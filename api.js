@@ -293,6 +293,17 @@ export class WebcakeCmsApi {
     return this.request("GET", `/api/v1/site/${this.siteId}/themes`);
   }
 
+  /**
+   * Semantic search over the theme marketplace embeddings (bge-m3, cosine similarity).
+   * Returns { results: [[theme_embedding_record, score], ...] }.
+   */
+  semanticSearchThemes(query) {
+    return this.request("POST", `/api/v1/ai/semantic_search`, {
+      body: { query },
+      timeout: 45000,
+    });
+  }
+
   // ── Applications ──
 
   listApps() {

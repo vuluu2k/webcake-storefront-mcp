@@ -3,3 +3,4 @@ node_modules/
 webcake-mcp.db
 webcake-mcp.db-wal
 webcake-mcp.db-shm
+.omc
