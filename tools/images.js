@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getImageAlt, getImageAlts, setImageAlts as dbSetImageAlts, listImageAlts, countImageAlts, deleteImageAlt } from "../db.js";
 
 const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|svg|avif|bmp|ico)(\?[^"')\s]*)?$/i;
 const URL_IN_CSS_RE = /url\(\s*['"]?([^'")\s]+)['"]?\s*\)/g;
@@ -356,6 +357,7 @@ Note: global_sections are read-only via the API and are not included.`,
             if (!isImageElement(node)) return;
             const { src, alt, src_path, alt_path } = probeImagePaths(node);
             if (only_missing_alt && alt && alt.trim()) return;
+            const cached = src ? getImageAlt(normalizeUrl(src)) : null;
             out.push({
               source_type: meta.source_type,
               source_id: meta.source_id,
@@ -366,6 +368,7 @@ Note: global_sections are read-only via the API and are not included.`,
               alt: alt || "",
               src_path,
               alt_path,
+              ...(cached && { cached_alt: cached.alt, cached_source: cached.source, cached_at: cached.updated_at }),
             });
           });
         }
@@ -492,10 +495,11 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
           for (const it of group) {
             const node = findNodeByIdInSource(source, it.element_id);
             if (!node) { perItem.push({ element_id: it.element_id, error: "Element not found" }); continue; }
-            const path = it.alt_path || probeImagePaths(node).alt_path;
+            const probe = probeImagePaths(node);
+            const path = it.alt_path || probe.alt_path;
             const before = path.split(".").reduce((acc, k) => (acc == null ? acc : acc[k]), node);
             setByPath(node, path, it.alt);
-            perItem.push({ element_id: it.element_id, alt_path: path, before: before == null ? "" : before, after: it.alt });
+            perItem.push({ element_id: it.element_id, alt_path: path, before: before == null ? "" : before, after: it.alt, _src: probe.src });
           }
 
           if (dry_run) {
@@ -511,13 +515,106 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
 
           try {
             await saver(source);
-            results.push({ source_type, source_id, success: true, updated: perItem.filter((u) => !u.error).length, updates: perItem });
+            // Auto-cache: save alt per src URL so re-runs can skip OCR
+            const cacheBatch = [];
+            for (const u of perItem) {
+              if (u.error || !u._src) continue;
+              if (!/^https?:\/\//i.test(u._src)) continue;
+              cacheBatch.push({ url_key: normalizeUrl(u._src), url: u._src, alt: u.after, source: "ai" });
+            }
+            if (cacheBatch.length) {
+              try { dbSetImageAlts(cacheBatch); } catch { /* cache best-effort */ }
+            }
+            results.push({
+              source_type,
+              source_id,
+              success: true,
+              updated: perItem.filter((u) => !u.error).length,
+              cached: cacheBatch.length,
+              updates: perItem.map(({ _src, ...rest }) => rest),
+            });
           } catch (e) {
-            results.push({ source_type, source_id, error: `save failed: ${e.message}`, updates: perItem });
+            results.push({ source_type, source_id, error: `save failed: ${e.message}`, updates: perItem.map(({ _src, ...rest }) => rest) });
           }
         }
 
         return { dry_run, sources: results.length, results };
+      })
+  );
+
+  // ── Alt cache tools ──
+
+  server.tool(
+    "get_cached_image_alts",
+    `Look up cached alt descriptions for image URLs. URLs are matched by normalized form (query string stripped, lowercase). Use BEFORE running read_image/OCR — skip already-described URLs.`,
+    {
+      urls: z.array(z.string()).min(1).describe("Image URLs to look up"),
+    },
+    ({ urls }) =>
+      handle(async () => {
+        const hits = [];
+        const misses = [];
+        for (const u of urls) {
+          if (!/^https?:\/\//i.test(u)) { misses.push(u); continue; }
+          const key = normalizeUrl(u);
+          const row = getImageAlt(key);
+          if (row) hits.push({ url: u, url_key: key, alt: row.alt, source: row.source, updated_at: row.updated_at });
+          else misses.push(u);
+        }
+        return { hits_count: hits.length, miss_count: misses.length, hits, misses };
+      })
+  );
+
+  server.tool(
+    "save_image_alts_cache",
+    `Manually save image URL → alt entries to the local cache. Useful for bulk import or saving descriptions generated outside the set_image_alts flow.`,
+    {
+      items: z.array(z.object({
+        url: z.string().describe("Image URL"),
+        alt: z.string().describe("Alt/description text"),
+        source: z.string().optional().describe("Origin tag (e.g. 'ai', 'manual', 'imported'). Default 'manual'"),
+      })).min(1),
+    },
+    ({ items }) =>
+      handle(async () => {
+        const batch = [];
+        const skipped = [];
+        for (const it of items) {
+          if (!/^https?:\/\//i.test(it.url)) { skipped.push({ url: it.url, reason: "non-http URL" }); continue; }
+          batch.push({ url_key: normalizeUrl(it.url), url: it.url, alt: it.alt, source: it.source || "manual" });
+        }
+        if (batch.length) dbSetImageAlts(batch);
+        return { saved: batch.length, skipped };
+      })
+  );
+
+  server.tool(
+    "list_image_alts_cache",
+    `List entries in the alt cache, most recently updated first.`,
+    {
+      limit: z.number().default(100).describe("Max entries (default 100)"),
+      offset: z.number().default(0).describe("Pagination offset"),
+    },
+    ({ limit, offset }) =>
+      handle(async () => {
+        const total = countImageAlts();
+        const rows = listImageAlts(limit, offset);
+        return { total, count: rows.length, entries: rows };
+      })
+  );
+
+  server.tool(
+    "delete_image_alt_cache",
+    `Remove a single URL from the alt cache (forces re-OCR next time).`,
+    {
+      url: z.string().describe("Image URL to evict"),
+    },
+    ({ url }) =>
+      handle(async () => {
+        if (!/^https?:\/\//i.test(url)) return { error: "non-http URL" };
+        const key = normalizeUrl(url);
+        const removed = deleteImageAlt(key);
+        return { removed, url_key: key };
       })
   );
 
