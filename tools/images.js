@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { getImageAlt, getImageAlts, setImageAlts as dbSetImageAlts, listImageAlts, countImageAlts, deleteImageAlt } from "../db.js";
+import { getImageAlt, setImageAlts as dbSetImageAlts, listImageAlts, countImageAlts } from "../db.js";
+import { isMongoEnabled, mongoUpsertAlts, mongoFindAlts, mongoListAlts } from "../mongo.js";
 
 const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|svg|avif|bmp|ico)(\?[^"')\s]*)?$/i;
 const URL_IN_CSS_RE = /url\(\s*['"]?([^'")\s]+)['"]?\s*\)/g;
@@ -524,6 +525,9 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
             }
             if (cacheBatch.length) {
               try { dbSetImageAlts(cacheBatch); } catch { /* cache best-effort */ }
+              if (isMongoEnabled()) {
+                mongoUpsertAlts(cacheBatch).catch(() => { /* fire-and-forget */ });
+              }
             }
             results.push({
               source_type,
@@ -546,22 +550,56 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
 
   server.tool(
     "get_cached_image_alts",
-    `Look up cached alt descriptions for image URLs. URLs are matched by normalized form (query string stripped, lowercase). Use BEFORE running read_image/OCR — skip already-described URLs.`,
+    `Look up cached alt descriptions for image URLs. URLs are matched by normalized form (query string stripped, lowercase). Use BEFORE running read_image/OCR — skip already-described URLs.
+When MONGO_URI is set, misses are then checked against MongoDB and successful hits are backfilled into the local SQLite cache for fast re-lookup.`,
     {
       urls: z.array(z.string()).min(1).describe("Image URLs to look up"),
     },
     ({ urls }) =>
       handle(async () => {
         const hits = [];
-        const misses = [];
+        let misses = [];
+        const keyToUrl = new Map();
+
         for (const u of urls) {
           if (!/^https?:\/\//i.test(u)) { misses.push(u); continue; }
           const key = normalizeUrl(u);
+          keyToUrl.set(key, u);
           const row = getImageAlt(key);
           if (row) hits.push({ url: u, url_key: key, alt: row.alt, source: row.source, updated_at: row.updated_at });
           else misses.push(u);
         }
-        return { hits_count: hits.length, miss_count: misses.length, hits, misses };
+
+        let mongo_hits = 0;
+        if (isMongoEnabled() && misses.length) {
+          const missKeys = misses
+            .filter((u) => /^https?:\/\//i.test(u))
+            .map((u) => normalizeUrl(u));
+          try {
+            const found = await mongoFindAlts(missKeys);
+            if (found.size) {
+              const backfill = [];
+              const stillMissing = [];
+              for (const u of misses) {
+                const k = /^https?:\/\//i.test(u) ? normalizeUrl(u) : null;
+                if (k && found.has(k)) {
+                  const doc = found.get(k);
+                  hits.push({ url: u, url_key: k, alt: doc.alt, source: doc.source || "mongo", updated_at: doc.updated_at, origin: "mongo" });
+                  backfill.push({ url_key: k, url: doc.url || u, alt: doc.alt, source: doc.source || "mongo" });
+                  mongo_hits++;
+                } else {
+                  stillMissing.push(u);
+                }
+              }
+              if (backfill.length) {
+                try { dbSetImageAlts(backfill); } catch { /* best-effort */ }
+              }
+              misses = stillMissing;
+            }
+          } catch { /* fall through with original misses */ }
+        }
+
+        return { hits_count: hits.length, miss_count: misses.length, mongo_hits, hits, misses };
       })
   );
 
@@ -583,8 +621,13 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
           if (!/^https?:\/\//i.test(it.url)) { skipped.push({ url: it.url, reason: "non-http URL" }); continue; }
           batch.push({ url_key: normalizeUrl(it.url), url: it.url, alt: it.alt, source: it.source || "manual" });
         }
-        if (batch.length) dbSetImageAlts(batch);
-        return { saved: batch.length, skipped };
+        if (batch.length) {
+          dbSetImageAlts(batch);
+          if (isMongoEnabled()) {
+            mongoUpsertAlts(batch).catch(() => { /* fire-and-forget */ });
+          }
+        }
+        return { saved: batch.length, skipped, mongo: isMongoEnabled() ? "queued" : "disabled" };
       })
   );
 
@@ -603,18 +646,42 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
       })
   );
 
+  // ── Mongo sync (active when MONGO_URI is set) ──
+
   server.tool(
-    "delete_image_alt_cache",
-    `Remove a single URL from the alt cache (forces re-OCR next time).`,
+    "sync_image_alts_to_mongo",
+    `Push local SQLite alt cache entries up to MongoDB. Bulk upsert keyed by url_key. Use when you want to back up local-only entries to the shared central store, or after a session of heavy AI describes.
+Requires MONGO_URI env var.`,
     {
-      url: z.string().describe("Image URL to evict"),
+      limit: z.number().default(1000).describe("Max entries to push per call"),
+      offset: z.number().default(0).describe("Offset into local cache"),
     },
-    ({ url }) =>
+    ({ limit, offset }) =>
       handle(async () => {
-        if (!/^https?:\/\//i.test(url)) return { error: "non-http URL" };
-        const key = normalizeUrl(url);
-        const removed = deleteImageAlt(key);
-        return { removed, url_key: key };
+        if (!isMongoEnabled()) return { error: "MONGO_URI not configured" };
+        const rows = listImageAlts(limit, offset);
+        if (!rows.length) return { pushed: 0, total_local: countImageAlts() };
+        const res = await mongoUpsertAlts(rows.map((r) => ({ url_key: r.url_key, url: r.url, alt: r.alt, source: r.source })));
+        return { pushed: rows.length, ...res, total_local: countImageAlts() };
+      })
+  );
+
+  server.tool(
+    "sync_image_alts_from_mongo",
+    `Pull MongoDB alt entries down into local SQLite cache. Useful when starting on a new machine/site to warm the local cache from the central store.
+Requires MONGO_URI env var.`,
+    {
+      limit: z.number().default(1000).describe("Max entries to pull"),
+      offset: z.number().default(0).describe("Offset into Mongo collection"),
+    },
+    ({ limit, offset }) =>
+      handle(async () => {
+        if (!isMongoEnabled()) return { error: "MONGO_URI not configured" };
+        const { total, entries } = await mongoListAlts(limit, offset);
+        if (entries.length) {
+          dbSetImageAlts(entries.map((e) => ({ url_key: e.url_key, url: e.url, alt: e.alt, source: e.source || "mongo" })));
+        }
+        return { pulled: entries.length, total_remote: total, total_local: countImageAlts() };
       })
   );
 

@@ -68,7 +68,6 @@ const stmtAltSet = db.prepare(`
     source = excluded.source,
     updated_at = excluded.updated_at
 `);
-const stmtAltDel = db.prepare("DELETE FROM image_alt_cache WHERE url_key = ?");
 const stmtAltList = db.prepare("SELECT url_key, url, alt, source, updated_at FROM image_alt_cache ORDER BY updated_at DESC LIMIT ? OFFSET ?");
 const stmtAltCount = db.prepare("SELECT COUNT(*) AS n FROM image_alt_cache");
 
@@ -100,10 +99,6 @@ export const setImageAlts = db.transaction((items) => {
     });
   }
 });
-
-export function deleteImageAlt(urlKey) {
-  return stmtAltDel.run(urlKey).changes > 0;
-}
 
 export function listImageAlts(limit = 100, offset = 0) {
   return stmtAltList.all(limit, offset);

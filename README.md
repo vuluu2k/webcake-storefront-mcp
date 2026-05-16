@@ -156,6 +156,9 @@ npm install
 | `WEBCAKE_KNOWLEDGE_DIR` | No | Path to local knowledge files directory (default: `./knowledge`) |
 | `WEBCAKE_KNOWLEDGE_REPO` | No | GitHub repo for knowledge files (e.g. `owner/repo` or full URL) |
 | `WEBCAKE_KNOWLEDGE_TOKEN` | No | GitHub token for private repos |
+| `MONGO_URI` | No | MongoDB connection string. If set, image alt cache is mirrored to Mongo for cross-instance reuse |
+| `MONGO_DB` | No | MongoDB database name (default: `webcake_mcp`) |
+| `MONGO_COLLECTION` | No | MongoDB collection name (default: `image_alt_cache`) |
 
 > \* Token, session_id, site_id can be set later via `update_auth` and `switch_site` tools in chat. When set via tools, values are **saved to SQLite** (`webcake-mcp.db`) and auto-restored in the next session.
 
