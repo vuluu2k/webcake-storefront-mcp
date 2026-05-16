@@ -17,6 +17,7 @@ import { registerComboTools } from "./tools/combos.js";
 import { registerKnowledgeTools, autoSync } from "./tools/knowledge.js";
 import { registerContextTools, getSavedConfig } from "./tools/context.js";
 import { registerGlobalSourceTools } from "./tools/global-sources.js";
+import { registerImageTools } from "./tools/images.js";
 
 // Priority: SQLite (saved by AI tools) > env vars (initial config)
 // SQLite empty → fallback to env vars
@@ -90,6 +91,7 @@ registerPromotionTools(server, api, handle);
 registerComboTools(server, api, handle);
 registerKnowledgeTools(server, handle);
 registerGlobalSourceTools(server, api, handle);
+registerImageTools(server, api, handle);
 
 // Start server
 async function main() {
