@@ -234,7 +234,28 @@ Scans every string field in the source tree (config.src, style.background-image,
 - notable_details: props, textures, typography, brand elements
 Use these as building blocks when drafting an image-gen brief.`;
 
-  async function fetchImageAsContent(url, maxSizeMb) {
+  /** Resize raw image buffer with sharp so base64 output stays under targetBytes.
+   * Skips svg/gif (sharp can't easily handle animation, svg is text). */
+  async function shrinkImageBuffer(buf, ctype, targetRawBytes) {
+    if (ctype.includes("svg") || ctype.includes("gif")) return { buf, mime: ctype };
+    try {
+      const sharp = (await import("sharp")).default;
+      let width = 1024;
+      let quality = 80;
+      let out = await sharp(buf).rotate().resize({ width, withoutEnlargement: true }).jpeg({ quality }).toBuffer();
+      // Step down if still too big
+      const steps = [[768, 70], [512, 60], [384, 50]];
+      for (const [w, q] of steps) {
+        if (out.length <= targetRawBytes) break;
+        out = await sharp(buf).rotate().resize({ width: w, withoutEnlargement: true }).jpeg({ quality: q }).toBuffer();
+      }
+      return { buf: out, mime: "image/jpeg" };
+    } catch {
+      return { buf, mime: ctype };
+    }
+  }
+
+  async function fetchImageAsContent(url, maxSizeMb, opts = {}) {
     if (!/^https?:\/\//i.test(url)) {
       return { ok: false, error: "must be absolute http(s) URL" };
     }
@@ -251,12 +272,24 @@ Use these as building blocks when drafting an image-gen brief.`;
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     const ctype = (res.headers.get("content-type") || "").split(";")[0].trim();
     if (!ctype.startsWith("image/")) return { ok: false, error: `not an image (${ctype || "unknown"})` };
-    const buf = Buffer.from(await res.arrayBuffer());
+    let buf = Buffer.from(await res.arrayBuffer());
     const sizeMb = buf.length / (1024 * 1024);
     if (sizeMb > maxSizeMb) {
       return { ok: false, error: `image too large (${sizeMb.toFixed(2)}MB > ${maxSizeMb}MB)` };
     }
-    return { ok: true, mime: ctype, data: buf.toString("base64"), size_kb: Math.round(buf.length / 1024) };
+
+    // Target: base64 output should stay under (targetBase64Kb) → raw bytes = targetBase64Kb * 1024 * 0.75
+    // Default 600KB base64 for single-image use; caller can override (batch uses smaller target).
+    const targetBase64Kb = opts.targetBase64Kb || 600;
+    const targetRawBytes = Math.floor(targetBase64Kb * 1024 * 0.75);
+    let mime = ctype;
+    if (buf.length > targetRawBytes) {
+      const shrunk = await shrinkImageBuffer(buf, ctype, targetRawBytes);
+      buf = shrunk.buf;
+      mime = shrunk.mime;
+    }
+
+    return { ok: true, mime, data: buf.toString("base64"), size_kb: Math.round(buf.length / 1024), resized: mime !== ctype };
   }
 
   server.tool(
@@ -796,8 +829,9 @@ The pre-built "items" template at the end contains placeholders — fill in "alt
           if (needVision.length >= cap) break;
         }
 
-        // 3. Fetch image bytes in parallel
-        const fetched = await Promise.all(needVision.map((c) => fetchImageAsContent(c.src, max_size_mb)));
+        // 3. Fetch image bytes in parallel (budget ~950KB total / N images, base64)
+        const perImageBase64Kb = needVision.length ? Math.max(60, Math.floor(950 / needVision.length)) : 600;
+        const fetched = await Promise.all(needVision.map((c) => fetchImageAsContent(c.src, max_size_mb, { targetBase64Kb: perImageBase64Kb })));
 
         // 4. Build mixed content response
         const content = [];
@@ -854,7 +888,8 @@ ${DESCRIBE_HINT}`,
       max_size_mb: z.number().default(8).describe("Per-image size cap in MB"),
     },
     async ({ urls, max_size_mb }) => {
-      const results = await Promise.all(urls.map((u) => fetchImageAsContent(u, max_size_mb)));
+      const perImageBase64Kb = urls.length ? Math.max(60, Math.floor(950 / urls.length)) : 600;
+      const results = await Promise.all(urls.map((u) => fetchImageAsContent(u, max_size_mb, { targetBase64Kb: perImageBase64Kb })));
       const content = [];
       const summary = [];
       for (let i = 0; i < urls.length; i++) {
