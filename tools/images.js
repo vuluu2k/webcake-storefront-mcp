@@ -289,38 +289,62 @@ ${DESCRIBE_HINT}`,
   function isImageElement(node) {
     const t = (node && node.type) ? String(node.type).toLowerCase() : "";
     if (/image|img|picture|photo/i.test(t)) return true;
-    const cfg = node && node.config;
-    if (!cfg || typeof cfg !== "object") return false;
-    // common image-bearing config shapes
-    const candidates = [cfg.src, cfg.url, cfg.image && (cfg.image.src || cfg.image.url || cfg.image), cfg.background && (cfg.background.src || cfg.background.url)];
-    return candidates.some((v) => typeof v === "string" && isImageUrl(v));
+    // Check root + every breakpoint config for an image-bearing field
+    const configs = [node && node.config];
+    for (const k of Object.keys(node || {})) {
+      if (/^bp\d+$/.test(k) && node[k] && typeof node[k] === "object") configs.push(node[k].config);
+    }
+    for (const cfg of configs) {
+      if (!cfg || typeof cfg !== "object") continue;
+      const candidates = [cfg.src, cfg.url, cfg.image && (cfg.image.src || cfg.image.url), cfg.background && (cfg.background.src || cfg.background.url)];
+      if (candidates.some((v) => typeof v === "string" && isImageUrl(v))) return true;
+    }
+    return false;
   }
 
-  /** Locate the src path inside a node's config. Alt is ALWAYS at specials.image_alt by builder convention.
-   * Returns { src, alt, src_path, alt_path }. */
+  /** Find src inside a config object (used per-breakpoint). Returns { src, sub_path } where sub_path is the leaf path inside config. */
+  function findSrcInConfig(cfg) {
+    if (!cfg || typeof cfg !== "object") return { src: "", sub_path: "" };
+    if (cfg.image && typeof cfg.image === "object") {
+      const src = cfg.image.src || cfg.image.url || "";
+      if (src) return { src, sub_path: "image.src" };
+    }
+    if (typeof cfg.src === "string" && isImageUrl(cfg.src)) {
+      return { src: cfg.src, sub_path: "src" };
+    }
+    if (typeof cfg.url === "string" && isImageUrl(cfg.url)) {
+      return { src: cfg.url, sub_path: "url" };
+    }
+    if (cfg.background && typeof cfg.background === "object") {
+      const src = cfg.background.src || cfg.background.url || "";
+      if (src) return { src, sub_path: "background.src" };
+    }
+    return { src: "", sub_path: "" };
+  }
+
+  /** Locate the src path. In this builder, config lives inside breakpoints (bp1, bp2...).
+   * Walks bp1 → bp2 → ... → root.config as fallback. Alt is always at specials.image_alt. */
   function probeImagePaths(node) {
-    const cfg = (node && node.config) || {};
     const specials = (node && node.specials) || {};
     const alt_path = "specials.image_alt";
     const alt = specials.image_alt || specials.alt || "";
 
-    let src = "";
-    let src_path = "";
-    if (cfg.image && typeof cfg.image === "object") {
-      src = cfg.image.src || cfg.image.url || "";
-      src_path = "config.image.src";
-    } else if (typeof cfg.src === "string" && isImageUrl(cfg.src)) {
-      src = cfg.src;
-      src_path = "config.src";
-    } else if (typeof cfg.url === "string" && isImageUrl(cfg.url)) {
-      src = cfg.url;
-      src_path = "config.url";
-    } else if (cfg.background && typeof cfg.background === "object") {
-      src = cfg.background.src || cfg.background.url || "";
-      src_path = "config.background.src";
+    // Iterate breakpoints in sorted order (bp1 first)
+    const bpKeys = Object.keys(node || {})
+      .filter((k) => /^bp\d+$/.test(k))
+      .sort((a, b) => Number(a.slice(2)) - Number(b.slice(2)));
+
+    for (const bp of bpKeys) {
+      const cfg = node[bp] && node[bp].config;
+      const { src, sub_path } = findSrcInConfig(cfg);
+      if (src) return { src, alt, src_path: `${bp}.config.${sub_path}`, alt_path };
     }
 
-    return { src, alt, src_path, alt_path };
+    // Fallback: root config (some legacy/non-responsive nodes)
+    const { src, sub_path } = findSrcInConfig(node && node.config);
+    if (src) return { src, alt, src_path: `config.${sub_path}`, alt_path };
+
+    return { src: "", alt, src_path: "", alt_path };
   }
 
   function setByPath(obj, path, value) {
