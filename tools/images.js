@@ -708,6 +708,141 @@ Requires MONGO_URI env var.`,
       })
   );
 
+  // ── Combo: fetch images + metadata in one call so Claude can describe + call set_image_alts once ──
+
+  server.tool(
+    "fetch_images_for_alt_fill",
+    `One-shot helper for filling image_alt across the site. Returns image bytes + element metadata in a single response so Claude can describe everything in one pass, then call set_image_alts once.
+
+Workflow:
+1. Call this tool with scope/limit.
+2. Tool returns each image inline with its element_id + source_type + source_id (and skips URLs already in cache).
+3. Claude reads images, drafts an alt for each, then calls set_image_alts(items) once with the template at the end of the response.
+
+The pre-built "items" template at the end contains placeholders — fill in "alt" and call set_image_alts.`,
+    {
+      scope: z.enum(["all", "pages", "global_sources"]).default("all"),
+      page_id: z.string().optional(),
+      only_missing_alt: z.boolean().default(true).describe("Default true — skip elements that already have alt"),
+      skip_cached: z.boolean().default(true).describe("Skip URLs already in alt cache (Claude doesn't need to describe again)"),
+      limit: z.number().default(10).describe("Max images per call (cap 20)"),
+      max_size_mb: z.number().default(8),
+    },
+    async ({ scope, page_id, only_missing_alt, skip_cached, limit, max_size_mb }) => {
+      try {
+        const cap = Math.min(Math.max(limit, 1), 20);
+
+        // 1. Collect candidate elements
+        const candidates = [];
+        const addFromSource = (source, meta) => {
+          const roots = getRoots(source);
+          walkNodes(roots, (node) => {
+            if (candidates.length >= cap * 3) return; // overscan, will filter
+            if (!isImageElement(node)) return;
+            const probe = probeImagePaths(node);
+            if (only_missing_alt && probe.alt && probe.alt.trim()) return;
+            if (!probe.src || !/^https?:\/\//i.test(probe.src)) return;
+            candidates.push({
+              source_type: meta.source_type,
+              source_id: meta.source_id,
+              source_name: meta.source_name,
+              element_id: node.id,
+              src: probe.src,
+              alt_path: probe.alt_path,
+            });
+          });
+        };
+
+        if (scope === "all" || scope === "pages") {
+          const res = await api.listPages();
+          const pages = (res && res.data) || res || [];
+          if (Array.isArray(pages)) {
+            const targets = page_id ? pages.filter((p) => p.id === page_id) : pages;
+            for (const p of targets) {
+              const source = parseSource(p.source && p.source.source);
+              if (source) addFromSource(source, { source_type: "page", source_id: p.id, source_name: p.name });
+            }
+          }
+        }
+        if (scope === "all" || scope === "global_sources") {
+          const [gsRes, cartRes] = await Promise.all([
+            api.getGlobalSources({}).catch(() => null),
+            api.getSourceCart().catch(() => null),
+          ]);
+          const gsList = (gsRes && gsRes.data) || (Array.isArray(gsRes) ? gsRes : []) || [];
+          const cartList = (cartRes && cartRes.data) || (Array.isArray(cartRes) ? cartRes : []) || [];
+          for (const gs of [...gsList, ...cartList]) {
+            const source = parseSource(gs.source);
+            if (source) addFromSource(source, {
+              source_type: "global_source",
+              source_id: gs.id,
+              source_name: gs.component || gs.type || `gs-${gs.id}`,
+            });
+          }
+        }
+
+        // 2. Resolve cache hits → auto-prepare items; misses → need vision
+        const autoItems = [];
+        const needVision = [];
+        for (const c of candidates) {
+          if (skip_cached) {
+            const cached = getImageAlt(normalizeUrl(c.src));
+            if (cached && cached.alt) {
+              autoItems.push({ source_type: c.source_type, source_id: c.source_id, element_id: c.element_id, alt: cached.alt });
+              continue;
+            }
+          }
+          needVision.push(c);
+          if (needVision.length >= cap) break;
+        }
+
+        // 3. Fetch image bytes in parallel
+        const fetched = await Promise.all(needVision.map((c) => fetchImageAsContent(c.src, max_size_mb)));
+
+        // 4. Build mixed content response
+        const content = [];
+        content.push({
+          type: "text",
+          text: `Fetched ${needVision.length} image(s) needing description. ${autoItems.length} auto-filled from cache. ${candidates.length - needVision.length - autoItems.length} skipped.
+
+For each image below, write a short alt description in the language of the site (Vietnamese unless content suggests otherwise). Focus on the SUBJECT visible — avoid generic phrases like "image of...".
+
+When done, call set_image_alts with the items array. The template is at the bottom of this response.`,
+        });
+
+        const visionItems = [];
+        for (let i = 0; i < needVision.length; i++) {
+          const c = needVision[i];
+          const r = fetched[i];
+          const header = `[#${i + 1}] element_id=${c.element_id} | source=${c.source_type}:${c.source_id} (${c.source_name}) | src=${c.src}`;
+          content.push({ type: "text", text: header });
+          if (r.ok) {
+            content.push({ type: "image", data: r.data, mimeType: r.mime });
+            visionItems.push({
+              source_type: c.source_type,
+              source_id: c.source_id,
+              element_id: c.element_id,
+              alt: "<FILL_ALT_FOR_#" + (i + 1) + ">",
+            });
+          } else {
+            content.push({ type: "text", text: `(fetch error: ${r.error})` });
+          }
+        }
+
+        const template = {
+          auto_from_cache: autoItems,
+          to_describe: visionItems,
+          next_step: "Replace each <FILL_ALT_FOR_#N> with your description, then call set_image_alts with items = [...auto_from_cache, ...to_describe].",
+        };
+        content.push({ type: "text", text: JSON.stringify(template, null, 2) });
+
+        return { content };
+      } catch (e) {
+        return { content: [{ type: "text", text: `Error: ${e.message}` }], isError: true };
+      }
+    }
+  );
+
   server.tool(
     "read_images",
     `Batch fetch multiple image URLs in parallel. Use when comparing several references or extracting motifs across a set.
