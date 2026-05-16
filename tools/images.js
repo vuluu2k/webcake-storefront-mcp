@@ -296,32 +296,31 @@ ${DESCRIBE_HINT}`,
     return candidates.some((v) => typeof v === "string" && isImageUrl(v));
   }
 
-  /** Locate the (src, alt) path inside a node's config/specials. Returns { src, alt, src_path, alt_path }.
-   * alt_path is where alt currently is OR where it should be written (sibling of src). */
+  /** Locate the src path inside a node's config. Alt is ALWAYS at specials.image_alt by builder convention.
+   * Returns { src, alt, src_path, alt_path }. */
   function probeImagePaths(node) {
     const cfg = (node && node.config) || {};
     const specials = (node && node.specials) || {};
+    const alt_path = "specials.image_alt";
+    const alt = specials.image_alt || specials.alt || "";
 
-    // 1. config.image.{src|url}
+    let src = "";
+    let src_path = "";
     if (cfg.image && typeof cfg.image === "object") {
-      const src = cfg.image.src || cfg.image.url || "";
-      return { src, alt: cfg.image.alt || "", src_path: "config.image.src", alt_path: "config.image.alt" };
+      src = cfg.image.src || cfg.image.url || "";
+      src_path = "config.image.src";
+    } else if (typeof cfg.src === "string" && isImageUrl(cfg.src)) {
+      src = cfg.src;
+      src_path = "config.src";
+    } else if (typeof cfg.url === "string" && isImageUrl(cfg.url)) {
+      src = cfg.url;
+      src_path = "config.url";
+    } else if (cfg.background && typeof cfg.background === "object") {
+      src = cfg.background.src || cfg.background.url || "";
+      src_path = "config.background.src";
     }
-    // 2. config.src
-    if (typeof cfg.src === "string") {
-      return { src: cfg.src, alt: cfg.alt || "", src_path: "config.src", alt_path: "config.alt" };
-    }
-    // 3. config.url
-    if (typeof cfg.url === "string" && isImageUrl(cfg.url)) {
-      return { src: cfg.url, alt: cfg.alt || "", src_path: "config.url", alt_path: "config.alt" };
-    }
-    // 4. config.background.{src|url}
-    if (cfg.background && typeof cfg.background === "object") {
-      const src = cfg.background.src || cfg.background.url || "";
-      return { src, alt: cfg.background.alt || "", src_path: "config.background.src", alt_path: "config.background.alt" };
-    }
-    // fallback: specials.alt
-    return { src: "", alt: specials.alt || "", src_path: "", alt_path: "specials.alt" };
+
+    return { src, alt, src_path, alt_path };
   }
 
   function setByPath(obj, path, value) {
