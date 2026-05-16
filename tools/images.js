@@ -282,6 +282,245 @@ ${DESCRIBE_HINT}`,
     }
   );
 
+  // ── Image element discovery + alt writer ──
+
+  function isImageElement(node) {
+    const t = (node && node.type) ? String(node.type).toLowerCase() : "";
+    if (/image|img|picture|photo/i.test(t)) return true;
+    const cfg = node && node.config;
+    if (!cfg || typeof cfg !== "object") return false;
+    // common image-bearing config shapes
+    const candidates = [cfg.src, cfg.url, cfg.image && (cfg.image.src || cfg.image.url || cfg.image), cfg.background && (cfg.background.src || cfg.background.url)];
+    return candidates.some((v) => typeof v === "string" && isImageUrl(v));
+  }
+
+  /** Locate the (src, alt) path inside a node's config/specials. Returns { src, alt, src_path, alt_path }.
+   * alt_path is where alt currently is OR where it should be written (sibling of src). */
+  function probeImagePaths(node) {
+    const cfg = (node && node.config) || {};
+    const specials = (node && node.specials) || {};
+
+    // 1. config.image.{src|url}
+    if (cfg.image && typeof cfg.image === "object") {
+      const src = cfg.image.src || cfg.image.url || "";
+      return { src, alt: cfg.image.alt || "", src_path: "config.image.src", alt_path: "config.image.alt" };
+    }
+    // 2. config.src
+    if (typeof cfg.src === "string") {
+      return { src: cfg.src, alt: cfg.alt || "", src_path: "config.src", alt_path: "config.alt" };
+    }
+    // 3. config.url
+    if (typeof cfg.url === "string" && isImageUrl(cfg.url)) {
+      return { src: cfg.url, alt: cfg.alt || "", src_path: "config.url", alt_path: "config.alt" };
+    }
+    // 4. config.background.{src|url}
+    if (cfg.background && typeof cfg.background === "object") {
+      const src = cfg.background.src || cfg.background.url || "";
+      return { src, alt: cfg.background.alt || "", src_path: "config.background.src", alt_path: "config.background.alt" };
+    }
+    // fallback: specials.alt
+    return { src: "", alt: specials.alt || "", src_path: "", alt_path: "specials.alt" };
+  }
+
+  function setByPath(obj, path, value) {
+    const parts = path.split(".");
+    let cur = obj;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const k = parts[i];
+      if (cur[k] == null || typeof cur[k] !== "object") cur[k] = {};
+      cur = cur[k];
+    }
+    cur[parts[parts.length - 1]] = value;
+  }
+
+  server.tool(
+    "list_image_elements",
+    `Find all image elements across pages + global sources, with element_id, current alt, src, and the field path where alt is/should be written. Use as the first step before generating alt text via vision (read_image) and writing back with set_image_alts.
+Note: global_sections are read-only via the API and are not included.`,
+    {
+      scope: z.enum(["all", "pages", "global_sources"]).default("all").describe("Which sources to inspect"),
+      page_id: z.string().optional().describe("Limit to one page (only used when scope is 'pages' or 'all')"),
+      only_missing_alt: z.boolean().default(false).describe("Return only elements whose alt is empty"),
+      limit: z.number().default(500).describe("Max elements to return"),
+    },
+    ({ scope, page_id, only_missing_alt, limit }) =>
+      handle(async () => {
+        const out = [];
+        const errors = [];
+
+        function visitSource(source, meta) {
+          if (out.length >= limit) return;
+          const roots = getRoots(source);
+          walkNodes(roots, (node) => {
+            if (out.length >= limit) return;
+            if (!isImageElement(node)) return;
+            const { src, alt, src_path, alt_path } = probeImagePaths(node);
+            if (only_missing_alt && alt && alt.trim()) return;
+            out.push({
+              source_type: meta.source_type,
+              source_id: meta.source_id,
+              source_name: meta.source_name,
+              element_id: node.id || null,
+              element_type: node.type || null,
+              src: src || null,
+              alt: alt || "",
+              src_path,
+              alt_path,
+            });
+          });
+        }
+
+        if (scope === "all" || scope === "pages") {
+          try {
+            const res = await api.listPages();
+            const pages = (res && res.data) || res || [];
+            if (Array.isArray(pages)) {
+              const targets = page_id ? pages.filter((p) => p.id === page_id) : pages;
+              for (const p of targets) {
+                const source = parseSource(p.source && p.source.source);
+                if (source) visitSource(source, { source_type: "page", source_id: p.id, source_name: p.name });
+              }
+            }
+          } catch (e) { errors.push(`pages: ${e.message}`); }
+        }
+
+        if (scope === "all" || scope === "global_sources") {
+          try {
+            const [gsRes, cartRes] = await Promise.all([
+              api.getGlobalSources({}).catch(() => null),
+              api.getSourceCart().catch(() => null),
+            ]);
+            const gsList = (gsRes && gsRes.data) || (Array.isArray(gsRes) ? gsRes : []) || [];
+            const cartList = (cartRes && cartRes.data) || (Array.isArray(cartRes) ? cartRes : []) || [];
+            for (const gs of [...gsList, ...cartList]) {
+              const source = parseSource(gs.source);
+              if (source) visitSource(source, {
+                source_type: "global_source",
+                source_id: gs.id,
+                source_name: gs.component || gs.type || `gs-${gs.id}`,
+              });
+            }
+          } catch (e) { errors.push(`global_sources: ${e.message}`); }
+        }
+
+        return {
+          scope,
+          count: out.length,
+          truncated: out.length >= limit,
+          ...(errors.length && { errors }),
+          elements: out,
+        };
+      })
+  );
+
+  function findNodeByIdInSource(source, elementId) {
+    let found = null;
+    const roots = getRoots(source);
+    walkNodes(roots, (n) => { if (n.id === elementId) found = n; });
+    return found;
+  }
+
+  server.tool(
+    "set_image_alts",
+    `Batch-write alt text for image elements across pages + global sources. Groups updates by source so each source is fetched + saved exactly once.
+Workflow: list_image_elements → read_image (per src) → describe → set_image_alts(items).
+If alt_path is omitted, it is auto-detected via the same probe used by list_image_elements (config.image.alt → config.alt → specials.alt).`,
+    {
+      items: z.array(z.object({
+        source_type: z.enum(["page", "global_source"]).describe("Which source contains the element"),
+        source_id: z.string().describe("Page ID or global source ID"),
+        element_id: z.string().describe("Element ID"),
+        alt: z.string().describe("Alt text to write"),
+        alt_path: z.string().optional().describe("Dotted path inside the node, e.g. 'config.image.alt'. Omit to auto-detect"),
+      })).min(1).describe("List of alt updates"),
+      dry_run: z.boolean().default(false).describe("Preview the diff without saving"),
+    },
+    ({ items, dry_run }) =>
+      handle(async () => {
+        const groups = new Map();
+        for (const it of items) {
+          const key = `${it.source_type}:${it.source_id}`;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(it);
+        }
+
+        const results = [];
+
+        for (const [key, group] of groups) {
+          const [source_type, source_id] = key.split(":");
+          let source = null;
+          let saver = null;
+          let existingLen = 0;
+          let context = null;
+
+          try {
+            if (source_type === "page") {
+              const pages = await api.listPages();
+              const list = (pages && pages.data) || pages || [];
+              const page = Array.isArray(list) ? list.find((p) => p.id === source_id) : null;
+              if (!page) { results.push({ source_type, source_id, error: "Page not found" }); continue; }
+              source = parseSource(page.source && page.source.source);
+              if (!source) { results.push({ source_type, source_id, error: "Page has no source" }); continue; }
+              existingLen = JSON.stringify(source).length;
+              saver = (newSrc) => api.updatePageSource(source_id, { source: newSrc });
+              context = { page };
+            } else {
+              const [gsRes, cartRes] = await Promise.all([
+                api.getGlobalSources({}).catch(() => null),
+                api.getSourceCart().catch(() => null),
+              ]);
+              const gsList = (gsRes && gsRes.data) || (Array.isArray(gsRes) ? gsRes : []) || [];
+              const cartList = (cartRes && cartRes.data) || (Array.isArray(cartRes) ? cartRes : []) || [];
+              const gs = [...gsList, ...cartList].find((g) => String(g.id) === String(source_id));
+              if (!gs) { results.push({ source_type, source_id, error: "Global source not found" }); continue; }
+              source = parseSource(gs.source);
+              if (!source) { results.push({ source_type, source_id, error: "Global source has no source" }); continue; }
+              existingLen = JSON.stringify(source).length;
+              const isCart = gs.component === "cart-droppable";
+              saver = (newSrc) =>
+                isCart
+                  ? api.updateSourceCart({ source: newSrc, type: gs.type, site_id: api.siteId })
+                  : api.updateGlobalSource({ global_source_id: source_id, source: newSrc, type: gs.component, site_id: api.siteId });
+              context = { gs };
+            }
+          } catch (e) {
+            results.push({ source_type, source_id, error: `load failed: ${e.message}` });
+            continue;
+          }
+
+          const perItem = [];
+          for (const it of group) {
+            const node = findNodeByIdInSource(source, it.element_id);
+            if (!node) { perItem.push({ element_id: it.element_id, error: "Element not found" }); continue; }
+            const path = it.alt_path || probeImagePaths(node).alt_path;
+            const before = path.split(".").reduce((acc, k) => (acc == null ? acc : acc[k]), node);
+            setByPath(node, path, it.alt);
+            perItem.push({ element_id: it.element_id, alt_path: path, before: before == null ? "" : before, after: it.alt });
+          }
+
+          if (dry_run) {
+            results.push({ source_type, source_id, dry_run: true, updates: perItem });
+            continue;
+          }
+
+          const newLen = JSON.stringify(source).length;
+          if (existingLen > 200 && newLen < existingLen * 0.5) {
+            results.push({ source_type, source_id, error: `BLOCKED: source would shrink ${existingLen} → ${newLen}`, updates: perItem });
+            continue;
+          }
+
+          try {
+            await saver(source);
+            results.push({ source_type, source_id, success: true, updated: perItem.filter((u) => !u.error).length, updates: perItem });
+          } catch (e) {
+            results.push({ source_type, source_id, error: `save failed: ${e.message}`, updates: perItem });
+          }
+        }
+
+        return { dry_run, sources: results.length, results };
+      })
+  );
+
   server.tool(
     "read_images",
     `Batch fetch multiple image URLs in parallel. Use when comparing several references or extracting motifs across a set.
