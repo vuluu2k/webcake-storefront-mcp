@@ -218,4 +218,95 @@ Scans every string field in the source tree (config.src, style.background-image,
         };
       })
   );
+
+  // ── Image reader: fetch image bytes, return as MCP image content for vision-capable clients ──
+
+  const DESCRIBE_HINT = `Describe the image with these fields, useful as input for new image generation:
+- subject: main object / scene / person
+- style: photography, illustration, 3D render, flat vector, watercolor, ...
+- palette: 3–5 dominant colors (hex or names)
+- composition: layout, framing, focal point
+- mood: emotion or atmosphere
+- lighting: natural / studio / golden hour / dramatic / soft / ...
+- background: setting / environment
+- notable_details: props, textures, typography, brand elements
+Use these as building blocks when drafting an image-gen brief.`;
+
+  async function fetchImageAsContent(url, maxSizeMb) {
+    if (!/^https?:\/\//i.test(url)) {
+      return { ok: false, error: "must be absolute http(s) URL" };
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20000);
+    let res;
+    try {
+      res = await fetch(url, { signal: ctrl.signal });
+    } catch (e) {
+      clearTimeout(timer);
+      return { ok: false, error: `fetch failed: ${e.message}` };
+    }
+    clearTimeout(timer);
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    const ctype = (res.headers.get("content-type") || "").split(";")[0].trim();
+    if (!ctype.startsWith("image/")) return { ok: false, error: `not an image (${ctype || "unknown"})` };
+    const buf = Buffer.from(await res.arrayBuffer());
+    const sizeMb = buf.length / (1024 * 1024);
+    if (sizeMb > maxSizeMb) {
+      return { ok: false, error: `image too large (${sizeMb.toFixed(2)}MB > ${maxSizeMb}MB)` };
+    }
+    return { ok: true, mime: ctype, data: buf.toString("base64"), size_kb: Math.round(buf.length / 1024) };
+  }
+
+  server.tool(
+    "read_image",
+    `Fetch an image URL and return its bytes for vision analysis by the AI client. Pair with scan_unique_images to inspect images already on the site.
+
+After receiving the image, describe it (subject, style, palette, composition, mood, lighting, background, notable_details) to build an image-generation brief.
+
+${DESCRIBE_HINT}`,
+    {
+      url: z.string().describe("Absolute http(s) image URL"),
+      max_size_mb: z.number().default(8).describe("Reject images larger than this (default 8MB)"),
+    },
+    async ({ url, max_size_mb }) => {
+      const r = await fetchImageAsContent(url, max_size_mb);
+      if (!r.ok) {
+        return { content: [{ type: "text", text: `Error: ${r.error}` }], isError: true };
+      }
+      return {
+        content: [
+          { type: "image", data: r.data, mimeType: r.mime },
+          { type: "text", text: JSON.stringify({ url, mime: r.mime, size_kb: r.size_kb }) },
+        ],
+      };
+    }
+  );
+
+  server.tool(
+    "read_images",
+    `Batch fetch multiple image URLs in parallel. Use when comparing several references or extracting motifs across a set.
+Capped at 5 images per call to keep context manageable. For each image, describe subject/style/palette/composition/mood; then synthesize common themes for the brief.
+
+${DESCRIBE_HINT}`,
+    {
+      urls: z.array(z.string()).min(1).max(5).describe("1–5 absolute http(s) image URLs"),
+      max_size_mb: z.number().default(8).describe("Per-image size cap in MB"),
+    },
+    async ({ urls, max_size_mb }) => {
+      const results = await Promise.all(urls.map((u) => fetchImageAsContent(u, max_size_mb)));
+      const content = [];
+      const summary = [];
+      for (let i = 0; i < urls.length; i++) {
+        const r = results[i];
+        if (!r.ok) {
+          summary.push({ url: urls[i], error: r.error });
+          continue;
+        }
+        content.push({ type: "image", data: r.data, mimeType: r.mime });
+        summary.push({ url: urls[i], mime: r.mime, size_kb: r.size_kb });
+      }
+      content.push({ type: "text", text: JSON.stringify({ count: content.length - 0, images: summary }) });
+      return { content };
+    }
+  );
 }
