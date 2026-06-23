@@ -5,6 +5,23 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.2.0] - 2026-06-23
+
+### Added
+- `upload_images` replaces `upload_image` with batch support (1–20 sources per call), parallel uploads, and a `dry_run` mode that previews what would be processed without uploading.
+- `upload_images` accepts local file paths (absolute, `~/`, `file://`) in stdio mode so images on the user's machine can be uploaded directly to the site CDN.
+- `build_page` now accepts a `type` enum (`main`, `store`, `member`, `blog`, `custom`, `error`, `maintain`) and automatically enables the matching site data-source flag (`use_store`, `use_member`, `use_blog`, `use_error`, `use_maintain`) before creating the page, so product, customer, and blog bindings resolve on first load.
+- `get_build_guide` now includes a "Page types & data sources" section documenting the page kind enum, `PAGE_TYPE` numeric values, required data-source flags, and binding names for each special page type.
+
+### Changed
+- `build_page`'s `type` parameter is now a typed enum instead of a free string; the dry-run response includes new `page_type_num` and `will_enable_feature` fields, and the success response includes `page_type` and `data_source`.
+- References to `upload_image` in `ingest_html` and `ingest_url` hints have been updated to `upload_images`.
+- `set_image_alts` no longer auto-caches generated alt text between runs; the `cached_alt` field has been removed from `list_image_alts` output.
+
+### Removed
+- `upload_image` (singular) has been replaced by the new `upload_images` batch tool.
+- `get_cached_image_alts`, `save_image_alts_cache`, `list_image_alts_cache`, `sync_image_alts_to_mongo`, and `sync_image_alts_from_mongo` tools have been removed along with the local image-alt cache and MongoDB sync layer.
+
 ## [1.1.4] - 2026-06-23
 
 ### Added

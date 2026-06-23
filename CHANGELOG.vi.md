@@ -5,6 +5,23 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.2.0] - 2026-06-23
+
+### Added
+- `upload_images` thay thế `upload_image` với khả năng xử lý hàng loạt (1–20 nguồn mỗi lần gọi), tải song song, và chế độ `dry_run` cho phép xem trước những gì sẽ được xử lý mà không thực sự tải lên.
+- `upload_images` chấp nhận đường dẫn file cục bộ (tuyệt đối, `~/`, `file://`) trong chế độ stdio, giúp người dùng tải ảnh trực tiếp từ máy của mình lên CDN của site.
+- `build_page` nay nhận tham số `type` dạng enum (`main`, `store`, `member`, `blog`, `custom`, `error`, `maintain`) và tự động bật flag dữ liệu site tương ứng (`use_store`, `use_member`, `use_blog`, `use_error`, `use_maintain`) trước khi tạo trang, giúp các binding dữ liệu sản phẩm, khách hàng và blog hoạt động ngay từ lần tải đầu tiên.
+- `get_build_guide` nay bổ sung mục "Page types & data sources" ghi lại enum loại trang, giá trị số `PAGE_TYPE`, flag dữ liệu cần bật, và tên binding cho từng loại trang đặc biệt.
+
+### Changed
+- Tham số `type` của `build_page` nay là enum có kiểu rõ ràng thay vì chuỗi tự do; phản hồi dry-run bổ sung các trường `page_type_num` và `will_enable_feature`, còn phản hồi thành công bổ sung `page_type` và `data_source`.
+- Các gợi ý trong `ingest_html` và `ingest_url` đã được cập nhật từ `upload_image` sang `upload_images`.
+- `set_image_alts` không còn tự động cache alt text được tạo ra giữa các lần chạy; trường `cached_alt` đã bị xóa khỏi kết quả của `list_image_alts`.
+
+### Removed
+- `upload_image` (số ít) đã được thay thế bởi tool hàng loạt `upload_images`.
+- Các tool `get_cached_image_alts`, `save_image_alts_cache`, `list_image_alts_cache`, `sync_image_alts_to_mongo` và `sync_image_alts_from_mongo` đã bị xóa cùng với bộ nhớ cache alt ảnh cục bộ và lớp đồng bộ MongoDB.
+
 ## [1.1.4] - 2026-06-23
 
 ### Added
