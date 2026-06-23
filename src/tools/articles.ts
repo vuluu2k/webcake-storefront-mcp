@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { randomUUID } from "node:crypto";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -45,18 +46,37 @@ export function registerArticleTools(server: McpServer, api: WebcakeCmsApi, hand
 
   server.tool(
     "create_article",
-    "Create a new blog article",
+    `Create a blog article so blog/post pages (post-list, grid-blog, post-overlay) have content.
+Built via the dashboard command pipeline: title + optional summary, HTML content, image URLs, and
+category linkage. Pass category_ids from create_blog_category / list articles' categories so the
+post shows up under those categories (it is also auto-filed under the default category). Image URLs
+must be hosted (search_images / upload_images). The backend generates the id and slug.`,
     {
       name: z.string().describe("Article title"),
-      slug: z.string().describe("URL slug"),
-      content: z.string().describe("HTML content"),
-      summary: z.string().optional().describe("Summary"),
-      category_id: z.string().optional().describe("Category ID"),
-      tags: z.array(z.string()).optional().describe("Tags"),
-      images: z.array(z.string()).optional().describe("Image URLs"),
-      is_hidden: z.boolean().default(false).describe("Hide from public"),
+      content: z.string().optional().describe("HTML content of the post"),
+      summary: z.string().optional().describe("Short summary / excerpt"),
+      images: z.array(z.string()).optional().describe("Hosted image URLs; the first is the cover image"),
+      category_ids: z.array(z.string()).optional().describe("Blog category IDs to file the post under (from create_blog_category)"),
     },
-    (params) => handle(() => api.createArticle(params))
+    ({ name, content, summary, images, category_ids }) =>
+      handle(async () => {
+        const id = randomUUID();
+        const commands: any[] = [{ name: "create_article", data: { id, name } }];
+        if (summary) commands.push({ name: "summary_article", data: { id, summary } });
+        if (images && images.length) commands.push({ name: "image_article", data: { id, images } });
+        if (content) commands.push({ name: "content_article", data: { id, content } });
+        if (category_ids && category_ids.length)
+          commands.push({ name: "bulk_add_category_to_article", data: { id, ids: category_ids } });
+
+        await api.createBlogArticle(commands);
+        return {
+          success: true,
+          article_id: id,
+          name,
+          categories: category_ids || [],
+          cover: images?.[0] || null,
+        };
+      })
   );
 
   server.tool(

@@ -270,6 +270,22 @@ export class WebcakeCmsApi {
   deleteArticle(id: string) {
     return this.request("DELETE", `/api/v1/cms_function/${this.siteId}/blog/article/${id}`);
   }
+  /** Create a blog/article category. Command-based: pass a `commands` array whose entries
+   *  each carry a caller-generated `data.id` (the new category id). Response is generic. */
+  createBlogCategory(commands: any[]) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/blog/categories/create`, {
+      body: { site_id: this.siteId, commands },
+      timeout: 60000,
+    });
+  }
+  /** Create a blog article via the dashboard command pipeline (supports category linkage,
+   *  images, summary, content). Caller generates the article id in each command's data.id. */
+  createBlogArticle(commands: any[]) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/blog/articles/create`, {
+      body: { site_id: this.siteId, commands },
+      timeout: 60000,
+    });
+  }
 
   // ── Products ──
   listProducts(query?: any) {
@@ -286,6 +302,22 @@ export class WebcakeCmsApi {
   }
   getProductsByCategory(categoryId: string) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/categories/products`, { query: { category_id: categoryId } });
+  }
+  /** Create a product. Body wraps fields in `product_params`; the backend generates the
+   *  id/slug and sets is_published. Pass variations (price/stock per SKU) + categories. */
+  createProduct(productParams: any) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/products/create`, {
+      body: { site_id: this.siteId, product_params: productParams },
+      timeout: 60000,
+    });
+  }
+  /** Create a product category. Command-based: pass a `commands` array whose entries each
+   *  carry a caller-generated `data.id` (the new category id). Response is generic. */
+  createProductCategory(commands: any[]) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/categories/create`, {
+      body: { site_id: this.siteId, commands },
+      timeout: 60000,
+    });
   }
 
   // ── Orders ──

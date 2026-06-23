@@ -9,6 +9,7 @@ import { registerArticleTools } from "./tools/articles.js";
 import { registerCustomerTools } from "./tools/customers.js";
 import { registerAutomationTools } from "./tools/automation.js";
 import { registerProductTools } from "./tools/products.js";
+import { registerCatalogWriteTools } from "./tools/catalog-write.js";
 import { registerOrderTools } from "./tools/orders.js";
 import { registerSiteStyleTools } from "./tools/site-style.js";
 import { registerAppTools } from "./tools/apps.js";
@@ -27,6 +28,8 @@ const INSTRUCTIONS = `You are an AI assistant connected to the WebCake/StoreCake
 IMPORTANT: When the user asks ANY question about their website, store, products, orders, pages, or code — you MUST use the available tools to look up real data before answering. Never guess.
 
 You can also BUILD pages: use get_build_guide, list_elements, get_element to learn the BuilderX component model, new_section/new_element to compose, validate_page to check, then build_page (dry_run first) to create. Publishing is site-level via publish_site.
+
+To make a generated site look real, also CREATE DATA so dataset bindings resolve: create_product_category + create_product (storefront), create_blog_category + create_article (blog). Get image URLs from search_images / upload_images first, then reference them. A good flow for a fresh site: create_site → create a few categories → create products in them → build_page (home + store/blog pages) → publish_site.
 
 Workflow:
 1. On first interaction, call get_current_context. The site is NOT set from env — if no site is selected yet, call list_my_sites and ask the user which site to work on, then switch_site (the choice is saved and reused next session). To start from scratch, create_site makes a new site and switches to it; then build a homepage with build_page (type:'main', is_homepage:true).
@@ -68,6 +71,7 @@ export function createServer(api: WebcakeCmsApi, opts: ServerOptions = {}): McpS
   registerCustomerTools(server, api, handle);
   registerAutomationTools(server, api, handle);
   registerProductTools(server, api, handle);
+  registerCatalogWriteTools(server, api, handle);
   registerOrderTools(server, api, handle);
   registerSiteStyleTools(server, api, handle);
   registerAppTools(server, api, handle);
