@@ -5,6 +5,14 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.0.3] - 2026-06-23
+
+### Added
+- MIT license (Copyright vuluu2k) added to the package.
+
+### Fixed
+- The server no longer exits at startup when `WEBCAKE_API_URL` is not set; the API base URL defaults to the `prod` preset and can be overridden with `WEBCAKE_API_URL` or `WEBCAKE_ENV`.
+
 ## [1.0.2] - 2026-06-23
 
 ### Changed

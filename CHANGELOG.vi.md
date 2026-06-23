@@ -5,6 +5,14 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.0.3] - 2026-06-23
+
+### Added
+- Thêm giấy phép MIT (Copyright vuluu2k) vào package.
+
+### Fixed
+- Server không còn thoát khi khởi động nếu `WEBCAKE_API_URL` chưa được đặt; URL API base mặc định là preset `prod` và có thể ghi đè bằng `WEBCAKE_API_URL` hoặc `WEBCAKE_ENV`.
+
 ## [1.0.2] - 2026-06-23
 
 ### Changed
