@@ -1,0 +1,54 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.vuluu2k/webcake-storefront-mcp",
+  "description": "Read and build pages on the WebCake/StoreCake storefront builder: page/element CRUD, the BuilderX component model, products, orders, and publishing.",
+  "title": "WebCake Storefront",
+  "repository": {
+    "url": "https://github.com/vuluu2k/webcake-storefront-mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/vuluu2k/webcake-storefront-mcp#readme",
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "webcake-storefront-mcp",
+      "version": "1.0.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "WEBCAKE_TOKEN",
+          "description": "Storefront JWT Bearer token (the builder's `jwt` cookie / store_jwt).",
+          "isSecret": true
+        },
+        {
+          "name": "WEBCAKE_SESSION_ID",
+          "description": "Session id sent as the x-session-id header (the builder's `wsid` cookie).",
+          "isSecret": true
+        },
+        {
+          "name": "WEBCAKE_SITE_ID",
+          "description": "Target site id."
+        },
+        {
+          "name": "WEBCAKE_ENV",
+          "description": "Named environment preset that fills the API + app base URLs (default prod).",
+          "choices": ["local", "staging", "prod"]
+        },
+        {
+          "name": "WEBCAKE_API_URL",
+          "description": "Override for the backend API base URL (takes precedence over WEBCAKE_ENV)."
+        },
+        {
+          "name": "PEXELS_API_KEY",
+          "description": "Optional Pexels API key for the search_images tool.",
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

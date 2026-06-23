@@ -25,7 +25,7 @@ export function walk(source: any, fn: (node: any) => any) {
 }
 
 /** Empty but valid page source. */
-export function newPageSkeleton() {
+export function newPageSkeleton(): { sections: any[] } {
   return { sections: [] };
 }
 

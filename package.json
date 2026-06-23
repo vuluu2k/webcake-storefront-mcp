@@ -2,6 +2,7 @@
   "name": "webcake-storefront-mcp",
   "version": "1.0.0",
   "description": "MCP server for the WebCake/StoreCake storefront builder — page CRUD, page authoring, products, orders, and more",
+  "mcpName": "io.github.vuluu2k/webcake-storefront-mcp",
   "type": "module",
   "bin": {
     "webcake-storefront-mcp": "dist/index.js"
@@ -17,7 +18,9 @@
     "start": "node dist/index.js",
     "serve": "node dist/index.js serve",
     "dev": "tsc --watch",
-    "prepare": "npm run build"
+    "smoke": "node dist/smoke.js",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build && npm run smoke"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
