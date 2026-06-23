@@ -5,6 +5,18 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.3.0] - 2026-06-23
+
+### Added
+- Tool mới `create_site` tạo một site storefront hoàn toàn mới cho tài khoản hiện tại (kèm sản phẩm, danh mục và blog mẫu), tự động chuyển sang site vừa tạo (theo mặc định) và trả về preview URL; lỗi vượt hạn mức tài khoản miễn phí (giới hạn 4 site) được báo rõ ràng.
+
+### Changed
+- Các section được tạo bởi `new_section` nay sử dụng lưới 3 cột căn giữa của builder (lề co giãn · cột nội dung tối đa 1300px · lề co giãn), đúng với mô hình layout của builderx_spa; các phần tử con được đặt vào cột giữa (`columnStart:2`, `columnEnd:3`) thay vì bố cục một cột như trước đây.
+- `get_build_guide` nay ghi lại đúng tên key breakpoint (`bp1`..`bp4`, thay cho các alias cũ `tablet` và `laptop`), mô hình lưới section 3 cột căn giữa, tên trường binding dữ liệu cụ thể (`product::product_price`, `cart_item::cart_item_price`, `order_item::product_name`, v.v.), cú pháp biến màu theme (`var(--color_NN)`), và quá trình tự động mở rộng `runtime` thành các key breakpoint mà `build_page` và `add_section` thực hiện khi lưu.
+
+### Fixed
+- `build_page` và `add_section` nay mở rộng `runtime.{style,config}` của mỗi node thành bốn key per-breakpoint (`bp1`, `bp2`, `bp3`, `bp4`) mà storefront renderer đọc, trước khi lưu trang; trước đây, các node chỉ được lưu với key `runtime` sẽ không có bất kỳ style nào vì renderer không có fallback về `runtime`.
+
 ## [1.2.0] - 2026-06-23
 
 ### Added

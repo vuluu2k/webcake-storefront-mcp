@@ -5,6 +5,18 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.3.0] - 2026-06-23
+
+### Added
+- New `create_site` tool creates a brand-new storefront site for the current account (seeded with sample products, categories, and a blog), optionally switches to it immediately, and returns a preview URL; quota errors on free accounts (4-site limit) are surfaced with a clear message.
+
+### Changed
+- Sections built by `new_section` now use the builder's centred 3-column grid (flexible margin · up to 1300px content column · flexible margin), matching the builderx_spa layout model; children are placed in the centre column (`columnStart:2`, `columnEnd:3`) instead of the former single-column layout.
+- `get_build_guide` now documents the correct breakpoint key names (`bp1`..`bp4`, replacing former aliases `tablet` and `laptop`), the centred 3-column section grid, concrete data-binding target names (`product::product_price`, `cart_item::cart_item_price`, `order_item::product_name`, etc.), theme colour variable syntax (`var(--color_NN)`), and the automatic `runtime`-to-breakpoint expansion that `build_page` and `add_section` perform on save.
+
+### Fixed
+- `build_page` and `add_section` now expand each node's `runtime.{style,config}` into the four per-breakpoint keys (`bp1`, `bp2`, `bp3`, `bp4`) the storefront renderer reads before saving the page; previously, nodes saved with only a `runtime` key appeared completely unstyled because the renderer does not fall back to `runtime`.
+
 ## [1.2.0] - 2026-06-23
 
 ### Added
