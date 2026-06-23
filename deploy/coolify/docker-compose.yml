@@ -1,0 +1,131 @@
+# Coolify deployment for the webcake-storefront MCP server (REMOTE Streamable-HTTP mode).
+#
+# In Coolify:  + New  ->  Docker Compose  ->  pick this repo, then set
+#   Base Directory:           /
+#   Docker Compose Location:  /deploy/coolify/docker-compose.yml
+# Deploy once, then add a Domain to the `webcake-mcp` service in the Coolify UI.
+# Coolify substitutes that domain into SERVICE_FQDN_MCP below, and the Traefik
+# labels route + TLS-terminate it for you.
+#
+# Recommended domain: store.toolvn.io.vn
+# Your MCP endpoint:  https://store.toolvn.io.vn/mcp
+# Health probe:       https://store.toolvn.io.vn/health
+# OAuth metadata:     https://store.toolvn.io.vn/.well-known/oauth-authorization-server
+#
+# Clients can authenticate via the OAuth 2.1 flow (recommended — Claude connectors),
+# or send credentials per request:
+#   x-webcake-jwt: <jwt>                (required)
+#   x-webcake-session-id: <wsid>        (required for storefront session)
+#   x-webcake-site-id: <site_id>        (required)
+#
+# See ./README.md for the full walkthrough.
+
+services:
+  webcake-mcp:
+    build:
+      context: .
+      dockerfile: deploy/coolify/Dockerfile
+    init: true
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      SERVICE_FQDN_MCP: /
+      PORT: 8787
+      WEBCAKE_ENV: prod
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/webcake_storefront
+      # Optional: override the WebCake API / app base URLs
+      # WEBCAKE_API_URL: ${WEBCAKE_API_URL}
+      # WEBCAKE_APP_URL: ${WEBCAKE_APP_URL}
+      # Optional: MongoDB for image-alt cache
+      # MONGO_URI: ${MONGO_URI}
+      # Optional: Pexels image search
+      # PEXELS_API_KEY: ${PEXELS_API_KEY}
+    expose:
+      - "8787"
+    # Uncomment to publish directly (e.g. for local docker compose up):
+    # ports:
+    #   - "8787:8787"
+    networks:
+      - coolify
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||8787)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=coolify"
+      - "traefik.http.services.webcake-mcp.loadbalancer.server.port=8787"
+      - "traefik.http.routers.webcake-mcp.rule=Host(`${SERVICE_FQDN_MCP}`)"
+      - "traefik.http.routers.webcake-mcp.entrypoints=https"
+      - "traefik.http.routers.webcake-mcp.tls=true"
+      - "traefik.http.routers.webcake-mcp.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.webcake-mcp-http.rule=Host(`${SERVICE_FQDN_MCP}`)"
+      - "traefik.http.routers.webcake-mcp-http.entrypoints=http"
+      - "traefik.http.routers.webcake-mcp-http.middlewares=webcake-mcp-redirect"
+      - "traefik.http.middlewares.webcake-mcp-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.webcake-mcp-redirect.redirectscheme.permanent=true"
+
+  redis:
+    image: redis:7-alpine
+    init: true
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru", "--appendonly", "yes"]
+    volumes:
+      - webcake-storefront-redis-data:/data
+    networks:
+      - coolify
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres:
+    image: postgres:16-alpine
+    init: true
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${SERVICE_USER_POSTGRES}
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+      POSTGRES_DB: webcake_storefront
+    volumes:
+      - webcake-storefront-pg-data:/var/lib/postgresql/data
+    networks:
+      - coolify
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d webcake_storefront"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  webcake-storefront-pg-data:
+  webcake-storefront-redis-data:
+
+networks:
+  coolify:
+    external: true

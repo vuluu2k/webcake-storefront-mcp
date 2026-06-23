@@ -193,7 +193,7 @@ async function handleOAuth(req: IncomingMessage, res: ServerResponse, path: stri
     if (req.method !== "POST") { oauthError(res, 405, "invalid_request", "Use POST."); return true; }
     const raw = await readRawBody(req);
     const body = parseBodyParams(raw, String(req.headers["content-type"] ?? "")) as RegisterRequest;
-    const result = registerClient(body);
+    const result = await registerClient(body);
     if (!result.ok) { oauthError(res, 400, result.error, result.error_description); return true; }
     res.writeHead(201, { "content-type": "application/json", "access-control-allow-origin": "*", "cache-control": "no-store" });
     res.end(JSON.stringify({
@@ -210,7 +210,7 @@ async function handleOAuth(req: IncomingMessage, res: ServerResponse, path: stri
   // ---- Authorize: validate + redirect to storefront consent page ----
   if (req.method === "GET" && path === OAUTH_AUTHORIZE) {
     const sp = new URL(req.url ?? "/", "http://x").searchParams;
-    const result = startAuthorize({
+    const result = await startAuthorize({
       client_id: sp.get("client_id"),
       redirect_uri: sp.get("redirect_uri"),
       response_type: sp.get("response_type"),
@@ -249,7 +249,7 @@ async function handleOAuth(req: IncomingMessage, res: ServerResponse, path: stri
     // Accept both 'token' and 'jwt' from the SPA (login.ts uses both aliases).
     const jwt = sp.get("token") || sp.get("jwt");
     const wsid = sp.get("wsid") || sp.get("session_id") || "";
-    const done = completeAuthorize(sp.get("state"), jwt, wsid);
+    const done = await completeAuthorize(sp.get("state"), jwt, wsid);
     if (!done.ok) { htmlError(res, 400, done.error_description); return true; }
     const r = new URL(done.redirectUri);
     r.searchParams.set("code", done.code);
@@ -269,7 +269,7 @@ async function handleOAuth(req: IncomingMessage, res: ServerResponse, path: stri
     if (req.method !== "POST") { oauthError(res, 405, "invalid_request", "Use POST."); return true; }
     const raw = await readRawBody(req);
     const body = parseBodyParams(raw, String(req.headers["content-type"] ?? "")) as TokenParams;
-    const result = exchangeToken(body);
+    const result = await exchangeToken(body);
     if (!result.ok) { oauthError(res, result.status, result.error, result.error_description); return true; }
     res.writeHead(200, { "content-type": "application/json", "access-control-allow-origin": "*", "cache-control": "no-store" });
     res.end(JSON.stringify(result.body));
@@ -347,7 +347,7 @@ export async function startHttpServer(port: number): Promise<void> {
     // Resolve an OAuth Bearer access token to { jwt, wsid } and inject both headers
     // so apiFromRequest picks them up — existing header/query paths remain untouched.
     const bearer = bearerFrom(req);
-    const oauthCred = resolveAccessToken(bearer);
+    const oauthCred = await resolveAccessToken(bearer);
     if (oauthCred) {
       if (req.headers["x-webcake-jwt"] == null) {
         req.headers["x-webcake-jwt"] = oauthCred.jwt;
