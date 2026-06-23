@@ -5,6 +5,17 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.4.0] - 2026-06-23
+
+### Changed
+- The `install` command's interactive wizard now presents numbered choices with ANSI colour output and a completion summary.
+- The `install` command now supports 11 IDEs and agent hosts (up from 5), adding Codex (TOML format), Antigravity, Gemini CLI, Cline, Kiro, and OpenCode alongside the existing Claude Desktop, Claude Code, Cursor, Windsurf, and VS Code; Claude Code is configured via `claude mcp add` when the CLI is available; `uninstall` removes the server entry from all 11 configs.
+- The browser-login success page shown after `login` completes is redesigned with a gradient card, animated checkmark, and dark-mode support; on macOS the CLI automatically re-focuses the originating terminal or IDE after the token is received.
+
+### Fixed
+- On Windows, the `login` command now opens the authorization URL via `cmd /c start` with verbatim argument passing so the `&state=` query parameter is no longer truncated by the shell command separator.
+- The `login` callback server now ignores requests to paths other than `/callback` (such as favicon fetches) so stray browser requests no longer abort the login flow, and live keep-alive connections are dropped on shutdown so the CLI process exits promptly.
+
 ## [1.3.0] - 2026-06-23
 
 ### Added

@@ -5,6 +5,17 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.4.0] - 2026-06-23
+
+### Changed
+- Trình hướng dẫn tương tác của lệnh `install` nay hiển thị các lựa chọn được đánh số kèm màu ANSI và thông báo tóm tắt sau khi hoàn tất.
+- Lệnh `install` nay hỗ trợ 11 IDE và môi trường agent (tăng từ 5), bổ sung Codex (định dạng TOML), Antigravity, Gemini CLI, Cline, Kiro và OpenCode bên cạnh các IDE hiện có là Claude Desktop, Claude Code, Cursor, Windsurf và VS Code; Claude Code được cấu hình qua `claude mcp add` khi CLI khả dụng; lệnh `uninstall` xóa entry server khỏi cả 11 config.
+- Trang thành công hiển thị sau khi `login` hoàn tất được thiết kế lại với thẻ gradient, dấu tích có hiệu ứng động và hỗ trợ dark mode; trên macOS, CLI tự động đưa terminal hoặc IDE đang chạy lệnh trở lại foreground sau khi nhận được token.
+
+### Fixed
+- Trên Windows, lệnh `login` nay mở URL xác thực qua `cmd /c start` với cờ truyền tham số nguyên văn, tránh ký tự `&` trong `&state=` bị shell hiểu nhầm là phân tách lệnh.
+- Callback server của lệnh `login` nay bỏ qua các yêu cầu đến đường dẫn khác `/callback` (như favicon) để chúng không vô tình ngắt luồng đăng nhập, đồng thời đóng các kết nối keep-alive đang mở khi tắt server để CLI thoát ngay lập tức thay vì bị treo.
+
 ## [1.3.0] - 2026-06-23
 
 ### Added
