@@ -1,0 +1,4107 @@
+{
+ "address": {
+  "seen": 24,
+  "specials": [
+   "autoCatchWarehouse",
+   "communeName",
+   "country",
+   "default_province",
+   "districtName",
+   "field_name",
+   "hiddenCommune",
+   "isColumn",
+   "label",
+   "placeholder",
+   "provinceName",
+   "required_commune",
+   "required_districts",
+   "required_province",
+   "show_label",
+   "useNewAddress"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "agency": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "attr": {
+  "seen": 30,
+  "specials": [
+   "attrName",
+   "attrPrimary",
+   "autoAttrName",
+   "autoNamePriority",
+   "defaultSelected",
+   "layout",
+   "placeholder",
+   "tooltip"
+  ],
+  "config": [
+   "backgroundSelected",
+   "borderColorHover",
+   "borderColorSelected",
+   "borderWidthHover",
+   "borderWidthSelected",
+   "colorSelected",
+   "distanceBottom",
+   "distanceLeft",
+   "distanceRight",
+   "imagePadding",
+   "selectedType",
+   "sizeImage",
+   "strokeColor",
+   "tooltipBackground",
+   "tooltipColor",
+   "type"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "-webkit-texts-troke",
+   "background",
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "color",
+   "fontFamily",
+   "fontSize",
+   "height",
+   "left",
+   "lineHeight",
+   "textAlign",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "auto-number": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "blog-overlay": {
+  "seen": 0,
+  "specials": [
+   "type"
+  ],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "bonus-items": {
+  "seen": 3,
+  "specials": [
+   "isShowRow",
+   "selectDefault",
+   "typeBonus"
+  ],
+  "config": [],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "breadcrumb": {
+  "seen": 182,
+  "specials": [
+   "icon",
+   "options"
+  ],
+  "config": [
+   "hoverColor",
+   "strokeColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "fontWeight",
+   "gap",
+   "height",
+   "left",
+   "letterSpacing",
+   "lineHeight",
+   "textAlign",
+   "textTransform",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "button": {
+  "seen": 1006,
+  "specials": [
+   "custom_class",
+   "event_name_custom",
+   "fb_conversion_value",
+   "fb_event_type",
+   "tabIndex",
+   "text",
+   "tiktok_conversion_value",
+   "tiktok_event_type"
+  ],
+  "config": [
+   "stickyBottom",
+   "stickyPosition",
+   "strokeColor",
+   "strokeWidth",
+   "textColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "boxShadow",
+   "color",
+   "filter",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "fontStyle",
+   "fontWeight",
+   "height",
+   "left",
+   "letterSpacing",
+   "lineHeight",
+   "textAlign",
+   "textDecoration",
+   "textTransform",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "button-login-facebook": {
+  "seen": 4,
+  "specials": [
+   "text"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "strokeColor",
+   "textPadding"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "color",
+   "fontSize",
+   "fontWeight",
+   "height",
+   "left",
+   "textAlign",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "button-login-google": {
+  "seen": 6,
+  "specials": [
+   "text"
+  ],
+  "config": [
+   "backgroundInput",
+   "constraintDimension",
+   "labelMarginBottom",
+   "locked",
+   "strokeColor",
+   "textPadding"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "color",
+   "fontSize",
+   "fontWeight",
+   "height",
+   "left",
+   "textAlign",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "calendar": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "calendar-content": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "carousel": {
+  "seen": 22,
+  "specials": [
+   "arrowColor",
+   "arrowIcon",
+   "autoplay",
+   "autoplay_time",
+   "custom_class",
+   "image_alt",
+   "src",
+   "type"
+  ],
+  "config": [
+   "arrowHeight",
+   "arrowWidth",
+   "arrowX",
+   "barHeight",
+   "barWidth",
+   "barWidthUnit",
+   "isUseInitMaxHeight",
+   "itemWidth",
+   "maxHeightSaved",
+   "navColor",
+   "navSecondaryColor",
+   "paginateCount",
+   "paginateMode",
+   "ratio",
+   "relSlideWidth",
+   "showPaginate",
+   "slideItems",
+   "slideWidth",
+   "slideWidthUnit",
+   "slides",
+   "src",
+   "transition_time",
+   "transition_type"
+  ],
+  "style": [
+   "borderColor",
+   "borderRadius",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "cart-droppable": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "cart-icon": {
+  "seen": 324,
+  "specials": [
+   "custom_class",
+   "itemCount",
+   "svg"
+  ],
+  "config": [
+   "constraintDimension",
+   "itemBackgroundColor",
+   "itemCountBorderRadius",
+   "itemCountColor",
+   "itemCountFont",
+   "itemCountFontFamily",
+   "itemCountFontSize",
+   "itemCountFontWeight"
+  ],
+  "style": [
+   "background",
+   "borderColor",
+   "borderRadius",
+   "color",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "cart-items": {
+  "seen": 20,
+  "specials": [],
+  "config": [],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "cart-items-empty": {
+  "seen": 6,
+  "specials": [],
+  "config": [],
+  "style": [
+   "background",
+   "height",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "checkbox": {
+  "seen": 16,
+  "specials": [
+   "custom_class",
+   "custom_css",
+   "defaultValue",
+   "field_name",
+   "icon_color",
+   "label",
+   "options",
+   "placeholder",
+   "required",
+   "show_label"
+  ],
+  "config": [
+   "backgroundInput",
+   "isStyleInputChecked",
+   "labelColor",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "optionBorderStyle",
+   "optionBorderWidth",
+   "placeholderColor",
+   "strokeColor",
+   "textPadding",
+   "traitsReset"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "border",
+   "color",
+   "font",
+   "fontWeight",
+   "height",
+   "left",
+   "lineHeight",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "checkbox-group": {
+  "seen": 25,
+  "specials": [
+   "count",
+   "filter_elements",
+   "icon_color",
+   "is_attribute_by_category",
+   "is_auto_child_categories",
+   "options",
+   "sync_tab",
+   "use_button_filter",
+   "use_filter_or"
+  ],
+  "config": [
+   "borderRadiusInput",
+   "column",
+   "radioButtonSize",
+   "spaceButtonText",
+   "strokeColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "checkbox-item": {
+  "seen": 1,
+  "specials": [],
+  "config": [],
+  "style": [
+   "background",
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "collapse": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "collapse-content": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "collapse-item": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "color-group": {
+  "seen": 3,
+  "specials": [
+   "count",
+   "filter_elements",
+   "is_auto_child_categories",
+   "options",
+   "selectionMode",
+   "sync_tab"
+  ],
+  "config": [
+   "hiddenText"
+  ],
+  "style": [
+   "color",
+   "fontSize",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "container": {
+  "seen": 6923,
+  "specials": [
+   "custom_class",
+   "custom_css",
+   "event_name_custom",
+   "fb_event_type",
+   "image_alt",
+   "postal_code",
+   "showCategories",
+   "src",
+   "tabIndex",
+   "text",
+   "tiktok_event_type",
+   "type"
+  ],
+  "config": [
+   "animation",
+   "constraintDimension",
+   "fixedBottom",
+   "fixedLeft",
+   "fixedPosition",
+   "fixedRight",
+   "fixedTop",
+   "leftCenterXUnit",
+   "locked",
+   "maxHeightSaved",
+   "maxHeightUnit",
+   "maxWidth",
+   "maxWidthUnit",
+   "pinnedPoint",
+   "ratio",
+   "relMaxHeight",
+   "showAutoScroll",
+   "src",
+   "stickyBottom",
+   "stickyPosition",
+   "stickyTop",
+   "type",
+   "undefined",
+   "unpinnedPoint",
+   "useAutoScroll"
+  ],
+  "style": [
+   "background",
+   "background-attachment",
+   "background-position-x",
+   "background-position-y",
+   "background-repeat",
+   "background-size",
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "boxShadow",
+   "filter",
+   "fontSize",
+   "height",
+   "left",
+   "overflowX",
+   "overflowY",
+   "position",
+   "top",
+   "transform",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "countdown": {
+  "seen": 9,
+  "specials": [
+   "custom_class",
+   "custom_css",
+   "dailyEnd",
+   "dailyStart",
+   "duration",
+   "durationEnd",
+   "durationStart",
+   "isPromotion",
+   "positionTitle",
+   "promotionId",
+   "repeat",
+   "showDay",
+   "showHours",
+   "showMinute",
+   "showSecond",
+   "showText",
+   "type",
+   "typeShow"
+  ],
+  "config": [
+   "bgBottom",
+   "bgTop",
+   "colorLabel",
+   "colorText",
+   "colorTime",
+   "fontSizeText",
+   "fontSizeTime",
+   "heightFigure",
+   "radiusFigure",
+   "row_gap_dot",
+   "sizeDot",
+   "spacingTitle",
+   "widthFigure"
+  ],
+  "style": [
+   "background",
+   "borderRadius",
+   "fontFamily",
+   "fontStyle",
+   "fontWeight",
+   "height",
+   "left",
+   "textDecoration",
+   "textTransform",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "country": {
+  "seen": 3,
+  "specials": [
+   "countries",
+   "defaultValue",
+   "field_name",
+   "label",
+   "placeholder",
+   "required",
+   "show_label"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "coupon": {
+  "seen": 17,
+  "specials": [
+   "auto_fill_coupon",
+   "field_name",
+   "label",
+   "placeholder",
+   "required",
+   "show_label",
+   "title"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "optionBorderStyle",
+   "optionBorderWidth",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "current-location": {
+  "seen": 0,
+  "specials": [
+   "field_name",
+   "field_type",
+   "text"
+  ],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "current-password": {
+  "seen": 8,
+  "specials": [
+   "field_name",
+   "field_type",
+   "label",
+   "placeholder",
+   "required",
+   "show_label",
+   "validate",
+   "validate_password"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "custom-layout": {
+  "seen": 94,
+  "specials": [],
+  "config": [
+   "undefined"
+  ],
+  "style": [
+   "background",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "customer-address": {
+  "seen": 1,
+  "specials": [
+   "tabIndex"
+  ],
+  "config": [],
+  "style": [
+   "borderColor",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "delivery-method": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "detect-address": {
+  "seen": 16,
+  "specials": [
+   "custom_css",
+   "field_name",
+   "field_type",
+   "label",
+   "placeholder",
+   "required",
+   "show_label"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "dropdown": {
+  "seen": 61,
+  "specials": [
+   "arrowIcon",
+   "auto_category_type",
+   "auto_option",
+   "count",
+   "filter_elements",
+   "is_auto_child_categories",
+   "is_default_select",
+   "optionTargetId",
+   "options",
+   "placeholder",
+   "sync_tab",
+   "use_filter_or"
+  ],
+  "config": [
+   "arrowColor",
+   "arrowSize",
+   "leftCenterXUnit",
+   "strokeColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "boxShadow",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "fontWeight",
+   "gap",
+   "height",
+   "justify-content",
+   "left",
+   "letterSpacing",
+   "lineHeight",
+   "paddingLeft",
+   "paddingRight",
+   "textAlign",
+   "textTransform",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "dropdown-content": {
+  "seen": 61,
+  "specials": [],
+  "config": [
+   "is_use_width_outer_parent"
+  ],
+  "style": [
+   "borderColor",
+   "borderStyle",
+   "borderWidth",
+   "boxShadow",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "email": {
+  "seen": 150,
+  "specials": [
+   "field_name",
+   "label",
+   "placeholder",
+   "required",
+   "show_label",
+   "validate",
+   "validate_email"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "optionBorderRadius",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "embed": {
+  "seen": 20,
+  "specials": [
+   "htmlCode",
+   "type"
+  ],
+  "config": [],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "empty-product-layout": {
+  "seen": 92,
+  "specials": [],
+  "config": [],
+  "style": [
+   "background",
+   "height",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "favorite-icon": {
+  "seen": 11,
+  "specials": [],
+  "config": [
+   "mask"
+  ],
+  "style": [
+   "background",
+   "borderColor",
+   "color",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "flash-sale": {
+  "seen": 1,
+  "specials": [
+   "promotion_advance_id"
+  ],
+  "config": [],
+  "style": [
+   "background",
+   "borderColor",
+   "borderStyle",
+   "borderWidth",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "form": {
+  "seen": 256,
+  "specials": [
+   "agencyTarget",
+   "autoGetInfoCustomer",
+   "custom_class",
+   "custom_css",
+   "event_name_custom",
+   "fb_conversion_value",
+   "fb_event_type",
+   "fb_tracking_currency",
+   "field_name",
+   "formParent",
+   "icon_color",
+   "multiForms",
+   "partner_id",
+   "postal_code",
+   "required",
+   "tabIndex",
+   "tiktok_conversion_value",
+   "tiktok_event_type",
+   "time_otp",
+   "type"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelColor",
+   "labelMarginBottom",
+   "labelPadding",
+   "placeholderColor",
+   "strokeColor",
+   "textPadding"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "-webkit-textstroke",
+   "background",
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "fontWeight",
+   "height",
+   "left",
+   "letterSpacing",
+   "textAlign",
+   "textDecoration",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "gallery": {
+  "seen": 15,
+  "specials": [
+   "autoplay",
+   "custom_class",
+   "infinity",
+   "media",
+   "showNavigation"
+  ],
+  "config": [
+   "distanceAmong",
+   "distanceToGallery",
+   "image_ratio",
+   "showNavigation",
+   "showThumbnail",
+   "thumbnailHeight",
+   "thumbnailPosition",
+   "thumbnailWidth"
+  ],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "googlemap": {
+  "seen": 180,
+  "specials": [
+   "https",
+   "iframe",
+   "type"
+  ],
+  "config": [],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "grid-blog": {
+  "seen": 4,
+  "specials": [
+   "order",
+   "showBlogs"
+  ],
+  "config": [
+   "blogBackgroundColor",
+   "blogBorder",
+   "blogBorderColor",
+   "blogBorderRadius",
+   "blogCategoryColor",
+   "blogCategoryFontSize",
+   "blogCategoryPaddingY",
+   "descriptionFontSize",
+   "descriptionPaddingY",
+   "gap_column",
+   "gap_row",
+   "imageBorderRadius",
+   "image_ratio",
+   "minimum_card_width",
+   "responsive",
+   "showBlogCategory",
+   "showDescription",
+   "showImage",
+   "sizeThumbnail",
+   "strokeColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "color",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "grid-category": {
+  "seen": 290,
+  "specials": [
+   "custom_class",
+   "custom_css",
+   "isAutoCatchMenuLevelFirst",
+   "isSyncMenu",
+   "showCategories",
+   "type"
+  ],
+  "config": [
+   "cardBorderRadius",
+   "gap_column",
+   "gap_row",
+   "imageBorderRadius",
+   "image_ratio",
+   "minimum_card_width",
+   "name_padding_y",
+   "on_hover",
+   "responsive",
+   "sizeThumbnail",
+   "strokeColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "color",
+   "fontSize",
+   "fontWeight",
+   "height",
+   "left",
+   "lineHeight",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "grid-product": {
+  "seen": 262,
+  "specials": [
+   "action_add_to_cart",
+   "action_attachment_add_to_cart",
+   "action_product_card",
+   "animate_load",
+   "auto_hide_without_star",
+   "category_id",
+   "custom_class",
+   "dateRange",
+   "disable_filter",
+   "disable_search",
+   "display_grid_product_init",
+   "filledStarIcon",
+   "filter_color_course_purchased",
+   "format_discount_on_price",
+   "load_brand",
+   "load_category",
+   "load_rating",
+   "max_show_categories",
+   "on_hover",
+   "original_price_position",
+   "plugins",
+   "productNameTag",
+   "products_per_load",
+   "promotion_id",
+   "rating_number_type",
+   "scroll_to_element",
+   "scroll_type",
+   "show_button",
+   "show_button_on_hover",
+   "show_categories",
+   "show_detail_price",
+   "show_discount_on_price",
+   "show_divider",
+   "show_original_price",
+   "show_product_name",
+   "show_product_price",
+   "show_quantity",
+   "show_quick_view",
+   "show_rating",
+   "show_ribbon",
+   "show_text",
+   "show_total_sold",
+   "show_video_demo",
+   "show_wholesale_price",
+   "show_wholesale_quantity",
+   "store_show_attribute_template_1",
+   "textQuickBtn",
+   "text_load_more",
+   "typeLinkCategory",
+   "type_view_more",
+   "unfilledStarIcon",
+   "wholesale_price_position"
+  ],
+  "config": [
+   "activePaginationColor",
+   "addToCartBackground",
+   "addToCartBackgroundHover",
+   "addToCartBorderRadius",
+   "addToCartColor",
+   "addToCartFont",
+   "addToCartFontSize",
+   "addToCartFontWeight",
+   "addToCartPaddingX",
+   "addToCartPaddingY",
+   "background",
+   "button_margin",
+   "cardBackground",
+   "cardBorderColor",
+   "cardBorderRadius",
+   "cardBorderWidth",
+   "cardBoxShadow",
+   "discountBackground",
+   "discountColor",
+   "discountPaddingX",
+   "discountPaddingY",
+   "discountRadius",
+   "displayStyle",
+   "distanceLoadViewEvent",
+   "dividerBorderWidth",
+   "dividerWidth",
+   "gap_column",
+   "gap_row",
+   "hoverPaginationColor",
+   "image_border_radius",
+   "image_padding",
+   "image_placement",
+   "image_ratio",
+   "image_width",
+   "img_object_fit",
+   "layout_advanced_grids",
+   "loadMoreBackground",
+   "loadMoreBorderRadius",
+   "loadMoreColor",
+   "loadMoreFont",
+   "loadMoreFontSize",
+   "loadMoreFontStyle",
+   "loadMoreFontTheme",
+   "loadMoreFontWeight",
+   "minLineProductName",
+   "minimum_card_width",
+   "nameLineClamp",
+   "origin_price_margin_x",
+   "paginationColor",
+   "paginationLocation",
+   "paginationSize",
+   "price_padding_x",
+   "price_padding_y",
+   "productCategoryColor",
+   "productCategoryFont",
+   "productCategoryFontSize",
+   "productCategoryFontWeight",
+   "productNameColor",
+   "productNameDecoration",
+   "productNameFont",
+   "productNameFontSize",
+   "productNameFontStyle",
+   "productNameFontTheme",
+   "productNameFontWeight",
+   "productNameHover",
+   "productNameLetterSpacing",
+   "productNamePaddingY",
+   "productNameTextTransform",
+   "productOriginalPriceColor",
+   "productOriginalPriceFont",
+   "productOriginalPriceFontSize",
+   "productOriginalPriceFontStyle",
+   "productOriginalPriceFontTheme",
+   "productOriginalPriceFontWeight",
+   "productPriceColor",
+   "productPriceFont",
+   "productPriceFontSize",
+   "productPriceFontStyle",
+   "productPriceFontTheme",
+   "productPriceFontWeight",
+   "productTotalSoldColor",
+   "productTotalSoldFontSize",
+   "productTotalSoldFontStyle",
+   "product_info_alignment",
+   "product_info_alignment_y",
+   "product_info_padding",
+   "product_info_padding_x",
+   "product_info_padding_y",
+   "responsive",
+   "ribbonBackground",
+   "ribbonBorderRadius",
+   "ribbonDisplay",
+   "ribbonFont",
+   "ribbonFontSize",
+   "ribbonFontStyle",
+   "ribbonFontWeight",
+   "ribbonGap",
+   "ribbonPadding",
+   "scoreColor",
+   "scoreFont",
+   "scoreFontSize",
+   "sizeThumbnail",
+   "starColor",
+   "starColorActive",
+   "starSize",
+   "store_show_attribute_template_1",
+   "store_show_extra_info"
+  ],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [
+   "search_result::products"
+  ],
+  "events": false
+ },
+ "group-select": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "identity": {
+  "seen": 10,
+  "specials": [
+   "field_name",
+   "label",
+   "placeholder",
+   "required",
+   "show_label",
+   "validate",
+   "validate_country"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "image": {
+  "seen": 3026,
+  "specials": [
+   "custom_class",
+   "custom_css",
+   "event_name_custom",
+   "ggc_mode",
+   "image_alt",
+   "src",
+   "tabIndex",
+   "type"
+  ],
+  "config": [
+   "animation",
+   "constraintDimension",
+   "filterMode",
+   "fixedPosition",
+   "leftCenterXUnit",
+   "maxWidthUnit",
+   "minHeight",
+   "minWidth",
+   "ratio",
+   "sizeThumbnail",
+   "src"
+  ],
+  "style": [
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "boxShadow",
+   "filter",
+   "height",
+   "left",
+   "position",
+   "top",
+   "transform",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "image-dataset": {
+  "seen": 489,
+  "specials": [
+   "custom_class",
+   "custom_css",
+   "tabIndex"
+  ],
+  "config": [
+   "constraintDimension",
+   "img_object_fit",
+   "minHeight",
+   "minWidth",
+   "ratio",
+   "src"
+  ],
+  "style": [
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [
+   "bonus_item::bonus_item_image",
+   "cart_item::cart_item_image",
+   "category::category_image",
+   "customer::profile_avatar",
+   "order_item::product_image",
+   "post::post_image",
+   "product::product_image",
+   "promotion_item::image",
+   "wishlist_item::product_image"
+  ],
+  "events": false
+ },
+ "input": {
+  "seen": 69,
+  "specials": [
+   "custom_css",
+   "field_name",
+   "label",
+   "placeholder",
+   "required",
+   "show_label"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "optionBorderRadius",
+   "optionBorderStyle",
+   "optionBorderWidth",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "input-date": {
+  "seen": 2,
+  "specials": [
+   "field_connect_pos",
+   "field_name",
+   "label",
+   "placeholder",
+   "required",
+   "show_label",
+   "type"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "input-file": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "input-number": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "input-product-note": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "input-search": {
+  "seen": 634,
+  "specials": [
+   "custom_class",
+   "default_search_page",
+   "iconPadding",
+   "inputPadding",
+   "isSearchInBlogPage",
+   "isSearchInCategoryPage",
+   "placeholder",
+   "searchIcon",
+   "showIcon",
+   "showModalSearch",
+   "view_keep_keywords"
+  ],
+  "config": [
+   "colorIconClear",
+   "iconAlign",
+   "iconClearPadding",
+   "iconColor",
+   "iconColorFocus",
+   "iconColorHover",
+   "iconOpacity",
+   "iconPadding",
+   "iconSize",
+   "iconSizeClear",
+   "inputBackground",
+   "inputBackgroundFocus",
+   "inputBackgroundHover",
+   "inputBorderColor",
+   "inputBorderColorFocus",
+   "inputBorderColorHover",
+   "inputBorderRadius",
+   "inputBorderType",
+   "inputBorderTypeFocus",
+   "inputBorderTypeHover",
+   "inputBorderWidth",
+   "inputBorderWidthFocus",
+   "inputPadding",
+   "placeholderColor",
+   "tabActive",
+   "textAlign"
+  ],
+  "style": [
+   "color",
+   "fontFamily",
+   "fontSize",
+   "fontWeight",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "language-menu": {
+  "seen": 91,
+  "specials": [
+   "custom_class",
+   "show_flag",
+   "type"
+  ],
+  "config": [
+   "background",
+   "backgroundHover",
+   "backgroundSelected",
+   "backgroundSeparator",
+   "borderColor",
+   "borderWidth",
+   "color",
+   "colorHover",
+   "colorSelected",
+   "display",
+   "dropdown_icon_size",
+   "flagSize",
+   "font",
+   "fontSize"
+  ],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "layout-dataset": {
+  "seen": 16,
+  "specials": [
+   "image_alt",
+   "src",
+   "tabIndex"
+  ],
+  "config": [
+   "ratio",
+   "src"
+  ],
+  "style": [
+   "borderColor",
+   "borderStyle",
+   "borderWidth",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [
+   "7762e553-47d3-4623-8717-059d08a6f566",
+   "none"
+  ],
+  "events": false
+ },
+ "lesson-items": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "lesson-sidebar": {
+  "seen": 5,
+  "specials": [
+   "submit_status"
+  ],
+  "config": [
+   "backgroundLesson",
+   "backgroundModule",
+   "iconSize",
+   "paddingXLesson",
+   "paddingXModule",
+   "paddingYLesson",
+   "paddingYModule",
+   "styleTextLesson",
+   "styleTextModule"
+  ],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "line": {
+  "seen": 1224,
+  "specials": [
+   "tabIndex",
+   "type"
+  ],
+  "config": [],
+  "style": [
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "height",
+   "left",
+   "top",
+   "transform",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "list-lesson-droppable": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "list-ordered": {
+  "seen": 3,
+  "specials": [
+   "is_scroll_to_top",
+   "items_per_load",
+   "tableItems",
+   "type_view_more"
+  ],
+  "config": [
+   "activePaginationColor",
+   "constraintDimension",
+   "hoverPaginationColor",
+   "paginationSize",
+   "strokeColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "color",
+   "fontFamily",
+   "fontSize",
+   "height",
+   "left",
+   "textAlign",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "lucky-wheel": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "masonry-review": {
+  "seen": 4,
+  "specials": [
+   "reviews_pre_load",
+   "text"
+  ],
+  "config": [],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "member-bar": {
+  "seen": 429,
+  "specials": [
+   "arrowShape",
+   "custom_class",
+   "event_type",
+   "layoutShow",
+   "loginPage",
+   "login_icon",
+   "login_popup",
+   "open_when_logged",
+   "register_popup",
+   "showLoginOneTab",
+   "showView",
+   "signupPage",
+   "signup_icon",
+   "textBeforeLogin",
+   "textLogin",
+   "textLogout",
+   "textSignup"
+  ],
+  "config": [
+   "arrowSize",
+   "avatarSize",
+   "bgDropdown",
+   "bgLoginBar",
+   "borderColor",
+   "borderRadiusBar",
+   "borderWidthAvatar",
+   "borderWidthBar",
+   "colorIcon",
+   "constraintDimension",
+   "dropColorHover",
+   "justifyBar",
+   "memberColorHover",
+   "paddingRightBar",
+   "show_icon",
+   "show_signup",
+   "show_text",
+   "strokeColor",
+   "textAlign"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "fontWeight",
+   "height",
+   "left",
+   "textAlign",
+   "textTransform",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "member-dropdown": {
+  "seen": 429,
+  "specials": [
+   "children",
+   "dropdown_position"
+  ],
+  "config": [],
+  "style": [
+   "background",
+   "borderRadius",
+   "boxShadow",
+   "height",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "menu": {
+  "seen": 2623,
+  "specials": [
+   "custom_class",
+   "custom_css",
+   "eventDefault",
+   "expandType",
+   "fullField",
+   "isPostList",
+   "shapeType",
+   "sync",
+   "text",
+   "type",
+   "url"
+  ],
+  "config": [
+   "activeColor",
+   "activeLink",
+   "arrowColor",
+   "arrowSize",
+   "backgroundHover",
+   "borderActiveHover",
+   "borderColorHover",
+   "borderRegular",
+   "borderStyleHover",
+   "borderWidthHover",
+   "colorHover",
+   "constraintDimension",
+   "fontWeightHover",
+   "mask",
+   "showArrow",
+   "strokeColor",
+   "textColor",
+   "textDecorationHover"
+  ],
+  "style": [
+   "--gap",
+   "--padX",
+   "--padY",
+   "-webkit-text-stroke",
+   "background",
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "fontWeight",
+   "height",
+   "justifyContent",
+   "left",
+   "letterSpacing",
+   "lineHeight",
+   "textAlign",
+   "textDecoration",
+   "textTransform",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "menu-anchor-item": {
+  "seen": 9,
+  "specials": [
+   "anchor",
+   "name"
+  ],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "menu-droppable": {
+  "seen": 323,
+  "specials": [
+   "effect",
+   "shapeType",
+   "showCategories",
+   "text",
+   "timeAnim"
+  ],
+  "config": [
+   "mask"
+  ],
+  "style": [
+   "background",
+   "height",
+   "overflowX",
+   "overflowY",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "menu-item": {
+  "seen": 10237,
+  "specials": [
+   "categoryId",
+   "eventDefault",
+   "isCustom",
+   "isSync",
+   "link",
+   "linkBlogCategory",
+   "linkCategory",
+   "linkCategoryTarget",
+   "linkPage",
+   "linkPageTarget",
+   "linkTarget",
+   "linkType",
+   "name",
+   "pageId",
+   "type"
+  ],
+  "config": [
+   "animation",
+   "strokeColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "color",
+   "fontSize",
+   "fontWeight",
+   "left",
+   "textTransform",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "next-lesson-droppable": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "notify": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "number-step": {
+  "seen": 2,
+  "specials": [
+   "count",
+   "filter",
+   "maxValue",
+   "minValue",
+   "numberUnit",
+   "shortened"
+  ],
+  "config": [
+   "buttons_in_row"
+  ],
+  "style": [
+   "background",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "order-history": {
+  "seen": 18,
+  "specials": [
+   "cancel_text",
+   "countdown_time",
+   "default_filter",
+   "editView",
+   "is_scroll_to_top",
+   "item_attr_text",
+   "items_per_load",
+   "order_id_text",
+   "payment_text",
+   "tabIndex",
+   "total_price_text",
+   "type_view_more"
+  ],
+  "config": [
+   "cancelOrderBackground",
+   "cancelOrderBorderRadius",
+   "cancelOrderColor",
+   "cancelOrderFont",
+   "cancelOrderFontSize",
+   "cancelOrderFontStyle",
+   "cancelOrderFontTheme",
+   "cancelOrderFontWeight",
+   "countdownNumberFont",
+   "countdownTextFont",
+   "countdownTextFontSize",
+   "footerFontFamily",
+   "footerFontSize",
+   "footerTotalPriceColor",
+   "footerTotalPriceFontFamily",
+   "footerTotalPriceFontSize",
+   "footerTotalPriceFontTheme",
+   "footerTotalPriceSize",
+   "headerBg",
+   "headerFontFamily",
+   "headerFontSize",
+   "headerOrderIDFontFamily",
+   "headerOrderIDSize",
+   "imagePadding",
+   "imageSize",
+   "image_border_radius",
+   "image_ratio",
+   "itemBg",
+   "itemGap",
+   "itemPaddingX",
+   "itemPaddingY",
+   "loadMoreMargin",
+   "orderPendingPaymentBackground",
+   "orderPendingPaymentBorderRadius",
+   "orderPendingPaymentColor",
+   "orderPendingPaymentFont",
+   "orderPendingPaymentFontSize",
+   "paddingX",
+   "paymentOrderBackground",
+   "paymentOrderBorderRadius",
+   "paymentOrderColor",
+   "paymentOrderFont",
+   "paymentOrderFontSize",
+   "paymentOrderFontStyle",
+   "paymentOrderFontTheme",
+   "paymentOrderFontWeight",
+   "priceColor",
+   "priceFontFamily",
+   "priceFontSize",
+   "productNameClamp",
+   "productNameColor",
+   "productNameFontFamily",
+   "productNameFontSize",
+   "showSeparatorA",
+   "showSeparatorB",
+   "show_cancel_order_button",
+   "show_footer",
+   "show_header",
+   "show_order_pending_payment",
+   "show_payment_order_button",
+   "show_variation",
+   "show_variation_detail",
+   "summaryBg"
+  ],
+  "style": [
+   "borderColor",
+   "borderStyle",
+   "borderWidth",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "order-items": {
+  "seen": 20,
+  "specials": [],
+  "config": [],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "otp-input": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "password": {
+  "seen": 36,
+  "specials": [
+   "custom_class",
+   "field_name",
+   "field_type",
+   "label",
+   "placeholder",
+   "required",
+   "showHidePassword",
+   "show_label",
+   "validate",
+   "validate_p",
+   "validate_password"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "payment": {
+  "seen": 14,
+  "specials": [
+   "custom_link_redirect",
+   "defaultValue",
+   "icon_color",
+   "options",
+   "qrCodeImage",
+   "runNow",
+   "storecake_page_faild_id"
+  ],
+  "config": [
+   "activeColor",
+   "gap",
+   "paddingItemX",
+   "paddingItemY",
+   "strokeColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "borderColor",
+   "borderStyle",
+   "borderWidth",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "paypal-button": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "phone-number": {
+  "seen": 74,
+  "specials": [
+   "custom_class",
+   "custom_css",
+   "field_name",
+   "label",
+   "placeholder",
+   "required",
+   "show_label",
+   "validate",
+   "validate_country"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "optionBorderRadius",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "popup": {
+  "seen": 1,
+  "specials": [
+   "effect",
+   "timeAnim"
+  ],
+  "config": [
+   "popupHorizontalPosition",
+   "popupVerticalPosition"
+  ],
+  "style": [
+   "background",
+   "borderRadius",
+   "boxShadow",
+   "filter",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "post-list": {
+  "seen": 47,
+  "specials": [
+   "category_id",
+   "custom_class",
+   "numbers_posts_to_show",
+   "numbers_posts_to_show_per_page",
+   "on_hover",
+   "posts_display_by",
+   "readButtonText",
+   "tabIndex"
+  ],
+  "config": [
+   "background_area",
+   "background_post",
+   "button_align",
+   "cardBorderColor",
+   "cardBorderRadius",
+   "cardBorderWidth",
+   "categoriesPaddingY",
+   "categoryColor",
+   "categoryDescriptionColor",
+   "categoryDescriptionFontSize",
+   "categoryDescriptionPaddingY",
+   "categoryFont",
+   "categoryFontSize",
+   "categoryPosition",
+   "dateColor",
+   "dateFont",
+   "dateFontSize",
+   "dateFontStyle",
+   "dateFontWeight",
+   "datePaddingY",
+   "descriptionColor",
+   "descriptionFont",
+   "descriptionFontSize",
+   "descriptionFontStyle",
+   "descriptionFontWeight",
+   "descriptionPaddingY",
+   "expirationTimeColor",
+   "expirationTimeFontSize",
+   "expirationTimePaddingY",
+   "imageBorderRadius",
+   "image_align",
+   "image_proportions",
+   "image_ratio",
+   "minimum_card_width",
+   "navIconSize",
+   "number_of_line_description",
+   "number_of_line_title",
+   "objectFit",
+   "post_info_alignment_y",
+   "posts_per_row",
+   "readButtonBackground",
+   "readButtonBorderRadius",
+   "readButtonColor",
+   "readButtonFont",
+   "readButtonFontSize",
+   "readButtonFontWeight",
+   "readButtonHeight",
+   "readButtonWidth",
+   "responsive",
+   "showCategory",
+   "showCategoryDescription",
+   "showDescription",
+   "showExpirationTime",
+   "showImage",
+   "showPublishDate",
+   "showReadButton",
+   "show_info",
+   "spacing_between_posts",
+   "text_align",
+   "text_padding",
+   "text_padding_y",
+   "titleColor",
+   "titleFont",
+   "titleFontSize",
+   "titleFontStyle",
+   "titleFontWeight",
+   "titlePaddingY"
+  ],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "post-overlay": {
+  "seen": 43,
+  "specials": [
+   "type"
+  ],
+  "config": [
+   "0"
+  ],
+  "style": [
+   "background",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "postal-code": {
+  "seen": 1,
+  "specials": [
+   "field_name",
+   "label",
+   "numberCharacter",
+   "placeholder",
+   "postal_code",
+   "required",
+   "show_label",
+   "validate"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "product-gallery": {
+  "seen": 13,
+  "specials": [
+   "arrowColor",
+   "auto_resize_height",
+   "autoplay",
+   "autoplay_time",
+   "custom_class",
+   "image_preview_ratio",
+   "infinity",
+   "on_hover",
+   "scale_ratio",
+   "showNavigation",
+   "showThumbnail",
+   "show_ribbon",
+   "thumbnailPosition",
+   "zoom_type"
+  ],
+  "config": [
+   "arrowHeight",
+   "arrowPosition",
+   "arrowWidth",
+   "arrowX",
+   "barDotSize",
+   "barWidth",
+   "barWidthUnit",
+   "distanceAmong",
+   "distanceToGallery",
+   "gapBar",
+   "image_ratio",
+   "img_object_fit",
+   "is_pin_video",
+   "itemWidth",
+   "navColor",
+   "navSecondaryColor",
+   "paginateCount",
+   "paginateMode",
+   "paginateRadius",
+   "ribbonGap",
+   "scrollDirection",
+   "showPaginate",
+   "showThumbnail",
+   "sizeThumbnail",
+   "thumbnailHeight",
+   "thumbnailPosition",
+   "thumbnailWidth",
+   "zoom_img_object_fit"
+  ],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "product-image-carousel": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "product-overlay": {
+  "seen": 242,
+  "specials": [
+   "custom_class",
+   "type"
+  ],
+  "config": [
+   "0"
+  ],
+  "style": [
+   "background",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "product-review": {
+  "seen": 6,
+  "specials": [
+   "avatar_border_color",
+   "avatar_border_size",
+   "avatar_size",
+   "require_email",
+   "require_phone_number",
+   "reviews_per_page",
+   "show_filter",
+   "show_heading",
+   "show_publish_date",
+   "show_rating_breakdown",
+   "tabIndex",
+   "title"
+  ],
+  "config": [
+   "areaBackground",
+   "areaBorderColor",
+   "areaBorderRadius",
+   "areaBorderWidth",
+   "bars_active_color",
+   "bars_border_radius",
+   "bars_color",
+   "bodyColor",
+   "bodyFont",
+   "bodyFontSize",
+   "bodyFontStyle",
+   "bodyFontTheme",
+   "bodyFontWeight",
+   "buttonBackground",
+   "buttonBorderRadius",
+   "buttonFont",
+   "buttonFontSize",
+   "buttonFontStyle",
+   "buttonFontTheme",
+   "buttonFontWeight",
+   "buttonUploadColor",
+   "filled_star_color",
+   "filterBtnColor",
+   "filterBtnFontSize",
+   "filterBtnFontWeight",
+   "filterColor",
+   "filterFont",
+   "filterFontSize",
+   "filterFontStyle",
+   "filterFontTheme",
+   "filterFontWeight",
+   "filterSelectedColor",
+   "formBackground",
+   "formBorderColor",
+   "formBorderRadius",
+   "formBorderWidth",
+   "formStarHoverColor",
+   "form_star_color",
+   "headingColor",
+   "headingDecoration",
+   "headingFont",
+   "headingFontSize",
+   "headingFontStyle",
+   "headingFontTheme",
+   "headingFontWeight",
+   "inputBorderColor",
+   "inputBorderRadius",
+   "inputBorderWidth",
+   "inputColor",
+   "inputFont",
+   "inputFontSize",
+   "inputFontStyle",
+   "inputFontTheme",
+   "inputFontWeight",
+   "inputHoverBorderColor",
+   "inputHoverColor",
+   "labelColor",
+   "labelFont",
+   "labelFontSize",
+   "labelFontStyle",
+   "labelFontTheme",
+   "labelFontWeight",
+   "loadingFont",
+   "loadingFontSize",
+   "loadingFontStyle",
+   "loadingFontTheme",
+   "loadingFontWeight",
+   "paddingY",
+   "paginationSelectedColor",
+   "publishColor",
+   "publishFont",
+   "publishFontSize",
+   "publishFontStyle",
+   "publishFontTheme",
+   "publishFontWeight",
+   "reviewButtonBorderColor",
+   "reviewButtonBorderRadius",
+   "reviewButtonBorderWidth",
+   "reviewButtonColor",
+   "reviewButtonFont",
+   "reviewButtonFontSize",
+   "reviewButtonFontStyle",
+   "reviewButtonFontTheme",
+   "reviewButtonFontWeight",
+   "reviewButtonHoverBackground",
+   "reviewButtonHoverBorderColor",
+   "reviewButtonHoverColor",
+   "reviewListDividerBorderColor",
+   "reviewListFilledStar",
+   "reviewListStarSize",
+   "reviewListUnfilledStar",
+   "sidePadding",
+   "star_size",
+   "titleColor",
+   "titleFont",
+   "titleFontSize",
+   "titleFontStyle",
+   "titleFontTheme",
+   "titleFontWeight",
+   "unfilled_star_color"
+  ],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "promotions": {
+  "seen": 11,
+  "specials": [
+   "custom_class",
+   "displayPromotions",
+   "getBy",
+   "tabIndex"
+  ],
+  "config": [
+   "direction",
+   "promotionBorderColor",
+   "promotionCount",
+   "promotionDotColor"
+  ],
+  "style": [
+   "background",
+   "borderColor",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "promotions-short": {
+  "seen": 10,
+  "specials": [
+   "displayPromotions"
+  ],
+  "config": [
+   "borderRadius",
+   "borderWidth",
+   "direction",
+   "paddingX",
+   "promotionBorderColor",
+   "promotionDotColor",
+   "strokeColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "color",
+   "fontFamily",
+   "fontSize",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "quantity-input": {
+  "seen": 28,
+  "specials": [
+   "max",
+   "showLeftBtn",
+   "showRightBtn",
+   "spinner"
+  ],
+  "config": [
+   "borderEdgesDec",
+   "borderEdgesInc",
+   "btnDecrease",
+   "btnIncrease",
+   "constraintDimension",
+   "iconWidthDec",
+   "iconWidthInc",
+   "strokeColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "fontWeight",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "question-container": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "radio": {
+  "seen": 8,
+  "specials": [
+   "defaultValue",
+   "field_name",
+   "icon_color",
+   "isRetrieve",
+   "label",
+   "options",
+   "placeholder",
+   "required",
+   "show_label"
+  ],
+  "config": [
+   "backgroundInput",
+   "column",
+   "gap",
+   "labelColor",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "optionBorderRadius",
+   "optionBorderStyle",
+   "optionBorderWidth",
+   "placeholderColor",
+   "sizeInput",
+   "strokeColor",
+   "textPadding"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "border",
+   "color",
+   "fontWeight",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "radio-group": {
+  "seen": 33,
+  "specials": [
+   "count",
+   "filter_elements",
+   "icon_color",
+   "options",
+   "use_button_filter"
+  ],
+  "config": [
+   "spaceButtonText",
+   "strokeColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "color",
+   "height",
+   "left",
+   "lineHeight",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "random-number": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "rating-input": {
+  "seen": 13,
+  "specials": [
+   "activeStarIcon",
+   "auto_hide_without_star",
+   "inactiveStarIcon"
+  ],
+  "config": [
+   "activeStarColor",
+   "gap",
+   "inactiveStarColor"
+  ],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "rectangle": {
+  "seen": 4774,
+  "specials": [
+   "custom_class",
+   "custom_css",
+   "shapeType",
+   "tabIndex"
+  ],
+  "config": [
+   "animation",
+   "constraintDimension",
+   "custom_mask",
+   "fixedBottom",
+   "fixedLeft",
+   "fixedPosition",
+   "leftCenterXUnit",
+   "mask",
+   "maskId",
+   "stickyBottom",
+   "stickyPosition"
+  ],
+  "style": [
+   "background",
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "boxShadow",
+   "height",
+   "left",
+   "position",
+   "top",
+   "transform",
+   "width"
+  ],
+  "bindings": [
+   "none"
+  ],
+  "events": true
+ },
+ "rectangle-dataset": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [
+   "height",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "referral-code": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "retype-password": {
+  "seen": 18,
+  "specials": [
+   "custom_class",
+   "field_name",
+   "field_type",
+   "label",
+   "placeholder",
+   "required",
+   "showHidePassword",
+   "show_label",
+   "validate"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "textPadding"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "border",
+   "borderColor",
+   "borderRadius",
+   "color",
+   "fontSize",
+   "fontWeight",
+   "height",
+   "left",
+   "textAlign",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "retype-phone-number": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "reward-point": {
+  "seen": 3,
+  "specials": [
+   "field_name",
+   "label",
+   "placeholder",
+   "show_label"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "row": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "search-droppable": {
+  "seen": 300,
+  "specials": [
+   "custom_class",
+   "custom_css"
+  ],
+  "config": [
+   "droppable_position",
+   "use_overlay",
+   "vwWidth"
+  ],
+  "style": [
+   "background",
+   "boxShadow",
+   "height",
+   "left",
+   "overflowX",
+   "overflowY",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "search-form": {
+  "seen": 2,
+  "specials": [
+   "field_name",
+   "field_type",
+   "label",
+   "placeholder",
+   "required",
+   "show_label"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "section": {
+  "seen": 1870,
+  "specials": [
+   "custom_class",
+   "custom_css",
+   "global",
+   "layout",
+   "text"
+  ],
+  "config": [
+   "apply_pattern_overlay",
+   "cardBorderWidth",
+   "constraintDimension",
+   "minLineProductName",
+   "nameLineClamp",
+   "pattern_overlay",
+   "ribbonPadding",
+   "showShadowWhenSticky",
+   "stickyPosition",
+   "stickyTop",
+   "type",
+   "undefined"
+  ],
+  "style": [
+   "background",
+   "background-attachment",
+   "background-position-x",
+   "background-position-y",
+   "background-repeat",
+   "background-size",
+   "borderColor",
+   "borderRadius",
+   "borderWidth",
+   "boxShadow",
+   "color",
+   "filter",
+   "fontSize",
+   "height",
+   "left",
+   "overflowX",
+   "overflowY",
+   "position",
+   "top",
+   "transform",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "select": {
+  "seen": 9,
+  "specials": [
+   "datagrid_id",
+   "defaultValue",
+   "field_name",
+   "field_type",
+   "label",
+   "options",
+   "placeholder",
+   "required",
+   "show_label"
+  ],
+  "config": [
+   "backgroundInput",
+   "isStyleInputChecked",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "strokeColor",
+   "textPadding",
+   "traitsReset"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "border",
+   "color",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "slide": {
+  "seen": 324,
+  "specials": [],
+  "config": [],
+  "style": [
+   "height",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "slider-blog": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [
+   "height",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "slider-category": {
+  "seen": 5,
+  "specials": [
+   "showCategories"
+  ],
+  "config": [
+   "arrowBorderWidth",
+   "arrowColor",
+   "arrowX",
+   "cardBackground",
+   "gap_column",
+   "gap_row",
+   "imageBorderRadius",
+   "image_ratio",
+   "img_object_fit",
+   "name_padding_y",
+   "navIconSize",
+   "navSize",
+   "on_hover",
+   "responsive",
+   "sizeThumbnail",
+   "strokeColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "fontWeight",
+   "height",
+   "left",
+   "textAlign",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "slider-post": {
+  "seen": 11,
+  "specials": [
+   "arrow_icon",
+   "category_id",
+   "custom_class",
+   "numbers_post_to_show",
+   "numbers_posts_to_show",
+   "on_hover",
+   "readButtonText"
+  ],
+  "config": [
+   "arrowColor",
+   "arrowX",
+   "background_area",
+   "background_post",
+   "button_align",
+   "cardBorderColor",
+   "cardBorderRadius",
+   "cardBorderWidth",
+   "categoriesPaddingY",
+   "categoryColor",
+   "categoryDescriptionColor",
+   "categoryDescriptionPaddingY",
+   "categoryFont",
+   "categoryFontSize",
+   "categoryPosition",
+   "dateColor",
+   "dateFont",
+   "dateFontSize",
+   "dateFontStyle",
+   "dateFontWeight",
+   "descriptionColor",
+   "descriptionFont",
+   "descriptionFontSize",
+   "descriptionFontStyle",
+   "descriptionFontWeight",
+   "descriptionPaddingY",
+   "image_align",
+   "image_ratio",
+   "layout",
+   "navIconSize",
+   "navSize",
+   "number_of_line_description",
+   "number_of_line_title",
+   "posts_per_row",
+   "readButtonBackground",
+   "readButtonColor",
+   "readButtonFont",
+   "readButtonFontWeight",
+   "readButtonWidth",
+   "responsive",
+   "showCategory",
+   "showCategoryDescription",
+   "showDescription",
+   "showExpirationTime",
+   "showImage",
+   "showPostTitle",
+   "showPublishDate",
+   "showReadButton",
+   "show_info",
+   "spacing_between_posts",
+   "text_align",
+   "text_padding",
+   "text_padding_y",
+   "titleColor",
+   "titleFont",
+   "titleFontSize",
+   "titleFontStyle",
+   "titleFontWeight"
+  ],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "slider-product": {
+  "seen": 112,
+  "specials": [
+   "action_add_to_cart",
+   "action_product_card",
+   "arrow_icon",
+   "auto_hide_without_star",
+   "autoplay",
+   "barValue",
+   "category_id",
+   "custom_class",
+   "custom_css",
+   "dateRange",
+   "disable_filter",
+   "filter_color_course_purchased",
+   "load_brand",
+   "load_category",
+   "load_rating",
+   "max_show_categories",
+   "on_hover",
+   "original_price_position",
+   "plugins",
+   "productNameTag",
+   "productOriginalPriceTag",
+   "products_per_load",
+   "promotion_id",
+   "randomDisplay",
+   "saleInfoDisplayText",
+   "saleInfoSoldoutText",
+   "show_button",
+   "show_button_on_hover",
+   "show_categories",
+   "show_detail_price",
+   "show_discount_on_price",
+   "show_divider",
+   "show_nav_on_hover",
+   "show_navigation",
+   "show_original_price",
+   "show_product_name",
+   "show_product_price",
+   "show_quantity",
+   "show_quick_view",
+   "show_rating",
+   "show_ribbon",
+   "show_text",
+   "show_total_sold",
+   "show_video_demo",
+   "show_wholesale_price",
+   "show_wholesale_quantity",
+   "store_show_attribute_template_1",
+   "tabIndex",
+   "textQuickBtn",
+   "typeLinkCategory",
+   "wholesale_price_position"
+  ],
+  "config": [
+   "addToCartBackground",
+   "addToCartBackgroundHover",
+   "addToCartBorderRadius",
+   "addToCartBorderWidth",
+   "addToCartFont",
+   "addToCartFontSize",
+   "addToCartFontWeight",
+   "addToCartPaddingX",
+   "addToCartPaddingY",
+   "addToCartTextAlign",
+   "arrowBorderColor",
+   "arrowBorderWidth",
+   "arrowColor",
+   "arrowPosition",
+   "arrowX",
+   "background",
+   "button_margin",
+   "cardBackground",
+   "cardBackgroundHover",
+   "cardBorderColor",
+   "cardBorderRadius",
+   "cardBorderWidth",
+   "cardBoxShadow",
+   "discountBackground",
+   "discountColor",
+   "discountPaddingX",
+   "discountRadius",
+   "displayStyle",
+   "display_row",
+   "dividerBorderColor",
+   "dividerBorderWidth",
+   "dividerWidth",
+   "gap_column",
+   "gap_row",
+   "image_border_radius",
+   "image_padding",
+   "image_placement",
+   "image_ratio",
+   "image_width",
+   "img_object_fit",
+   "item_show",
+   "minLineProductName",
+   "minimum_card_width",
+   "nameLineClamp",
+   "navIconSize",
+   "navSize",
+   "origin_price_margin_x",
+   "price_padding_x",
+   "price_padding_y",
+   "productCategoryColor",
+   "productCategoryFont",
+   "productNameColor",
+   "productNameDecoration",
+   "productNameFont",
+   "productNameFontSize",
+   "productNameFontStyle",
+   "productNameFontTheme",
+   "productNameFontWeight",
+   "productNameLetterSpacing",
+   "productNameTextTransform",
+   "productOriginalPriceColor",
+   "productOriginalPriceFont",
+   "productOriginalPriceFontSize",
+   "productOriginalPriceFontStyle",
+   "productOriginalPriceFontTheme",
+   "productOriginalPriceFontWeight",
+   "productPriceColor",
+   "productPriceFont",
+   "productPriceFontSize",
+   "productPriceFontWeight",
+   "productTotalSoldColor",
+   "product_info_alignment",
+   "product_info_alignment_y",
+   "product_info_padding_x",
+   "product_info_padding_y",
+   "responsive",
+   "ribbonBackground",
+   "ribbonBorderRadius",
+   "ribbonBorderWidth",
+   "ribbonDisplay",
+   "ribbonFont",
+   "ribbonFontSize",
+   "ribbonFontStyle",
+   "ribbonFontWeight",
+   "ribbonPadding",
+   "scoreFont",
+   "scoreFontSize",
+   "scoreFontWeight",
+   "sizeThumbnail",
+   "starSize",
+   "store_show_attribute_template_1",
+   "store_show_extra_info",
+   "store_show_sale_info"
+  ],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "submenu": {
+  "seen": 935,
+  "specials": [
+   "children",
+   "custom_css",
+   "effect",
+   "syncSubmenu",
+   "timeAnim",
+   "type"
+  ],
+  "config": [
+   "vwWidth",
+   "widthFixed"
+  ],
+  "style": [
+   "background",
+   "borderRadius",
+   "height",
+   "left",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "submit-button": {
+  "seen": 241,
+  "specials": [
+   "custom_class",
+   "text"
+  ],
+  "config": [
+   "locked",
+   "strokeColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "fontWeight",
+   "height",
+   "left",
+   "letterSpacing",
+   "lineHeight",
+   "textAlign",
+   "textTransform",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "swiper": {
+  "seen": 117,
+  "specials": [
+   "arrowIcon",
+   "auto_hide_navigation",
+   "autoplay",
+   "autoplayDelay",
+   "blurry",
+   "custom_class",
+   "direction",
+   "infinity",
+   "overflow",
+   "paginate",
+   "paginateBar",
+   "scale_overflow",
+   "transitionMode",
+   "transitionTime"
+  ],
+  "config": [
+   "barHeight",
+   "barHeightUnit",
+   "barWidth",
+   "barWidthUnit",
+   "navBackground",
+   "navBoxShadow",
+   "navColor",
+   "navSecondaryColor",
+   "navSize",
+   "show_button"
+  ],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "switch": {
+  "seen": 5,
+  "specials": [
+   "defaultValue"
+  ],
+  "config": [
+   "backgroundSlider",
+   "borderRadiusSlider",
+   "colorSlider"
+  ],
+  "style": [
+   "background",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "table": {
+  "seen": 3,
+  "specials": [
+   "datagrid_id",
+   "tabIndex"
+  ],
+  "config": [
+   "evenBackground",
+   "oddBackground",
+   "titleBackground",
+   "titleColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "borderColor",
+   "borderStyle",
+   "color",
+   "fontSize",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "tabs": {
+  "seen": 59,
+  "specials": [
+   "activeTab",
+   "custom_class",
+   "hightlightIconSize",
+   "navMode",
+   "showBullet",
+   "showCategories",
+   "showDivider",
+   "showNav",
+   "tabIndex",
+   "tabs"
+  ],
+  "config": [
+   "alignNav",
+   "navPosition",
+   "nav_display_style"
+  ],
+  "style": [
+   "activeColor",
+   "activeFontWeight",
+   "background",
+   "color",
+   "dividerColor",
+   "dividerSize",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "fontWeight",
+   "height",
+   "left",
+   "navActiveBgColor",
+   "navBLBorderRadius",
+   "navBRBorderRadius",
+   "navBgColor",
+   "navGap",
+   "navItemJustifyContent",
+   "navMinWidth",
+   "navPaddingX",
+   "navPaddingY",
+   "navTLBorderRadius",
+   "navTRBorderRadius",
+   "paddingNavBar",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "tags": {
+  "seen": 11,
+  "specials": [
+   "activeMode",
+   "auto_category_type",
+   "auto_option",
+   "count",
+   "filter_elements",
+   "is_auto_child_categories",
+   "max_child_categories",
+   "options",
+   "selectionMode",
+   "sync_tab",
+   "tabIndex",
+   "use_button_filter"
+  ],
+  "config": [
+   "tags_layout"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "borderRadius",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "fontSizeActive",
+   "fontSizeHover",
+   "fontWeight",
+   "fontWeightActive",
+   "fontWeightHover",
+   "height",
+   "itemBackground",
+   "itemBackgroundActive",
+   "itemBackgroundHover",
+   "itemBorderColor",
+   "itemBorderColorActive",
+   "itemBorderColorHover",
+   "itemBorderWidth",
+   "itemPaddingX",
+   "itemPaddingY",
+   "itemTextColor",
+   "itemTextColorActive",
+   "itemTextColorHover",
+   "left",
+   "rowGap",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "tee-form": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [],
+  "bindings": [],
+  "events": false
+ },
+ "text": {
+  "seen": 11683,
+  "specials": [
+   "custom_class",
+   "custom_css",
+   "marker",
+   "tabIndex",
+   "tag",
+   "text",
+   "text_animation_type",
+   "typographyTheme"
+  ],
+  "config": [
+   "leftCenterXUnit",
+   "locked",
+   "markIconBackground",
+   "markerLeft",
+   "markerSize",
+   "strokeColor",
+   "strokeWidth",
+   "textColor",
+   "undefined"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "borderRadius",
+   "boxShadow",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "fontStyle",
+   "fontWeight",
+   "height",
+   "left",
+   "letterSpacing",
+   "lineHeight",
+   "listStyleImage",
+   "listStyleType",
+   "position",
+   "textAlign",
+   "textDecoration",
+   "textTransform",
+   "top",
+   "transform",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "text-area": {
+  "seen": 22,
+  "specials": [
+   "field_name",
+   "label",
+   "placeholder",
+   "required",
+   "show_label"
+  ],
+  "config": [
+   "backgroundInput",
+   "labelMarginBottom",
+   "optionBorderColor",
+   "textPadding"
+  ],
+  "style": [
+   "background",
+   "border",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "text-dataset": {
+  "seen": 1788,
+  "specials": [
+   "custom_class",
+   "custom_css",
+   "tabIndex",
+   "tag",
+   "text"
+  ],
+  "config": [
+   "leftCenterXUnit",
+   "maxHeightUnit",
+   "maxWidth",
+   "maxWidthUnit",
+   "relMaxHeight",
+   "strokeColor",
+   "strokeWidth",
+   "textColor"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "background",
+   "borderColor",
+   "borderRadius",
+   "borderStyle",
+   "borderWidth",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "fontStyle",
+   "fontWeight",
+   "height",
+   "left",
+   "letterSpacing",
+   "lineHeight",
+   "textAlign",
+   "textDecoration",
+   "textTransform",
+   "top",
+   "width"
+  ],
+  "bindings": [
+   "7762e553-47d3-4623-8717-059d08a6f566",
+   "8385935b-1d45-4026-8589-94dab49c3de0",
+   "FORM-0urzp4kb",
+   "FORM-4qn30lyk",
+   "FORM-8fsbb65r",
+   "FORM-fd7aamkm",
+   "FORM-fobp95v5",
+   "FORM-knwwerks",
+   "FORM-lcd20a75",
+   "FORM-nisjaot9",
+   "FORM-uxfzmwa1",
+   "FORM-xztn88zj",
+   "GRID-PRODUCT-2d6indkq",
+   "GRID-PRODUCT-8hqkhhqc",
+   "GRID-PRODUCT-8lr8ru4a",
+   "GRID-PRODUCT-e88bkudt",
+   "GRID-PRODUCT-h5jchhqk",
+   "GRID-PRODUCT-r71cnh1l",
+   "GRID-PRODUCT-rmbv5bgo",
+   "GRID-PRODUCT-si5m9uor",
+   "GRID-PRODUCT-veeejf4b",
+   "GRID-PRODUCT-wrwuljia",
+   "SLIDER-PRODUCT-vic13mvo",
+   "attr::attr_name",
+   "attr::attr_value",
+   "blog::category_description",
+   "blog::category_name",
+   "blog::total_post",
+   "bonus_item::bonus_item_name",
+   "bonus_item::bonus_item_original_price",
+   "bonus_item::bonus_item_price",
+   "bonus_item::index_item",
+   "bonus_item::total_discount_price",
+   "cart_item::cart_item_error",
+   "cart_item::cart_item_name",
+   "cart_item::cart_item_original_price",
+   "cart_item::cart_item_price",
+   "cart_item::cart_item_prod_attr",
+   "cart_item::cart_item_subtotal",
+   "cart_item::cart_item_tag_bonus",
+   "cart_item::cart_item_total_price",
+   "cart_item::cart_item_total_quantity",
+   "cart_item::cart_promotion_discount",
+   "cart_item::cart_shipping_fee",
+   "cart_item::cart_total_price",
+   "cart_item::discount_customer_level",
+   "cart_item::discount_reward_point",
+   "cart_item::preorder_text",
+   "cart_item::subtotal_before_discount",
+   "cart_item::total_price_all_promotions",
+   "cart_item::total_price_discount_products",
+   "category::category_description",
+   "category::category_name",
+   "customer::birthday",
+   "customer::email",
+   "customer::gender",
+   "customer::order_count",
+   "customer::phone_number",
+   "customer::pos_accumulated_value",
+   "customer::pos_level_discount",
+   "customer::pos_reward_point",
+   "customer::pos_reward_point_level",
+   "customer::pos_reward_point_to_money",
+   "customer::profile_name",
+   "customer::succeed_order_count",
+   "customer_address::address",
+   "customer_address::full_name",
+   "customer_address::is_default",
+   "customer_address::pdc",
+   "customer_address::phone_number",
+   "general_info::page_name",
+   "none",
+   "order::address",
+   "order::code_order",
+   "order::order_date",
+   "order::order_email",
+   "order::order_full_name",
+   "order::order_payment_method",
+   "order::order_phone_number",
+   "order::order_promotion_coupon",
+   "order::order_promotion_discount",
+   "order::payment_status",
+   "order::shipping_fee",
+   "order::subtotal",
+   "order::subtotal_before_discount",
+   "order::total_price",
+   "order::total_price_all_promotions",
+   "order_item::items_sum_up_price",
+   "order_item::original_price",
+   "order_item::product_attrs",
+   "order_item::product_name",
+   "order_item::product_price",
+   "order_item::product_quantity",
+   "post::category_description",
+   "post::category_name",
+   "post::post_content",
+   "post::post_creator",
+   "post::post_description",
+   "post::post_expired",
+   "post::post_publish_date",
+   "post::post_status",
+   "post::post_title",
+   "post::total_views",
+   "product::brand_name",
+   "product::course_member_quantity",
+   "product::course_total_time",
+   "product::course_video_quantity",
+   "product::discount_price_from_original_price",
+   "product::discount_price_to_original_price",
+   "product::lesson_description",
+   "product::preorder_text",
+   "product::product_categories",
+   "product::product_name",
+   "product::product_note",
+   "product::product_original_price",
+   "product::product_price",
+   "product::product_url",
+   "product::rating_count",
+   "product::rating_point",
+   "product::selected_total_price",
+   "product::short_description",
+   "product::total_course",
+   "product::total_course_active",
+   "product::total_course_completed",
+   "product::total_course_learning",
+   "product::total_course_not_active",
+   "product::total_sold_web",
+   "product_item::percent_discount",
+   "product_item::product_name",
+   "product_item::product_original_price",
+   "product_item::product_retail_price",
+   "product_item::product_total_sold",
+   "product_item::short_description",
+   "promotion_item::code",
+   "promotion_item::description",
+   "promotion_item::end_date",
+   "promotion_item::name",
+   "promotion_item::promotion_value",
+   "search_result::search_name",
+   "warehouse::address",
+   "warehouse::name",
+   "warehouse::quantity",
+   "warehouse::status",
+   "wishlist_item::product_name",
+   "wishlist_item::product_original_price",
+   "wishlist_item::product_price",
+   "wishlist_item::product_short_description"
+  ],
+  "events": false
+ },
+ "two-point-range": {
+  "seen": 9,
+  "specials": [
+   "display_type",
+   "filter",
+   "max",
+   "min"
+  ],
+  "config": [
+   "dotColor",
+   "dotSize",
+   "progressBgColor",
+   "progressColor",
+   "progressSize"
+  ],
+  "style": [
+   "-webkit-text-stroke",
+   "color",
+   "font",
+   "fontFamily",
+   "fontSize",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "user-point-log": {
+  "seen": 21,
+  "specials": [
+   "datetimeColor",
+   "itemGap",
+   "logPerPage",
+   "noteColor",
+   "pointText",
+   "tabIndex"
+  ],
+  "config": [
+   "datetimeColor",
+   "datetimeFont",
+   "datetimeFontSize",
+   "datetimeFontStyle",
+   "datetimeFontTheme",
+   "datetimeFontWeight",
+   "itemGap",
+   "noteColor",
+   "noteFont",
+   "noteFontSize",
+   "noteFontStyle",
+   "noteFontTheme",
+   "noteFontWeight"
+  ],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "video": {
+  "seen": 28,
+  "specials": [
+   "autoplay",
+   "image_alt",
+   "loop",
+   "showControl",
+   "src",
+   "thumbnail",
+   "time",
+   "type"
+  ],
+  "config": [
+   "ratio",
+   "src"
+  ],
+  "style": [
+   "borderColor",
+   "borderRadius",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "video-dataset": {
+  "seen": 5,
+  "specials": [
+   "autoRotateInMobile",
+   "custom_class",
+   "tabIndex"
+  ],
+  "config": [],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [
+   "product::video_lesson"
+  ],
+  "events": false
+ },
+ "warehouse": {
+  "seen": 1,
+  "specials": [
+   "warehouses"
+  ],
+  "config": [
+   "activeColor",
+   "distanceWarehouse",
+   "hoverColor"
+  ],
+  "style": [
+   "background",
+   "borderColor",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "warehouse-dataset": {
+  "seen": 0,
+  "specials": [],
+  "config": [],
+  "style": [
+   "color",
+   "height",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "wishlist": {
+  "seen": 0,
+  "specials": [
+   "itemCount",
+   "svg"
+  ],
+  "config": [],
+  "style": [
+   "height",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "wishlist-container": {
+  "seen": 3,
+  "specials": [
+   "tabIndex"
+  ],
+  "config": [],
+  "style": [
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ },
+ "wishlist-empty": {
+  "seen": 3,
+  "specials": [],
+  "config": [],
+  "style": [
+   "background",
+   "borderColor",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": true
+ },
+ "wishlist-item": {
+  "seen": 3,
+  "specials": [],
+  "config": [],
+  "style": [
+   "background",
+   "borderColor",
+   "height",
+   "left",
+   "top",
+   "width"
+  ],
+  "bindings": [],
+  "events": false
+ }
+}

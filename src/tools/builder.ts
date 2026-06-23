@@ -59,7 +59,7 @@ export function registerBuilderTools(server: McpServer, api: WebcakeCmsApi, hand
 
   server.tool(
     "get_element",
-    "Get the full detail of an element type: category, container flag, summary, and a live skeleton node (the authoritative default shape) you can copy and edit.",
+    "Get the full detail of an element type: category, container flag, summary, an ATTRIBUTES reference (the meaningful specials/config keys + their purpose/allowed values, events, and dataset binding targets), and a live skeleton node (the authoritative default shape) you can copy and edit. Read this before authoring/editing an element so you set the right keys.",
     {
       type: z.string().describe("Element type, e.g. 'text', 'button', 'grid-product'"),
     },

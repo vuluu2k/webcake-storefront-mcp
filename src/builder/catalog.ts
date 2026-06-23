@@ -6,6 +6,7 @@
 // so an AI agent can understand the palette, and (3) expose helpers the MCP tools use.
 
 import * as F from "./factory.js";
+import { describeAttributes } from "./attributes.js";
 
 // Probe every factory once with safe default opts to learn the type string it produces
 // and whether it is a container (has a children array). Calling with {children:[]} is
@@ -186,7 +187,9 @@ export function getElement(type: string) {
   const d = describeType(type);
   // A live skeleton straight from the factory = authoritative shape for this type.
   const skeleton = buildElement(type, {});
-  return { ...d, skeleton };
+  // Curated + skeleton-derived attribute reference so the agent knows the meaningful keys.
+  const attributes = describeAttributes(type, skeleton);
+  return { ...d, attributes, skeleton };
 }
 
 export const ELEMENT_TYPES = ALL_TYPES;
