@@ -5,6 +5,15 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.1] - 2026-06-23
+
+### Added
+- Kho lưu trữ token OAuth của lệnh `serve` nay hỗ trợ tùy chọn sử dụng Postgres (qua `DATABASE_URL`) để lưu token bền vững qua các lần khởi động lại và chia sẻ trạng thái giữa nhiều instance sau load balancer, đồng thời hỗ trợ Redis (qua `REDIS_URL`) để cache tra cứu access-token; cả hai đều tùy chọn và server tự động dùng in-memory nếu không cấu hình.
+- Trang landing tại `/` của lệnh `serve` nay hỗ trợ nội dung song ngữ (Tiếng Việt và Tiếng Anh) có thể chọn qua tham số `?lang=en`.
+
+### Changed
+- Trang landing tại `/` được thiết kế lại với nội dung đơn giản hóa dành cho người dùng không chuyên về kỹ thuật và bảng màu violet/indigo mới.
+
 ## [1.1.0] - 2026-06-23
 
 ### Added
