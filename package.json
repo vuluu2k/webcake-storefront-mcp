@@ -24,7 +24,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "tsc && node scripts/copy-assets.mjs",
+    "build": "node scripts/gen-changelog.mjs && tsc && node scripts/copy-assets.mjs",
     "start": "node dist/index.js",
     "serve": "node dist/index.js serve",
     "dev": "tsc --watch",

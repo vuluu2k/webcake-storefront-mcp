@@ -15,6 +15,8 @@
  * Self-contained (inline CSS + JS, no external fonts/trackers) so it loads instantly.
  */
 
+import { readFileSync } from "node:fs";
+
 // The SPA page (on the builder app) that shows the user their personal remote
 // connector link with login already built in — see builderx_spa McpRemoteStore.vue
 // (/mcp-remote-store). The raw MCP endpoint itself is {ENDPOINT} = <origin>/mcp.
@@ -199,6 +201,9 @@ type Strings = {
   promptSub: string;
   promptEx: string;
   faqH2: string;
+  newH2: string;
+  newBadge: string;
+  clMore: string;
   starH2: string;
   starP: string;
   starBtn: string;
@@ -361,6 +366,9 @@ const T: Record<Lang, Strings> = {
     promptEx:
       "Tạo cho tôi một trang sản phẩm trên WebCake cho thương hiệu [tên thương hiệu].\nTrang cần có: ảnh sản phẩm lớn, tên và giá, mô tả ngắn, nút \"Mua ngay\".\nKiểm tra kỹ trước khi lưu, rồi xuất bản lên cửa hàng của tôi.",
     faqH2: "Câu hỏi thường gặp",
+    newH2: "Có gì mới",
+    newBadge: "MỚI",
+    clMore: "Xem tất cả thay đổi",
     starH2: "Thấy hữu ích? Tặng dự án một ngôi sao nhé",
     starP:
       "Đây là dự án miễn phí, mã nguồn mở — mỗi ngôi sao là một lời động viên để dự án tiếp tục phát triển và giúp nhiều người tìm ra nó hơn.",
@@ -373,6 +381,7 @@ const T: Record<Lang, Strings> = {
       { href: "#build", label: "Tạo được gì" },
       { href: "#connect", label: "Kết nối" },
       { href: "#tools", label: "Trợ lý làm gì" },
+      { href: "#new", label: "Có gì mới" },
       { href: "#faq", label: "Hỏi đáp" },
     ],
   },
@@ -528,6 +537,9 @@ const T: Record<Lang, Strings> = {
     promptEx:
       "Create a product page on my WebCake store for [brand name].\nThe page should have: a large product image, name and price, a short description, and a \"Buy Now\" button.\nPlease check everything looks right before saving, then publish it to my store.",
     faqH2: "Frequently asked questions",
+    newH2: "What's new",
+    newBadge: "NEW",
+    clMore: "See all changes",
     starH2: "Find it useful? Give the project a star",
     starP:
       "It's a free, open-source project — every star is a little encouragement to keep it growing and helps more people find it.",
@@ -540,10 +552,48 @@ const T: Record<Lang, Strings> = {
       { href: "#build", label: "What you build" },
       { href: "#connect", label: "Connect" },
       { href: "#tools", label: "What it does" },
+      { href: "#new", label: "What's new" },
       { href: "#faq", label: "FAQ" },
     ],
   },
 };
+
+// The "What's new" timeline is loaded from changelog.json, which the build
+// generates from CHANGELOG.md + CHANGELOG.vi.md (scripts/gen-changelog.mjs) and
+// copy-assets mirrors next to this module in dist/. Falls back to an empty list
+// (section hidden) if absent.
+type ChangelogEntry = {
+  v: string;
+  d: string;
+  type?: string;
+  en: string;
+  vi: string;
+};
+const CHANGELOG: ChangelogEntry[] = loadChangelog();
+function loadChangelog(): ChangelogEntry[] {
+  try {
+    const raw = readFileSync(new URL("./changelog.json", import.meta.url), "utf8");
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+// English Keep-a-Changelog section names → short Vietnamese tags (en uses the raw name).
+const CL_TYPE_VI: Record<string, string> = {
+  Added: "Thêm mới",
+  Changed: "Cải tiến",
+  Fixed: "Sửa lỗi",
+  Removed: "Gỡ bỏ",
+  Deprecated: "Ngừng dùng",
+  Security: "Bảo mật",
+  Internal: "Nội bộ",
+};
+function clTag(type: string | undefined, lang: Lang): string {
+  if (!type) return "";
+  const label = lang === "vi" ? (CL_TYPE_VI[type] ?? "") : type;
+  return label ? ` <span class="cl-tag">${label}</span>` : "";
+}
 
 function steps(items: string[]): string {
   return items
@@ -804,6 +854,26 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     display:flex;gap:18px;flex-wrap:wrap;align-items:center}
   footer a{color:var(--g7);font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
   footer a:hover{text-decoration:underline}
+  .cl-wrap{padding:24px 26px 12px}
+  .cl{position:relative;margin:0;padding:0 0 0 24px;list-style:none}
+  .cl::before{content:"";position:absolute;left:6px;top:8px;bottom:14px;width:2px;
+    background:linear-gradient(var(--g),rgba(16,139,103,.08))}
+  .cl li{position:relative;padding:0 0 18px}
+  .cl li:last-child{padding-bottom:0}
+  .cl li::before{content:"";position:absolute;left:-24px;top:4px;width:12px;height:12px;border-radius:50%;
+    background:var(--card);border:2.5px solid var(--g);box-sizing:border-box}
+  .cl li.is-new::before{box-shadow:0 0 0 0 rgba(16,139,103,.5);animation:ring 2s infinite}
+  @keyframes ring{70%{box-shadow:0 0 0 8px rgba(16,139,103,0)}100%{box-shadow:0 0 0 0 rgba(16,139,103,0)}}
+  .cl .v{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:.97rem;flex-wrap:wrap}
+  .cl-tag{font-size:.68rem;font-weight:700;color:var(--g7);background:rgba(16,139,103,.12);
+    border:1px solid var(--line);padding:1px 8px;border-radius:999px;margin-left:8px}
+  .cl .date{color:var(--mut);font-size:.79rem;margin-left:8px;font-weight:500}
+  .cl .t{color:var(--mut);font-size:.91rem;margin:3px 0 0;max-width:62ch}
+  .new{font-size:.64rem;font-weight:800;letter-spacing:.06em;color:#fff;background:var(--g);
+    padding:2px 7px;border-radius:999px;animation:blink 1.8s ease-in-out infinite}
+  @keyframes blink{50%{opacity:.55}}
+  .cl-more{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:.86rem;font-weight:600;color:var(--g7);text-decoration:none}
+  .cl-more:hover{gap:9px}
   @media(max-width:640px){
     .wrap{padding:30px 15px 56px}
     header{flex-wrap:wrap;gap:12px}
@@ -814,6 +884,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     .method{padding:18px 15px}
     .card{padding:18px}
     .tip{padding:11px 12px}
+    .cl-wrap{padding:18px 16px 10px}
     .langsw{padding:6px 10px}
     .uses li,.feat li{padding:14px}
     .flow{flex-direction:column;align-items:stretch;overflow:visible;padding:16px}
@@ -851,7 +922,9 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     </div>
   </header>
 
-  <p class="hero-in" style="display:flex;gap:9px;flex-wrap:wrap"><span class="pill"><span class="dot"></span> ${t.running}</span><span class="pill">WebCake · StoreCake</span></p>
+  <p class="hero-in" style="display:flex;gap:9px;flex-wrap:wrap"><span class="pill"><span class="dot"></span> ${t.running}</span><span class="pill">WebCake · StoreCake</span>${
+    CHANGELOG[0] ? `<span class="pill">v${CHANGELOG[0].v}</span>` : ""
+  }</p>
 
   <p class="lead hero-in">${t.leadPre}<b class="grad">${t.leadGrad}</b>${t.leadPost}</p>
 
@@ -939,6 +1012,23 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   <ul class="feat">
     <li class="glass reveal">${tile("wand")} <span><pre style="background:transparent;color:inherit;border:none;padding:0;font-size:.88rem;white-space:pre-wrap">${t.promptEx}</pre></span></li>
   </ul>
+
+  ${
+    CHANGELOG.length
+      ? `<h2 id="new" class="reveal">${t.newH2}</h2>
+  <div class="glass cl-wrap reveal">
+    <ul class="cl">
+      ${CHANGELOG.map(
+        (c, i) =>
+          `<li class="${i === 0 ? "is-new" : ""}"><span class="v">v${c.v}${
+            i === 0 ? ` <span class="new">${t.newBadge}</span>` : ""
+          }${clTag(c.type, L)}<span class="date">${c.d}</span></span><p class="t">${L === "en" ? c.en : c.vi}</p></li>`,
+      ).join("\n      ")}
+    </ul>
+    <a class="cl-more" href="${GITHUB_URL}/blob/main/${L === "en" ? "CHANGELOG.md" : "CHANGELOG.vi.md"}">${t.clMore} ${icon("arrow")}</a>
+  </div>`
+      : ""
+  }
 
   <h2 id="faq" class="reveal">${t.faqH2}</h2>
   ${faq.map((f) => `<details class="glass reveal"><summary>${f.q}</summary><p>${f.a}</p></details>`).join("\n  ")}
