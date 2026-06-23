@@ -15,7 +15,10 @@
  * Self-contained (inline CSS + JS, no external fonts/trackers) so it loads instantly.
  */
 
-const MCP_REMOTE_URL = "https://store.toolvn.io.vn/mcp";
+// The SPA page (on the builder app) that shows the user their personal remote
+// connector link with login already built in — see builderx_spa McpRemoteStore.vue
+// (/mcp-remote-store). The raw MCP endpoint itself is {ENDPOINT} = <origin>/mcp.
+const MCP_REMOTE_URL = "https://webcake.io/mcp-remote-store";
 const INSTALL_CMD = "npx -y webcake-storefront-mcp install";
 const INSTALL_ALL_CMD =
   "npx -y webcake-storefront-mcp install --ide all --token &lt;TOKEN&gt; --session &lt;SESSION&gt;";
@@ -301,17 +304,17 @@ const T: Record<Lang, Strings> = {
       '<b>Mở lại ứng dụng AI.</b> Khi thấy <code class="inl">webcake-storefront</code> xuất hiện trong danh sách công cụ là bạn đã kết nối thành công — hãy thử nói "Tạo cho tôi trang sản phẩm…"',
     ],
     m1Note: "Muốn cài cho nhiều ứng dụng cùng lúc — dùng lệnh này:",
-    m2Tag: "Cách ② · Dùng ngay trên trình duyệt (claude.ai) — không cần cài gì",
+    m2Tag: "Cách ② · Dùng link — không cần cài gì",
     m2Sub:
-      "Phù hợp khi bạn dùng Claude trên web (claude.ai) hoặc không muốn cài thêm gì trên máy. Chỉ cần thêm địa chỉ kết nối, đăng nhập WebCake là dùng được.",
+      "Phù hợp khi bạn dùng Claude trên web (claude.ai), máy không cài được phần mềm, hoặc dùng theo nhóm.",
     m2Steps: [
-      '<b>Copy địa chỉ kết nối</b> bên dưới:<a class="btn" href="{REMOTE}">{REMOTE} {ARROW}</a>',
-      '<b>Mở ứng dụng AI của bạn:</b><br>• claude.ai: vào <i>Settings → Connectors → Add custom connector</i><br>• Cursor / Claude Code: mở file <code class="inl">.mcp.json</code>',
-      "<b>Dán địa chỉ vừa copy vào</b> — trình duyệt sẽ mở trang đăng nhập WebCake tự động:<pre>{REMOTE}</pre>",
-      "<b>Bấm Thêm</b> (hoặc lưu file). Khi biểu tượng WebCake chuyển màu tím là kết nối thành công. Nói \"Tạo cho tôi trang…\" là bắt đầu được.",
+      '<b>Lấy link riêng của bạn</b> (đã gắn sẵn mã đăng nhập) — mở trang dưới đây rồi bấm <b>Copy</b>:<a class="btn" href="{REMOTE}">Mở {REMOTE_HOST} {ARROW}</a>',
+      '<b>Vào nơi thêm kết nối</b> trong ứng dụng:<br>• claude.ai: <i>Settings → Connectors → Add custom connector</i><br>• Cursor / Claude Code: mở file <code class="inl">.mcp.json</code>',
+      "<b>Dán link</b> bạn vừa copy (trông giống như):<pre>{ENDPOINT}?jwt=&lt;MÃ CỦA BẠN&gt;&amp;session_id=&lt;PHIÊN CỦA BẠN&gt;</pre>",
+      "<b>Bấm Add</b> (hoặc lưu file) rồi chờ một chút. Khi biểu tượng WebCake chuyển xanh là dùng được.",
     ],
     m2Note:
-      "Bạn chỉ cần đăng nhập một lần. Sau đó có thể chuyển đổi giữa các cửa hàng của mình ngay trong cuộc trò chuyện.",
+      "⚠️ Link có chứa mã đăng nhập riêng của bạn — hãy coi như mật khẩu, đừng chia sẻ cho ai.",
     toolsH2: "Trợ lý có thể giúp bạn làm gì",
     toolsSub:
       "Nói chuyện bình thường với trợ lý — bạn không cần biết tên công cụ hay lệnh nào cả.",
@@ -469,17 +472,17 @@ const T: Record<Lang, Strings> = {
       '<b>Reopen your AI app.</b> When you see <code class="inl">webcake-storefront</code> in the tools list, you\'re connected — try saying "Create a product page for…"',
     ],
     m1Note: "Want to set up multiple apps at once — use this command:",
-    m2Tag: "Option ② · In your browser (claude.ai) — nothing to install",
+    m2Tag: "Way ② · Use a link — nothing to install",
     m2Sub:
-      "Best if you use Claude on the web (claude.ai) or prefer not to install anything. Just add the connection address, sign in to WebCake, and you're ready.",
+      "Best if you use Claude on the web (claude.ai), can't install software, or work as a team.",
     m2Steps: [
-      '<b>Copy the connection address</b> below:<a class="btn" href="{REMOTE}">{REMOTE} {ARROW}</a>',
-      '<b>Open your AI app:</b><br>• claude.ai: go to <i>Settings → Connectors → Add custom connector</i><br>• Cursor / Claude Code: open <code class="inl">.mcp.json</code>',
-      "<b>Paste the address you copied</b> — your browser will open the WebCake login page automatically:<pre>{REMOTE}</pre>",
-      "<b>Click Add</b> (or save the file). When the WebCake icon turns purple, you're connected. Just say \"Create a page for…\" to get started.",
+      '<b>Get your personal link</b> (your login is built in) — open the page below and hit <b>Copy</b>:<a class="btn" href="{REMOTE}">Open {REMOTE_HOST} {ARROW}</a>',
+      '<b>Open where you add a connection</b> in your app:<br>• claude.ai: <i>Settings → Connectors → Add custom connector</i><br>• Cursor / Claude Code: open <code class="inl">.mcp.json</code>',
+      "<b>Paste the link</b> you just copied (it looks like):<pre>{ENDPOINT}?jwt=&lt;YOUR TOKEN&gt;&amp;session_id=&lt;YOUR SESSION&gt;</pre>",
+      "<b>Click Add</b> (or save the file) and wait a moment. When the WebCake icon turns green, you're good to go.",
     ],
     m2Note:
-      "You only need to sign in once. After that you can switch between your stores anytime during a conversation.",
+      "⚠️ This link contains your personal login — treat it like a password and don't share it.",
     toolsH2: "What your assistant can help you do",
     toolsSub:
       "Just talk to your assistant naturally — you don't need to know any tool names or commands.",
@@ -601,9 +604,12 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   };
   const jsonLdScript = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
 
+  const remoteHost = MCP_REMOTE_URL.replace("https://", "");
+
   const fill = (s: string) =>
     s
       .replaceAll("{REMOTE}", MCP_REMOTE_URL)
+      .replaceAll("{REMOTE_HOST}", remoteHost)
       .replaceAll("{ENDPOINT}", endpoint)
       .replaceAll("{ARROW}", icon("arrow"));
 
@@ -645,10 +651,10 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   :root{--g:#108B67;--g7:#0c6f52;--ink:#11121e;--mut:#5e5f7a;--bg:#f6f5ff;--card:#ffffff;
     --line:rgba(16,14,40,.09);--shadow:0 1px 2px rgba(16,14,40,.05),0 6px 20px -12px rgba(16,14,40,.18);--code:#0e0d1a;
     --ic-fg:#0c6f52;--btn-hover:#0c6f52;--navbg:rgba(246,245,255,.82)}
-  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#e8e6ff;--mut:#9a98b8;--bg:#0c0b14;--card:#141320;
-    --line:rgba(255,255,255,.07);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7);--code:#07060f;--g7:#5fe0b3;--ic-fg:#8aecc9;--btn-hover:#16a07a;--navbg:rgba(12,11,20,.82)}}
-  :root[data-theme="dark"]{--ink:#e8e6ff;--mut:#9a98b8;--bg:#0c0b14;--card:#141320;
-    --line:rgba(255,255,255,.07);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7);--code:#07060f;--g7:#5fe0b3;--ic-fg:#8aecc9;--btn-hover:#16a07a;--navbg:rgba(12,11,20,.82)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#eaf1ee;--mut:#9fb0a9;--bg:#0f1714;--card:#18211d;
+    --line:rgba(255,255,255,.09);--shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px -16px rgba(0,0,0,.6);--code:#0b120f;--g:#16a37c;--g7:#6fe6c0;--ic-fg:#8aecc9;--btn-hover:#1cba8d;--navbg:rgba(15,23,20,.82)}}
+  :root[data-theme="dark"]{--ink:#eaf1ee;--mut:#9fb0a9;--bg:#0f1714;--card:#18211d;
+    --line:rgba(255,255,255,.09);--shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px -16px rgba(0,0,0,.6);--code:#0b120f;--g:#16a37c;--g7:#6fe6c0;--ic-fg:#8aecc9;--btn-hover:#1cba8d;--navbg:rgba(15,23,20,.82)}
   *{box-sizing:border-box}
   html{scroll-behavior:auto}
   html.smooth{scroll-behavior:smooth}
@@ -704,12 +710,12 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     text-transform:uppercase;letter-spacing:.04em;flex-wrap:wrap}
   .tag .ic{width:30px;height:30px;border-radius:9px}
   .tag .ic .i{width:16px;height:16px}
-  pre{margin:0;background:var(--code);color:#e8e6ff;border-radius:11px;padding:12px 14px;overflow-x:auto;
+  pre{margin:0;background:var(--code);color:#e7efe9;border-radius:11px;padding:12px 14px;overflow-x:auto;
     border:1px solid rgba(255,255,255,.06);font:600 .82rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
   .codewrap{position:relative}
   .codewrap pre{padding-right:46px}
   .copy{position:absolute;top:8px;right:8px;width:30px;height:30px;display:grid;place-items:center;cursor:pointer;
-    border:1px solid rgba(255,255,255,.15);border-radius:8px;background:rgba(255,255,255,.06);color:#cfc9ff;
+    border:1px solid rgba(255,255,255,.15);border-radius:8px;background:rgba(255,255,255,.06);color:#cdd8d2;
     transition:background .15s ease,color .15s ease,border-color .15s ease}
   .copy:hover{background:rgba(255,255,255,.13);color:#fff}
   .copy svg{width:15px;height:15px}
@@ -1022,7 +1028,7 @@ export function ogImageSvg(): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0c0b14"/><stop offset="1" stop-color="#16122a"/>
+      <stop stop-color="#0f1714"/><stop offset="1" stop-color="#0c241c"/>
     </linearGradient>
     <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(960 70) rotate(130) scale(620)" gradientUnits="userSpaceOnUse">
       <stop stop-color="#108B67" stop-opacity="0.40"/><stop offset="1" stop-color="#108B67" stop-opacity="0"/>
@@ -1046,12 +1052,12 @@ export function ogImageSvg(): string {
   <text x="90" y="300" fill="#ffffff" font-size="64" font-weight="800" letter-spacing="-2">Bạn nói điều mình muốn —</text>
   <text x="90" y="380" fill="#ffffff" font-size="64" font-weight="800" letter-spacing="-2">AI dựng trang, kiểm tra,</text>
   <text x="90" y="460" fill="#108B67" font-size="64" font-weight="800" letter-spacing="-2">đăng lên là xong.</text>
-  <text x="90" y="534" fill="#9a98b8" font-size="28" font-weight="500">Không cần kéo-thả · Không cần biết lập trình · Luôn xem trước khi lưu</text>
+  <text x="90" y="534" fill="#9fb0a9" font-size="28" font-weight="500">Không cần kéo-thả · Không cần biết lập trình · Luôn xem trước khi lưu</text>
   <g transform="translate(90 560)">
     <rect width="540" height="52" rx="12" fill="#108B67"/>
     <text x="270" y="34" fill="#ffffff" font-size="22" font-weight="700" text-anchor="middle">store.toolvn.io.vn</text>
   </g>
-  <text x="1110" y="600" fill="#5b5a7a" font-size="22" font-weight="600" text-anchor="end">github.com/vuluu2k/webcake-storefront-mcp</text>
+  <text x="1110" y="600" fill="#5a7269" font-size="22" font-weight="600" text-anchor="end">github.com/vuluu2k/webcake-storefront-mcp</text>
 </svg>`;
 }
 

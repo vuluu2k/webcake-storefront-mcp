@@ -15,7 +15,7 @@ function page(title: string, bodyHtml: string): string {
 <style>
   :root{color-scheme:light dark}
   body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.65;color:#1e293b;background:#f8fafc}
-  @media(prefers-color-scheme:dark){body{color:#e2e8f0;background:#0f172a}}
+  @media(prefers-color-scheme:dark){body{color:#eaf1ee;background:#0f1714}a{color:#6fe6c0}}
   main{max-width:760px;margin:0 auto;padding:48px 24px 80px}
   h1{font-size:1.9rem;margin:0 0 4px}
   h2{font-size:1.2rem;margin:32px 0 8px}

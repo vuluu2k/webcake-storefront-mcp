@@ -5,6 +5,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline/promises";
+import { runLogin } from "./auth/login.js";
 
 const SERVER_KEY = "webcake-storefront";
 
@@ -110,31 +111,69 @@ function applyToIde(ide: string, opts: InstallOpts, launch: LaunchSpec, env: Rec
   return `${ide}: configured (${cfg.path})`;
 }
 
-async function promptMissing(opts: InstallOpts): Promise<void> {
-  if (!process.stdin.isTTY) return;
+/**
+ * Interactive wizard (TTY only): pick environment → authenticate (browser login,
+ * recommended, or paste a token) → pick IDEs. Mirrors webcake-landing-mcp's
+ * installer. Returns whether a browser login completed (token then lives in the
+ * local config db, so it is NOT written into the IDE env block).
+ */
+async function promptInteractive(opts: InstallOpts): Promise<{ loggedIn: boolean }> {
+  let loggedIn = false;
+  if (!process.stdin.isTTY || !process.stdout.isTTY) return { loggedIn };
   const rl = createInterface({ input: process.stdin, output: process.stderr });
   try {
-    if (!opts.ides.length) {
-      const ans = (await rl.question(`IDE(s) [${ALL_IDES.join(", ")}, all]: `)).trim();
-      opts.ides = ans === "all" || ans === "" ? ALL_IDES : ans.split(",").map((s) => s.trim());
+    // 1) Environment — drives which API/app URLs are used (default prod).
+    if (!opts.uninstall && !opts.env && !process.env.WEBCAKE_ENV) {
+      const e = (await rl.question("Environment [prod] / staging / local: ")).trim().toLowerCase();
+      if (e === "staging" || e === "local") opts.env = e;
     }
+    if (opts.env) process.env.WEBCAKE_ENV = opts.env; // so the login flow opens the right app
+
+    // 2) Authentication — browser login (recommended) or paste a token. An explicit
+    //    --token/--jwt or an ambient WEBCAKE_TOKEN skips this entirely.
     if (!opts.uninstall && !opts.token && !process.env.WEBCAKE_TOKEN) {
-      const t = (await rl.question("Token (paste JWT, or leave blank to set later): ")).trim();
-      if (t) opts.token = t;
+      console.error("\nHow do you want to connect your WebCake account?");
+      console.error("  1) Log in via browser   (recommended — opens WebCake, saves a token)");
+      console.error("  2) Paste a token manually");
+      const choice = (await rl.question("Choose [1]: ")).trim() || "1";
+      if (choice === "1") {
+        try {
+          rl.pause();
+          await runLogin([]); // loopback browser flow → saves token + session to local config db
+          loggedIn = true;
+        } catch (e: any) {
+          console.error(
+            `Login didn't complete (${e?.message ?? e}). Paste a token now, or run \`npx -y webcake-storefront-mcp login\` later.`,
+          );
+        }
+      }
+      if (!loggedIn && choice !== "1") {
+        const t = (await rl.question("  Token (paste JWT): ")).trim();
+        if (t) opts.token = t;
+        const s = (await rl.question("  Session id (x-session-id): ")).trim();
+        if (s) opts.sessionId = s;
+      }
     }
-    if (!opts.uninstall && !opts.sessionId && !process.env.WEBCAKE_SESSION_ID) {
-      const s = (await rl.question("Session id (x-session-id, or leave blank to set later): ")).trim();
-      if (s) opts.sessionId = s;
+
+    // 3) IDEs to configure.
+    if (!opts.ides.length) {
+      const ans = (await rl.question(`\nIDE(s) to configure [${ALL_IDES.join(", ")}, all]: `)).trim();
+      opts.ides = ans === "all" || ans === "" ? ALL_IDES : ans.split(",").map((s) => s.trim());
     }
     // Site is chosen at runtime — use the list_my_sites / switch_site tools in chat.
   } finally {
-    rl.close();
+    try {
+      rl.close();
+    } catch {
+      /* already closed */
+    }
   }
+  return { loggedIn };
 }
 
 export async function runInstaller(argv: string[]): Promise<void> {
   const opts = parseArgs(argv);
-  await promptMissing(opts);
+  const { loggedIn } = await promptInteractive(opts);
 
   let ides = opts.ides.length ? opts.ides : ALL_IDES;
   if (ides.includes("all")) ides = ALL_IDES;
@@ -144,5 +183,8 @@ export async function runInstaller(argv: string[]): Promise<void> {
 
   console.error(opts.uninstall ? "Removing webcake-storefront MCP…" : "Configuring webcake-storefront MCP…");
   for (const ide of ides) console.error("  " + applyToIde(ide, opts, launch, env));
-  if (!opts.uninstall) console.error("\nDone. Restart your IDE to pick up the new MCP server.");
+  if (!opts.uninstall) {
+    if (loggedIn) console.error("\n✓ Logged in — your token is saved to the local config (no token written into IDE files).");
+    console.error("\nDone. Restart your IDE to pick up the new MCP server.");
+  }
 }
