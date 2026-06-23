@@ -107,14 +107,14 @@ const META: Record<
 > = {
   vi: {
     title: "WebCake Storefront — Tạo website bán hàng chỉ bằng cách trò chuyện",
-    desc: "Bạn nói ý tưởng, trợ lý AI dựng trang, bạn xem trước rồi đăng lên — không cần kéo-thả hay biết lập trình. Kết nối Claude, Cursor, Windsurf với cửa hàng WebCake/StoreCake của bạn.",
+    desc: "Bạn nói ý tưởng, trợ lý AI dựng cả cửa hàng — tạo sản phẩm, danh mục, trang bán hàng và bài viết có ảnh — rồi xuất bản. Không cần kéo-thả hay biết lập trình. Kết nối Claude, Cursor, Windsurf với cửa hàng WebCake/StoreCake của bạn.",
     keywords:
       "WebCake, StoreCake, storefront, AI, Claude, Cursor, Windsurf, tạo trang bán hàng, website bán hàng, no-code, bán hàng online, tạo trang bằng AI",
     locale: "vi_VN",
   },
   en: {
     title: "WebCake Storefront — Build your online store just by chatting",
-    desc: "Tell your AI assistant what you want, it builds the page on your WebCake store, you review and publish — no dragging blocks, no coding required. Works with Claude, Cursor, Windsurf and more.",
+    desc: "Tell your AI assistant your idea and it builds an entire store — creating products, categories, shop pages and blog posts with images — then publishes. No dragging blocks, no coding. Works with Claude, Cursor, Windsurf and more.",
     keywords:
       "WebCake, StoreCake, storefront, AI, Claude, Cursor, Windsurf, AI page builder, no-code, e-commerce, online store builder",
     locale: "en_US",
@@ -214,13 +214,13 @@ type Strings = {
 
 const T: Record<Lang, Strings> = {
   vi: {
-    sub: "Tạo website bán hàng chỉ bằng cách trò chuyện — không cần biết lập trình",
+    sub: "Dựng cả một cửa hàng online — sản phẩm, danh mục, trang, bài viết — chỉ bằng cách trò chuyện. Không cần biết lập trình.",
     running: "Đang hoạt động",
     leadPre:
-      "Bạn nói điều mình muốn, trợ lý AI dựng trang trên cửa hàng WebCake của bạn, bạn xem trước rồi ",
-    leadGrad: "đăng lên là xong",
+      "Bạn nói ý tưởng, trợ lý AI dựng nguyên một cửa hàng trên WebCake — tạo sản phẩm, danh mục và trang bán hàng có ảnh — bạn xem trước rồi ",
+    leadGrad: "đăng lên là bán",
     leadPost:
-      ". Không kéo-thả, không học gì thêm — chỉ cần nói chuyện như bình thường.",
+      ". Không kéo-thả, không học gì thêm — nhanh hơn thuê người làm web cả tuần.",
     ctaStart: "Bắt đầu ngay",
     ctaStar: "Tặng sao trên GitHub",
     flowH2: "Chỉ 4 bước đơn giản",
@@ -235,67 +235,67 @@ const T: Record<Lang, Strings> = {
     howH2: "Tại sao dùng được ngay, không lo hỏng",
     how: [
       {
-        icon: "layers",
-        t: "Trang đẹp, đúng ý",
-        d: "Trợ lý hiểu đúng bố cục cửa hàng WebCake — banner, lưới sản phẩm, form đặt hàng, đếm ngược — và dựng trang trông chuyên nghiệp ngay từ đầu.",
+        icon: "cart",
+        t: "Dữ liệu thật, không phải shop rỗng",
+        d: "Trợ lý tạo luôn sản phẩm, danh mục và bài viết kèm ảnh — nên lưới sản phẩm, danh mục, blog hiện nội dung thật ngay, trông như một shop đang chạy.",
       },
       {
         icon: "check2",
-        t: "Không lo hỏng layout",
-        d: "Trước khi lưu, trang được kiểm tra tự động: bố cục có đúng không, các phần có khớp nhau không. Nếu có gì sai, trợ lý sẽ tự sửa.",
+        t: "Chuẩn trên mọi thiết bị",
+        d: "Trang dựng đúng mô hình lưới của WebCake và tự tối ưu cho desktop, laptop, tablet và điện thoại — không lo vỡ layout.",
       },
       {
         icon: "shield",
         t: "An toàn — luôn xem trước khi lưu",
-        d: "Mọi thay đổi đều được hiển thị để bạn xem trước. Chưa xác nhận thì cửa hàng chưa bị đụng tới — bạn hoàn toàn kiểm soát.",
+        d: "Mọi thay đổi đều hiển thị để bạn xem trước. Chưa xác nhận thì cửa hàng chưa bị đụng tới — bạn hoàn toàn kiểm soát.",
       },
       {
         icon: "edit",
-        t: "Sửa nhẹ nhàng, đúng chỗ",
-        d: "Nói \"đổi nút sang màu tím\" hay \"thêm phần đánh giá\" — chỉ đúng chỗ đó được sửa, mọi thứ còn lại giữ nguyên.",
+        t: "Chỉnh đúng chỗ, xuất bản tức thì",
+        d: "Nói \"đổi nút sang tím\" hay \"thêm phần đánh giá\" — chỉ chỗ đó đổi. Ưng rồi bảo \"đăng lên\" là cửa hàng live ngay.",
       },
     ],
-    buildH2: "Bạn có thể tạo những trang nào",
+    buildH2: "Bạn dựng được cả một cửa hàng",
     uses: [
       {
+        icon: "server",
+        t: "Cả cửa hàng từ con số 0",
+        e: '"Tạo cho tôi cửa hàng thời trang mới — vài danh mục, ít sản phẩm có ảnh và giá, rồi dựng trang chủ."',
+      },
+      {
         icon: "cart",
-        t: "Trang bán 1 sản phẩm",
-        e: '"Tạo trang cho serum dưỡng da của tôi — có ảnh gallery, giá bán và nút đặt hàng."',
+        t: "Sản phẩm & danh mục có ảnh",
+        e: '"Thêm 6 sản phẩm áo thun vào danh mục \"Áo thun\" — kèm ảnh, giá và mô tả."',
       },
       {
         icon: "window",
-        t: "Trang chủ cửa hàng",
-        e: '"Tạo trang chủ — banner giới thiệu, các sản phẩm nổi bật, ô đăng ký nhận tin."',
+        t: "Trang chủ bán hàng",
+        e: '"Tạo trang chủ — banner, lưới danh mục, sản phẩm nổi bật và bài viết mới."',
+      },
+      {
+        icon: "layers",
+        t: "Bộ trang bán hàng đầy đủ",
+        e: '"Dựng đủ bộ: trang sản phẩm, danh mục, giỏ hàng, thanh toán và cảm ơn."',
       },
       {
         icon: "flame",
         t: "Trang flash sale",
-        e: '"Tạo trang flash sale — đồng hồ đếm ngược, danh sách sản phẩm giảm giá, nút mua dính cố định."',
-      },
-      {
-        icon: "ticket",
-        t: "Trang sự kiện / webinar",
-        e: '"Tạo trang đăng ký sự kiện — thời gian, lịch trình, form đăng ký tham dự."',
-      },
-      {
-        icon: "mail",
-        t: "Thiệp mời",
-        e: '"Tạo thiệp cưới online — tên, ngày tháng, địa chỉ, form xác nhận tham dự."',
+        e: '"Tạo trang flash sale — đồng hồ đếm ngược, sản phẩm giảm giá, nút mua dính cố định."',
       },
       {
         icon: "newspaper",
-        t: "Trang blog / nội dung",
-        e: '"Tạo trang blog với các bài viết nổi bật và ô đăng ký nhận bản tin."',
+        t: "Blog & bài viết",
+        e: '"Tạo chuyên mục blog và 3 bài viết có ảnh bìa, rồi gắn vào trang blog."',
       },
       {
-        icon: "link",
-        t: "Link-in-bio",
-        e: '"Tạo trang link-in-bio — ảnh đại diện, giới thiệu ngắn, 5 nút liên kết, mạng xã hội."',
+        icon: "shield",
+        t: "Trang thành viên",
+        e: '"Tạo trang đăng nhập, đăng ký và lịch sử đơn hàng cho khách."',
       },
       {
         icon: "wand",
-        t: "Bất cứ trang nào bạn muốn",
-        e: '"…rồi \"đổi màu nút\" hay \"thêm phần hỏi đáp\" — trợ lý sửa đúng chỗ đó thôi."',
+        t: "Rồi chỉnh & đăng lên",
+        e: '"…\"đổi màu nút\", \"thêm phần hỏi đáp\" rồi \"đăng lên cửa hàng\" — xong."',
       },
     ],
     connectH2: "Kết nối trợ lý AI với cửa hàng của bạn",
@@ -336,8 +336,8 @@ const T: Record<Lang, Strings> = {
       },
       {
         icon: "cart",
-        t: "Quản lý sản phẩm & đơn hàng",
-        d: "Xem sản phẩm, đơn hàng, bộ sưu tập, khuyến mãi, combo và thông tin khách hàng.",
+        t: "Tạo & quản lý sản phẩm",
+        d: "Tạo sản phẩm, danh mục, combo, khuyến mãi (kèm ảnh); xem đơn hàng, bộ sưu tập và thông tin khách hàng.",
       },
       {
         icon: "newspaper",
@@ -362,9 +362,9 @@ const T: Record<Lang, Strings> = {
     ],
     promptH2: "Ví dụ — nói với trợ lý như thế này",
     promptSub:
-      "Bạn có thể nói tự nhiên bằng tiếng Việt. Ví dụ:",
+      "Bạn có thể nói tự nhiên bằng tiếng Việt. Ví dụ, dựng cả cửa hàng:",
     promptEx:
-      "Tạo cho tôi một trang sản phẩm trên WebCake cho thương hiệu [tên thương hiệu].\nTrang cần có: ảnh sản phẩm lớn, tên và giá, mô tả ngắn, nút \"Mua ngay\".\nKiểm tra kỹ trước khi lưu, rồi xuất bản lên cửa hàng của tôi.",
+      "Tạo cho tôi một cửa hàng WebCake mới cho thương hiệu [tên thương hiệu].\nTạo 2-3 danh mục, mỗi danh mục vài sản phẩm có ảnh, giá và mô tả.\nDựng trang chủ: banner, lưới danh mục, sản phẩm nổi bật và mục bài viết mới.\nThêm 1 chuyên mục blog với 1 bài viết.\nKiểm tra kỹ rồi xuất bản lên cửa hàng giúp tôi.",
     faqH2: "Câu hỏi thường gặp",
     newH2: "Có gì mới",
     newBadge: "MỚI",
@@ -386,13 +386,13 @@ const T: Record<Lang, Strings> = {
     ],
   },
   en: {
-    sub: "Build your online store just by chatting — no coding or drag-and-drop needed",
+    sub: "Build a whole online store — products, categories, pages, blog posts — just by chatting. No coding required.",
     running: "Up and running",
     leadPre:
-      "You describe what you want, your AI assistant builds the page on your WebCake store, you review it and ",
+      "You describe your idea, your AI assistant builds an entire store on WebCake — creating products, categories and shop pages with images — you preview it and ",
     leadGrad: "publish it — done",
     leadPost:
-      ". No dragging blocks, nothing to learn — just talk like you normally would.",
+      ". No dragging blocks, nothing to learn — faster than waiting weeks for a web agency.",
     ctaStart: "Get started",
     ctaStar: "Star on GitHub",
     flowH2: "Just 4 simple steps",
@@ -407,14 +407,14 @@ const T: Record<Lang, Strings> = {
     howH2: "Why you can trust it straight away",
     how: [
       {
-        icon: "layers",
-        t: "Pages that look great",
-        d: "The assistant understands WebCake's store layout — banners, product grids, order forms, countdowns — and builds a professional-looking page right from your first message.",
+        icon: "cart",
+        t: "Real data, not an empty shell",
+        d: "The assistant also creates products, categories and blog posts with images — so product grids, category tiles and the blog show real content immediately, like a store that's already trading.",
       },
       {
         icon: "check2",
-        t: "No broken layouts",
-        d: "Before saving, the page is automatically checked: is the layout correct, do the sections fit together? If anything is off, the assistant fixes it itself.",
+        t: "Looks right on every device",
+        d: "Pages are built on WebCake's real grid model and auto-tuned for desktop, laptop, tablet and phone — no broken layouts.",
       },
       {
         icon: "shield",
@@ -423,51 +423,51 @@ const T: Record<Lang, Strings> = {
       },
       {
         icon: "edit",
-        t: "Easy, precise edits",
-        d: "Say \"change the button to purple\" or \"add a reviews section\" — only that exact spot is updated, everything else stays as it was.",
+        t: "Precise edits, instant publish",
+        d: "Say \"make the button purple\" or \"add a reviews section\" — only that spot changes. Happy? Say \"publish\" and your store is live.",
       },
     ],
-    buildH2: "What you can create",
+    buildH2: "You build a whole store",
     uses: [
       {
+        icon: "server",
+        t: "A whole store from scratch",
+        e: '"Build me a new fashion store — a few categories, some products with images and prices, then a homepage."',
+      },
+      {
         icon: "cart",
-        t: "Single product page",
-        e: '"Create a page for my skincare serum — photo gallery, price, and an order button."',
+        t: "Products & categories with images",
+        e: '"Add 6 t-shirt products to the \"T-shirts\" category — with images, prices and descriptions."',
       },
       {
         icon: "window",
         t: "Store homepage",
-        e: '"Create a homepage — intro banner, featured products, newsletter sign-up."',
+        e: '"Create a homepage — banner, category grid, featured products and latest posts."',
+      },
+      {
+        icon: "layers",
+        t: "A full set of shop pages",
+        e: '"Build the full set: product page, category, cart, checkout and thank-you."',
       },
       {
         icon: "flame",
         t: "Flash sale page",
-        e: '"Create a flash sale page — big countdown timer, discounted products, sticky buy button."',
-      },
-      {
-        icon: "ticket",
-        t: "Event / webinar page",
-        e: '"Create an event sign-up page — date, schedule, registration form."',
-      },
-      {
-        icon: "mail",
-        t: "Invitation",
-        e: '"Create a wedding invite — names, date, location, RSVP form."',
+        e: '"Create a flash sale page — countdown timer, discounted products, sticky buy button."',
       },
       {
         icon: "newspaper",
-        t: "Blog / content page",
-        e: '"Create a blog page with featured posts and a newsletter subscribe box."',
+        t: "Blog & articles",
+        e: '"Create a blog category and 3 articles with cover images, then wire up the blog page."',
       },
       {
-        icon: "link",
-        t: "Link-in-bio",
-        e: '"Create a link-in-bio — profile photo, short bio, 5 link buttons, socials."',
+        icon: "shield",
+        t: "Member pages",
+        e: '"Create login, register and order-history pages for customers."',
       },
       {
         icon: "wand",
-        t: "Anything you can think of",
-        e: '"…then \"change the button colour\" or \"add an FAQ section\" — just that part gets updated."',
+        t: "Then tweak & publish",
+        e: '"…\"change the button colour\", \"add an FAQ\", then \"publish to my store\" — done."',
       },
     ],
     connectH2: "Connect your AI assistant to your store",
@@ -508,8 +508,8 @@ const T: Record<Lang, Strings> = {
       },
       {
         icon: "cart",
-        t: "Products & orders",
-        d: "View products, orders, collections, promotions, bundles, and customer information.",
+        t: "Create & manage products",
+        d: "Create products, categories, bundles and promotions (with images); view orders, collections and customer info.",
       },
       {
         icon: "newspaper",
@@ -533,9 +533,9 @@ const T: Record<Lang, Strings> = {
       },
     ],
     promptH2: "Example — here's what to say to your assistant",
-    promptSub: "You can speak naturally. For example:",
+    promptSub: "You can speak naturally. For example, build a whole store:",
     promptEx:
-      "Create a product page on my WebCake store for [brand name].\nThe page should have: a large product image, name and price, a short description, and a \"Buy Now\" button.\nPlease check everything looks right before saving, then publish it to my store.",
+      "Create a new WebCake store for [brand name].\nCreate 2-3 categories, each with a few products that have images, prices and descriptions.\nBuild the homepage: banner, category grid, featured products and a latest-posts section.\nAdd a blog category with one article.\nCheck everything, then publish it to my store.",
     faqH2: "Frequently asked questions",
     newH2: "What's new",
     newBadge: "NEW",
@@ -698,22 +698,36 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
 <meta name="twitter:image:alt" content="${m.title}">
 <script type="application/ld+json">${jsonLdScript}</script>
 <style>
-  :root{--g:#108B67;--g7:#0c6f52;--ink:#11121e;--mut:#5e5f7a;--bg:#f6f5ff;--card:#ffffff;
-    --line:rgba(16,14,40,.09);--shadow:0 1px 2px rgba(16,14,40,.05),0 6px 20px -12px rgba(16,14,40,.18);--code:#0e0d1a;
-    --ic-fg:#0c6f52;--btn-hover:#0c6f52;--navbg:rgba(246,245,255,.82)}
-  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#eaf1ee;--mut:#9fb0a9;--bg:#0f1714;--card:#18211d;
-    --line:rgba(255,255,255,.09);--shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px -16px rgba(0,0,0,.6);--code:#0b120f;--g:#16a37c;--g7:#6fe6c0;--ic-fg:#8aecc9;--btn-hover:#1cba8d;--navbg:rgba(15,23,20,.82)}}
-  :root[data-theme="dark"]{--ink:#eaf1ee;--mut:#9fb0a9;--bg:#0f1714;--card:#18211d;
-    --line:rgba(255,255,255,.09);--shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px -16px rgba(0,0,0,.6);--code:#0b120f;--g:#16a37c;--g7:#6fe6c0;--ic-fg:#8aecc9;--btn-hover:#1cba8d;--navbg:rgba(15,23,20,.82)}
+  :root{--g:#108B67;--g7:#0c6f52;--ink:#13211c;--mut:#5a6b64;--bg:#f6faf8;--bg2:#e9f2ec;--card:#ffffff;
+    --line:rgba(16,48,38,.10);--shadow:0 1px 2px rgba(16,48,38,.05),0 6px 20px -12px rgba(16,48,38,.18);--code:#0c1a15;
+    --ic-fg:#0c6f52;--btn-hover:#0c6f52;--navbg:rgba(246,250,248,.82)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#eaf1ee;--mut:#9fb0a9;--bg:#0d1714;--bg2:#091310;--card:#161f1b;
+    --line:rgba(255,255,255,.09);--shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px -16px rgba(0,0,0,.6);--code:#0b120f;--g:#16a37c;--g7:#6fe6c0;--ic-fg:#8aecc9;--btn-hover:#1cba8d;--navbg:rgba(13,23,20,.82)}}
+  :root[data-theme="dark"]{--ink:#eaf1ee;--mut:#9fb0a9;--bg:#0d1714;--bg2:#091310;--card:#161f1b;
+    --line:rgba(255,255,255,.09);--shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px -16px rgba(0,0,0,.6);--code:#0b120f;--g:#16a37c;--g7:#6fe6c0;--ic-fg:#8aecc9;--btn-hover:#1cba8d;--navbg:rgba(13,23,20,.82)}
   *{box-sizing:border-box}
   html{scroll-behavior:auto}
   html.smooth{scroll-behavior:smooth}
   body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);
-    background:var(--bg);line-height:1.62;overflow-x:hidden}
+    background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);background-attachment:fixed;
+    min-height:100vh;line-height:1.62;overflow-x:hidden}
+  /* layered "aurora" mesh of soft teal glows */
+  body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+    background:
+      radial-gradient(58% 46% at 50% -8%,rgba(16,139,103,.12),transparent 70%),
+      radial-gradient(40% 38% at 100% 4%,rgba(20,168,124,.09),transparent 70%),
+      radial-gradient(46% 46% at 0% 100%,rgba(16,139,103,.08),transparent 70%)}
+  /* faint grid texture, masked so it only whispers near the top */
+  body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.55;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:46px 46px;
+    -webkit-mask:radial-gradient(120% 70% at 50% 0%,#000 0%,transparent 62%);
+    mask:radial-gradient(120% 70% at 50% 0%,#000 0%,transparent 62%)}
   .blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
-  .blobs b{position:absolute;border-radius:50%;filter:blur(90px);opacity:.16;will-change:transform}
+  .blobs b{position:absolute;border-radius:50%;filter:blur(100px);opacity:.13;will-change:transform}
   .blobs b:nth-child(1){width:560px;height:560px;right:-160px;top:-180px;background:radial-gradient(circle,#108B67,transparent 70%);animation:drift1 40s ease-in-out infinite}
   .blobs b:nth-child(2){width:440px;height:440px;left:-160px;bottom:-160px;background:radial-gradient(circle,#14a87c,transparent 70%);animation:drift2 48s ease-in-out infinite}
+  .blobs b:nth-child(3){width:380px;height:380px;left:46%;top:34%;background:radial-gradient(circle,#3fcf9e,transparent 70%);opacity:.08;animation:drift1 56s ease-in-out infinite}
   @keyframes drift1{50%{transform:translate(-50px,60px)}}
   @keyframes drift2{50%{transform:translate(40px,-50px)}}
   .wrap{max-width:900px;margin:0 auto;padding:48px 20px 72px}
@@ -907,7 +921,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   }
 </style></head>
 <body>
-<div class="blobs"><b></b><b></b></div>
+<div class="blobs"><b></b><b></b><b></b></div>
 <div class="wrap">
 
   <header class="hero-in">
