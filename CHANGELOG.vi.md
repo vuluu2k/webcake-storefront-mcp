@@ -5,6 +5,13 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.3] - 2026-06-23
+
+### Changed
+- Trình hướng dẫn tương tác của lệnh `install` nay chạy theo 3 bước: chọn môi trường (`prod` / `staging` / `local`), xác thực, rồi cấu hình IDE.
+- Trong bước xác thực khi chạy `install`, người dùng có thể chọn đăng nhập qua trình duyệt (được đề xuất — thông tin đăng nhập lưu vào file config cục bộ, không ghi vào khối biến môi trường của IDE) hoặc dán token + session ID thủ công như trước.
+- Trang landing của lệnh `serve`, mục "Cách ②", nay hướng người dùng đến `webcake.io/mcp-remote-store` để lấy link kết nối cá nhân đã gắn sẵn mã đăng nhập thay vì hiển thị URL endpoint MCP tĩnh, đồng thời bổ sung cảnh báo bảo mật rằng link cá nhân này chứa thông tin đăng nhập.
+
 ## [1.1.2] - 2026-06-23
 
 ### Fixed
