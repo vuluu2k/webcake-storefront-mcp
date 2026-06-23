@@ -5,6 +5,18 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.0] - 2026-06-23
+
+### Added
+- Chế độ `serve` (remote Streamable-HTTP) nay tích hợp sẵn một Authorization Server OAuth 2.1 đầy đủ tại các endpoint `/authorize`, `/token`, `/revoke`, `/register` và `/.well-known/oauth-authorization-server`, cho phép Claude Connectors Directory xác thực qua luồng đồng ý PKCE trên trình duyệt mà không cần chia sẻ thông tin đăng nhập trước.
+- Lệnh `serve` nay phục vụ trang landing marketing tại `/` (HTML cho trình duyệt và các crawler đã biết, JSON cho client lập trình) cùng favicon tại `/favicon.svg` và `/favicon.ico`.
+- Trang Privacy Policy tự host tại `/privacy` (cũng là `/privacy-policy`) và trang Terms of Service tại `/terms` (cũng là `/tos`), phù hợp để đăng ký vào Claude Connectors Directory.
+- Endpoint `/health` được thêm vào chế độ `serve` (trả về JSON cho các probe kiểm tra uptime, trả về HTML landing cho trình duyệt).
+
+### Changed
+- Các request đến `/mcp` không có thông tin xác thực trong chế độ `serve` nay nhận phản hồi `401 WWW-Authenticate` theo mặc định, kích hoạt luồng OAuth trên các client hỗ trợ như claude.ai; đặt `WEBCAKE_OAUTH=0` để tắt cơ chế này và giữ lại hành vi xác thực qua header/query-param như trước.
+- URI chuyển hướng OAuth nay được xây dựng dựa trên các header `X-Forwarded-Proto` và `X-Forwarded-Host` khi có mặt, cho phép hoạt động đúng khi triển khai sau một reverse proxy.
+
 ## [1.0.3] - 2026-06-23
 
 ### Added
