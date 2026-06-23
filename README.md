@@ -1,1166 +1,200 @@
-**🌐 [Tiếng Việt](README_VI.md)** | English
+# 🏪 WebCake Storefront MCP
 
-# WebCake Storefront MCP Server
+**English** · [Tiếng Việt](./README.vi.md)
 
-MCP server for the WebCake/StoreCake storefront builder — lets AI agents read your site data and build pages.
+[![npm version](https://img.shields.io/npm/v/webcake-storefront-mcp?color=cb3837&logo=npm)](https://www.npmjs.com/package/webcake-storefront-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/webcake-storefront-mcp?color=cb3837&logo=npm)](https://www.npmjs.com/package/webcake-storefront-mcp)
+[![GitHub stars](https://img.shields.io/github/stars/vuluu2k/webcake-storefront-mcp?style=social)](https://github.com/vuluu2k/webcake-storefront-mcp/stargazers)
+[![MCP](https://img.shields.io/badge/Model_Context_Protocol-server-6E56CF)](https://modelcontextprotocol.io)
 
-## Install
+> **Describe a store page in plain words — your AI builds it, validates it, and publishes it to your WebCake storefront.**
 
-Published to npm, so there is nothing to clone — everything runs through `npx`.
+> ⭐ **If this saves you an afternoon of dragging blocks around, [give it a star](https://github.com/vuluu2k/webcake-storefront-mcp) — every star keeps a solo project alive.**
 
-### Configure your IDE automatically (recommended)
+> *"Build a page for my coffee shop — a hero with a Shop Now button, a product grid, and an order form. Save it and publish."*
+
+…and a real, **editable** page appears on your WebCake/StoreCake site. No dragging blocks, no learning the schema, no hand-writing JSON.
+
+---
+
+## 🧩 How it works
+
+This server is the **bridge** between your AI assistant and your storefront. The AI never *guesses* what a
+page looks like — it asks this MCP, which knows the entire BuilderX component model, validates the result, and saves it.
+
+```text
+   You              AI assistant          webcake-storefront MCP          WebCake / StoreCake
+  ┌──────┐  prompt  ┌────────────┐  tools ┌───────────────────────┐  API ┌──────────┐
+  │ idea │ ───────► │  Claude /  │ ─────► │ • knows the BuilderX  │ ───► │  a real  │
+  │      │          │  Cursor /  │        │   component model     │      │ editable │
+  │      │ ◄─────── │  Windsurf  │ ◄───── │ • builds + validates  │ ◄─── │  page on │
+  └──────┘ live URL └────────────┘ result │ • saves + publishes   │      │ your site│
+                                          └───────────────────────┘      └──────────┘
+```
+
+1. **You ask** in plain language — goal, brand, sections, products, form fields.
+2. **The AI learns the model** from the MCP: the element catalog, the CSS-grid layout, the breakpoints — so it builds a *real* storefront page, not a guess.
+3. **It assembles + validates** the `{ sections: [...] }` page source. `validate_page` catches duplicate ids, broken grids, and form fields without a name **before** anything is saved.
+4. **It saves** to your site — dry-run preview first, then for real — and `publish_site` makes it live.
+5. **You get the preview URL** — open it, tweak in the editor, done.
+
+### Why it's reliable
+
+| | |
+|---|---|
+| 📚 **Knows the real model** | Serves 130+ BuilderX component types (text, image, button, form, product grid, cart, countdown, gallery…) ported **straight from the builder's own factory** — the exact same shapes the editor produces. |
+| ✅ **Validates before saving** | Structural checks (unique ids, valid grid, form fields with names, working event targets) so the page isn't broken when it lands. |
+| 🛡️ **Safe by default** | Every write is **dry-run first** — preview the change, nothing touches your site until you confirm. |
+| ✏️ **Edits surgically** | Ask for one change ("make the CTA green") and it edits *only* that element — every other id, style, and block stays exactly as it was. |
+
+> 💡 Selling **COD or online**? It speaks the full commerce model too — products, variations, cart, orders, promotions, combos.
+
+---
+
+## ✨ What you can build
+
+One sentence to your AI → a finished, **editable** storefront page:
+
+| | Just say… |
+|---|---|
+| 🛒 **Product page** | *"A one-product page for my skincare serum — gallery, price, an order form with cart."* |
+| 🏬 **Storefront home** | *"A homepage — hero banner, featured product grid, a newsletter form."* |
+| ⚡ **Flash sale** | *"A flash-sale page — big countdown, discounted product grid, a sticky Buy button."* |
+| 🎟️ **Event / webinar** | *"A registration page — countdown, agenda, a sign-up form."* |
+| 💌 **Invitation** | *"A wedding invite — names, date, a map, an RSVP form."* |
+| 📰 **Blog / content** | *"A blog index with featured posts and a subscribe box."* |
+| 🔗 **Link-in-bio** | *"A link-in-bio — avatar, short bio, 5 link buttons, socials."* |
+
+…then **"make the CTA green"** or **"add a 4th feature"** and it edits *only* that block.
+
+> 🤖 Works in **Claude Desktop, Claude Code, Cursor, Windsurf, VS Code**, or any MCP-capable client — and the **build guide + element catalog tools need zero backend calls**, so you can explore the model before pasting a token.
+
+---
+
+## Under the hood
+
+An MCP (Model Context Protocol) server that teaches AI agents the **WebCake/StoreCake storefront builder
+(BuilderX) component model** and connects them to the backend. The AI produces the full `{ sections: [...] }`
+page source; `build_page` creates the page and saves it, and `publish_site` makes the whole site live.
+
+Beyond page authoring, it exposes your real store: pages & custom code, products, orders, collections,
+blog articles, promotions, combos, themes, customers, and automation — **~101 tools** in total.
+
+| Method | Best for | Auth |
+|--------|----------|------|
+| **npx (local)** — runs on your machine | Personal daily use, full control | browser `login`, or a token + session |
+| **Remote (`serve`)** — self-host Streamable-HTTP | Teams, the claude.ai dialog, always-on | `?jwt=` link / `x-webcake-jwt` header |
+
+The **build + catalog tools** (`get_build_guide`, `list_elements`, `get_element`, `new_section`,
+`validate_page`) work with **zero config**; everything that reads or writes your site needs a token + session.
+
+---
+
+## 🚀 Get connected
+
+Pick **one**. Both hand your AI tool the full storefront toolkit. No coding.
+
+### ① `npx` — runs on your machine (recommended)
+
+Zero install, always the latest version, needs Node.js 18+. **One line** configures your IDE:
 
 ```bash
+# Interactive — pick your IDE(s) and paste your credentials
 npx -y webcake-storefront-mcp install
+
+# Non-interactive — configure every supported IDE at once
+npx -y webcake-storefront-mcp install --ide all --token <token> --session <session-id> --site <site-id>
+
+# Remove the server from every IDE config
+npx -y webcake-storefront-mcp uninstall
 ```
 
-Interactive: pick your IDE(s) and paste your credentials. Or non-interactive:
+Targets: `claude-desktop`, `claude-code`, `cursor`, `windsurf`, `vscode`, or `all`.
+Just want to run the server (configure by hand)? `npx -y webcake-storefront-mcp`.
 
-```bash
-npx -y webcake-storefront-mcp install \
-  --ide all \
-  --token YOUR_TOKEN \
-  --session YOUR_SESSION_ID \
-  --site YOUR_SITE_ID
-```
-
-Supported IDEs: `claude-desktop`, `claude-code`, `cursor`, `windsurf`, `vscode`, or `all`.
-Uninstall with `npx -y webcake-storefront-mcp uninstall`.
-
-### Or connect via the browser (no token copy/paste)
+### ② Browser login — no token copy/paste
 
 ```bash
 npx -y webcake-storefront-mcp login
 ```
 
-This opens the builder's connect page; approve it and your token + session are saved to a local config db and picked up automatically.
+Opens the builder's **connect page**; click *Connect* and your token + session are saved locally and picked up automatically.
 
-### Manual config (`.mcp.json`)
-
-```json
-{
-  "mcpServers": {
-    "webcake-storefront": {
-      "command": "npx",
-      "args": ["-y", "webcake-storefront-mcp"],
-      "env": {
-        "WEBCAKE_TOKEN": "<your-token>",
-        "WEBCAKE_SESSION_ID": "<your-session-id>",
-        "WEBCAKE_SITE_ID": "<your-site-id>"
-      }
-    }
-  }
-}
-```
-
-### Remote server (Streamable-HTTP)
+### Remote URL — self-hosted, nothing per-client to install
 
 ```bash
 npx -y webcake-storefront-mcp serve --port 8787
-# MCP endpoint: http://localhost:8787/mcp?jwt=<token>&site_id=<id>
 ```
 
-## Environment Variables
+Then point any client at `http://<host>:8787/mcp?jwt=<TOKEN>&site_id=<SITE_ID>` (clients that support
+headers can send `x-webcake-jwt` / `x-webcake-site-id` instead). Server-side secrets like `PEXELS_API_KEY`
+live on the host — handy on a VPS.
 
-Required: `WEBCAKE_TOKEN` (Bearer JWT), `WEBCAKE_SESSION_ID` (sent as `x-session-id`), `WEBCAKE_SITE_ID`.
+> ⚠️ A `?jwt=` link contains your personal token — treat it like a password and use **HTTPS** in production.
 
-Endpoints come from a named environment, so you don't set base URLs by hand:
+---
 
-| `WEBCAKE_ENV` / `--env` | api | app (login) | preview |
+## ⚙️ Configuration
+
+Only three values are required: **`WEBCAKE_TOKEN`** (Bearer JWT), **`WEBCAKE_SESSION_ID`** (sent as
+`x-session-id`), and **`WEBCAKE_SITE_ID`**.
+
+Base URLs come from a **named environment** — set `WEBCAKE_ENV` (or `--env`) and you never type a URL:
+
+| `WEBCAKE_ENV` | api | app (login) | preview |
 |---|---|---|---|
 | `local` | `http://localhost:24679` | `http://localhost:5173` | `demo.localhost:24679/<siteId>` |
 | `staging` | `https://api.staging.storecake.io` | `https://staging.webcake.io` | `staging2.webcake.me/<siteId>` |
-| `prod` (default) | `https://api.storefront.webcake.io` | `https://webcake.io` | `<site_slug>.webcake.me` |
+| **`prod`** (default) | `https://api.storefront.webcake.io` | `https://webcake.io` | `<site_slug>.webcake.me` |
 
-Override a preset with `WEBCAKE_API_URL` / `WEBCAKE_APP_URL`. Optional, configured server-side (e.g. on the VPS running `serve`): `PEXELS_API_KEY` (search_images), `MONGO_URI` / `MONGO_DB` / `MONGO_COLLECTION` (image-alt cache).
+Override a preset with `WEBCAKE_API_URL` / `WEBCAKE_APP_URL`. Optional, configured server-side:
+`PEXELS_API_KEY` (search_images), `MONGO_URI` (image-alt cache). Token / session / site can also be set
+in chat via `update_auth` and `switch_site` — saved to a local SQLite db at `~/.webcake-storefront-mcp/`.
 
-Token / session / site can also be set later from chat via the `update_auth` and `switch_site` tools — values are saved to a local SQLite db at `~/.webcake-storefront-mcp/` and restored next session. The CMS admin token + CMS API key (needed for HTTP-function tools) are fetched automatically.
-
-### How to get `WEBCAKE_TOKEN` and `WEBCAKE_SESSION_ID`
+<details>
+<summary><b>How to get your token + session</b></summary>
 
 1. Open the WebCake builder and log in.
-2. Open DevTools (`F12`), go to the **Network** tab, and click any API request.
-3. In **Request Headers**: `Authorization: Bearer ...` → `WEBCAKE_TOKEN`; `x-session-id: ...` → `WEBCAKE_SESSION_ID`.
-4. `WEBCAKE_SITE_ID` is in the builder URL, or use the `list_my_sites` tool to list your sites.
+2. Open DevTools (`F12`) → **Network** tab → click any API request.
+3. In **Request Headers**: `Authorization: Bearer …` → `WEBCAKE_TOKEN`; `x-session-id: …` → `WEBCAKE_SESSION_ID`.
+4. `WEBCAKE_SITE_ID` is in the builder URL, or use the `list_my_sites` tool.
+
+</details>
 
 ---
 
-## Usage Examples
+## 🧰 The tools at a glance
 
-### Example 1: Write backend HTTP function + frontend integration
+~101 tools. The headline group **builds pages**; the rest read and edit your live store.
 
-**Prompt:**
-```
-Create a newsletter subscription feature. Backend saves email to "subscribers" collection,
-frontend calls the backend function.
-```
+| Group | Tools | Needs |
+|-------|-------|-------|
+| **Build a page** | `get_build_guide` · `list_elements` · `get_element` · `new_element` · `new_section` · `new_page_skeleton` · `validate_page` · `build_page` · `add_section` | catalog tools: nothing |
+| **Media & ingest** | `search_images` (Pexels) · `upload_image` (CDN) · `ingest_html` · `ingest_url` (recreate a reference page) | — |
+| **Pages & code** | `list_pages` · `get_page_source` · `search_page_elements` · `get_page_element` · `update_page_element(s)` · `create_page` · `update_page` · `update_page_source` · custom CSS/JS · page contents · global sections · `publish_site` | token + session |
+| **Commerce** | products · orders · collections · promotions · combos | token + session |
+| **Content & store** | blog articles · themes / site style · apps · customers · `send_mail` | token + session |
+| **Backend code** | HTTP-function CRUD (`get_http_function`, `edit_http_function`, `run_function`, `debug_function`…) | token + session |
+| **Context** | `get_current_context` · `list_my_sites` · `switch_site` · `update_auth` · `toggle_confirm_mode` | token |
 
-**AI agent will automatically:**
+Every write **defaults to `dry_run=true`** — it previews the exact change and only touches your site when you re-run with `dry_run=false`.
 
-**Step 1** — Call `get_http_function` to read current code
+## 💬 Suggested prompt
 
-**Step 2** — Call `update_http_function` to add new functions:
-
-```javascript
-import { DBConnection } from 'webcake-data';
-const db = new DBConnection();
-const Subscriber = db.model('subscribers');
-
-export const post_Subscribe = async (request) => {
-  const { email } = request.params;
-  if (!email) return { error: 'Email is required' };
-
-  const exists = await Subscriber.exists({ email });
-  if (exists) return { error: 'Already subscribed' };
-
-  await Subscriber.create({ email, subscribed_at: new Date() });
-  return { success: true, message: 'Subscribed successfully!' };
-}
-
-export const get_Subscribers = async (request) => {
-  const { page = 1, limit = 20 } = request.params;
-  const data = await Subscriber.find()
-    .sort({ subscribed_at: -1 })
-    .limit(limit)
-    .skip((page - 1) * limit)
-    .exec();
-  const total = await Subscriber.countDocuments();
-  return { data, total, page };
-}
-```
-
-**Step 3** — Call `update_site_custom_code` to add frontend code:
-
-`code_before_head`:
-```html
-<script src="https://cdn.jsdelivr.net/npm/webcake-fn/dist/webcake-fn.umd.min.js"></script>
-```
-
-`code_custom_javascript`:
-```javascript
-document.getElementById('newsletter-form')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const email = document.getElementById('newsletter-email').value;
-  try {
-    const result = await api.post_Subscribe({ email });
-    if (result.success) {
-      window.useNotification('success', { title: result.message });
-    } else {
-      window.useNotification('error', { title: result.error });
-    }
-  } catch (err) {
-    window.useNotification('error', { title: 'Error', message: err.message });
-  }
-});
-```
+> Build me a WebCake storefront page for &lt;brand/offer&gt;. Use the webcake-storefront MCP:
+> call `get_build_guide`, `list_elements`, build the sections with `new_section`,
+> `validate_page` until zero errors, then `build_page` (dry-run first) and `publish_site`.
 
 ---
 
-### Example 2: Batch create blog articles
+## ⭐ Like the idea? Drop a star
 
-**Prompt:**
-```
-Write 3 blog posts about summer skincare, each 300 words, with SEO-friendly slugs.
-```
+This is a solo, open-source project — every ⭐ genuinely keeps it moving and helps other builders find it.
 
-**AI agent calls `create_article` 3 times:**
+- ⭐ **[Star the repo](https://github.com/vuluu2k/webcake-storefront-mcp)** — 2 seconds, huge motivation.
+- 🐛 **[Open an issue](https://github.com/vuluu2k/webcake-storefront-mcp/issues)** — a bug, a missing component, or just an idea.
+- 🔁 **Share it** with anyone still building store pages block by block.
 
-```
-create_article({
-  name: "5 Steps for Summer Skincare",
-  slug: "5-steps-summer-skincare",
-  content: "<h2>...</h2><p>...</p>",
-  tags: ["skincare", "summer"]
-})
+[![Star History Chart](https://api.star-history.com/svg?repos=vuluu2k/webcake-storefront-mcp&type=Date)](https://star-history.com/#vuluu2k/webcake-storefront-mcp&Date)
 
-create_article({
-  name: "Sun Protection Done Right",
-  slug: "sun-protection-done-right",
-  content: "<h2>...</h2><p>...</p>",
-  tags: ["skincare", "sunscreen"]
-})
-
-create_article({
-  name: "Moisturizing Oily Skin",
-  slug: "moisturizing-oily-skin",
-  content: "<h2>...</h2><p>...</p>",
-  tags: ["skincare", "moisturizer"]
-})
-```
-
----
-
-### Example 3: Debug and test a function
-
-**Prompt:**
-```
-Test the get_Subscribers function to see if it works
-```
-
-**AI agent calls:**
-```
-run_function({
-  function_name: "Subscribers",
-  method: "GET",
-  params: { page: 1, limit: 5 }
-})
-```
-
-Returns the result or error, AI agent reads and explains to the developer.
-
----
-
-### Example 4: Add custom CSS
-
-**Prompt:**
-```
-Add hover effect to all product cards: slight lift with drop shadow.
-```
-
-**AI agent calls `update_site_custom_code`:**
-
-`code_custom_css`:
-```css
-.product-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.product-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-}
-```
-
----
-
-### Example 5: Find customer and send email
-
-**Prompt:**
-```
-Find the customer with email john@example.com and send a thank-you email.
-```
-
-**AI agent calls 2 tools:**
-
-```
-find_customer({ by: "email", value: "john@example.com" })
-→ Found: { name: "John Doe", email: "john@example.com" }
-
-send_mail({
-  to: "john@example.com",
-  subject: "Thank you for your purchase!",
-  body: "<h2>Hi John Doe,</h2><p>Thank you for shopping with us...</p>"
-})
-```
-
----
-
-### Example 6: Find and update page elements
-
-**Prompt:**
-```
-Change the hero title color to red and update the CTA button text to "Buy Now"
-```
-
-**AI agent calls 3 tools:**
-
-```
-# Step 1: Find the hero title
-search_page_elements({ page_id: "page_1", custom_class: "hero-title" })
-→ { matched: 1, elements: [{ id: "TEXT-3", type: "text", ... }] }
-
-# Step 2: Find the CTA button
-search_page_elements({ page_id: "page_1", custom_class: "cta" })
-→ { matched: 1, elements: [{ id: "BUTTON-1", type: "button", ... }] }
-
-# Step 3: Update both elements at once
-update_page_elements({
-  page_id: "page_1",
-  updates: [
-    { element_id: "TEXT-3", style: { "color": "#ff0000" } },
-    { element_id: "BUTTON-1", specials: { "text": "Buy Now" } }
-  ]
-})
-```
-
----
-
-## Detailed Tool Usage Guide
-
-All tools are designed with **token optimization** in mind — list tools return lightweight metadata, detail tools return full data, and guides are loaded on-demand. This section explains the optimal workflow for each tool group.
-
-### CMS Files & HTTP Functions
-
-#### Step 1: Get overview — `get_http_function` (default: overview mode)
-
-By default, returns **only function names and line ranges** — no code body. Very token-efficient for large files.
-
-```
-# First time — overview + guide + schemas
-get_http_function({ include_guide: true })
-→ {
-    file_id: "file_123",
-    total_lines: 250,
-    imports: "import { DBConnection } from 'webcake-data';",
-    functions: [
-      { name: "get_Products", method: "get", function_name: "Products", start_line: 5, end_line: 35, lines: 31 },
-      { name: "post_CreateOrder", method: "post", function_name: "CreateOrder", start_line: 37, end_line: 120, lines: 84 },
-      ...
-    ],
-    collections: [...],
-    guide: "..."
-  }
-
-# Subsequent calls — overview only
-get_http_function({})
-```
-
-To get the full file (when really needed): `get_http_function({ overview: false })`
-
-#### Step 2: Read specific functions — `get_http_function_snippet`
-
-Read only the function(s) you need — saves 80-95% tokens vs reading the full file.
-
-```
-get_http_function_snippet({ function_names: ["get_Products"] })
-→ {
-    functions: [{
-      name: "get_Products", method: "get", function_name: "Products",
-      start_line: 5, end_line: 35,
-      code: "export const get_Products = (request) => {\n  ..."
-    }]
-  }
-```
-
-#### Step 3: Edit by function name — `edit_http_function`
-
-Edit functions by **name** — server finds function boundaries automatically. No fragile string matching.
-
-```
-# Replace entire function by name (server finds where it starts/ends)
-edit_http_function({
-  action: "replace_function",
-  function_name: "get_Products",
-  code: "export const get_Products = (request) => {\n  const db = new DBConnection();\n  return db.model('products').find().limit(20).exec();\n}"
-})
-
-# Add a new function at end of file
-edit_http_function({
-  action: "add",
-  code: "export const get_Stats = (request) => {\n  return { count: 42 };\n}"
-})
-
-# Remove a function by name
-edit_http_function({ action: "remove", function_name: "get_OldFunction" })
-
-# Update import block
-edit_http_function({
-  action: "update_imports",
-  code: "import { DBConnection } from 'webcake-data';\nimport { findArticle } from '@webcake/article';"
-})
-→ { success: true, total_lines: 245, functions: [...] }
-```
-
-#### Full rewrite (when needed) — `update_http_function`
-
-Send full file content. Use `edit_http_function` for targeted changes instead.
-
-```
-update_http_function({ content: "import { DBConnection } from 'webcake-data';\n..." })
-```
-
-#### Testing — `debug_function` vs `run_function`
-
-| Tool | When to use |
-|------|-------------|
-| `debug_function` | Test code **before deploying** — send code directly, get result + logs |
-| `run_function` | Call an **already deployed** function — like calling a REST API |
-
-```
-# Debug: test code without saving
-debug_function({
-  content: "export const get_Test = (request) => { return { hello: 'world' }; }",
-  function_name: "Test",
-  params: {}
-})
-
-# Run: call deployed function (note: function_name excludes method prefix)
-run_function({ function_name: "Products", method: "GET", params: { page: 1 } })
-```
-
-#### Version management — `save_file_version` / `get_file_versions`
-
-Save a snapshot before major changes for rollback capability:
-
-```
-save_file_version({ cms_file_id: "file_123", content: "...", is_public: false })
-get_file_versions({ cms_file_id: "file_123" })
-```
-
----
-
-### Pages & Custom Code
-
-#### Step 1: List pages — `list_pages`
-
-Returns **metadata only** (no source data) — id, name, slug, type, is_homepage, updated_at.
-
-```
-list_pages({})
-→ [{ id: "page_1", name: "Home", slug: "/", type: "page", is_homepage: true, ... }, ...]
-```
-
-#### Step 2: Get page overview — `get_page_source`
-
-Returns a **lightweight overview** of the page structure — section count, element type counts, and all custom CSS classes used. Does NOT return full source data.
-
-```
-get_page_source({ page_id: "page_1" })
-→ {
-    page: { id, name, slug, type },
-    custom_code: { ... },
-    overview: {
-      sections_count: 5,
-      total_elements: 47,
-      element_types: { section: 5, container: 12, text: 15, image: 8, button: 7 },
-      custom_classes: ["hero-title", "product-card", "cta-button", ...]
-    }
-  }
-```
-
-#### Step 3: Search specific elements — `search_page_elements`
-
-Query elements by various filters. Returns **full detail** for each matched element (style, config, specials, events, bindings, responsive breakpoints).
-
-```
-# Find all buttons
-search_page_elements({ page_id: "page_1", type: "button" })
-
-# Find elements with a specific CSS class
-search_page_elements({ page_id: "page_1", custom_class: "hero" })
-
-# Find text containing "subscribe"
-search_page_elements({ page_id: "page_1", text: "subscribe" })
-
-# Find all data-bound elements (product, category, blog bindings)
-search_page_elements({ page_id: "page_1", has_bind: true })
-
-# Find all elements with click/submit events
-search_page_elements({ page_id: "page_1", has_events: true })
-
-# Find all elements that have custom CSS classes
-search_page_elements({ page_id: "page_1", has_custom_class: true })
-
-# Combine filters
-search_page_elements({ page_id: "page_1", type: "text", custom_class: "hero", limit: 10 })
-```
-
-Each matched element returns:
-
-```json
-{
-  "id": "TEXT-3",
-  "type": "text",
-  "style": { "color": "#333", "font-size": "18px", ... },
-  "config": { ... },
-  "specials": { "text": "Subscribe now", "custom_class": "cta-text", "custom_css": "..." },
-  "events": [{ "eventName": "click", "action": "open_page", ... }],
-  "bindings": [{ "name": "product", "target": "title", ... }],
-  "responsive": {
-    "bp_320_768": { "style": { "font-size": "14px" } },
-    "bp_768_1024": { "style": { "font-size": "16px" } }
-  },
-  "children_count": 3
-}
-```
-
-**CSS targeting**: Sections render as `<section id="SECTION-1" class="x-section {custom_class}">`, elements as `<div id="TEXT-3" class="x-element {custom_class}">`. Target via `#TEXT-3` (by ID) or `.cta-text` (by custom class).
-
-#### Custom code — `get_site_custom_code` / `append_site_custom_code`
-
-**Read specific fields only** to save tokens when code is large:
-
-```
-# Read only CSS (skip large JS)
-get_site_custom_code({ fields: ["code_custom_css"] })
-→ { code_custom_css: ".hero { color: #333; ... }" }
-
-# Read all — _sizes shows character count per field
-get_site_custom_code({ include_guide: true })
-→ { ..., _sizes: { code_custom_css: 3500, code_custom_javascript: 8200, ... }, guide: "..." }
-```
-
-**Add new code** — append/prepend without reading existing content:
-
-```
-# Append new CSS rules
-append_site_custom_code({ field: "code_custom_css", code: ".new-section { padding: 20px; }" })
-
-# Prepend a script tag to head
-append_site_custom_code({ field: "code_before_head", position: "prepend",
-  code: "<script src='https://cdn.example.com/lib.js'></script>" })
-```
-
-**Full update** — read first, then rewrite entire field:
-```
-get_site_custom_code({ fields: ["code_custom_css"] })   # read only CSS
-update_site_custom_code({ code_custom_css: ".hero { ... }\n.new-style { ... }" })
-```
-
-| Field | Where it's injected | Use for |
-|-------|-------------------|---------|
-| `code_before_head` | Before `</head>` | External scripts, meta tags |
-| `code_before_body` | Before `</body>` | Tracking scripts, chat widgets |
-| `code_custom_css` | Auto-wrapped in `<style>` | Custom CSS styles |
-| `code_custom_javascript` | As inline `<script>` | Custom JavaScript |
-
-#### Step 4: Update elements — `update_page_element` / `update_page_elements`
-
-After finding elements via search, update their properties directly in the page source.
-
-**Single element update:**
-```
-# Change text and style of a specific element
-update_page_element({
-  page_id: "page_1",
-  element_id: "TEXT-3",
-  style: { "color": "#ff0000", "font-size": "24px" },
-  specials: { "text": "New heading text", "custom_class": "hero-title,bold" }
-})
-
-# Add events to a button
-update_page_element({
-  page_id: "page_1",
-  element_id: "BUTTON-1",
-  events: [{ "eventName": "click", "action": "open_page", "open_page_id": "page_2" }]
-})
-
-# Update responsive styles
-update_page_element({
-  page_id: "page_1",
-  element_id: "TEXT-3",
-  responsive: {
-    "bp_320_768": { "style": { "font-size": "14px" } },
-    "bp_768_1024": { "style": { "font-size": "18px" } }
-  }
-})
-```
-
-**Batch update multiple elements at once:**
-```
-update_page_elements({
-  page_id: "page_1",
-  updates: [
-    { element_id: "TEXT-1", specials: { "text": "Welcome" } },
-    { element_id: "TEXT-2", style: { "color": "#333" } },
-    { element_id: "BUTTON-1", specials: { "custom_class": "cta-primary" } }
-  ]
-})
-```
-
-**Merge rules:**
-| Property | Behavior | Example |
-|----------|----------|---------|
-| `style` | Shallow merge | Only changed CSS properties are updated, others kept |
-| `config` | Shallow merge | Same as style |
-| `specials` | Shallow merge | Update `text`, `custom_class`, `custom_css` individually |
-| `events` | Replace | Entire events array is replaced (get current first) |
-| `bindings` | Replace | Entire bindings array is replaced |
-| `responsive` | Merge by breakpoint | Each `bp_*` key is set/replaced individually |
-
-#### Get single element detail — `get_page_element`
-
-Get full detail of one element by its ID, including children IDs for tree navigation.
-
-```
-get_page_element({ page_id: "page_1", element_id: "SECTION-1" })
-→ { id: "SECTION-1", type: "section", style: {...}, specials: {...},
-    children: [{ id: "CONTAINER-1", type: "container" }, { id: "TEXT-1", type: "text" }] }
-```
-
-#### Custom code — `get_site_custom_code` / `update_site_custom_code`
-
-**Always read before writing** to avoid overwriting existing code.
-
-On the **first call**, set `include_guide=true` to get the coding guide (~400 tokens). Omit on subsequent calls.
-
-```
-# First time — read current code + guide
-get_site_custom_code({ include_guide: true })
-→ {
-    code_before_head: "<script src='...'>",
-    code_before_body: "",
-    code_custom_css: ".hero { ... }",
-    code_custom_javascript: "document.addEventListener(...)",
-    guide: "..."
-  }
-
-# Update — only send the fields you want to change
-update_site_custom_code({ code_custom_css: ".hero { ... }\n.new-style { ... }" })
-```
-
-| Field | Where it's injected | Use for |
-|-------|-------------------|---------|
-| `code_before_head` | Before `</head>` | External scripts, meta tags |
-| `code_before_body` | Before `</body>` | Tracking scripts, chat widgets |
-| `code_custom_css` | Auto-wrapped in `<style>` | Custom CSS styles |
-| `code_custom_javascript` | As inline `<script>` | Custom JavaScript |
-
-#### Recommended workflows
-
-**CSS/JS tasks:**
-```
-1. list_pages()                              → find the target page
-2. get_page_source({ page_id })              → understand page structure
-3. search_page_elements({ page_id, ... })    → find specific elements to style
-4. get_site_custom_code({ include_guide: true })  → read existing code
-5. update_site_custom_code({ ... })          → write new code (merged with existing)
-```
-
-**Direct element modification:**
-```
-1. list_pages()                              → find the target page
-2. get_page_source({ page_id })              → overview of elements
-3. search_page_elements({ page_id, ... })    → find elements to modify
-4. update_page_element({ page_id, element_id, ... })  → update properties
-   or update_page_elements({ page_id, updates: [...] })  → batch update
-```
-
----
-
-### Collections (Database)
-
-#### List collections — `list_collections`
-
-Returns **summary only** — name, table_name, field count. Does NOT include full schema definitions.
-
-```
-list_collections({})
-→ {
-    data: [
-      { id: "col_1", name: "Subscribers", table_name: "subscribers", fields_count: 5 },
-      { id: "col_2", name: "Orders", table_name: "custom_orders", fields_count: 12 },
-      ...
-    ],
-    total: 8
-  }
-```
-
-#### Get full schema — `get_collection`
-
-Use this to get complete field definitions (name, type, constraints, references) when you need to write queries.
-
-```
-get_collection({ id: "col_1" })
-→ { name: "Subscribers", table_name: "subscribers", schema: [
-    { name: "email", type: "string", is_required: true },
-    { name: "subscribed_at", type: "datetime", is_required: false },
-    ...
-  ]}
-```
-
-#### Query records — `query_collection_records`
-
-Inspect existing data using the **table_name** (not collection ID).
-
-```
-query_collection_records({ table_name: "subscribers", page: 1, limit: 10 })
-```
-
----
-
-### Blog Articles
-
-#### List articles — `list_articles`
-
-Returns **metadata only** — no HTML content. Saves significant tokens for sites with many articles.
-
-```
-list_articles({ page: 1, limit: 20 })
-→ {
-    data: [
-      { id: "art_1", name: "Getting Started", slug: "getting-started", summary: "...",
-        tags: ["tutorial"], category_id: "cat_1", created_at: "...", updated_at: "..." },
-      ...
-    ],
-    total: 45
-  }
-```
-
-#### Get full article — `get_article`
-
-Use this when you need the full HTML content of a specific article.
-
-```
-get_article({ id: "art_1" })
-→ { id: "art_1", name: "...", content: "<h2>...</h2><p>Full HTML content...</p>", ... }
-```
-
----
-
-### Products
-
-#### List products — `list_products`
-
-Returns **metadata only** — id, name, slug, price, image, status. No full description or variations.
-
-```
-list_products({ page: 1, limit: 20, term: "shirt" })
-→ {
-    data: [
-      { id: "prod_1", name: "Blue Shirt", slug: "blue-shirt", price: 29.99,
-        image: "https://...", is_published: true, total_sold: 150, ... },
-      ...
-    ],
-    total: 42
-  }
-```
-
-#### Get full product — `get_product`
-
-Returns complete product data: description, variations (sizes/colors/prices), attributes, images, SEO meta.
-
-```
-get_product({ id: "prod_1" })
-→ { id: "prod_1", name: "Blue Shirt", description: "<p>...</p>",
-    variations: [...], product_attributes: [...], meta_tags: [...], ... }
-```
-
-#### Search products — `search_products`
-
-Quick keyword search across product names.
-
-```
-search_products({ term: "summer dress", limit: 10 })
-```
-
-#### Product categories — `list_categories`
-
-List all product categories of the site.
-
-```
-list_categories({})
-→ [{ id: "cat_1", name: "Shirts", slug: "shirts", ... }, ...]
-```
-
----
-
-### Orders
-
-#### List orders — `list_orders`
-
-Returns order **metadata only** — customer name, status, total value. No item details.
-
-```
-list_orders({ page: 1, limit: 20, status: 50 })
-→ {
-    data: [
-      { id: "ord_1", bill_full_name: "John Doe", status: 50,
-        invoice_value: 99.99, items_count: 3, created_at: "..." },
-      ...
-    ],
-    total: 128
-  }
-```
-
-**Status codes:** 0=pending, 50=confirmed, 100=shipping, 150=delivered, -1=cancelled
-
-#### Get full order — `get_order`
-
-Returns complete order: items with product details, customer info, payment, shipping, discounts.
-
-```
-get_order({ id: "ord_1" })
-→ { id: "ord_1", bill_full_name: "John Doe", items: [...], shipping_address: {...}, ... }
-```
-
-#### Order statistics — `count_orders_by_status`
-
-Get order count grouped by status for dashboard overview.
-
-```
-count_orders_by_status({})
-→ { pending: 5, confirmed: 12, shipping: 3, delivered: 108, cancelled: 2 }
-```
-
----
-
-### Promotions & Discounts
-
-#### List promotions — `list_promotions`
-
-Returns promotion **metadata only** — name, type, status, schedule. Use `include_guide=true` for promotion type reference.
-
-```
-list_promotions({ page: 1, limit: 20, include_guide: true })
-→ {
-    data: [
-      { id: "promo_1", name: "Summer Sale 30%", type: "normal",
-        is_activated: true, start_time: "2025-06-01", end_time: "2025-06-30",
-        priority_level: 1, used_count: 45 },
-      { id: "promo_2", name: "WELCOME10", type: "coupon",
-        is_activated: true, coupon_info: { code: "WELCOME10", max_uses: 100 } },
-      ...
-    ],
-    total: 8,
-    guide: "## Promotion Types..."
-  }
-```
-
-#### Get full promotion — `get_promotion`
-
-Returns complete promotion: discount rules, coupon settings, items, bonus products, customer levels.
-
-```
-get_promotion({ id: "promo_1" })
-→ { id: "promo_1", name: "Summer Sale 30%", type: "normal", items: [...],
-    bonus_items: [...], customer_levels: [...], ... }
-```
-
-#### Get promotion items — `get_promotion_items`
-
-Returns products/variations/categories attached to a promotion with detailed discount info.
-
-```
-get_promotion_items({ id: "promo_1", page: 1, limit: 20 })
-→ { items: [{ id: "item_1", product: { name: "..." }, fixed_prices: 299000,
-    level_info: [...] }], total_items: 15 }
-```
-
-#### Active promotions — `get_active_promotions`
-
-Get all currently active promotions (activated and within schedule).
-
-```
-get_active_promotions({})
-→ { data: [{ id: "promo_1", name: "Summer Sale", type: "normal", is_activated: true, ... }], total: 3 }
-```
-
-#### Search/filter promotions — `search_promotions`
-
-Filter by type, time status, keyword, active state.
-
-```
-search_promotions({ type: "coupon", status: 2, is_activated: true })
-→ { promotions: [...], total: 5 }
-```
-
-**Status filter:** 1=coming_soon, 2=in_progress, 3=finished
-
----
-
-### Combo / Bundle Products
-
-#### List combos — `list_combos`
-
-Returns combo **metadata** — name, discount type, schedule. Use `include_guide=true` for combo type reference.
-
-```
-list_combos({ page: 1, limit: 20, include_guide: true })
-→ {
-    data: [
-      { id: "combo_1", name: "Summer Bundle", is_activated: true,
-        is_variation: false, discount_amount: 50000,
-        start_time: "2025-06-01", end_time: "2025-06-30" },
-      { id: "combo_2", name: "Buy 3 Get 1 Free", is_activated: true,
-        is_categories: true, is_use_percent: true, discount_by_percent: 25 },
-    ],
-    total: 4,
-    guide: "## Combo Product Types..."
-  }
-```
-
-**Combo types:**
-- `is_variation=true` — Variation-based: requires specific product variations
-- `is_variation=false` — Product-based: requires specific products (any variation)
-- `is_categories=true` — Category-based: requires items from categories with quantities
-
-**Discount types:**
-- `discount_amount` — Fixed amount off
-- `is_use_percent=true` + `discount_by_percent` — Percentage off (capped by `max_discount_by_percent`)
-- `is_value_combo=true` + `value_combo` — Fixed total price for combo
-- `is_free_shipping=true` — Free shipping included
-
-#### Get combo items — `get_combo_items`
-
-Returns the products/variations that compose the combo and any bonus/gift products.
-
-```
-get_combo_items({ combo_product_id: "combo_1" })
-→ {
-    combo_items: [
-      { id: "item_1", product: { name: "T-Shirt" }, count: 2 },
-      { id: "item_2", product: { name: "Shorts" }, count: 1 },
-    ],
-    bonus_items: [
-      { id: "bonus_1", product: { name: "Free Socks" }, quantity: 1 }
-    ]
-  }
-```
-
----
-
-### Site Style & Theme
-
-#### Site info — `get_site_info`
-
-Get full site configuration: name, domain, logo, and **all settings** (colors, typography, layout, language, payment methods, etc.).
-
-```
-get_site_info({})
-→ { id: "site_1", name: "My Store", domain: "mystore.storecake.io",
-    settings: { primary_colors: [...], typography: {...}, layout_mode: "...", ... } }
-```
-
-#### Themes — `list_themes`
-
-List all custom themes: colors, typographies, transitions, and which is currently active.
-
-```
-list_themes({})
-→ [{ id: "theme_1", name: "Modern", colors: {...}, typographies: {...}, is_selected: true }, ...]
-```
-
----
-
-### Applications
-
-#### Installed apps — `list_apps`
-
-List all installed applications/subscriptions with their settings and status.
-
-```
-list_apps({})
-→ [{ id: "app_1", type: 1, is_active: true, settings: {...} }, ...]
-```
-
-**Common app types:** 1=CMS, 2=Product Design, 10=Multilingual
-
-#### Get app detail — `get_app`
-
-Get a specific app by its type ID.
-
-```
-get_app({ type: "1" })
-→ { id: "app_1", type: 1, is_active: true, settings: {...} }
-```
-
----
-
-### Custom Knowledge (Training)
-
-Add your own knowledge files so AI agents have custom context about your business, coding standards, or workflows.
-
-Knowledge supports two sources: **local files** and **GitHub repo**. Both can be used together — local files take priority if names conflict.
-
-#### Source 1: Local files
-
-Drop `.md` or `.txt` files into the `knowledge/` directory (next to `index.js`):
-
-```
-knowledge/
-  business-rules.md
-  coding-standards.md
-  api-docs.md
-```
-
-Or set a custom directory:
-```json
-{ "env": { "WEBCAKE_KNOWLEDGE_DIR": "/path/to/my/knowledge" } }
-```
-
-#### Source 2: GitHub repo
-
-Point to a GitHub repo containing knowledge files. The AI agent will fetch and read them automatically.
-
-```json
-{
-  "env": {
-    "WEBCAKE_KNOWLEDGE_REPO": "your-org/my-knowledge"
-  }
-}
-```
-
-**Supported formats:**
-
-| Format | Example |
-|--------|---------|
-| `owner/repo` | `acme/knowledge-base` |
-| `owner/repo/subdir` | `acme/docs/ai-guides` |
-| Full URL | `https://github.com/acme/knowledge-base` |
-| URL with branch + path | `https://github.com/acme/docs/tree/main/ai-guides` |
-
-**Private repos** — add a GitHub personal access token:
-```json
-{
-  "env": {
-    "WEBCAKE_KNOWLEDGE_REPO": "your-org/private-knowledge",
-    "WEBCAKE_KNOWLEDGE_TOKEN": "ghp_xxxxxxxxxxxx"
-  }
-}
-```
-
-Files are cached for 5 minutes to avoid GitHub API rate limits.
-
-#### File format
-
-Files support optional frontmatter for name and description:
-
-```markdown
----
-name: Business Rules
-description: E-commerce shipping and return policies
-tags: business, policy
----
-
-## Shipping Policy
-- Free shipping for orders over $50
-- Express shipping: 2-3 business days
-...
-```
-
-#### Usage
-
-```
-# List available knowledge files
-list_knowledge({})
-→ { files: [
-    { file: "business-rules", name: "Business Rules", description: "E-commerce shipping..." },
-    { file: "coding-standards", name: "Coding Standards", description: "..." }
-  ]}
-
-# Read a specific file
-get_knowledge({ file: "business-rules" })
-→ { file: "business-rules.md", name: "Business Rules", content: "## Shipping Policy\n..." }
-```
-
-AI agents will use this knowledge as context when helping with tasks. For example, if you have shipping rules documented, the AI will reference them when writing order-related code.
-
----
-
-### Token Optimization Summary
-
-| Pattern | Tokens saved | How |
-|---------|-------------|-----|
-| Lazy guides (`include_guide`) | ~600-1000 per call | Only load guide on first call |
-| List = metadata only | 50-90% per list call | HTML content, source JSON, full schemas stripped from list responses |
-| Overview + Search (pages) | ~85-90% | Overview gives structure, search gives only matched elements |
-| HTTP function overview + snippet | ~80-95% per read | Overview shows function list only, snippet reads just the needed function |
-| `edit_http_function` | ~70-90% per edit | Replace/add/remove by function name, not full file |
-| Custom code field filter | ~50-80% per read | Read only CSS or JS instead of all 4 fields |
-| `append_site_custom_code` | ~100% on add | Append/prepend without reading existing content |
-| Compact JSON | ~30% per response | No pretty-printing in responses |
-
----
-
-## Available Tools
-
-### CMS Files (12 tools)
-| Tool | Description |
-|------|-------------|
-| `list_cms_files` | List all CMS files |
-| `create_cms_file` | Create HTTP function / cron job / default file |
-| `update_cms_file` | Update file content |
-| `get_http_function` | **Default**: full code + schemas. **overview=true**: function list only (for browsing). `include_guide=true` for coding guide |
-| `get_http_function_snippet` | Read specific function(s) by name — much more token-efficient than full file |
-| `edit_http_function` | Edit by function name: replace_function/add/remove/update_imports — no string matching needed |
-| `update_http_function` | Full file write — best for new features, major refactors. `edit_http_function` for small fixes |
-| `run_function` | Execute a deployed function |
-| `debug_function` | Run code in debug mode (without deploying) |
-| `save_file_version` | Save version snapshot for rollback |
-| `get_file_versions` | Get version history |
-| `toggle_debug_render` | Toggle debug render mode |
-
-### Pages (16 tools)
-| Tool | Description |
-|------|-------------|
-| `list_pages` | List all pages (metadata only, no source) |
-| `get_page_source` | Get page overview: section count, element types, custom classes |
-| `search_page_elements` | Search elements by type, id, class, text, bind, events (returns full detail) |
-| `get_page_element` | Get full detail of a single element by ID (includes children IDs) |
-| `update_page_element` | Update element properties: style, config, specials, events, bindings, responsive |
-| `update_page_elements` | Batch update multiple elements in one call |
-| `create_page` | Create a new page |
-| `update_page` | Update page properties |
-| `get_site_custom_code` | Read CSS/JS. Use `fields` to read only specific fields. `include_guide=true` for guide |
-| `update_site_custom_code` | Write full CSS/JS custom code (only specified fields are updated) |
-| `append_site_custom_code` | Append/prepend CSS/JS code without reading first — for adding new rules |
-| `delete_page` | Delete a page |
-| `get_page_versions` | Page version history |
-| `list_page_contents` | Multi-language contents |
-| `update_page_content` | Update content for a language |
-| `list_global_sections` | List reusable global sections |
-
-### Collections — Database (3 tools)
-| Tool | Description |
-|------|-------------|
-| `list_collections` | List collections (name, table_name, field count only) |
-| `get_collection` | Get full schema: field names, types, constraints, references |
-| `query_collection_records` | Query records by table_name |
-
-### Blog Articles (5 tools)
-| Tool | Description |
-|------|-------------|
-| `list_articles` | List articles (metadata only, no HTML content) |
-| `get_article` | Get full article with HTML content |
-| `create_article` | Create article |
-| `update_article` | Update article |
-| `delete_article` | Delete article |
-
-### Products (4 tools)
-| Tool | Description |
-|------|-------------|
-| `list_products` | List products (metadata: name, slug, price, image, status) |
-| `get_product` | Get full product: description, variations, attributes, images, SEO |
-| `search_products` | Search products by keyword |
-| `list_categories` | List all product categories |
-
-### Orders (3 tools)
-| Tool | Description |
-|------|-------------|
-| `list_orders` | List orders (metadata: customer, status, total, items count) |
-| `get_order` | Get full order: items, payment, shipping, discounts |
-| `count_orders_by_status` | Order count grouped by status |
-
-### Promotions & Discounts (5 tools)
-| Tool | Description |
-|------|-------------|
-| `list_promotions` | List all promotions (metadata: name, type, status, schedule). `include_guide=true` for type reference |
-| `get_promotion` | Get full promotion details: discount rules, coupon settings, items, bonus products |
-| `get_promotion_items` | Get products/variations/categories attached to a promotion with discount details |
-| `get_active_promotions` | Get all currently active promotions |
-| `search_promotions` | Search/filter by type, status (coming_soon/in_progress/finished), keyword |
-
-### Combo Products (2 tools)
-| Tool | Description |
-|------|-------------|
-| `list_combos` | List all combo/bundle products (name, discount, schedule, type). `include_guide=true` for type reference |
-| `get_combo_items` | Get combo composition: required items (with quantities) and bonus/gift products |
-
-### Site Style & Theme (2 tools)
-| Tool | Description |
-|------|-------------|
-| `get_site_info` | Get site name, domain, logo, and all design settings |
-| `list_themes` | List custom themes: colors, typography, transitions |
-
-### Applications (2 tools)
-| Tool | Description |
-|------|-------------|
-| `list_apps` | List installed apps with settings and status |
-| `get_app` | Get specific app by type ID |
-
-### Custom Knowledge (2 tools)
-| Tool | Description |
-|------|-------------|
-| `list_knowledge` | List all custom knowledge/guide files |
-| `get_knowledge` | Read a specific knowledge file |
-
-### Customers (1 tool)
-| Tool | Description |
-|------|-------------|
-| `find_customer` | Find by ID, phone, or email |
-
-### Automation (1 tool)
-| Tool | Description |
-|------|-------------|
-| `send_mail` | Send email via CMS automation |
+> Built with ❤️ for the WebCake community. Thanks for being here.

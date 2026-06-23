@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.vuluu2k/webcake-storefront-mcp",
-  "description": "Read and build pages on the WebCake/StoreCake storefront builder: page/element CRUD, the BuilderX component model, products, orders, and publishing.",
+  "description": "Build pages and manage products, orders, and content on the WebCake/StoreCake storefront builder.",
   "title": "WebCake Storefront",
   "repository": {
     "url": "https://github.com/vuluu2k/webcake-storefront-mcp",
