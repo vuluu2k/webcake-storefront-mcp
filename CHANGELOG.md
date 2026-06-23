@@ -5,6 +5,11 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.4] - 2026-06-23
+
+### Added
+- The remote landing page served by the `serve` command now includes a "What's new" section that renders a version timeline loaded from a build-time `changelog.json` (generated from CHANGELOG.md and CHANGELOG.vi.md), with the current version shown as a pill badge in the hero bar and a nav link added to the page navigation.
+
 ## [1.1.3] - 2026-06-23
 
 ### Changed

@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.4] - 2026-06-23
+
+### Added
+- Trang landing của lệnh `serve` nay có thêm mục "Có gì mới" hiển thị timeline lịch sử phiên bản được tải từ file `changelog.json` sinh ra lúc build (từ CHANGELOG.md và CHANGELOG.vi.md), phiên bản hiện tại được hiển thị dạng pill badge trên hero bar, và bổ sung liên kết điều hướng đến mục này trong thanh nav của trang.
+
 ## [1.1.3] - 2026-06-23
 
 ### Changed
