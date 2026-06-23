@@ -40,10 +40,6 @@
           ]
         },
         {
-          "name": "WEBCAKE_API_URL",
-          "description": "Override for the backend API base URL (takes precedence over WEBCAKE_ENV)."
-        },
-        {
           "name": "PEXELS_API_KEY",
           "description": "Optional Pexels API key for the search_images tool.",
           "isSecret": true

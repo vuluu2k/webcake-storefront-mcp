@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createServer } from "./server.js";
-import { makeApi, resolveSettings } from "./config.js";
+import { makeApi } from "./config.js";
 
 const HELP = `webcake-storefront-mcp — MCP server for the WebCake/StoreCake storefront builder
 
@@ -60,14 +60,9 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Default: stdio MCP server.
-  const settings = resolveSettings();
-  if (!settings.apiUrl) {
-    console.error("Required: WEBCAKE_API_URL (env var or saved via `login` / update_auth tool).");
-    console.error("Run `npx -y webcake-storefront-mcp install` to set things up.");
-    process.exit(1);
-  }
-
+  // Default: stdio MCP server. The API base URL defaults to the prod preset, so
+  // no env is required to start — auth (token + session) is set via env or `login`,
+  // and the site is chosen at runtime with switch_site.
   const api = makeApi();
   const server = createServer(api);
   const transport = new StdioServerTransport();

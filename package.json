@@ -3,6 +3,16 @@
   "version": "1.0.2",
   "description": "MCP server for the WebCake/StoreCake storefront builder — page CRUD, page authoring, products, orders, and more",
   "mcpName": "io.github.vuluu2k/webcake-storefront-mcp",
+  "license": "MIT",
+  "author": "vuluu2k (https://github.com/vuluu2k)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vuluu2k/webcake-storefront-mcp.git"
+  },
+  "homepage": "https://github.com/vuluu2k/webcake-storefront-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/vuluu2k/webcake-storefront-mcp/issues"
+  },
   "type": "module",
   "bin": {
     "webcake-storefront-mcp": "dist/index.js"
