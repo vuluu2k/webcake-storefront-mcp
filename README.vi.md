@@ -149,7 +149,7 @@ URL gốc lấy theo **môi trường có tên** — đặt `WEBCAKE_ENV` (hoặ
 
 Override bằng `WEBCAKE_API_URL` / `WEBCAKE_APP_URL`. Tuỳ chọn, đặt phía server:
 `PEXELS_API_KEY` (search_images), `MONGO_URI` (cache alt ảnh). Token / session / site cũng có thể đặt
-trong chat bằng `update_auth` và `switch_site` — lưu vào SQLite tại `~/.webcake-storefront-mcp/`.
+trong chat bằng `update_auth` và `switch_site` — lưu vào file cấu hình tại `~/.webcake-storefront-mcp/`.
 
 <details>
 <summary><b>Cách lấy token + session</b></summary>

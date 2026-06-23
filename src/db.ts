@@ -1,67 +1,59 @@
-import Database from "better-sqlite3";
-import { mkdirSync } from "node:fs";
+// Tiny JSON-file persistence (no native deps) for: (1) the saved connection config
+// (token / session / site / api_url / confirm_mode) and (2) the image-alt cache.
+//
+// Stored under a stable home dir so it survives `npx` (ephemeral package cache) and
+// container restarts. Two flat JSON files instead of SQLite — keeps the package light
+// and works in any runtime (Alpine, Docker `--ignore-scripts`, serverless) with no
+// native binding to build. The API is synchronous to match the call sites.
+
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-// Persist in a stable home directory so saved config survives `npx` (where the
-// package lives in an ephemeral cache dir) and rebuilds.
 const CONFIG_DIR = process.env.WEBCAKE_CONFIG_DIR || join(homedir(), ".webcake-storefront-mcp");
 mkdirSync(CONFIG_DIR, { recursive: true });
-const DB_PATH = join(CONFIG_DIR, "webcake-mcp.db");
 
-const db = new Database(DB_PATH);
+const CONFIG_FILE = join(CONFIG_DIR, "config.json");
+const ALT_FILE = join(CONFIG_DIR, "image-alt-cache.json");
 
-// WAL mode for better concurrent reads
-db.pragma("journal_mode = WAL");
+function readJson<T>(file: string, fallback: T): T {
+  try {
+    return JSON.parse(readFileSync(file, "utf-8")) as T;
+  } catch {
+    return fallback;
+  }
+}
 
-// ── Schema ──
+function writeJson(file: string, data: unknown): void {
+  try {
+    writeFileSync(file, JSON.stringify(data), "utf-8");
+  } catch (e) {
+    console.error("[db] write failed:", (e as Error)?.message ?? e);
+  }
+}
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS config (
-    key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
-`);
-
-// ── Simple key-value helpers ──
-
-const stmtGet = db.prepare("SELECT value FROM config WHERE key = ?");
-const stmtSet = db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)");
-const stmtDel = db.prepare("DELETE FROM config WHERE key = ?");
-const stmtAll = db.prepare("SELECT key, value FROM config");
+// ── Config (key/value) ───────────────────────────────────────────────────────
+const config: Record<string, string> = readJson<Record<string, string>>(CONFIG_FILE, {});
 
 export function getConfig(key: string): string | null {
-  const row = stmtGet.get(key) as { value: string } | undefined;
-  return row ? row.value : null;
+  return key in config ? config[key] : null;
 }
 
 export function setConfig(key: string, value: unknown): void {
-  stmtSet.run(key, String(value));
+  config[key] = String(value);
+  writeJson(CONFIG_FILE, config);
 }
 
 export function delConfig(key: string): void {
-  stmtDel.run(key);
+  delete config[key];
+  writeJson(CONFIG_FILE, config);
 }
 
 export function getAllConfig(): Record<string, string> {
-  const rows = stmtAll.all() as { key: string; value: string }[];
-  const result: Record<string, string> = {};
-  for (const row of rows) result[row.key] = row.value;
-  return result;
+  return { ...config };
 }
 
-// ── Image alt cache ──
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS image_alt_cache (
-    url_key    TEXT PRIMARY KEY,
-    url        TEXT NOT NULL,
-    alt        TEXT NOT NULL,
-    source     TEXT,
-    updated_at INTEGER NOT NULL
-  );
-`);
-
+// ── Image alt cache ──────────────────────────────────────────────────────────
 interface AltRow {
   url_key: string;
   url: string;
@@ -70,54 +62,45 @@ interface AltRow {
   updated_at: number;
 }
 
-const stmtAltGet = db.prepare("SELECT url_key, url, alt, source, updated_at FROM image_alt_cache WHERE url_key = ?");
-const stmtAltSet = db.prepare(`
-  INSERT INTO image_alt_cache (url_key, url, alt, source, updated_at)
-  VALUES (@url_key, @url, @alt, @source, @updated_at)
-  ON CONFLICT(url_key) DO UPDATE SET
-    url = excluded.url,
-    alt = excluded.alt,
-    source = excluded.source,
-    updated_at = excluded.updated_at
-`);
-const stmtAltList = db.prepare("SELECT url_key, url, alt, source, updated_at FROM image_alt_cache ORDER BY updated_at DESC LIMIT ? OFFSET ?");
-const stmtAltCount = db.prepare("SELECT COUNT(*) AS n FROM image_alt_cache");
+const altCache: Record<string, AltRow> = readJson<Record<string, AltRow>>(ALT_FILE, {});
 
 export function getImageAlt(urlKey: string): AltRow | null {
-  return (stmtAltGet.get(urlKey) as AltRow | undefined) || null;
+  return altCache[urlKey] || null;
 }
 
 export function getImageAlts(urlKeys: string[]): Map<string, AltRow> {
   const out = new Map<string, AltRow>();
   for (const k of urlKeys) {
-    const row = stmtAltGet.get(k) as AltRow | undefined;
+    const row = altCache[k];
     if (row) out.set(k, row);
   }
   return out;
 }
 
 export function setImageAlt({ url_key, url, alt, source = "ai" }: AltRow): void {
-  stmtAltSet.run({ url_key, url, alt, source, updated_at: Date.now() });
+  altCache[url_key] = { url_key, url, alt, source, updated_at: Date.now() };
+  writeJson(ALT_FILE, altCache);
 }
 
-export const setImageAlts = db.transaction((items: AltRow[]) => {
+export function setImageAlts(items: AltRow[]): void {
   for (const it of items) {
-    stmtAltSet.run({
+    altCache[it.url_key] = {
       url_key: it.url_key,
       url: it.url,
       alt: it.alt,
       source: it.source || "ai",
       updated_at: Date.now(),
-    });
+    };
   }
-});
+  writeJson(ALT_FILE, altCache);
+}
 
 export function listImageAlts(limit = 100, offset = 0): AltRow[] {
-  return stmtAltList.all(limit, offset) as AltRow[];
+  return Object.values(altCache)
+    .sort((a, b) => b.updated_at - a.updated_at)
+    .slice(offset, offset + limit);
 }
 
 export function countImageAlts(): number {
-  return (stmtAltCount.get() as { n: number }).n;
+  return Object.keys(altCache).length;
 }
-
-export default db;

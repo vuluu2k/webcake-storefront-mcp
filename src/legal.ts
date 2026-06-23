@@ -20,7 +20,7 @@ function page(title: string, bodyHtml: string): string {
   h1{font-size:1.9rem;margin:0 0 4px}
   h2{font-size:1.2rem;margin:32px 0 8px}
   .meta{color:#64748b;font-size:.9rem;margin-bottom:28px}
-  a{color:#6d5efc}
+  a{color:#108B67}
   code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(127,127,127,.15);padding:1px 5px;border-radius:4px}
   ul{padding-left:22px}
   footer{margin-top:48px;padding-top:20px;border-top:1px solid rgba(127,127,127,.25);color:#64748b;font-size:.85rem}
@@ -60,7 +60,7 @@ handles, why, who receives it, and how long it is kept.</p>
   tokens are never written to disk by the connector. Access tokens expire automatically after ~1 hour, refresh
   tokens after ~30 days. A server restart clears all tokens.</li>
   <li><strong>Local CLI config (stdio mode).</strong> When you run <code>npx webcake-storefront-mcp login</code>,
-  your token and session ID are saved to a local SQLite file on <em>your own machine</em> (at
+  your token and session ID are saved to a local file on <em>your own machine</em> (at
   <code>~/.webcake-storefront-mcp.db</code> or similar). This file stays on your device and is not transmitted
   anywhere by the connector.</li>
   <li>The connector does <strong>not</strong> run an analytics database, does <strong>not</strong> sell or share

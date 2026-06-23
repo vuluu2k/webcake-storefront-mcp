@@ -4,7 +4,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
 
-/** Read all saved credentials from SQLite for startup */
+/** Read all saved credentials from the local config file for startup */
 export function getSavedConfig() {
   return {
     token: getConfig("token") || "",
@@ -153,7 +153,7 @@ Get token and session_id from browser DevTools → Network tab → copy from any
           throw new Error("Authentication failed — credentials were NOT changed. Make sure token and session_id are both correct.");
         }
 
-        // Persist all to SQLite
+        // Persist all to the local config file
         if (token) setConfig("token", token);
         if (session_id) setConfig("session_id", session_id);
         if (api_url) setConfig("api_url", api.baseUrl);

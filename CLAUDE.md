@@ -56,7 +56,7 @@ src/                — TypeScript source (strict); compiles to dist/
   install.ts        — writes MCP config into IDE config files (Claude Desktop/Code, Cursor, Windsurf, VSCode)
   auth/login.ts     — loopback browser login → builderx_spa /mcp-storefront → saves token + session_id to the local db
   http.ts           — remote Streamable-HTTP transport; per-session JWT/site via headers or ?query
-  db.ts             — SQLite (better-sqlite3) at ~/.webcake-storefront-mcp/; config + image-alt cache
+  db.ts             — JSON files at ~/.webcake-storefront-mcp/; config + image-alt cache
   api.ts            — WebcakeCmsApi class: all HTTP calls to the WebCake/StoreCake backend
   mongo.ts          — optional MongoDB sync for the image-alt cache (MONGO_URI)
   guides.ts         — embedded HTTP_FUNCTION_GUIDE / CUSTOM_CODE_GUIDE strings

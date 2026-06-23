@@ -27,8 +27,8 @@ const DOCS_URL = `${GITHUB_URL}#readme`;
 const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="7" fill="url(#sg)"/>
   <defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0%" stop-color="#6d5efc"/>
-    <stop offset="100%" stop-color="#8b5cf6"/>
+    <stop offset="0%" stop-color="#108B67"/>
+    <stop offset="100%" stop-color="#14a87c"/>
   </linearGradient></defs>
   <text x="16" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="17" fill="white">S</text>
   <circle cx="24" cy="9" r="4" fill="#FFD591"/>
@@ -617,7 +617,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
 <meta name="keywords" content="${m.keywords}">
 <meta name="author" content="WebCake">
 <meta name="robots" content="index,follow">
-<meta name="theme-color" content="#6d5efc">
+<meta name="theme-color" content="#108B67">
 <link rel="canonical" href="${canonical}">
 <link rel="alternate" hreflang="vi" href="${origin}/">
 <link rel="alternate" hreflang="en" href="${origin}/?lang=en">
@@ -642,13 +642,13 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
 <meta name="twitter:image:alt" content="${m.title}">
 <script type="application/ld+json">${jsonLdScript}</script>
 <style>
-  :root{--g:#6d5efc;--g7:#5546e0;--ink:#11121e;--mut:#5e5f7a;--bg:#f6f5ff;--card:#ffffff;
+  :root{--g:#108B67;--g7:#0c6f52;--ink:#11121e;--mut:#5e5f7a;--bg:#f6f5ff;--card:#ffffff;
     --line:rgba(16,14,40,.09);--shadow:0 1px 2px rgba(16,14,40,.05),0 6px 20px -12px rgba(16,14,40,.18);--code:#0e0d1a;
-    --ic-fg:#5546e0;--btn-hover:#5546e0;--navbg:rgba(246,245,255,.82)}
+    --ic-fg:#0c6f52;--btn-hover:#0c6f52;--navbg:rgba(246,245,255,.82)}
   @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#e8e6ff;--mut:#9a98b8;--bg:#0c0b14;--card:#141320;
-    --line:rgba(255,255,255,.07);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7);--code:#07060f;--g7:#b6a8ff;--ic-fg:#c4b8ff;--btn-hover:#7c6df6;--navbg:rgba(12,11,20,.82)}}
+    --line:rgba(255,255,255,.07);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7);--code:#07060f;--g7:#5fe0b3;--ic-fg:#8aecc9;--btn-hover:#16a07a;--navbg:rgba(12,11,20,.82)}}
   :root[data-theme="dark"]{--ink:#e8e6ff;--mut:#9a98b8;--bg:#0c0b14;--card:#141320;
-    --line:rgba(255,255,255,.07);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7);--code:#07060f;--g7:#b6a8ff;--ic-fg:#c4b8ff;--btn-hover:#7c6df6;--navbg:rgba(12,11,20,.82)}
+    --line:rgba(255,255,255,.07);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7);--code:#07060f;--g7:#5fe0b3;--ic-fg:#8aecc9;--btn-hover:#16a07a;--navbg:rgba(12,11,20,.82)}
   *{box-sizing:border-box}
   html{scroll-behavior:auto}
   html.smooth{scroll-behavior:smooth}
@@ -656,8 +656,8 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     background:var(--bg);line-height:1.62;overflow-x:hidden}
   .blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
   .blobs b{position:absolute;border-radius:50%;filter:blur(90px);opacity:.16;will-change:transform}
-  .blobs b:nth-child(1){width:560px;height:560px;right:-160px;top:-180px;background:radial-gradient(circle,#6d5efc,transparent 70%);animation:drift1 40s ease-in-out infinite}
-  .blobs b:nth-child(2){width:440px;height:440px;left:-160px;bottom:-160px;background:radial-gradient(circle,#8b5cf6,transparent 70%);animation:drift2 48s ease-in-out infinite}
+  .blobs b:nth-child(1){width:560px;height:560px;right:-160px;top:-180px;background:radial-gradient(circle,#108B67,transparent 70%);animation:drift1 40s ease-in-out infinite}
+  .blobs b:nth-child(2){width:440px;height:440px;left:-160px;bottom:-160px;background:radial-gradient(circle,#14a87c,transparent 70%);animation:drift2 48s ease-in-out infinite}
   @keyframes drift1{50%{transform:translate(-50px,60px)}}
   @keyframes drift2{50%{transform:translate(40px,-50px)}}
   .wrap{max-width:900px;margin:0 auto;padding:48px 20px 72px}
@@ -667,7 +667,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     transition:box-shadow .2s ease,border-color .2s ease}
   header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
   header .logo{width:50px;height:50px;border-radius:14px;overflow:hidden;flex:0 0 auto;
-    box-shadow:0 6px 16px -4px rgba(109,94,252,.4)}
+    box-shadow:0 6px 16px -4px rgba(16,139,103,.4)}
   header .logo svg{width:100%;height:100%;display:block}
   .hgrow{flex:1 1 auto;min-width:0}
   .controls{margin-left:auto;flex:0 0 auto;display:flex;align-items:center;gap:8px}
@@ -682,16 +682,16 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   .sub{color:var(--mut);margin:3px 0 0;font-size:.98rem}
   .lead{font-size:1.16rem;margin:20px 0 18px;max-width:60ch}
   .lead b{color:var(--ink)}
-  .grad{background:linear-gradient(95deg,#6d5efc,#8b5cf6 60%,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent;
+  .grad{background:linear-gradient(95deg,#108B67,#14a87c 60%,#3fcf9e);-webkit-background-clip:text;background-clip:text;color:transparent;
     background-size:200% auto;animation:shim 7s linear infinite}
   @keyframes shim{to{background-position:200% center}}
   .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;font-size:.82rem;font-weight:600;
-    color:var(--g7);background:rgba(109,94,252,.10);border:1px solid var(--line)}
-  .dot{width:8px;height:8px;border-radius:50%;background:var(--g);box-shadow:0 0 0 0 rgba(109,94,252,.5);animation:pulse 2s infinite}
-  @keyframes pulse{70%{box-shadow:0 0 0 7px rgba(109,94,252,0)}100%{box-shadow:0 0 0 0 rgba(109,94,252,0)}}
+    color:var(--g7);background:rgba(16,139,103,.10);border:1px solid var(--line)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--g);box-shadow:0 0 0 0 rgba(16,139,103,.5);animation:pulse 2s infinite}
+  @keyframes pulse{70%{box-shadow:0 0 0 7px rgba(16,139,103,0)}100%{box-shadow:0 0 0 0 rgba(16,139,103,0)}}
   h2{font-size:1.32rem;margin:46px 0 16px;font-weight:800;letter-spacing:-.01em;scroll-margin-top:72px}
   .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:0 0 auto;color:var(--ic-fg);
-    background:rgba(109,94,252,.11);border:1px solid var(--line);transition:transform .2s ease}
+    background:rgba(16,139,103,.11);border:1px solid var(--line);transition:transform .2s ease}
   .ic .i{width:22px;height:22px}
   .grid{display:grid;gap:16px;grid-template-columns:1fr 1fr}
   .grid-3{display:grid;gap:16px;grid-template-columns:1fr 1fr 1fr}
@@ -713,7 +713,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     transition:background .15s ease,color .15s ease,border-color .15s ease}
   .copy:hover{background:rgba(255,255,255,.13);color:#fff}
   .copy svg{width:15px;height:15px}
-  .copy.done{color:#b6a8ff;border-color:rgba(182,168,255,.55)}
+  .copy.done{color:#5fe0b3;border-color:rgba(95,224,179,.55)}
   .feat{list-style:none;padding:0;margin:0;display:grid;gap:12px}
   .feat li{display:flex;gap:13px;align-items:center;font-size:.97rem;padding:13px 16px}
   .feat li b{color:var(--ink)}
@@ -725,9 +725,9 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   .flow .node b{font-size:.93rem}
   .flow .node span{font-size:.75rem;color:var(--mut)}
   .flow .wire{flex:1 1 auto;min-width:30px;position:relative;height:2px;margin-top:27px;
-    background:linear-gradient(90deg,var(--line),rgba(109,94,252,.45),var(--line))}
+    background:linear-gradient(90deg,var(--line),rgba(16,139,103,.45),var(--line))}
   .flow .wire .pkt{position:absolute;top:50%;left:0;width:9px;height:9px;margin:-5px 0 0 -4px;border-radius:50%;
-    background:var(--g);box-shadow:0 0 9px 1px rgba(109,94,252,.7)}
+    background:var(--g);box-shadow:0 0 9px 1px rgba(16,139,103,.7)}
   .flow .wire::after{content:"";position:absolute;right:-1px;top:50%;width:7px;height:7px;margin-top:-4px;
     border-top:2px solid var(--g7);border-right:2px solid var(--g7);transform:rotate(45deg)}
   .flow-cap{color:var(--mut);font-size:.9rem;margin:2px 2px 0;max-width:68ch}
@@ -737,10 +737,10 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     .flow .node .ic{animation:nodepop 2.4s ease-in-out infinite}
   }
   @media(prefers-reduced-motion:reduce){.flow .wire .pkt{display:none}}
-  @keyframes nodepop{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 4px rgba(109,94,252,.12)}}
+  @keyframes nodepop{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 4px rgba(16,139,103,.12)}}
   .btn{display:inline-flex;align-items:center;gap:9px;padding:11px 19px;border-radius:11px;cursor:pointer;
     background:var(--g);color:#fff;text-decoration:none;font-weight:700;font-size:.93rem;
-    box-shadow:0 4px 12px -4px rgba(109,94,252,.5);transition:transform .15s ease,background .15s ease}
+    box-shadow:0 4px 12px -4px rgba(16,139,103,.5);transition:transform .15s ease,background .15s ease}
   .btn .i{width:18px;height:18px}
   .btn:hover{transform:translateY(-1px);background:var(--btn-hover)}
   .btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:none}
@@ -751,17 +751,17 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   .nav::-webkit-scrollbar{display:none}
   .nav a{flex:0 0 auto;font-size:.84rem;font-weight:600;color:var(--mut);text-decoration:none;
     padding:7px 13px;border-radius:999px;white-space:nowrap;transition:color .15s ease,background .15s ease}
-  .nav a:hover{color:var(--g7);background:rgba(109,94,252,.10)}
-  .nav a.active{color:var(--g7);background:rgba(109,94,252,.13)}
+  .nav a:hover{color:var(--g7);background:rgba(16,139,103,.10)}
+  .nav a.active{color:var(--g7);background:rgba(16,139,103,.13)}
   .uses{display:grid;gap:14px;grid-template-columns:1fr 1fr;padding:0;margin:0;list-style:none}
   @media(max-width:640px){.uses{grid-template-columns:1fr}}
   .uses li{display:flex;gap:13px;padding:16px 18px;align-items:flex-start;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
-  .uses li:hover{transform:translateY(-3px);border-color:rgba(109,94,252,.4);box-shadow:0 10px 26px -14px rgba(16,14,40,.4)}
+  .uses li:hover{transform:translateY(-3px);border-color:rgba(16,139,103,.4);box-shadow:0 10px 26px -14px rgba(16,14,40,.4)}
   .uses b{display:block;font-size:.96rem;margin-bottom:2px}
   .uses span{color:var(--mut);font-size:.88rem}
   .card{transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
   .card:hover{transform:translateY(-3px);box-shadow:0 10px 26px -14px rgba(16,14,40,.4)}
-  .card:hover,.method:hover{border-color:rgba(109,94,252,.32)}
+  .card:hover,.method:hover{border-color:rgba(16,139,103,.32)}
   .method{margin-bottom:16px;padding:24px}
   .method>.tag{margin-bottom:4px}
   .msub{color:var(--mut);font-size:.92rem;margin:.5rem 0 1.2rem}
@@ -769,16 +769,16 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   .steps li{display:flex;gap:14px;align-items:flex-start;position:relative}
   .steps li:not(:last-child)::after{content:"";position:absolute;left:13px;top:30px;bottom:-18px;width:2px;background:var(--line)}
   .steps .n{flex:0 0 auto;width:28px;height:28px;border-radius:50%;color:var(--ic-fg);
-    background:rgba(109,94,252,.12);border:1px solid var(--line);
+    background:rgba(16,139,103,.12);border:1px solid var(--line);
     font:800 .85rem/1 system-ui;display:flex;align-items:center;justify-content:center}
   .steps .body{flex:1;min-width:0;font-size:.95rem}
   .steps .body pre{margin-top:9px}
   .steps .body .btn{display:flex;width:fit-content;margin-top:10px}
-  code.inl{background:rgba(109,94,252,.13);color:var(--g7);padding:1px 6px;border-radius:6px;font-size:.85em;font-weight:600;
+  code.inl{background:rgba(16,139,103,.13);color:var(--g7);padding:1px 6px;border-radius:6px;font-size:.85em;font-weight:600;
     overflow-wrap:anywhere;word-break:break-word}
   .note{font-size:.86rem;color:var(--mut);margin-top:10px}
   .note + pre,.note + .codewrap{margin-top:9px}
-  .tip{margin-top:16px;background:rgba(109,94,252,.06);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+  .tip{margin-top:16px;background:rgba(16,139,103,.06);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
   .tip .note{margin:0}
   details{padding:2px 18px;margin-bottom:11px}
   details summary{cursor:pointer;font-weight:600;padding:15px 0;list-style:none;display:flex;align-items:center;gap:10px}
@@ -789,7 +789,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   details p{color:var(--mut);font-size:.92rem;margin:0 0 16px;padding-left:0}
   .star{margin-top:48px;text-align:center;padding:38px 24px;overflow:hidden;position:relative}
   .star::before{content:"";position:absolute;inset:-40% 0 auto;height:70%;
-    background:radial-gradient(closest-side,rgba(109,94,252,.10),transparent);pointer-events:none}
+    background:radial-gradient(closest-side,rgba(16,139,103,.10),transparent);pointer-events:none}
   .star h2{margin:0 0 6px;position:relative;display:inline-flex;align-items:center;gap:9px;justify-content:center}
   .star h2 .i{color:var(--g7)}
   .star p{color:var(--mut);max-width:48ch;margin:0 auto 18px;position:relative}
@@ -798,8 +798,6 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     display:flex;gap:18px;flex-wrap:wrap;align-items:center}
   footer a{color:var(--g7);font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
   footer a:hover{text-decoration:underline}
-  .badges{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px}
-  .badges img{height:20px;border-radius:4px}
   @media(max-width:640px){
     .wrap{padding:30px 15px 56px}
     header{flex-wrap:wrap;gap:12px}
@@ -854,13 +852,6 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   <div class="cta-row hero-in">
     <a class="btn" href="#connect">${icon("rocket")} ${t.ctaStart}</a>
     <a class="btn ghost" href="${GITHUB_URL}">${icon("star")} ${t.ctaStar}</a>
-  </div>
-
-  <div class="badges hero-in">
-    <a href="${NPM_URL}" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/v/webcake-storefront-mcp?label=npm&color=6d5efc" alt="npm version"></a>
-    <a href="${NPM_URL}" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/dm/webcake-storefront-mcp?color=8b5cf6" alt="npm downloads"></a>
-    <a href="${GITHUB_URL}/blob/main/LICENSE" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
-    <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/Model_Context_Protocol-server-6E56CF" alt="MCP server"></a>
   </div>
 
   <nav class="nav" aria-label="${L === "en" ? "Sections" : "Mục lục"}">
@@ -956,8 +947,6 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     <span>Endpoint: <code class="inl">${endpoint}</code></span>
     <a href="${DOCS_URL}">${icon("book")} ${t.footGuide}</a>
     <a href="${GITHUB_URL}">${icon("github")} GitHub</a>
-    <a href="${NPM_URL}">${icon("package")} npm</a>
-    <a href="${selfPath === "/" ? "/health" : "/health"}">Health</a>
     <a href="/privacy">Privacy</a>
     <a href="/terms">Terms</a>
   </footer>
@@ -1036,7 +1025,7 @@ export function ogImageSvg(): string {
       <stop stop-color="#0c0b14"/><stop offset="1" stop-color="#16122a"/>
     </linearGradient>
     <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(960 70) rotate(130) scale(620)" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#6d5efc" stop-opacity="0.40"/><stop offset="1" stop-color="#6d5efc" stop-opacity="0"/>
+      <stop stop-color="#108B67" stop-opacity="0.40"/><stop offset="1" stop-color="#108B67" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="1200" height="630" fill="url(#bg)"/>
@@ -1045,22 +1034,22 @@ export function ogImageSvg(): string {
     <svg x="0" y="0" width="80" height="80" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
       <rect width="32" height="32" rx="7" fill="url(#sg2)"/>
       <defs><linearGradient id="sg2" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#6d5efc"/>
-        <stop offset="100%" stop-color="#8b5cf6"/>
+        <stop offset="0%" stop-color="#108B67"/>
+        <stop offset="100%" stop-color="#14a87c"/>
       </linearGradient></defs>
       <text x="16" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="17" fill="white">S</text>
       <circle cx="24" cy="9" r="4" fill="#FFD591"/>
     </svg>
     <text x="100" y="42" fill="#ffffff" font-size="40" font-weight="800" letter-spacing="-1">WebCake Storefront MCP</text>
-    <text x="100" y="74" fill="#b6a8ff" font-size="22" font-weight="600">Tạo website bán hàng chỉ bằng cách trò chuyện · Build your store just by chatting</text>
+    <text x="100" y="74" fill="#5fe0b3" font-size="22" font-weight="600">Tạo website bán hàng chỉ bằng cách trò chuyện · Build your store just by chatting</text>
   </g>
   <text x="90" y="300" fill="#ffffff" font-size="64" font-weight="800" letter-spacing="-2">Bạn nói điều mình muốn —</text>
   <text x="90" y="380" fill="#ffffff" font-size="64" font-weight="800" letter-spacing="-2">AI dựng trang, kiểm tra,</text>
-  <text x="90" y="460" fill="#6d5efc" font-size="64" font-weight="800" letter-spacing="-2">đăng lên là xong.</text>
+  <text x="90" y="460" fill="#108B67" font-size="64" font-weight="800" letter-spacing="-2">đăng lên là xong.</text>
   <text x="90" y="534" fill="#9a98b8" font-size="28" font-weight="500">Không cần kéo-thả · Không cần biết lập trình · Luôn xem trước khi lưu</text>
   <g transform="translate(90 560)">
-    <rect width="540" height="52" rx="12" fill="#6d5efc"/>
-    <text x="270" y="34" fill="#ffffff" font-size="22" font-weight="700" text-anchor="middle">npx -y webcake-storefront-mcp install</text>
+    <rect width="540" height="52" rx="12" fill="#108B67"/>
+    <text x="270" y="34" fill="#ffffff" font-size="22" font-weight="700" text-anchor="middle">store.toolvn.io.vn</text>
   </g>
   <text x="1110" y="600" fill="#5b5a7a" font-size="22" font-weight="600" text-anchor="end">github.com/vuluu2k/webcake-storefront-mcp</text>
 </svg>`;

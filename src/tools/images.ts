@@ -610,7 +610,7 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
   server.tool(
     "get_cached_image_alts",
     `Look up cached alt descriptions for image URLs. URLs are matched by normalized form (query string stripped, lowercase). Use BEFORE running read_image/OCR — skip already-described URLs.
-When MONGO_URI is set, misses are then checked against MongoDB and successful hits are backfilled into the local SQLite cache for fast re-lookup.`,
+When MONGO_URI is set, misses are then checked against MongoDB and successful hits are backfilled into the local cache for fast re-lookup.`,
     {
       urls: z.array(z.string()).min(1).describe("Image URLs to look up"),
     },
@@ -709,7 +709,7 @@ When MONGO_URI is set, misses are then checked against MongoDB and successful hi
 
   server.tool(
     "sync_image_alts_to_mongo",
-    `Push local SQLite alt cache entries up to MongoDB. Bulk upsert keyed by url_key. Use when you want to back up local-only entries to the shared central store, or after a session of heavy AI describes.
+    `Push local alt cache entries up to MongoDB. Bulk upsert keyed by url_key. Use when you want to back up local-only entries to the shared central store, or after a session of heavy AI describes.
 Requires MONGO_URI env var.`,
     {
       limit: z.number().default(1000).describe("Max entries to push per call"),
@@ -727,7 +727,7 @@ Requires MONGO_URI env var.`,
 
   server.tool(
     "sync_image_alts_from_mongo",
-    `Pull MongoDB alt entries down into local SQLite cache. Useful when starting on a new machine/site to warm the local cache from the central store.
+    `Pull MongoDB alt entries down into local cache. Useful when starting on a new machine/site to warm the local cache from the central store.
 Requires MONGO_URI env var.`,
     {
       limit: z.number().default(1000).describe("Max entries to pull"),

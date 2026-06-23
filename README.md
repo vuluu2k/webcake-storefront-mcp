@@ -150,7 +150,7 @@ Base URLs come from a **named environment** — set `WEBCAKE_ENV` (or `--env`) a
 
 Override a preset with `WEBCAKE_API_URL` / `WEBCAKE_APP_URL`. Optional, configured server-side:
 `PEXELS_API_KEY` (search_images), `MONGO_URI` (image-alt cache). Token / session / site can also be set
-in chat via `update_auth` and `switch_site` — saved to a local SQLite db at `~/.webcake-storefront-mcp/`.
+in chat via `update_auth` and `switch_site` — saved to a local config file at `~/.webcake-storefront-mcp/`.
 
 <details>
 <summary><b>How to get your token + session</b></summary>

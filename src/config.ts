@@ -1,6 +1,6 @@
 // Central resolution of connection settings for every entry path (stdio, install,
 // login, remote HTTP). Precedence: explicit overrides > environment variables >
-// saved config in the local SQLite db.
+// saved config in the local config file.
 
 import { WebcakeCmsApi } from "./api.js";
 import { getSavedConfig } from "./tools/context.js";
