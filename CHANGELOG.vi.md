@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.6.0] - 2026-06-23
+
+### Added
+- `get_element` nay trả về trường `attributes` chứa tài liệu tham chiếu theo từng loại element, bao gồm các key có ý nghĩa của `specials`, `config`, `events` và `bindings` — được thu thập từ 329 trang thực đã publish, giá trị mặc định của factory và các trait component của builder — giúp agent biết chính xác cần đặt key nào trước khi tạo hoặc chỉnh sửa một element.
+
 ## [1.5.1] - 2026-06-23
 
 ### Fixed
