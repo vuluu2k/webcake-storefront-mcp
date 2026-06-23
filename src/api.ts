@@ -366,8 +366,15 @@ export class WebcakeCmsApi {
   listApps() {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/applications/subcriptions/all`);
   }
-  getApp(type: string) {
+  getApp(type: string | number) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/applications/subcriptions/get_app`, { query: { type } });
+  }
+  /** Install (register) an application on the site. type = Enum.Application value
+   *  (e.g. automation=2, send_email=7). Body: { site_id, type, is_active }. */
+  registerApp(type: number, is_active = true) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/applications/subcriptions/register`, {
+      body: { site_id: this.siteId, type, is_active },
+    });
   }
 
   // ── Promotions ──
@@ -436,6 +443,24 @@ export class WebcakeCmsApi {
   }
 
   // ── Automation ──
+  /** List the site's automations (id, name, rule/trigger, status). Use this to find the
+   *  automation_id to pass to send_mail. Returns { data: [...], total_entries, ... }. */
+  listAutomations(query?: any) {
+    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/automations/all`, { query });
+  }
+  createAutomation(automationAttrs: any) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/automations/create`, {
+      body: { automation_attrs: { ...automationAttrs, site_id: this.siteId } },
+    });
+  }
+  updateAutomation(automationAttrs: any) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/automations/update`, {
+      body: { automation_attrs: automationAttrs },
+    });
+  }
+  deleteAutomations(ids: string[]) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/automations/delete`, { body: { ids } });
+  }
   sendMail(params: any) {
     return this.request("POST", `/api/v1/cms_function/${this.siteId}/application/automation/send_mail`, { body: params });
   }

@@ -2,65 +2,127 @@ export const HTTP_FUNCTION_GUIDE = `
 # HTTP Function Guide
 
 ## Syntax
-export const [method]_[FunctionName] = (request) => { return result; }
-- Method: lowercase (get, post, put, patch, delete)
-- FunctionName: PascalCase
+export const [method]_[FunctionName] = async (request) => { return result; }
+- Method: lowercase (get, post, put, patch, delete) — picked from the export-name prefix.
+- FunctionName: keep it stable; it becomes the endpoint name.
+- Make it async; the return value is JSON-serialized and sent back to the caller.
 - Examples: get_Products, post_CreateOrder, delete_RemoveItem
 
-## Request object
-- request.params    — query params or body params
-- request.customer  — logged-in customer { id, name, email, first_name, last_name, phone_number, avatar }
-- request.account   — admin account { id, name, email, first_name, last_name, phone_number, avatar }
-- request.data      — full request params (including query string)
+## The request argument
+Your function is called with ONE object: { params, customer, site_id, account, data }.
+- request.params    — the arguments the caller passed (query string for GET, body for POST/…).
+- request.customer  — the logged-in storefront customer (when authenticated), else {}. Fields: id, name, email, first_name, last_name, phone_number, avatar.
+- request.account   — the logged-in admin account (when called by an admin), else {}.
+- request.site_id   — the current site id (string).
+- request.data      — extra request data (usually {}).
+IMPORTANT: pass request through to the @webcake/* module functions (their first arg).
 
-## API endpoint after deploy
-GET/POST/PUT/PATCH /api/v1/{site_id}/_functions/{FunctionName}
+## Endpoint after deploy
+ANY method → /api/v1/{site_id}/_functions/{FunctionName}
+The caller receives your return value as data.result. From the storefront, the
+webcake-fn client (api.method_FunctionName(params)) returns that result directly.
 
-## webcake-data (Database SDK, built-in, no config needed)
+## webcake-data — Database SDK (built-in)
 import { DBConnection } from 'webcake-data';
-const db = new DBConnection();
-const Model = db.model('table_name');
+const db = new DBConnection();              // auto-uses the sandbox global site/token
+const Model = db.model('collection_name');
 
-### CRUD
-- Model.create({ field: value })
-- Model.insertMany([...])
-- Model.find(filter).sort().limit().skip().select().exec()
+### Model CRUD (all async unless noted)
+- Model.create(doc)                         → created doc
+- Model.insertMany([doc, ...])              → array
+- Model.find(filter)                        → QueryBuilder (NOT a promise — chain then .exec()/await)
 - Model.findOne(filter, { select, sort, populate })
-- Model.findById(id)
-- Model.updateOne(filter, update)
-- Model.findByIdAndUpdate(id, update)
+- Model.findById(id, { select, populate })
+- Model.updateOne(filter, update)           → { acknowledged, matchedCount, modifiedCount }
+- Model.findByIdAndUpdate(id, update, { new: true })
+- Model.findOneAndUpdate(filter, update)
 - Model.updateMany(filter, update)
-- Model.deleteOne(filter)
-- Model.findByIdAndDelete(id)
+- Model.deleteOne(filter)                   → { acknowledged, deletedCount }
+- Model.findByIdAndDelete(id) / Model.findOneAndDelete(filter)
 - Model.deleteMany(filter)
-- Model.countDocuments(filter)
-- Model.exists(filter)
+- Model.countDocuments(filter)              → number
+- Model.exists(filter)                      → boolean
 
-### QueryBuilder
-Model.find().where('age').gte(25).lte(40).in('role', ['admin']).like('email', '%@ex.com').sort({ age: -1 }).limit(20).skip(10).select('name email').exec()
+### QueryBuilder (from Model.find())
+Chain then terminate with .exec() (or just await the chain):
+Model.find().where('age').gte(25).lte(40).in('role',['admin']).like('email','%@ex.com')
+  .sort({ age:-1 }).limit(20).skip(10).select('name email').exec()
+Operators: where, eq, ne, gt, gte, lt, lte, in, nin, between, like, sort, limit, skip, select, populate.
 
-### Populate (joins)
-Model.find().populate({ field: 'posts', table: 'posts', referenceField: 'user_id', select: 'title', where: {}, sort: {}, limit: 5 }).exec()
+### Populate (join another collection)
+Model.find().populate({
+  field:'posts', table:'posts', referenceField:'user_id',
+  select:'title', where:{}, sort:{ created_at:-1 }, limit:5, skip:0, justOne:false
+}).exec()
 
-### Operators
-where, eq, ne, gt, gte, lt, lte, in, nin, between, like, sort, limit, skip, select, populate
+## Built-in @webcake/* modules (first arg is always request; they auth via global.token)
+Thin wrappers over the backend's /cms_function/{site_id}/... endpoints. Pass request so
+they pick up site_id. Below is EXACTLY what each call sends to the backend + what it returns.
 
-## Built-in Modules
-- import { findArticleById, findArticle, createArticle, updateArticleById, deleteArticleById } from '@webcake/article'
-- import { findCustomerById, findCustomerByPhone, findCustomerByEmail } from '@webcake/customer'
-- import { addBonus } from '@webcake/promotion'
-- import { getAccessToken } from '@webcake/token'
-- import { sendMail } from '@webcake/app/automation'
-All module functions take (request, ...args) and auto-use global token/site_id.
+- '@webcake/article'  (backend: /cms_function/{site}/blog/article…)
+    findArticleById(request, id, opts?)
+        GET .../blog/article/{id}?opts=<json>   → the article object ({} if not found)
+    findArticle(request, payload, opts?)
+        GET .../blog/article/all?<payload>&filters=<json>&opts=<json>
+        payload: { filters?:{...}, page?, limit? }   → { data:[...], ... }
+    createArticle(request, data)            POST .../blog/article   → full response
+        data the backend accepts: { name (required), summary, content (HTML),
+        images: string[] (hosted URLs), tags: string[], status_approval,
+        render_inserted_at, render_expired_at }.  slug is auto-generated; the article is
+        auto-filed under the default blog category (this endpoint takes NO category_id —
+        use the create_article MCP tool if you need explicit category linkage).
+        creator_id/customer_id come from the authenticated request.
+    updateArticleById(request, id, data)    PATCH .../blog/article/{id}   (same fields) → response
+    deleteArticleById(request, id)          DELETE .../blog/article/{id}  → response
 
-## Sandbox Globals (no import needed)
-- fetch(url, options) — HTTP requests
-- URLSearchParams — URL query building
-- console.log/warn/error — logging (captured in debug mode)
+- '@webcake/customer'  (backend: /cms_function/{site}/customer/…)  → customer object ({} if none)
+    findCustomerById(request, id)     GET .../customer/identity/{id}
+    findCustomerByPhone(request, phone) GET .../customer/phone/{phone}
+    findCustomerByEmail(request, email) GET .../customer/email/{email}
+
+- '@webcake/promotion'  (backend: /cms_function/{site}/promotion/add_bonus)
+    addBonus(request, data)   POST add_bonus → response.
+        It ADDS REWARD POINTS to a customer. data: { customer_id (required),
+        point (number, required), message? (defaults "Bạn được cộng điểm") }.
+
+- '@webcake/token'  (backend: /external/oauth/token)
+    getAccessToken(request)   → access_token string (throws if none).
+        Needs request.x_storecake_refresh_token present (sent as x-storecake-refresh-token).
+
+- '@webcake/app/automation'  (backend: /cms_function/{site}/application/automation/send_mail)
+    sendMail(request, automationId, data)   → response (throws if send fails).
+        Sends body { automation_id, data }. automation_id MUST be a valid UUID of an
+        automation set up on the site — find it with the MCP tool list_automations.
+        data is the payload passed into that automation/email template.
+
+## Sandbox globals (no import)
+- fetch(url, options)            — HTTP requests; response.ok/status/text()/json().
+- URLSearchParams                — build/parse query strings.
+- console.log / warn / error     — captured in debug mode (returned in data.logs).
+- encodeURIComponent / decodeURIComponent / encodeURI / decodeURI
 - global.domain, global.siteId, global.token, global.headers
+- Standard JS: JSON, Math, Date, Object, Array, String, Number, Map, Set, Promise, Error.
+NOT available: require()/import at runtime, Buffer, crypto, fs, process, setTimeout/setInterval, eval/Function.
 
-## Cron Jobs (jobs_config JSON)
+## Limits
+Runs sandboxed: ~4 MB memory, ~30 s timeout. The return value MUST be JSON-serializable.
+
+## Cron jobs (jobs_config JSON)
 { "jobs": [{ "functionLocation": "backend/http_function", "functionName": "myFunc", "executionConfig": { "cronExpression": "0 2 * * *" } }] }
+
+## Example
+import { DBConnection } from 'webcake-data';
+import { findCustomerById } from '@webcake/customer';
+export const post_RecentOrders = async (request) => {
+  const { params, customer } = request;
+  const db = new DBConnection();
+  const orders = await db.model('orders')
+    .find().where('customer_id').eq(customer.id || params.customer_id)
+    .sort({ created_at:-1 }).limit(10)
+    .populate({ field:'items', table:'order_items', referenceField:'order_id', limit:50 })
+    .exec();
+  return { count: orders.length, orders };
+};
 `;
 
 export const CUSTOM_CODE_GUIDE = `
