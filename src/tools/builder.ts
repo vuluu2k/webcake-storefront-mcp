@@ -28,6 +28,19 @@ function newPageId(res: any): string | null {
   return (res && res.data && res.data.id) || (res && res.id) || null;
 }
 
+// BuilderX page kinds. The numeric `type` is what the backend stores (PAGE_TYPE in
+// builderx_spa); SPECIAL kinds also require a site-level data-source flag enabled on
+// site.settings, otherwise components that bind to store/customer/blog data render
+// with null bindings. build_page sets both for you.
+const PAGE_TYPE_NUM: Record<string, number> = {
+  main: 1, store: 2, member: 3, blog: 4, custom: 5, error: 6, maintain: 7,
+};
+const PAGE_TYPE_FLAG: Record<string, string> = {
+  store: "use_store", member: "use_member", blog: "use_blog",
+  error: "use_error", maintain: "use_maintain",
+};
+const PAGE_KINDS = ["main", "store", "member", "blog", "custom", "error", "maintain"] as const;
+
 export function registerBuilderTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "get_build_guide",
@@ -103,7 +116,12 @@ The source must be { sections: [...] } — build sections with new_section. Vali
       name: z.string().describe("Page name"),
       slug: z.string().describe("URL slug, e.g. '/landing' or '/about'"),
       source: z.any().describe("Full page source { sections: [...] } (object or JSON string)"),
-      type: z.string().optional().describe("Page type (optional)"),
+      type: z
+        .enum(PAGE_KINDS)
+        .optional()
+        .describe(
+          "Page kind. SPECIAL pages need a site data-source enabled — build_page does this automatically: store→use_store (product/cart bindings), member→use_member (customer/order bindings), blog→use_blog, error→use_error, maintain→use_maintain. 'main'/'custom' need nothing. Omit for a normal content page (defaults to 'main' for the homepage).",
+        ),
       is_homepage: z.boolean().default(false).describe("Set as the site homepage"),
       dry_run: z.boolean().default(true).describe("Preview+validate only (true) or create+save (false)"),
     },
@@ -112,13 +130,19 @@ The source must be { sections: [...] } — build sections with new_section. Vali
         const parsed = parseSource(source);
         const validation: any = validatePage(parsed);
 
+        // Resolve numeric page type + the site data-source flag a special page needs.
+        const kind = type || (is_homepage ? "main" : undefined);
+        const typeNum = kind ? PAGE_TYPE_NUM[kind] : undefined;
+        const requiredFlag = kind ? PAGE_TYPE_FLAG[kind] : undefined;
+
         if (dry_run) {
           return {
             dry_run: true,
             validation,
-            request: { name, slug, type, is_homepage, sections: (parsed && parsed.sections || []).length },
+            request: { name, slug, type: kind ?? null, page_type_num: typeNum ?? null, is_homepage, sections: (parsed && parsed.sections || []).length },
+            will_enable_feature: requiredFlag ?? null,
             hint: validation.valid
-              ? "Looks valid. Call again with dry_run=false to create and save the page."
+              ? `Looks valid. Call again with dry_run=false to create and save the page.${requiredFlag ? ` Will also enable site.settings.${requiredFlag} so its data bindings resolve.` : ""}`
               : "Fix the errors above before saving.",
           };
         }
@@ -127,7 +151,18 @@ The source must be { sections: [...] } — build sections with new_section. Vali
           return { error: "Validation failed — not saving.", validation };
         }
 
-        const created = await api.createPage({ name, slug, type, is_homepage });
+        // A special page is useless if its site data-source flag is off (bindings
+        // return null). Enable it BEFORE creating the page so the page works on first load.
+        let feature: { changed: boolean; flag: string } | null = null;
+        if (requiredFlag) {
+          try {
+            feature = await api.enableSiteFeature(requiredFlag);
+          } catch (e) {
+            return { error: `Could not enable site.settings.${requiredFlag} (needed for a '${kind}' page). ${(e as any)?.message ?? e}` };
+          }
+        }
+
+        const created = await api.createPage({ name, slug, ...(typeNum != null ? { type: typeNum } : {}), is_homepage });
         const pageId = newPageId(created);
         if (!pageId) {
           return { error: "Page created but no id was returned; cannot save source.", created };
@@ -139,6 +174,8 @@ The source must be { sections: [...] } — build sections with new_section. Vali
           page_id: pageId,
           name,
           slug,
+          page_type: kind ?? null,
+          ...(feature ? { data_source: { flag: feature.flag, newly_enabled: feature.changed } } : {}),
           page_source_id: saved && saved.data && saved.data.id,
           stats: validation.stats,
         };

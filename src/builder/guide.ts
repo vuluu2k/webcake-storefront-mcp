@@ -55,6 +55,23 @@ Breakpoint widths: large_desktop 1920, desktop 1280, laptop 992, tablet 640.
 - Dataset elements (text-dataset, image-dataset, grid-product...) use \`bindings\` to pull
   product/category/blog data — leave bindings to dataset-driven pages.
 
+## Page types & data sources (IMPORTANT for special pages)
+A page's \`type\` decides which live data it can bind to. A SPECIAL page only works if the
+matching site data-source flag (on site.settings) is enabled — otherwise the page renders
+but every product/customer/blog binding resolves to NULL (an empty, broken-looking page).
+\`build_page\` enables the right flag for you when you pass \`type\`:
+- \`main\`    — homepage / normal content. No flag needed.
+- \`store\`   — product detail, category, cart, checkout, thank-you. Needs \`use_store\`.
+            Bindings: \`product::*\`, \`cart_item::*\`.
+- \`member\`  — login, register, profile, order history. Needs \`use_member\`.
+            Bindings: \`customer_address::*\`, \`order_item::*\`.
+- \`blog\`    — blog list, article/post. Needs \`use_blog\`.
+- \`error\` / \`maintain\` — 404 / maintenance. Need \`use_error\` / \`use_maintain\`.
+- \`custom\`  — a free page with no special data. No flag needed.
+Rule of thumb: if the page shows products, a cart, customer/order data, or blog posts,
+set \`type\` accordingly so the binding source is turned on. A binding name like
+\`product::price\` REQUIRES its page to be the matching type.
+
 ## Workflow (do this every time)
 1. Intake: confirm goal, brand, colours, sections wanted (ask 3-5 questions if unclear).
 2. list_elements / get_element to pick the right component types.

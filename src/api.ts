@@ -217,6 +217,25 @@ export class WebcakeCmsApi {
   async updateSiteSettings(newSettings: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/update_site`, { body: { settings: newSettings }, timeout: 60000 });
   }
+  /** Read the full site.settings object (parsed). Empty object if unset/unparseable. */
+  async getSiteSettings(): Promise<Record<string, any>> {
+    const siteRes = await this.request("GET", `/api/v1/site/${this.siteId}/`, { timeout: 60000 });
+    const raw = (siteRes && siteRes.data && siteRes.data.settings) || "";
+    if (raw && typeof raw === "object") return raw as Record<string, any>;
+    if (typeof raw === "string" && raw.trim()) {
+      try { return JSON.parse(raw); } catch { return {}; }
+    }
+    return {};
+  }
+  /** Ensure a site data-source flag (use_store/use_member/use_blog/use_error/use_maintain)
+   *  is enabled so special pages' bindings resolve. Merges into existing settings;
+   *  no-op if already on. */
+  async enableSiteFeature(flag: string): Promise<{ changed: boolean; flag: string }> {
+    const settings = await this.getSiteSettings();
+    if (settings[flag] === true) return { changed: false, flag };
+    await this.updateSiteSettings({ ...settings, [flag]: true });
+    return { changed: true, flag };
+  }
 
   // ── Collections ──
   listCollections(query?: any) {
