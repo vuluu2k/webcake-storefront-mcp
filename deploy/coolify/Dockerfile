@@ -27,6 +27,10 @@ RUN npm ci --ignore-scripts
 COPY tsconfig.json ./
 COPY scripts ./scripts
 COPY src ./src
+# CHANGELOG files feed scripts/gen-changelog.mjs -> src/changelog.json (the landing
+# page's "What's new" timeline). Without them the generator writes an empty list and
+# the section is hidden on the deployed site.
+COPY CHANGELOG.md CHANGELOG.vi.md ./
 # Compile to dist/, then run the offline smoke gate.
 # A broken factory/validator/example fails the image build exactly like `npm run smoke`
 # locally (must print "All smoke checks passed.").
