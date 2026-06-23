@@ -11,7 +11,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createServer } from "./server.js";
 import { makeApi, resolveEnv, ENVIRONMENTS, DEFAULT_ENV } from "./config.js";
-import { landingHtml, faviconSvg } from "./web-guide.js";
+import { landingHtml, faviconSvg, ogImageSvg, normalizeLang } from "./web-guide.js";
 import { privacyHtml, termsHtml } from "./legal.js";
 import {
   registerClient,
@@ -303,6 +303,13 @@ export async function startHttpServer(port: number): Promise<void> {
       return;
     }
 
+    // ---- OG social card ----
+    if (req.method === "GET" && path === "/og.svg") {
+      res.writeHead(200, { "content-type": "image/svg+xml", "cache-control": "public, max-age=86400" });
+      res.end(ogImageSvg());
+      return;
+    }
+
     // ---- Legal pages ----
     if (req.method === "GET" && (path === "/privacy" || path === "/privacy-policy")) {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=3600" });
@@ -321,8 +328,9 @@ export async function startHttpServer(port: number): Promise<void> {
         const accept = String(req.headers["accept"] ?? "");
         const ua = String(req.headers["user-agent"] ?? "");
         if (accept.includes("text/html") || BOT_UA.test(ua)) {
+          const lang = normalizeLang(new URL(req.url ?? "/", "http://x").searchParams.get("lang"));
           res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-          res.end(landingHtml(publicBase(req)));
+          res.end(landingHtml(publicBase(req), lang));
           return;
         }
       }

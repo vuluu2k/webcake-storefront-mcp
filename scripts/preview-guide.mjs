@@ -82,12 +82,16 @@ const server = createServer(async (req, res) => {
     }
 
     let html;
-    if (url.pathname === "/privacy" || url.pathname === "/privacy-policy") {
+    if (url.pathname === "/og.svg") {
+      res.writeHead(200, { "Content-Type": "image/svg+xml", "Cache-Control": "no-store" });
+      return res.end(guide.ogImageSvg());
+    } else if (url.pathname === "/privacy" || url.pathname === "/privacy-policy") {
       html = (await freshImport(DIST_LEGAL)).privacyHtml();
     } else if (url.pathname === "/terms" || url.pathname === "/tos") {
       html = (await freshImport(DIST_LEGAL)).termsHtml();
     } else {
-      html = guide.landingHtml(`http://localhost:${PORT}`);
+      const lang = guide.normalizeLang(url.searchParams.get("lang"));
+      html = guide.landingHtml(`http://localhost:${PORT}`, lang);
     }
 
     html = html.replace("</body>", `${LIVERELOAD}</body>`);
