@@ -5,6 +5,16 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.2] - 2026-06-23
+
+### Fixed
+- Server không còn bị crash khi khởi động trong môi trường container được build bằng `npm ci --ignore-scripts`; module SQLite native `better-sqlite3` đã được thay thế bằng lưu trữ file JSON thuần túy (`config.json` và `image-alt-cache.json`) trong thư mục `~/.webcake-storefront-mcp/`.
+
+### Changed
+- Trang landing của lệnh `serve` đã được đổi bảng màu từ violet/indigo sang xanh ngọc (`#108B67`).
+- Trang landing không còn hiển thị các huy hiệu shields.io (version npm, lượt tải, license), và chân trang không còn liên kết tới npm hoặc endpoint `/health`.
+- Mô tả của các tool `get_cached_image_alts`, `sync_image_alts_to_mongo` và `sync_image_alts_from_mongo` nay ghi "local cache" thay vì "local SQLite cache" để phản ánh đúng loại lưu trữ đã thay đổi.
+
 ## [1.1.1] - 2026-06-23
 
 ### Added
