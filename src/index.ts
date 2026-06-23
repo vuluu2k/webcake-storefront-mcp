@@ -16,10 +16,21 @@ Commands:
   help, --help, -h   show this help
 
 Global options:
-  --env <local|prod>   pick the API + app base URLs
+  --env <local|staging|prod>   pick the API + app base URLs (default prod)
 `;
 
+/** Read a global `--env <name>` / `--env=<name>` flag and expose it via WEBCAKE_ENV
+ * so every subcommand (stdio, install, login, serve) resolves the same endpoints. */
+function applyEnvFlag(argv: string[]): void {
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--env" && argv[i + 1]) process.env.WEBCAKE_ENV = argv[i + 1];
+    else if (a.startsWith("--env=")) process.env.WEBCAKE_ENV = a.slice("--env=".length);
+  }
+}
+
 async function main(): Promise<void> {
+  applyEnvFlag(process.argv);
   const sub = process.argv[2];
 
   if (sub === "help" || sub === "--help" || sub === "-h") {

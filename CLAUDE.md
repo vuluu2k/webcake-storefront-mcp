@@ -24,12 +24,22 @@ node dist/index.js serve --port 8787   # remote Streamable-HTTP MCP
 
 This is a **TypeScript** project (strict). All source lives in `src/` and compiles to `dist/`; the published `bin` is `dist/index.js`. The server runs over stdio by default (for IDE configs) and can also run as a remote Streamable-HTTP server via `serve`. Config (token/site/api_url) is read from env vars or a SQLite db at `~/.webcake-storefront-mcp/` (survives `npx`).
 
-## Required Environment Variables
+## Environment Variables
 
-- `WEBCAKE_API_URL` — Backend API base URL (e.g. `https://api.storecake.io`)
+Required (auth + target):
 - `WEBCAKE_TOKEN` — storefront JWT Bearer token (the builder's `jwt` cookie / `store_jwt`)
 - `WEBCAKE_SESSION_ID` — session id, sent as the `x-session-id` header (the builder's `wsid` cookie)
 - `WEBCAKE_SITE_ID` — Target site ID
+
+Endpoints come from a **named environment** so you don't set base URLs by hand:
+- `WEBCAKE_ENV` (or `--env`) = `local` | `staging` | `prod` — **default `prod`**. Presets live in `src/config.ts` (`ENVIRONMENTS`):
+  - local → api `http://localhost:24679`, app `http://localhost:5173`, preview `http://demo.localhost:24679/<siteId>`
+  - staging → api `https://api.staging.storecake.io`, app `https://staging.webcake.io`, preview `https://staging2.webcake.me/<siteId>`
+  - prod → api `https://api.storefront.webcake.io`, app `https://webcake.io`, preview `https://<site_slug.slug>.webcake.me`
+- **Preview URL** (`resolvePreviewUrl` in config.ts): a site's custom domain (`primary_domain.domain`) wins; otherwise the per-env rule above (prod = per-site subdomain from the DB `site_slug.slug`; local/staging = `${base}/<siteId>`). Surfaced by `publish_site`.
+- `WEBCAKE_API_URL` / `WEBCAKE_APP_URL` — optional explicit overrides (win over the preset). Per-request overrides in remote mode: `x-webcake-env` / `x-webcake-api-url` headers or `?env=` / `?api_url=` query.
+
+So with `--env prod` (the default) you only need token + session (+ site). `--env local` flips everything to localhost for testing.
 
 Optional, configured server-side (e.g. on the VPS running `serve`): `PEXELS_API_KEY` (search_images), `MONGO_URI` (image-alt cache).
 
@@ -43,7 +53,7 @@ src/                — TypeScript source (strict); compiles to dist/
   server.ts         — createServer(api): builds McpServer, registers every tool module, exposes Handle type
   config.ts         — env presets + resolveSettings() + makeApi() (overrides > env > saved db)
   install.ts        — writes MCP config into IDE config files (Claude Desktop/Code, Cursor, Windsurf, VSCode)
-  auth/login.ts     — loopback browser login → builderx_spa /mcp-connect → saves token to the local db
+  auth/login.ts     — loopback browser login → builderx_spa /mcp-storefront → saves token + session_id to the local db
   http.ts           — remote Streamable-HTTP transport; per-session JWT/site via headers or ?query
   db.ts             — SQLite (better-sqlite3) at ~/.webcake-storefront-mcp/; config + image-alt cache
   api.ts            — WebcakeCmsApi class: all HTTP calls to the WebCake/StoreCake backend

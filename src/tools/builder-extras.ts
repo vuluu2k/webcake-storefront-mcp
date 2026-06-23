@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
+import { resolvePreviewUrl } from "../config.js";
 import { parse as parseHtml } from "node-html-parser";
 
 const ALLOWED_IMG = /^image\/(jpe?g|png|webp)$/;
@@ -101,15 +102,17 @@ Two-step safety: dry_run=true (default) describes what will happen; dry_run=fals
     },
     ({ dry_run }) =>
       handle(async () => {
+        const preview_url = await resolvePreviewUrl(api);
         if (dry_run) {
           return {
             dry_run: true,
+            preview_url,
             note: "This will publish ALL saved pages of the site live. Call again with dry_run=false to publish.",
           };
         }
         const res = await api.publishSite({ is_publish: true });
         const data = (res && res.data) || res;
-        return { success: true, published_at: data && data.published_at, site: data && data.name };
+        return { success: true, published_at: data && data.published_at, site: data && data.name, preview_url };
       })
   );
 

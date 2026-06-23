@@ -56,6 +56,7 @@ export async function runLogin(argv: string[]): Promise<void> {
     const server = createServer((req: IncomingMessage, res: ServerResponse) => {
       const params = readQuery(req.url);
       const token = params.get("token") || params.get("jwt");
+      const wsid = params.get("wsid") || params.get("session_id") || "";
       const returnedState = params.get("state");
 
       if (!token) {
@@ -68,11 +69,12 @@ export async function runLogin(argv: string[]): Promise<void> {
       }
 
       setConfig("token", token);
+      if (wsid) setConfig("session_id", wsid);
       if (apiUrl) setConfig("api_url", apiUrl);
       if (opts.siteId) setConfig("site_id", opts.siteId);
 
       res.writeHead(200, { "content-type": "text/html" }).end(SUCCESS_HTML);
-      console.error(`\n✓ Connected. Token saved to local config (api ${apiUrl || "<unset>"}).`);
+      console.error(`\n✓ Connected. Token${wsid ? " + session" : ""} saved to local config (api ${apiUrl || "<unset>"}).`);
       server.close();
       resolve();
     });
@@ -81,7 +83,7 @@ export async function runLogin(argv: string[]): Promise<void> {
       const addr = server.address();
       const port = typeof addr === "object" && addr ? addr.port : opts.port;
       const redirectUri = `http://127.0.0.1:${port}/callback`;
-      const full = `${appUrl}/mcp-connect?redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+      const full = `${appUrl}/mcp-storefront?redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
       console.error("Opening your browser to connect (log in to WebCake there if prompted):");
       console.error("  " + full + "\n");
       if (opts.open) openBrowser(full);
