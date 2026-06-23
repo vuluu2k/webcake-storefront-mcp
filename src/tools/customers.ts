@@ -1,6 +1,9 @@
 import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
-export function registerCustomerTools(server, api, handle) {
+export function registerCustomerTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "find_customer",
     "Find a customer by ID, phone number, or email",

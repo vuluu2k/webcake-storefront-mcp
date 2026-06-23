@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { HTTP_FUNCTION_GUIDE } from "../guides.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
 // ── HTTP function code parsing utilities ──
 
@@ -7,10 +10,24 @@ import { HTTP_FUNCTION_GUIDE } from "../guides.js";
  * Parse exported functions from http_function code.
  * Tracks braces properly, handles template literals and strings.
  */
-function parseExportedFunctions(code) {
+function parseExportedFunctions(code: string): Array<{
+  name: string;
+  method: string;
+  function_name: string;
+  start_line: number;
+  end_line: number;
+  code: string;
+}> {
   if (!code) return [];
   const lines = code.split("\n");
-  const functions = [];
+  const functions: Array<{
+    name: string;
+    method: string;
+    function_name: string;
+    start_line: number;
+    end_line: number;
+    code: string;
+  }> = [];
   const exportRe = /^export\s+const\s+(\w+)\s*=/;
 
   for (let i = 0; i < lines.length; i++) {
@@ -49,10 +66,10 @@ function parseExportedFunctions(code) {
 }
 
 /** Extract import block (lines before first export) */
-function extractImports(code) {
+function extractImports(code: string): string {
   if (!code) return "";
   const lines = code.split("\n");
-  const out = [];
+  const out: string[] = [];
   for (const line of lines) {
     if (/^export\s/.test(line)) break;
     out.push(line);
@@ -61,7 +78,7 @@ function extractImports(code) {
 }
 
 /** Replace a function in the code by name, returns new full content */
-function replaceFunctionByName(code, funcName, newCode) {
+function replaceFunctionByName(code: string, funcName: string, newCode: string): string {
   const funcs = parseExportedFunctions(code);
   const target = funcs.find((f) => f.name === funcName || f.function_name === funcName);
   if (!target) throw new Error(`Function "${funcName}" not found in file`);
@@ -72,7 +89,7 @@ function replaceFunctionByName(code, funcName, newCode) {
 }
 
 /** Remove a function from the code by name */
-function removeFunctionByName(code, funcName) {
+function removeFunctionByName(code: string, funcName: string): string {
   const funcs = parseExportedFunctions(code);
   const target = funcs.find((f) => f.name === funcName || f.function_name === funcName);
   if (!target) throw new Error(`Function "${funcName}" not found in file`);
@@ -84,10 +101,10 @@ function removeFunctionByName(code, funcName) {
 }
 
 /** Build function overview result */
-function buildOverviewResult(content, fileId, schemas, includeGuide) {
+function buildOverviewResult(content: string, fileId: string | undefined, schemas: any[], includeGuide: boolean): any {
   const funcs = parseExportedFunctions(content);
   const imports = extractImports(content);
-  const res = {
+  const res: any = {
     file_id: fileId,
     total_lines: content.split("\n").length,
     imports: imports || undefined,
@@ -107,20 +124,20 @@ function buildOverviewResult(content, fileId, schemas, includeGuide) {
 }
 
 /** Helper to extract content and file_id from API response */
-function extractContent(httpFunc) {
+function extractContent(httpFunc: any): { content: string; fileId: string | undefined } {
   const content = (httpFunc?.data?.content) || (httpFunc?.content) || "";
   const fileId = (httpFunc?.data?.id) || (httpFunc?.id) || undefined;
   return { content, fileId };
 }
 
 /** Helper to build collection schemas */
-function buildSchemas(collections) {
+function buildSchemas(collections: any): any[] {
   const raw = collections?.data;
   const list = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
-  return list.map((c) => ({
+  return list.map((c: any) => ({
     name: c.name,
     table_name: c.table_name,
-    fields: (c.schema || []).map((f) => ({
+    fields: (c.schema || []).map((f: any) => ({
       name: f.name,
       type: f.type,
       is_required: f.is_required,
@@ -129,7 +146,7 @@ function buildSchemas(collections) {
   }));
 }
 
-export function registerCmsFileTools(server, api, handle) {
+export function registerCmsFileTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool("list_cms_files", "List all CMS files (HTTP functions, cron jobs, ...) for the site", {}, () =>
     handle(() => api.listCmsFiles())
   );
@@ -182,7 +199,7 @@ Add include_guide=true on first call to get the coding guide`,
 
         if (overview) return buildOverviewResult(content, fileId, schemas, include_guide);
 
-        const res = { http_function: httpFunc, collections: schemas };
+        const res: any = { http_function: httpFunc, collections: schemas };
         if (include_guide) res.guide = HTTP_FUNCTION_GUIDE;
         return res;
       })

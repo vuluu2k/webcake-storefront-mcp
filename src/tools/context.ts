@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { getConfig, setConfig } from "../db.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
 /** Read all saved credentials from SQLite for startup */
 export function getSavedConfig() {
@@ -22,7 +25,7 @@ export function getConfirmMode() {
 
 // ── Tools ──
 
-export function registerContextTools(server, api, handle) {
+export function registerContextTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "get_current_context",
     "Show current connection context: which site_id, API URL, session, and account info. Call this first to confirm you're working on the right site",
@@ -38,13 +41,13 @@ export function registerContextTools(server, api, handle) {
           api_url: api.baseUrl,
           site_id: api.siteId,
           session_id: api.sessionId || null,
-          site_name: site?.data?.name || null,
-          site_domain: site?.data?.domain || site?.data?.sub_domain || null,
-          account: me?.data
+          site_name: (site as any)?.data?.name || null,
+          site_domain: (site as any)?.data?.domain || (site as any)?.data?.sub_domain || null,
+          account: (me as any)?.data
             ? {
-                id: me.data.id,
-                email: me.data.email,
-                name: [me.data.first_name, me.data.last_name].filter(Boolean).join(" ") || null,
+                id: (me as any).data.id,
+                email: (me as any).data.email,
+                name: [(me as any).data.first_name, (me as any).data.last_name].filter(Boolean).join(" ") || null,
               }
             : null,
           confirm_mode: getConfirmMode(),
@@ -64,9 +67,9 @@ export function registerContextTools(server, api, handle) {
     ({ page, limit, term }) =>
       handle(async () => {
         const res = await api.listMySites({ page, limit, ...(term && { term }) });
-        const raw = res?.data?.sites || res?.data || [];
-        const list = Array.isArray(raw) ? raw : [];
-        const sites = list.map((s) => ({
+        const raw = (res as any)?.data?.sites || (res as any)?.data || [];
+        const list: any[] = Array.isArray(raw) ? raw : [];
+        const sites = list.map((s: any) => ({
           id: s.id,
           name: s.name,
           domain: s.domain || s.sub_domain || null,
@@ -75,7 +78,7 @@ export function registerContextTools(server, api, handle) {
         return {
           current_site_id: api.siteId,
           sites,
-          total: res?.data?.total_entries || sites.length,
+          total: (res as any)?.data?.total_entries || sites.length,
           page,
         };
       })
@@ -96,23 +99,23 @@ Use list_my_sites first to find the site_id`,
 
         // Verify the new site is accessible
         const site = await api.getSiteInfo().catch(() => null);
-        if (!site?.data) {
+        if (!(site as any)?.data) {
           api.switchSite(oldSiteId);
           throw new Error(`Cannot access site "${site_id}". Check the ID or your permissions.`);
         }
 
         // Persist for next session
         setConfig("site_id", api.siteId);
-        setConfig("site_name", site.data.name || "");
-        setConfig("site_domain", site.data.domain || site.data.sub_domain || "");
+        setConfig("site_name", (site as any).data.name || "");
+        setConfig("site_domain", (site as any).data.domain || (site as any).data.sub_domain || "");
 
         return {
           switched: true,
           saved: true,
           previous_site_id: oldSiteId,
           current_site_id: api.siteId,
-          site_name: site.data.name,
-          site_domain: site.data.domain || site.data.sub_domain || null,
+          site_name: (site as any).data.name,
+          site_domain: (site as any).data.domain || (site as any).data.sub_domain || null,
         };
       })
   );
@@ -142,7 +145,7 @@ Get token and session_id from browser DevTools → Network tab → copy from any
 
         // Verify credentials work
         const me = await api.getMe().catch(() => null);
-        if (!me?.data) {
+        if (!(me as any)?.data) {
           // Rollback
           if (token) api.switchToken(oldToken);
           if (session_id) api.switchSession(oldSessionId);
@@ -159,9 +162,9 @@ Get token and session_id from browser DevTools → Network tab → copy from any
           updated: true,
           saved: true,
           account: {
-            id: me.data.id,
-            email: me.data.email,
-            name: [me.data.first_name, me.data.last_name].filter(Boolean).join(" ") || null,
+            id: (me as any).data.id,
+            email: (me as any).data.email,
+            name: [(me as any).data.first_name, (me as any).data.last_name].filter(Boolean).join(" ") || null,
           },
           current_site_id: api.siteId,
         };

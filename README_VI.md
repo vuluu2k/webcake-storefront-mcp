@@ -19,7 +19,7 @@ Nếu đã clone repo:
 
 Hoặc tải về rồi chạy:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/install_vi.sh -o install_vi.sh && bash install_vi.sh
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install_vi.sh -o install_vi.sh && bash install_vi.sh
 ```
 
 Script sẽ hướng dẫn bạn:
@@ -44,7 +44,7 @@ Nếu đã clone repo:
 
 Hoặc tải về rồi chạy:
 ```powershell
-irm https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/install.ps1 -OutFile install.ps1; .\install.ps1
+irm https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install.ps1 -OutFile install.ps1; .\install.ps1
 ```
 
 Gỡ cài đặt:
@@ -62,17 +62,17 @@ Cập nhật lên phiên bản mới nhất:
 
 ```bash
 # Tự tìm thư mục cài đặt
-~/.webcake-cms-mcp/update_vi.sh
+~/.webcake-storefront-mcp/update_vi.sh
 ```
 
 Hoặc chỉ định đường dẫn:
 ```bash
-./update_vi.sh ~/.webcake-cms-mcp
+./update_vi.sh ~/.webcake-storefront-mcp
 ```
 
 Hoặc tải về rồi chạy:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/update_vi.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/update_vi.sh | bash
 ```
 
 ### Windows (PowerShell)
@@ -84,12 +84,12 @@ curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/update
 
 Hoặc chỉ định đường dẫn:
 ```powershell
-.\update.ps1 C:\Users\you\.webcake-cms-mcp
+.\update.ps1 C:\Users\you\.webcake-storefront-mcp
 ```
 
 Hoặc tải về rồi chạy:
 ```powershell
-irm https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/update.ps1 -OutFile update.ps1; .\update.ps1
+irm https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/update.ps1 -OutFile update.ps1; .\update.ps1
 ```
 
 ---
@@ -103,7 +103,7 @@ Thêm knowledge files để AI hiểu quy tắc kinh doanh, chính sách, chuẩ
 ./setup_env_vi.sh
 
 # Hoặc tải về rồi chạy
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/setup_env_vi.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/setup_env_vi.sh | bash
 ```
 
 Script sẽ:
@@ -118,8 +118,8 @@ Xem thư mục `knowledge/` để biết cách viết và ví dụ mẫu.
 ## Cài đặt thủ công
 
 ```bash
-git clone https://github.com/vuluu2k/webcake_cms_mcp.git
-cd webcake_cms_mcp
+git clone https://github.com/vuluu2k/webcake-storefront-mcp.git
+cd webcake-storefront-mcp
 npm install
 ```
 
@@ -154,8 +154,8 @@ npm install
 
 ## Cấu hình theo từng IDE / AI Tool
 
-> Thay `/đường-dẫn-tuyệt-đối/webcake_cms_mcp/index.js` bằng đường dẫn thực tế nơi bạn đã clone repo.
-> Ví dụ: `/Users/username/webcake_cms_mcp/index.js`
+> Thay `/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js` bằng đường dẫn thực tế nơi bạn đã clone repo.
+> Ví dụ: `/Users/username/webcake-storefront-mcp/index.js`
 
 ### 1. Claude Desktop
 
@@ -170,7 +170,7 @@ Mở Settings > Developer > Edit Config, hoặc sửa file trực tiếp:
   "mcpServers": {
     "webcake-cms": {
       "command": "node",
-      "args": ["/đường-dẫn-tuyệt-đối/webcake_cms_mcp/index.js"],
+      "args": ["/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js"],
       "env": {
         "WEBCAKE_API_URL": "https://api.storecake.io",
         "WEBCAKE_TOKEN": "<token-của-bạn>",
@@ -196,7 +196,7 @@ claude mcp add webcake-cms \
   -e WEBCAKE_TOKEN=<token-của-bạn> \
   -e WEBCAKE_SESSION_ID=<session-id-của-bạn> \
   -e WEBCAKE_SITE_ID=<site-id-của-bạn> \
-  -- node /đường-dẫn-tuyệt-đối/webcake_cms_mcp/index.js
+  -- node /đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js
 ```
 
 Hoặc tạo file `.claude.json` tại thư mục project:
@@ -206,7 +206,7 @@ Hoặc tạo file `.claude.json` tại thư mục project:
   "mcpServers": {
     "webcake-cms": {
       "command": "node",
-      "args": ["/đường-dẫn-tuyệt-đối/webcake_cms_mcp/index.js"],
+      "args": ["/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js"],
       "env": {
         "WEBCAKE_API_URL": "https://api.storecake.io",
         "WEBCAKE_TOKEN": "<token-của-bạn>",
@@ -242,7 +242,7 @@ claude mcp list
   "mcpServers": {
     "webcake-cms": {
       "command": "node",
-      "args": ["/đường-dẫn-tuyệt-đối/webcake_cms_mcp/index.js"],
+      "args": ["/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js"],
       "env": {
         "WEBCAKE_API_URL": "https://api.storecake.io",
         "WEBCAKE_TOKEN": "<token-của-bạn>",
@@ -275,7 +275,7 @@ Hoặc cấu hình global tại `~/.cursor/mcp.json`.
   "mcpServers": {
     "webcake-cms": {
       "command": "node",
-      "args": ["/đường-dẫn-tuyệt-đối/webcake_cms_mcp/index.js"],
+      "args": ["/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js"],
       "env": {
         "WEBCAKE_API_URL": "https://api.storecake.io",
         "WEBCAKE_TOKEN": "<token-của-bạn>",
@@ -304,7 +304,7 @@ Hoặc cấu hình global tại `~/.cursor/mcp.json`.
   "mcpServers": {
     "webcake-cms": {
       "command": "node",
-      "args": ["/đường-dẫn-tuyệt-đối/webcake_cms_mcp/index.js"],
+      "args": ["/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js"],
       "env": {
         "WEBCAKE_API_URL": "https://api.storecake.io",
         "WEBCAKE_TOKEN": "<token-của-bạn>",
@@ -327,7 +327,7 @@ Thêm vào file `~/.codex/config.toml`:
 ```toml
 [mcp_servers.webcake-cms]
 command = "node"
-args = ["/đường-dẫn-tuyệt-đối/webcake_cms_mcp/index.js"]
+args = ["/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js"]
 env = { "WEBCAKE_API_URL" = "https://api.storecake.io", "WEBCAKE_TOKEN" = "<token-của-bạn>", "WEBCAKE_SESSION_ID" = "<session-id-của-bạn>", "WEBCAKE_SITE_ID" = "<site-id-của-bạn>" }
 ```
 
@@ -337,7 +337,7 @@ codex mcp add webcake-cms \
   --env WEBCAKE_API_URL=https://api.storecake.io \
   --env WEBCAKE_TOKEN=<token-của-bạn> \
   --env WEBCAKE_SITE_ID=<site-id-của-bạn> \
-  -- node /đường-dẫn-tuyệt-đối/webcake_cms_mcp/index.js
+  -- node /đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js
 ```
 
 Kiểm tra:

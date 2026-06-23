@@ -19,7 +19,7 @@ success() { echo -e "${GREEN}[OK]${NC} $1"; }
 warn()    { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error()   { echo -e "${RED}[ERROR]${NC} $1"; }
 
-DEFAULT_INSTALL_DIR="$HOME/.webcake-cms-mcp"
+DEFAULT_INSTALL_DIR="$HOME/.webcake-storefront-mcp"
 
 echo ""
 echo -e "${CYAN}╔══════════════════════════════════════════════════╗${NC}"
@@ -41,7 +41,7 @@ if [ -z "$INSTALL_DIR" ]; then
     error "Could not find MCP server installation."
     echo ""
     echo "  Usage: ./update.sh [install-path]"
-    echo "  Example: ./update.sh ~/.webcake-cms-mcp"
+    echo "  Example: ./update.sh ~/.webcake-storefront-mcp"
     echo ""
     exit 1
   fi
@@ -122,7 +122,7 @@ if [ -d ".git" ]; then
 else
   warn "Not a git repo — cannot pull updates."
   echo "  To enable updates, re-install from git:"
-  echo "  git clone https://github.com/vuluu2k/webcake_cms_mcp.git $INSTALL_DIR"
+  echo "  git clone https://github.com/vuluu2k/webcake-storefront-mcp.git $INSTALL_DIR"
   exit 1
 fi
 

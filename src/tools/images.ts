@@ -1,18 +1,21 @@
 import { z } from "zod";
 import { getImageAlt, setImageAlts as dbSetImageAlts, listImageAlts, countImageAlts } from "../db.js";
 import { isMongoEnabled, mongoUpsertAlts, mongoFindAlts, mongoListAlts } from "../mongo.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
 const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|svg|avif|bmp|ico)(\?[^"')\s]*)?$/i;
 const URL_IN_CSS_RE = /url\(\s*['"]?([^'")\s]+)['"]?\s*\)/g;
 const HTTP_URL_RE = /https?:\/\/[^\s"'<>)]+/g;
 
-function isImageUrl(s) {
+function isImageUrl(s: any): boolean {
   if (typeof s !== "string") return false;
   if (s.startsWith("data:")) return false;
   return IMAGE_EXT_RE.test(s);
 }
 
-function normalizeUrl(u) {
+function normalizeUrl(u: string): string {
   try {
     const url = new URL(u);
     url.search = "";
@@ -22,7 +25,7 @@ function normalizeUrl(u) {
   }
 }
 
-function parseSource(raw) {
+function parseSource(raw: any): any {
   try {
     return typeof raw === "string" ? JSON.parse(raw) : raw;
   } catch {
@@ -30,7 +33,7 @@ function parseSource(raw) {
   }
 }
 
-function getRoots(source) {
+function getRoots(source: any): any[] {
   if (!source) return [];
   if (source.sections) return source.sections;
   if (source.id) return [source];
@@ -38,8 +41,8 @@ function getRoots(source) {
   return [];
 }
 
-function walkNodes(roots, fn) {
-  function walk(n) {
+function walkNodes(roots: any[], fn: (n: any) => void): void {
+  function walk(n: any): void {
     if (!n) return;
     fn(n);
     for (const c of n.children || []) walk(c);
@@ -47,7 +50,7 @@ function walkNodes(roots, fn) {
   for (const r of roots || []) walk(r);
 }
 
-function collectImagesFromValue(value, ctx, out) {
+function collectImagesFromValue(value: any, ctx: any, out: any[]): void {
   if (typeof value === "string") {
     // CSS url(...) refs
     URL_IN_CSS_RE.lastIndex = 0;
@@ -83,8 +86,8 @@ function collectImagesFromValue(value, ctx, out) {
   }
 }
 
-function extractFromSource(source, sourceMeta) {
-  const out = [];
+function extractFromSource(source: any, sourceMeta: any): any[] {
+  const out: any[] = [];
   const roots = getRoots(source);
   walkNodes(roots, (node) => {
     const { children, ...rest } = node;
@@ -99,7 +102,7 @@ function extractFromSource(source, sourceMeta) {
   return out;
 }
 
-export function registerImageTools(server, api, handle) {
+export function registerImageTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "scan_unique_images",
     `Scan all images used across page sources, global sources, and global sections. Returns a unique list of image URLs with which elements use each one.
@@ -133,7 +136,7 @@ Scans every string field in the source tree (config.src, style.background-image,
               }
             }
           } catch (e) {
-            errors.push(`pages: ${e.message}`);
+            errors.push(`pages: ${(e as any).message}`);
           }
         }
 
@@ -155,7 +158,7 @@ Scans every string field in the source tree (config.src, style.background-image,
               }));
             }
           } catch (e) {
-            errors.push(`global_sources: ${e.message}`);
+            errors.push(`global_sources: ${(e as any).message}`);
           }
         }
 
@@ -178,7 +181,7 @@ Scans every string field in the source tree (config.src, style.background-image,
               }
             }
           } catch (e) {
-            errors.push(`global_sections: ${e.message}`);
+            errors.push(`global_sections: ${(e as any).message}`);
           }
         }
 
@@ -236,7 +239,7 @@ Use these as building blocks when drafting an image-gen brief.`;
 
   /** Resize raw image buffer with sharp so base64 output stays under targetBytes.
    * Skips svg/gif (sharp can't easily handle animation, svg is text). */
-  async function shrinkImageBuffer(buf, ctype, targetRawBytes) {
+  async function shrinkImageBuffer(buf: any, ctype: string, targetRawBytes: number): Promise<{ buf: any; mime: string }> {
     if (ctype.includes("svg") || ctype.includes("gif")) return { buf, mime: ctype };
     try {
       const sharp = (await import("sharp")).default;
@@ -255,7 +258,7 @@ Use these as building blocks when drafting an image-gen brief.`;
     }
   }
 
-  async function fetchImageAsContent(url, maxSizeMb, opts = {}) {
+  async function fetchImageAsContent(url: string, maxSizeMb: number, opts: { targetBase64Kb?: number } = {}) {
     if (!/^https?:\/\//i.test(url)) {
       return { ok: false, error: "must be absolute http(s) URL" };
     }
@@ -266,7 +269,7 @@ Use these as building blocks when drafting an image-gen brief.`;
       res = await fetch(url, { signal: ctrl.signal });
     } catch (e) {
       clearTimeout(timer);
-      return { ok: false, error: `fetch failed: ${e.message}` };
+      return { ok: false, error: `fetch failed: ${(e as any).message}` };
     }
     clearTimeout(timer);
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
@@ -306,12 +309,12 @@ ${DESCRIBE_HINT}`,
     async ({ url, max_size_mb }) => {
       const r = await fetchImageAsContent(url, max_size_mb);
       if (!r.ok) {
-        return { content: [{ type: "text", text: `Error: ${r.error}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${r.error}` }], isError: true };
       }
       return {
         content: [
-          { type: "image", data: r.data, mimeType: r.mime },
-          { type: "text", text: JSON.stringify({ url, mime: r.mime, size_kb: r.size_kb }) },
+          { type: "image" as const, data: r.data as string, mimeType: r.mime as string },
+          { type: "text" as const, text: JSON.stringify({ url, mime: r.mime, size_kb: r.size_kb }) },
         ],
       };
     }
@@ -319,7 +322,7 @@ ${DESCRIBE_HINT}`,
 
   // ── Image element discovery + alt writer ──
 
-  function isImageElement(node) {
+  function isImageElement(node: any): boolean {
     const t = (node && node.type) ? String(node.type).toLowerCase() : "";
     if (/image|img|picture|photo/i.test(t)) return true;
     // Check root + every breakpoint config for an image-bearing field
@@ -336,7 +339,7 @@ ${DESCRIBE_HINT}`,
   }
 
   /** Find src inside a config object (used per-breakpoint). Returns { src, sub_path } where sub_path is the leaf path inside config. */
-  function findSrcInConfig(cfg) {
+  function findSrcInConfig(cfg: any): { src: string; sub_path: string } {
     if (!cfg || typeof cfg !== "object") return { src: "", sub_path: "" };
     if (cfg.image && typeof cfg.image === "object") {
       const src = cfg.image.src || cfg.image.url || "";
@@ -357,7 +360,7 @@ ${DESCRIBE_HINT}`,
 
   /** Locate the src path. In this builder, config lives inside breakpoints (bp1, bp2...).
    * Walks bp1 → bp2 → ... → root.config as fallback. Alt is always at specials.image_alt. */
-  function probeImagePaths(node) {
+  function probeImagePaths(node: any): { src: string; alt: string; src_path: string; alt_path: string } {
     const specials = (node && node.specials) || {};
     const alt_path = "specials.image_alt";
     const alt = specials.image_alt || specials.alt || "";
@@ -380,7 +383,7 @@ ${DESCRIBE_HINT}`,
     return { src: "", alt, src_path: "", alt_path };
   }
 
-  function setByPath(obj, path, value) {
+  function setByPath(obj: any, path: string, value: any): void {
     const parts = path.split(".");
     let cur = obj;
     for (let i = 0; i < parts.length - 1; i++) {
@@ -403,10 +406,10 @@ Note: global_sections are read-only via the API and are not included.`,
     },
     ({ scope, page_id, only_missing_alt, limit }) =>
       handle(async () => {
-        const out = [];
-        const errors = [];
+        const out: any[] = [];
+        const errors: string[] = [];
 
-        function visitSource(source, meta) {
+        function visitSource(source: any, meta: any): void {
           if (out.length >= limit) return;
           const roots = getRoots(source);
           walkNodes(roots, (node) => {
@@ -441,7 +444,7 @@ Note: global_sections are read-only via the API and are not included.`,
                 if (source) visitSource(source, { source_type: "page", source_id: p.id, source_name: p.name });
               }
             }
-          } catch (e) { errors.push(`pages: ${e.message}`); }
+          } catch (e) { errors.push(`pages: ${(e as any).message}`); }
         }
 
         if (scope === "all" || scope === "global_sources") {
@@ -460,7 +463,7 @@ Note: global_sections are read-only via the API and are not included.`,
                 source_name: gs.component || gs.type || `gs-${gs.id}`,
               });
             }
-          } catch (e) { errors.push(`global_sources: ${e.message}`); }
+          } catch (e) { errors.push(`global_sources: ${(e as any).message}`); }
         }
 
         return {
@@ -473,7 +476,7 @@ Note: global_sections are read-only via the API and are not included.`,
       })
   );
 
-  function findNodeByIdInSource(source, elementId) {
+  function findNodeByIdInSource(source: any, elementId: string): any {
     let found = null;
     const roots = getRoots(source);
     walkNodes(roots, (n) => { if (n.id === elementId) found = n; });
@@ -522,7 +525,7 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
               source = parseSource(page.source && page.source.source);
               if (!source) { results.push({ source_type, source_id, error: "Page has no source" }); continue; }
               existingLen = JSON.stringify(source).length;
-              saver = (newSrc) => api.updatePageSource(source_id, { source: newSrc });
+              saver = (newSrc: any) => api.updatePageSource(source_id, { source: newSrc });
               context = { page };
             } else {
               const [gsRes, cartRes] = await Promise.all([
@@ -537,24 +540,24 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
               if (!source) { results.push({ source_type, source_id, error: "Global source has no source" }); continue; }
               existingLen = JSON.stringify(source).length;
               const isCart = gs.component === "cart-droppable";
-              saver = (newSrc) =>
+              saver = (newSrc: any) =>
                 isCart
                   ? api.updateSourceCart({ source: newSrc, type: gs.type, site_id: api.siteId })
                   : api.updateGlobalSource({ global_source_id: source_id, source: newSrc, type: gs.component, site_id: api.siteId });
               context = { gs };
             }
           } catch (e) {
-            results.push({ source_type, source_id, error: `load failed: ${e.message}` });
+            results.push({ source_type, source_id, error: `load failed: ${(e as any).message}` });
             continue;
           }
 
-          const perItem = [];
+          const perItem: any[] = [];
           for (const it of group) {
             const node = findNodeByIdInSource(source, it.element_id);
             if (!node) { perItem.push({ element_id: it.element_id, error: "Element not found" }); continue; }
             const probe = probeImagePaths(node);
             const path = it.alt_path || probe.alt_path;
-            const before = path.split(".").reduce((acc, k) => (acc == null ? acc : acc[k]), node);
+            const before = path.split(".").reduce((acc: any, k: string) => (acc == null ? acc : acc[k]), node);
             setByPath(node, path, it.alt);
             perItem.push({ element_id: it.element_id, alt_path: path, before: before == null ? "" : before, after: it.alt, _src: probe.src });
           }
@@ -580,9 +583,9 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
               cacheBatch.push({ url_key: normalizeUrl(u._src), url: u._src, alt: u.after, source: "ai" });
             }
             if (cacheBatch.length) {
-              try { dbSetImageAlts(cacheBatch); } catch { /* cache best-effort */ }
+              try { dbSetImageAlts(cacheBatch as any); } catch { /* cache best-effort */ }
               if (isMongoEnabled()) {
-                mongoUpsertAlts(cacheBatch).catch(() => { /* fire-and-forget */ });
+                mongoUpsertAlts(cacheBatch as any).catch(() => { /* fire-and-forget */ });
               }
             }
             results.push({
@@ -594,7 +597,7 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
               updates: perItem.map(({ _src, ...rest }) => rest),
             });
           } catch (e) {
-            results.push({ source_type, source_id, error: `save failed: ${e.message}`, updates: perItem.map(({ _src, ...rest }) => rest) });
+            results.push({ source_type, source_id, error: `save failed: ${(e as any).message}`, updates: perItem.map(({ _src, ...rest }) => rest) });
           }
         }
 
@@ -648,7 +651,7 @@ When MONGO_URI is set, misses are then checked against MongoDB and successful hi
                 }
               }
               if (backfill.length) {
-                try { dbSetImageAlts(backfill); } catch { /* best-effort */ }
+                try { dbSetImageAlts(backfill as any); } catch { /* best-effort */ }
               }
               misses = stillMissing;
             }
@@ -678,9 +681,9 @@ When MONGO_URI is set, misses are then checked against MongoDB and successful hi
           batch.push({ url_key: normalizeUrl(it.url), url: it.url, alt: it.alt, source: it.source || "manual" });
         }
         if (batch.length) {
-          dbSetImageAlts(batch);
+          dbSetImageAlts(batch as any);
           if (isMongoEnabled()) {
-            mongoUpsertAlts(batch).catch(() => { /* fire-and-forget */ });
+            mongoUpsertAlts(batch as any).catch(() => { /* fire-and-forget */ });
           }
         }
         return { saved: batch.length, skipped, mongo: isMongoEnabled() ? "queued" : "disabled" };
@@ -735,7 +738,7 @@ Requires MONGO_URI env var.`,
         if (!isMongoEnabled()) return { error: "MONGO_URI not configured" };
         const { total, entries } = await mongoListAlts(limit, offset);
         if (entries.length) {
-          dbSetImageAlts(entries.map((e) => ({ url_key: e.url_key, url: e.url, alt: e.alt, source: e.source || "mongo" })));
+          dbSetImageAlts(entries.map((e: any) => ({ url_key: e.url_key, url: e.url, alt: e.alt, source: e.source || "mongo" })) as any);
         }
         return { pulled: entries.length, total_remote: total, total_local: countImageAlts() };
       })
@@ -766,8 +769,8 @@ The pre-built "items" template at the end contains placeholders — fill in "alt
         const cap = Math.min(Math.max(limit, 1), 20);
 
         // 1. Collect candidate elements
-        const candidates = [];
-        const addFromSource = (source, meta) => {
+        const candidates: any[] = [];
+        const addFromSource = (source: any, meta: any) => {
           const roots = getRoots(source);
           walkNodes(roots, (node) => {
             if (candidates.length >= cap * 3) return; // overscan, will filter
@@ -834,9 +837,9 @@ The pre-built "items" template at the end contains placeholders — fill in "alt
         const fetched = await Promise.all(needVision.map((c) => fetchImageAsContent(c.src, max_size_mb, { targetBase64Kb: perImageBase64Kb })));
 
         // 4. Build mixed content response
-        const content = [];
+        const content: any[] = [];
         content.push({
-          type: "text",
+          type: "text" as const,
           text: `Fetched ${needVision.length} image(s) needing description. ${autoItems.length} auto-filled from cache. ${candidates.length - needVision.length - autoItems.length} skipped.
 
 For each image below, write a short alt description in the language of the site (Vietnamese unless content suggests otherwise). Focus on the SUBJECT visible — avoid generic phrases like "image of...".
@@ -844,14 +847,14 @@ For each image below, write a short alt description in the language of the site 
 When done, call set_image_alts with the items array. The template is at the bottom of this response.`,
         });
 
-        const visionItems = [];
+        const visionItems: any[] = [];
         for (let i = 0; i < needVision.length; i++) {
           const c = needVision[i];
           const r = fetched[i];
           const header = `[#${i + 1}] element_id=${c.element_id} | source=${c.source_type}:${c.source_id} (${c.source_name}) | src=${c.src}`;
-          content.push({ type: "text", text: header });
+          content.push({ type: "text" as const, text: header });
           if (r.ok) {
-            content.push({ type: "image", data: r.data, mimeType: r.mime });
+            content.push({ type: "image" as const, data: r.data as string, mimeType: r.mime as string });
             visionItems.push({
               source_type: c.source_type,
               source_id: c.source_id,
@@ -859,7 +862,7 @@ When done, call set_image_alts with the items array. The template is at the bott
               alt: "<FILL_ALT_FOR_#" + (i + 1) + ">",
             });
           } else {
-            content.push({ type: "text", text: `(fetch error: ${r.error})` });
+            content.push({ type: "text" as const, text: `(fetch error: ${r.error})` });
           }
         }
 
@@ -868,11 +871,11 @@ When done, call set_image_alts with the items array. The template is at the bott
           to_describe: visionItems,
           next_step: "Replace each <FILL_ALT_FOR_#N> with your description, then call set_image_alts with items = [...auto_from_cache, ...to_describe].",
         };
-        content.push({ type: "text", text: JSON.stringify(template, null, 2) });
+        content.push({ type: "text" as const, text: JSON.stringify(template, null, 2) });
 
         return { content };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e.message}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${(e as any).message}` }], isError: true };
       }
     }
   );
@@ -890,7 +893,7 @@ ${DESCRIBE_HINT}`,
     async ({ urls, max_size_mb }) => {
       const perImageBase64Kb = urls.length ? Math.max(60, Math.floor(950 / urls.length)) : 600;
       const results = await Promise.all(urls.map((u) => fetchImageAsContent(u, max_size_mb, { targetBase64Kb: perImageBase64Kb })));
-      const content = [];
+      const content: any[] = [];
       const summary = [];
       for (let i = 0; i < urls.length; i++) {
         const r = results[i];
@@ -898,10 +901,10 @@ ${DESCRIBE_HINT}`,
           summary.push({ url: urls[i], error: r.error });
           continue;
         }
-        content.push({ type: "image", data: r.data, mimeType: r.mime });
+        content.push({ type: "image" as const, data: r.data as string, mimeType: r.mime as string });
         summary.push({ url: urls[i], mime: r.mime, size_kb: r.size_kb });
       }
-      content.push({ type: "text", text: JSON.stringify({ count: content.length - 0, images: summary }) });
+      content.push({ type: "text" as const, text: JSON.stringify({ count: content.length - 0, images: summary }) });
       return { content };
     }
   );

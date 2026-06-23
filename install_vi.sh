@@ -116,8 +116,8 @@ check_npm() {
 
 # ── Cài MCP server ──
 
-REPO_URL="https://github.com/vuluu2k/webcake_cms_mcp.git"
-DEFAULT_INSTALL_DIR="$HOME/.webcake-cms-mcp"
+REPO_URL="https://github.com/vuluu2k/webcake-storefront-mcp.git"
+DEFAULT_INSTALL_DIR="$HOME/.webcake-storefront-mcp"
 
 install_mcp() {
   echo ""

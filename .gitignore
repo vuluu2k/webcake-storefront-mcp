@@ -1,4 +1,5 @@
 node_modules/
+dist/
 .env
 webcake-mcp.db
 webcake-mcp.db-wal

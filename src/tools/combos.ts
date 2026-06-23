@@ -1,4 +1,7 @@
 import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
 const COMBO_GUIDE = `
 ## Combo Product Types
@@ -25,7 +28,7 @@ const COMBO_GUIDE = `
 - bonus_items: free/bonus products included with the combo
 `;
 
-export function registerComboTools(server, api, handle) {
+export function registerComboTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "list_combos",
     "List all combo/bundle products of the site. Use get_combo_items for combo composition details",
@@ -39,9 +42,9 @@ export function registerComboTools(server, api, handle) {
       handle(async () => {
         const res = await api.listCombos({ page, limit, term });
         const combos = (res && res.combo_products) || (res && res.data) || [];
-        const result = {
+        const result: Record<string, any> = {
           data: Array.isArray(combos)
-            ? combos.map((c) => ({
+            ? combos.map((c: any) => ({
                 id: c.id,
                 name: c.name,
                 slug: c.slug,

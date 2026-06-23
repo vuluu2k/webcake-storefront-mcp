@@ -1,4 +1,7 @@
 import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
 const PROMOTION_TYPES = `
 ## Promotion Types (type field)
@@ -35,7 +38,7 @@ const PROMOTION_TYPES = `
 - is_hidden: hidden from storefront but still active
 `;
 
-export function registerPromotionTools(server, api, handle) {
+export function registerPromotionTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "list_promotions",
     "List all promotions/discounts of the site (metadata only). Use get_promotion for full details",
@@ -48,9 +51,9 @@ export function registerPromotionTools(server, api, handle) {
       handle(async () => {
         const res = await api.listPromotions({ page, limit });
         const promotions = (res && res.data) || [];
-        const result = {
+        const result: Record<string, any> = {
           data: Array.isArray(promotions)
-            ? promotions.map((p) => ({
+            ? promotions.map((p: any) => ({
                 id: p.id,
                 name: p.name,
                 type: p.type,
@@ -111,7 +114,7 @@ export function registerPromotionTools(server, api, handle) {
         const promotions = (res && res.data && res.data.promotions) || (res && res.data) || [];
         return {
           data: Array.isArray(promotions)
-            ? promotions.map((p) => ({
+            ? promotions.map((p: any) => ({
                 id: p.id,
                 name: p.name,
                 type: p.type,
@@ -145,7 +148,7 @@ export function registerPromotionTools(server, api, handle) {
     },
     ({ term, type, status, is_activated, page, limit }) =>
       handle(async () => {
-        const query = {};
+        const query: Record<string, any> = {};
         if (term) query.term = term;
         if (type) query.type = type;
         if (status != null) query.status = status;

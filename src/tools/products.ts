@@ -1,6 +1,9 @@
 import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
-export function registerProductTools(server, api, handle) {
+export function registerProductTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "list_products",
     "List products of the site (metadata only: id, name, slug, price, image, status). Use get_product for full details",
@@ -15,7 +18,7 @@ export function registerProductTools(server, api, handle) {
         const products = (res && res.data) || res || [];
         if (!Array.isArray(products)) return res;
         return {
-          data: products.map((p) => ({
+          data: products.map((p: any) => ({
             id: p.id,
             name: p.name,
             slug: p.slug,

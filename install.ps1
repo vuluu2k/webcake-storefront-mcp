@@ -5,8 +5,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$REPO_URL = "https://github.com/vuluu2k/webcake_cms_mcp.git"
-$DEFAULT_DIR = "$env:USERPROFILE\.webcake-cms-mcp"
+$REPO_URL = "https://github.com/vuluu2k/webcake-storefront-mcp.git"
+$DEFAULT_DIR = "$env:USERPROFILE\.webcake-storefront-mcp"
 
 Write-Host ""
 Write-Host "  WebCake CMS MCP Server - Installer" -ForegroundColor Cyan

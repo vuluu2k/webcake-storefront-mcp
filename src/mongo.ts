@@ -5,9 +5,9 @@ const MONGO_URI = process.env.MONGO_URI || "";
 const MONGO_DB = process.env.MONGO_DB || "webcake_mcp";
 const MONGO_COLLECTION = process.env.MONGO_COLLECTION || "image_alt_cache";
 
-let _client = null;
-let _collection = null;
-let _connecting = null;
+let _client: any = null;
+let _collection: any = null;
+let _connecting: Promise<any> | null = null;
 
 async function connect() {
   if (!MONGO_URI) return null;
@@ -36,13 +36,13 @@ export function isMongoEnabled() {
   return !!MONGO_URI;
 }
 
-export async function mongoUpsertAlts(items) {
+export async function mongoUpsertAlts(items: any[]) {
   if (!isMongoEnabled()) return { ok: false, reason: "MONGO_URI not set" };
   const col = await connect();
   if (!col) return { ok: false, reason: "no collection" };
   if (!items.length) return { ok: true, upserted: 0 };
   const now = Date.now();
-  const ops = items.map((it) => ({
+  const ops = items.map((it: any) => ({
     updateOne: {
       filter: { url_key: it.url_key },
       update: {
@@ -62,7 +62,7 @@ export async function mongoUpsertAlts(items) {
   return { ok: true, upserted: res.upsertedCount, modified: res.modifiedCount };
 }
 
-export async function mongoFindAlts(urlKeys) {
+export async function mongoFindAlts(urlKeys: any[]) {
   if (!isMongoEnabled() || !urlKeys.length) return new Map();
   const col = await connect();
   if (!col) return new Map();

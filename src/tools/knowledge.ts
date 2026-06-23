@@ -2,15 +2,17 @@ import { z } from "zod";
 import { readdir, readFile, writeFile, unlink, mkdir } from "node:fs/promises";
 import { join, extname, basename } from "node:path";
 import { existsSync } from "node:fs";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { Handle } from "../server.js";
 
 const SUPPORTED_EXTS = new Set([".md", ".txt", ".json"]);
 
 /** Parse optional YAML-like frontmatter from markdown files */
-function parseFrontmatter(content) {
+function parseFrontmatter(content: string): { meta: Record<string, string>; body: string } {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
   if (!match) return { meta: {}, body: content };
 
-  const meta = {};
+  const meta: Record<string, string> = {};
   for (const line of match[1].split("\n")) {
     const idx = line.indexOf(":");
     if (idx > 0) {
@@ -24,17 +26,17 @@ function parseFrontmatter(content) {
 
 // ── Local directory ──
 
-function getLocalDir() {
+function getLocalDir(): string {
   if (process.env.WEBCAKE_KNOWLEDGE_DIR) return process.env.WEBCAKE_KNOWLEDGE_DIR;
   const moduleDir = new URL("../", import.meta.url).pathname;
   return join(moduleDir, "knowledge");
 }
 
-async function ensureDir(dir) {
+async function ensureDir(dir: string): Promise<void> {
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
 }
 
-async function listLocalFiles(dir) {
+async function listLocalFiles(dir: string): Promise<string[]> {
   try {
     const entries = await readdir(dir, { withFileTypes: true });
     return entries
@@ -48,8 +50,8 @@ async function listLocalFiles(dir) {
 
 // ── GitHub API ──
 
-function parseRepoUrl(input) {
-  let owner, repo, branch = null, path = "";
+function parseRepoUrl(input: string): { owner: string; repo: string; branch: string | null; path: string } | null {
+  let owner: string, repo: string, branch: string | null = null, path = "";
   const urlMatch = input.match(
     /github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/tree\/([^/]+)(?:\/(.*))?)?$/
   );
@@ -68,21 +70,21 @@ function parseRepoUrl(input) {
   return { owner, repo, branch, path };
 }
 
-function getRepoConfig() {
+function getRepoConfig(): { owner: string; repo: string; branch: string | null; path: string } | null {
   const url = process.env.WEBCAKE_KNOWLEDGE_REPO;
   if (!url) return null;
   return parseRepoUrl(url);
 }
 
-function ghHeaders(write = false) {
-  const h = { "User-Agent": "webcake-cms-mcp", Accept: "application/vnd.github.v3+json" };
+function ghHeaders(write = false): Record<string, string> {
+  const h: Record<string, string> = { "User-Agent": "webcake-storefront-mcp", Accept: "application/vnd.github.v3+json" };
   const token = process.env.WEBCAKE_KNOWLEDGE_TOKEN;
   if (token) h.Authorization = `token ${token}`;
   if (write) h["Content-Type"] = "application/json";
   return h;
 }
 
-async function ghRequest(method, url, body) {
+async function ghRequest(method: string, url: string, body?: any): Promise<any> {
   const token = process.env.WEBCAKE_KNOWLEDGE_TOKEN;
   if (method !== "GET" && !token) throw new Error("WEBCAKE_KNOWLEDGE_TOKEN is required to write to GitHub");
 
@@ -96,7 +98,7 @@ async function ghRequest(method, url, body) {
       signal: controller.signal,
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const err = await res.json().catch(() => ({})) as any;
       throw new Error(`GitHub ${res.status}: ${err.message || res.statusText}`);
     }
     return res.json();
@@ -105,7 +107,7 @@ async function ghRequest(method, url, body) {
   }
 }
 
-function ghContentsUrl(parsed, filename) {
+function ghContentsUrl(parsed: { owner: string; repo: string; path: string }, filename: string): string {
   const { owner, repo, path: basePath } = parsed;
   const full = basePath ? `${basePath}/${filename}` : filename;
   return `https://api.github.com/repos/${owner}/${repo}/contents/${full}`;
@@ -113,7 +115,10 @@ function ghContentsUrl(parsed, filename) {
 
 // ── Sync: GitHub → Local ──
 
-async function syncFromGithub(dir, repoCfg) {
+async function syncFromGithub(
+  dir: string,
+  repoCfg: { owner: string; repo: string; branch: string | null; path: string }
+): Promise<{ synced: number; files: string[] }> {
   const { owner, repo, branch, path } = repoCfg;
   const ref = branch ? `?ref=${branch}` : "";
   const apiPath = path ? `/${path}` : "";
@@ -122,19 +127,19 @@ async function syncFromGithub(dir, repoCfg) {
     `https://api.github.com/repos/${owner}/${repo}/contents${apiPath}${ref}`
   );
   const files = (Array.isArray(data) ? data : [])
-    .filter((f) => f.type === "file" && SUPPORTED_EXTS.has(extname(f.name).toLowerCase()));
+    .filter((f: any) => f.type === "file" && SUPPORTED_EXTS.has(extname(f.name).toLowerCase()));
 
   await ensureDir(dir);
   let synced = 0;
 
   // Download each file, store SHA in .sync.json for future push
-  const shaMap = {};
+  const shaMap: Record<string, string> = {};
   for (const f of files) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 10000);
     try {
       const res = await fetch(f.download_url, {
-        headers: { "User-Agent": "webcake-cms-mcp" },
+        headers: { "User-Agent": "webcake-storefront-mcp" },
         signal: controller.signal,
       });
       if (!res.ok) continue;
@@ -149,10 +154,10 @@ async function syncFromGithub(dir, repoCfg) {
 
   // Save SHA map for push operations
   await writeFile(join(dir, ".sync.json"), JSON.stringify(shaMap, null, 2), "utf-8");
-  return { synced, files: files.map((f) => f.name) };
+  return { synced, files: files.map((f: any) => f.name) };
 }
 
-async function getShaMap(dir) {
+async function getShaMap(dir: string): Promise<Record<string, string>> {
   try {
     const raw = await readFile(join(dir, ".sync.json"), "utf-8");
     return JSON.parse(raw);
@@ -161,7 +166,7 @@ async function getShaMap(dir) {
   }
 }
 
-async function updateShaMap(dir, filename, sha) {
+async function updateShaMap(dir: string, filename: string, sha: string | null): Promise<void> {
   const map = await getShaMap(dir);
   if (sha === null) {
     delete map[filename];
@@ -173,12 +178,17 @@ async function updateShaMap(dir, filename, sha) {
 
 // ── Push: Local → GitHub ──
 
-async function pushFileToGithub(dir, filename, repoCfg, message) {
+async function pushFileToGithub(
+  dir: string,
+  filename: string,
+  repoCfg: { owner: string; repo: string; branch: string | null; path: string },
+  message: string
+): Promise<any> {
   const content = await readFile(join(dir, filename), "utf-8");
   const shaMap = await getShaMap(dir);
   const url = ghContentsUrl(repoCfg, filename);
 
-  const body = {
+  const body: any = {
     message,
     content: Buffer.from(content).toString("base64"),
     ...(repoCfg.branch && { branch: repoCfg.branch }),
@@ -194,11 +204,16 @@ async function pushFileToGithub(dir, filename, repoCfg, message) {
   return res;
 }
 
-async function deleteFileFromGithub(dir, filename, repoCfg, message) {
+async function deleteFileFromGithub(
+  dir: string,
+  filename: string,
+  repoCfg: { owner: string; repo: string; branch: string | null; path: string },
+  message: string
+): Promise<void> {
   const shaMap = await getShaMap(dir);
   const url = ghContentsUrl(repoCfg, filename);
 
-  let sha = shaMap[filename];
+  let sha: string | undefined = shaMap[filename];
   if (!sha) {
     // Fetch SHA from GitHub
     const ref = repoCfg.branch ? `?ref=${repoCfg.branch}` : "";
@@ -216,7 +231,7 @@ async function deleteFileFromGithub(dir, filename, repoCfg, message) {
 }
 
 /** Auto-sync from GitHub on startup (silent, non-blocking) */
-export async function autoSync() {
+export async function autoSync(): Promise<void> {
   const repoCfg = getRepoConfig();
   if (!repoCfg) return;
   const dir = getLocalDir();
@@ -225,7 +240,7 @@ export async function autoSync() {
 
 // ── Register tools ──
 
-export function registerKnowledgeTools(server, handle) {
+export function registerKnowledgeTools(server: McpServer, handle: Handle) {
 
   server.tool(
     "sync_knowledge",
@@ -259,7 +274,7 @@ After sync, list_knowledge and get_knowledge read from local (instant)`,
           };
         }
 
-        const items = [];
+        const items: any[] = [];
         for (const file of files) {
           const raw = await readFile(join(dir, file), "utf-8");
           const { meta } = parseFrontmatter(raw);

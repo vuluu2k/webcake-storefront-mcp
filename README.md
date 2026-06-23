@@ -19,13 +19,13 @@ If you already cloned the repo:
 
 Or download and run directly:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/install.sh -o install.sh && bash install.sh
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install.sh -o install.sh && bash install.sh
 ```
 
 **Option B — Non-interactive** (via `curl` pipe or CI):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/install.sh | bash -s -- \
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install.sh | bash -s -- \
   --token YOUR_TOKEN \
   --session-id YOUR_SESSION_ID \
   --site-id YOUR_SITE_ID
@@ -40,7 +40,7 @@ curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/instal
 | `--site-id ID` | Target site ID | *(required)* |
 | `--api-url URL` | API base URL | `https://api.storecake.io` |
 | `--ide IDE` | IDE to configure: `claude-desktop`, `claude`, `cursor`, `windsurf`, `augment`, `codex`, `all` | `all` |
-| `--dir PATH` | Install directory | `~/.webcake-cms-mcp` |
+| `--dir PATH` | Install directory | `~/.webcake-storefront-mcp` |
 | `--uninstall` | Remove MCP server and IDE configs | — |
 
 **Examples:**
@@ -66,7 +66,7 @@ If you already cloned the repo:
 
 Or download and run directly:
 ```powershell
-irm https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/install.ps1 -OutFile install.ps1; .\install.ps1
+irm https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install.ps1 -OutFile install.ps1; .\install.ps1
 ```
 
 Uninstall:
@@ -84,17 +84,17 @@ Update to the latest version:
 
 ```bash
 # Auto-detect install path
-~/.webcake-cms-mcp/update.sh
+~/.webcake-storefront-mcp/update.sh
 ```
 
 Or specify the path:
 ```bash
-./update.sh ~/.webcake-cms-mcp
+./update.sh ~/.webcake-storefront-mcp
 ```
 
 Or download and run:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/update.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/update.sh | bash
 ```
 
 ### Windows (PowerShell)
@@ -106,12 +106,12 @@ curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/update
 
 Or specify the path:
 ```powershell
-.\update.ps1 C:\Users\you\.webcake-cms-mcp
+.\update.ps1 C:\Users\you\.webcake-storefront-mcp
 ```
 
 Or download and run:
 ```powershell
-irm https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/update.ps1 -OutFile update.ps1; .\update.ps1
+irm https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/update.ps1 -OutFile update.ps1; .\update.ps1
 ```
 
 ---
@@ -125,7 +125,7 @@ Add custom knowledge files so AI agents understand your business rules, policies
 ./setup_env.sh
 
 # Or download and run directly
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/setup_env.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/setup_env.sh | bash
 ```
 
 This script will:
@@ -140,8 +140,8 @@ See the `knowledge/` folder for examples and writing guides.
 ## Manual Setup
 
 ```bash
-git clone https://github.com/vuluu2k/webcake_cms_mcp.git
-cd webcake_cms_mcp
+git clone https://github.com/vuluu2k/webcake-storefront-mcp.git
+cd webcake-storefront-mcp
 npm install
 ```
 
@@ -179,8 +179,8 @@ npm install
 
 ## Configuration by IDE / AI Tool
 
-> Replace `/absolute-path/webcake_cms_mcp/index.js` below with the actual path where you cloned the repo.
-> Example: `/Users/username/webcake_cms_mcp/index.js`
+> Replace `/absolute-path/webcake-storefront-mcp/index.js` below with the actual path where you cloned the repo.
+> Example: `/Users/username/webcake-storefront-mcp/index.js`
 
 ### 1. Claude Desktop
 
@@ -195,7 +195,7 @@ Open Settings > Developer > Edit Config, or edit the file directly:
   "mcpServers": {
     "webcake-cms": {
       "command": "node",
-      "args": ["/absolute-path/webcake_cms_mcp/index.js"],
+      "args": ["/absolute-path/webcake-storefront-mcp/index.js"],
       "env": {
         "WEBCAKE_API_URL": "https://api.storecake.io",
         "WEBCAKE_TOKEN": "<your-token>",
@@ -221,7 +221,7 @@ claude mcp add webcake-cms \
   -e WEBCAKE_TOKEN=<your-token> \
   -e WEBCAKE_SESSION_ID=<your-session-id> \
   -e WEBCAKE_SITE_ID=<your-site-id> \
-  -- node /absolute-path/webcake_cms_mcp/index.js
+  -- node /absolute-path/webcake-storefront-mcp/index.js
 ```
 
 Or create `.claude.json` at project root:
@@ -231,7 +231,7 @@ Or create `.claude.json` at project root:
   "mcpServers": {
     "webcake-cms": {
       "command": "node",
-      "args": ["/absolute-path/webcake_cms_mcp/index.js"],
+      "args": ["/absolute-path/webcake-storefront-mcp/index.js"],
       "env": {
         "WEBCAKE_API_URL": "https://api.storecake.io",
         "WEBCAKE_TOKEN": "<your-token>",
@@ -261,7 +261,7 @@ Create `.cursor/mcp.json` at project root:
   "mcpServers": {
     "webcake-cms": {
       "command": "node",
-      "args": ["/absolute-path/webcake_cms_mcp/index.js"],
+      "args": ["/absolute-path/webcake-storefront-mcp/index.js"],
       "env": {
         "WEBCAKE_API_URL": "https://api.storecake.io",
         "WEBCAKE_TOKEN": "<your-token>",
@@ -286,7 +286,7 @@ Create `~/.codeium/windsurf/mcp_config.json`:
   "mcpServers": {
     "webcake-cms": {
       "command": "node",
-      "args": ["/absolute-path/webcake_cms_mcp/index.js"],
+      "args": ["/absolute-path/webcake-storefront-mcp/index.js"],
       "env": {
         "WEBCAKE_API_URL": "https://api.storecake.io",
         "WEBCAKE_TOKEN": "<your-token>",
@@ -311,7 +311,7 @@ Open Command Palette: `Cmd + Shift + P` > **"Augment: Edit MCP Settings"**, then
   "mcpServers": {
     "webcake-cms": {
       "command": "node",
-      "args": ["/absolute-path/webcake_cms_mcp/index.js"],
+      "args": ["/absolute-path/webcake-storefront-mcp/index.js"],
       "env": {
         "WEBCAKE_API_URL": "https://api.storecake.io",
         "WEBCAKE_TOKEN": "<your-token>",
@@ -334,7 +334,7 @@ Add to `~/.codex/config.toml`:
 ```toml
 [mcp_servers.webcake-cms]
 command = "node"
-args = ["/absolute-path/webcake_cms_mcp/index.js"]
+args = ["/absolute-path/webcake-storefront-mcp/index.js"]
 env = { "WEBCAKE_API_URL" = "https://api.storecake.io", "WEBCAKE_TOKEN" = "<your-token>", "WEBCAKE_SESSION_ID" = "<your-session-id>", "WEBCAKE_SITE_ID" = "<your-site-id>" }
 ```
 
@@ -345,7 +345,7 @@ codex mcp add webcake-cms \
   --env WEBCAKE_TOKEN=<your-token> \
   --env WEBCAKE_SESSION_ID=<your-session-id> \
   --env WEBCAKE_SITE_ID=<your-site-id> \
-  -- node /absolute-path/webcake_cms_mcp/index.js
+  -- node /absolute-path/webcake-storefront-mcp/index.js
 ```
 
 Verify:

@@ -1,8 +1,28 @@
 const DEFAULT_TIMEOUT = 15000;
 
+interface ApiInit {
+  baseUrl: string;
+  token: string;
+  siteId: string;
+  sessionId?: string;
+}
+
+interface RequestOpts {
+  body?: unknown;
+  query?: Record<string, unknown>;
+  timeout?: number;
+}
+
 export class WebcakeCmsApi {
-  constructor({ baseUrl, token, siteId, sessionId }) {
-    this.baseUrl = baseUrl.replace(/\/$/, "");
+  baseUrl: string;
+  token: string;
+  siteId: string;
+  sessionId: string;
+  private _adminToken: string | null;
+  private _cmsApiKey: string | null;
+
+  constructor({ baseUrl, token, siteId, sessionId }: ApiInit) {
+    this.baseUrl = (baseUrl || "").replace(/\/$/, "");
     this.token = token;
     this.siteId = siteId;
     this.sessionId = sessionId || "";
@@ -10,7 +30,7 @@ export class WebcakeCmsApi {
     this._cmsApiKey = null;
   }
 
-  async fetchCmsTokens() {
+  async fetchCmsTokens(): Promise<void> {
     if (this._adminToken && this._cmsApiKey) return;
 
     const [adminRes, apiKeyRes] = await Promise.all([
@@ -22,19 +42,19 @@ export class WebcakeCmsApi {
     this._cmsApiKey = (apiKeyRes && apiKeyRes.data && apiKeyRes.data.key) || null;
   }
 
-  getBundleParams() {
+  getBundleParams(): { token: string | null; x_cms_api_key: string | null } {
     return { token: this._adminToken, x_cms_api_key: this._cmsApiKey };
   }
 
-  async request(method, path, { body, query, timeout } = {}) {
+  async request(method: string, path: string, { body, query, timeout }: RequestOpts = {}): Promise<any> {
     const url = new URL(`${this.baseUrl}${path}`);
     if (query) {
       for (const [k, v] of Object.entries(query)) {
-        if (v != null) url.searchParams.set(k, v);
+        if (v != null) url.searchParams.set(k, String(v));
       }
     }
 
-    const headers = {
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
       Authorization: `Bearer ${this.token}`,
       ...(this.sessionId && { "x-session-id": this.sessionId }),
@@ -43,7 +63,7 @@ export class WebcakeCmsApi {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout || DEFAULT_TIMEOUT);
 
-    let res;
+    let res: Response;
     try {
       res = await fetch(url, {
         method,
@@ -55,7 +75,7 @@ export class WebcakeCmsApi {
       clearTimeout(timer);
     }
 
-    const json = await res.json().catch(() => null);
+    const json: any = await res.json().catch(() => null);
     if (!res.ok) {
       const msg = (json && json.message) || (json && json.error) || res.statusText;
       throw new Error(`API ${res.status}: ${msg}`);
@@ -64,144 +84,126 @@ export class WebcakeCmsApi {
   }
 
   // ── Account & Sites ──
-
   getMe() {
     return this.request("GET", `/api/v1/@me`);
   }
-
-  listMySites(query) {
+  listMySites(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/all`, { query });
   }
-
   getSiteInfo() {
     return this.request("GET", `/api/v1/site/${this.siteId}/`);
   }
-
   /** Switch to a different site (in-memory, no restart needed) */
-  switchSite(siteId) {
+  switchSite(siteId: string) {
     this.siteId = siteId;
-    // Reset CMS tokens since they're site-specific
     this._adminToken = null;
     this._cmsApiKey = null;
   }
-
   /** Update auth token (in-memory) */
-  switchToken(token) {
+  switchToken(token: string) {
     this.token = token;
     this._adminToken = null;
     this._cmsApiKey = null;
   }
-
   /** Update session ID */
-  switchSession(sessionId) {
+  switchSession(sessionId: string) {
     this.sessionId = sessionId;
   }
 
   // ── CMS Files ──
-
   listCmsFiles() {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/cms_files`);
   }
-
-  async createCmsFile(params) {
+  async createCmsFile(params: any) {
     await this.fetchCmsTokens();
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/cms_files`, {
       body: { ...params, ...this.getBundleParams() },
     });
   }
-
-  async updateCmsFile(id, params) {
+  async updateCmsFile(id: string, params: any) {
     await this.fetchCmsTokens();
     return this.request("PATCH", `/api/v1/dashboard/site/${this.siteId}/cms_files/${id}`, {
       body: { ...params, ...this.getBundleParams() },
     });
   }
-
   getHttpFunction() {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/cms_files/http_function`);
   }
-
-  async createOrUpdateHttpFunction(params) {
+  async createOrUpdateHttpFunction(params: any) {
     await this.fetchCmsTokens();
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/cms_files/http_function`, {
       body: { ...params, ...this.getBundleParams() },
     });
   }
-
-  debugFunction(params) {
+  debugFunction(params: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/cms_files/debug`, { body: params });
   }
-
-  runFunction(functionName, method, params) {
+  runFunction(functionName: string, method: string, params: any) {
     return this.request(method, `/api/v1/${this.siteId}/_functions/${functionName}`, { body: params });
   }
-
-  saveFileVersion(params) {
+  saveFileVersion(params: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/cms_files/save_version_file`, { body: params });
   }
-
-  getFileVersions(query) {
+  getFileVersions(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/cms_files/version_file`, { query });
   }
-
-  toggleDebugRender(params) {
+  toggleDebugRender(params: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/cms_files/toggle_is_debug_render`, { body: params });
   }
 
   // ── Pages ──
-
   listPages() {
     return this.request("GET", `/api/v1/site/${this.siteId}/pages`);
   }
-
-  createPage(params) {
+  createPage(params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/page`, { body: params });
   }
-
-  updatePage(pageId, params) {
+  updatePage(pageId: string, params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/${pageId}/update_page`, { body: params });
   }
-
-  updatePageSource(pageId, params) {
+  updatePageSource(pageId: string, params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/${pageId}/update_page_source`, { body: params });
   }
-
-  deletePage(params) {
+  deletePage(params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/delete_page`, { body: params });
   }
-
-  getPageVersions(pageId) {
+  getPageVersions(pageId: string) {
     return this.request("GET", `/api/v1/site/${this.siteId}/page_versions/${pageId}`);
   }
-
-  listPageContents(query) {
+  listPageContents(query?: any) {
     return this.request("GET", `/api/v1/site/${this.siteId}/page_contents`, { query });
   }
-
-  updatePageContent(params) {
+  updatePageContent(params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/page_contents/page_content`, { body: params });
   }
-
   listGlobalSections() {
     return this.request("GET", `/api/v1/site/${this.siteId}/global_sections`);
   }
-
   getSite() {
     return this.request("GET", `/api/v1/site/${this.siteId}/`);
   }
-
-  async getSiteSettingField(field) {
+  saveSite(params: any = {}) {
+    return this.request("POST", `/api/v1/site/${this.siteId}/save`, { body: params, timeout: 60000 });
+  }
+  publishSite(params: any = {}) {
+    return this.request("POST", `/api/v1/site/${this.siteId}/publish`, { body: params, timeout: 60000 });
+  }
+  uploadImageBase64({ base64, content_type }: { base64?: string; content_type?: string } = {}) {
+    return this.request("POST", `/api/v1/site/${this.siteId}/media/content/b64`, {
+      body: { base64, content_type },
+      timeout: 60000,
+    });
+  }
+  async getSiteSettingField(field: string): Promise<any> {
     const siteRes = await this.request("GET", `/api/v1/site/${this.siteId}/`, { timeout: 60000 });
     const raw = (siteRes && siteRes.data && siteRes.data.settings) || "";
     if (typeof raw === "object") return raw[field] || "";
-    // Extract field value from JSON string without parsing the entire 88MB+ object
     const needle = `"${field}":`;
     const idx = raw.indexOf(needle);
     if (idx === -1) return "";
     let vStart = idx + needle.length;
     while (vStart < raw.length && raw[vStart] === " ") vStart++;
     if (raw[vStart] !== '"') return "";
-    // Read JSON string value respecting escapes
     let vEnd = vStart + 1;
     while (vEnd < raw.length) {
       if (raw[vEnd] === "\\") { vEnd += 2; continue; }
@@ -210,197 +212,153 @@ export class WebcakeCmsApi {
     }
     try { return JSON.parse(raw.slice(vStart, vEnd)); } catch { return ""; }
   }
-
-  async updateSiteSettings(newSettings) {
+  async updateSiteSettings(newSettings: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/update_site`, { body: { settings: newSettings }, timeout: 60000 });
   }
 
   // ── Collections ──
-
-  listCollections(query) {
+  listCollections(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/db_collections`, { query });
   }
-
-  getCollection(id) {
+  getCollection(id: string) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/db_collections/${id}`);
   }
-
-  queryCollectionRecords(tableName, query) {
+  queryCollectionRecords(tableName: string, query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/db_collections/collections/${tableName}/records`, { query });
   }
 
   // ── Blog Articles ──
-
-  listArticles(query) {
+  listArticles(query?: any) {
     return this.request("GET", `/api/v1/cms_function/${this.siteId}/blog/article/all`, { query });
   }
-
-  getArticle(id) {
+  getArticle(id: string) {
     return this.request("GET", `/api/v1/cms_function/${this.siteId}/blog/article/${id}`);
   }
-
-  createArticle(params) {
+  createArticle(params: any) {
     return this.request("POST", `/api/v1/cms_function/${this.siteId}/blog/article`, { body: params });
   }
-
-  updateArticle(id, params) {
+  updateArticle(id: string, params: any) {
     return this.request("PATCH", `/api/v1/cms_function/${this.siteId}/blog/article/${id}`, { body: params });
   }
-
-  deleteArticle(id) {
+  deleteArticle(id: string) {
     return this.request("DELETE", `/api/v1/cms_function/${this.siteId}/blog/article/${id}`);
   }
 
   // ── Products ──
-
-  listProducts(query) {
+  listProducts(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/products/all`, { query });
   }
-
-  getProduct(id) {
+  getProduct(id: string) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/products/${id}`);
   }
-
-  searchProducts(query) {
+  searchProducts(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/products/search`, { query });
   }
-
   listCategories() {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/categories/all`);
   }
-
-  getProductsByCategory(categoryId) {
+  getProductsByCategory(categoryId: string) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/categories/products`, { query: { category_id: categoryId } });
   }
 
   // ── Orders ──
-
-  listOrders(query) {
+  listOrders(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/orders/all`, { query });
   }
-
-  getOrder(orderId) {
+  getOrder(orderId: string) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/orders/${orderId}`);
   }
-
   countOrdersByStatus() {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/orders/count_by_status`);
   }
 
   // ── Site Style / Themes ──
-
   listThemes() {
     return this.request("GET", `/api/v1/site/${this.siteId}/themes`);
   }
-
   /**
    * Semantic search over the theme marketplace embeddings (bge-m3, cosine similarity).
    * Returns { results: [[theme_embedding_record, score], ...] }.
    */
-  semanticSearchThemes(query) {
-    return this.request("POST", `/api/v1/ai/semantic_search`, {
-      body: { query },
-      timeout: 45000,
-    });
+  semanticSearchThemes(query: any) {
+    return this.request("POST", `/api/v1/ai/semantic_search`, { body: { query }, timeout: 45000 });
   }
 
   // ── Applications ──
-
   listApps() {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/applications/subcriptions/all`);
   }
-
-  getApp(type) {
+  getApp(type: string) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/applications/subcriptions/get_app`, { query: { type } });
   }
 
   // ── Promotions ──
-
-  listPromotions(query) {
+  listPromotions(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/promotion_advance/all`, { query });
   }
-
-  getPromotion(id) {
+  getPromotion(id: string) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/promotion_advance/get_promotion`, { query: { id } });
   }
-
-  getPromotionItems(id, query) {
+  getPromotionItems(id: string, query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/promotion_advance/get_items`, { query: { id, ...query } });
   }
-
   getActivePromotions() {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/promotion_advance/get_promotions_actived`);
   }
-
-  searchPromotions(query) {
+  searchPromotions(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/promotion_advance/get_promotions_advance`, { query });
   }
 
   // ── Combos ──
-
-  listCombos(query) {
+  listCombos(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/combo_product/all`, { query });
   }
-
-  getComboItems(comboProductId, query) {
+  getComboItems(comboProductId: string, query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/combo_product/items`, { query: { combo_product_id: comboProductId, ...query } });
   }
 
   // ── Customers ──
-
-  findCustomerById(id) {
+  findCustomerById(id: string) {
     return this.request("GET", `/api/v1/cms_function/${this.siteId}/customer/identity/${id}`);
   }
-
-  findCustomerByPhone(phone) {
+  findCustomerByPhone(phone: string) {
     return this.request("GET", `/api/v1/cms_function/${this.siteId}/customer/phone/${phone}`);
   }
-
-  findCustomerByEmail(email) {
+  findCustomerByEmail(email: string) {
     return this.request("GET", `/api/v1/cms_function/${this.siteId}/customer/email/${email}`);
   }
 
   // ── Global Sources (cart, popup, overview, etc.) ──
-
   getSourceCart() {
     return this.request("GET", `/api/v1/site/${this.siteId}/cart/get_source_cart`);
   }
-
-  createSourceCart(params) {
+  createSourceCart(params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/cart/create_source_cart`, { body: params });
   }
-
-  updateSourceCart(params) {
+  updateSourceCart(params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/cart/update_source_cart`, { body: params });
   }
-
-  getGlobalSources(query) {
+  getGlobalSources(query?: any) {
     return this.request("GET", `/api/v1/site/${this.siteId}/global_source/`, { query });
   }
-
-  createGlobalSource(params) {
+  createGlobalSource(params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/global_source/create`, { body: params });
   }
-
-  updateGlobalSource(params) {
+  updateGlobalSource(params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/global_source/update`, { body: params });
   }
-
-  deleteGlobalSource(params) {
+  deleteGlobalSource(params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/global_source/delete`, { body: params });
   }
-
-  getGlobalSourceContents(query) {
+  getGlobalSourceContents(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/multilingual/global_source_contents`, { query });
   }
-
-  updateGlobalSourceContents(params) {
+  updateGlobalSourceContents(params: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/multilingual/update_global_source_contents`, { body: params });
   }
 
   // ── Automation ──
-
-  sendMail(params) {
+  sendMail(params: any) {
     return this.request("POST", `/api/v1/cms_function/${this.siteId}/application/automation/send_mail`, { body: params });
   }
 }

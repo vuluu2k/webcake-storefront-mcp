@@ -1,6 +1,9 @@
 import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
-export function registerArticleTools(server, api, handle) {
+export function registerArticleTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "list_articles",
     "List blog articles (metadata only, without HTML content). Use get_article to get full content",
@@ -12,10 +15,10 @@ export function registerArticleTools(server, api, handle) {
     ({ page, limit, category_id }) =>
       handle(async () => {
         const res = await api.listArticles({ page, limit, category_id });
-        const articles = (res && res.data) || res || [];
+        const articles = (res && (res as any).data) || res || [];
         if (!Array.isArray(articles)) return res;
         return {
-          data: articles.map((a) => ({
+          data: articles.map((a: any) => ({
             id: a.id || a._id,
             name: a.name,
             slug: a.slug,
@@ -26,7 +29,7 @@ export function registerArticleTools(server, api, handle) {
             created_at: a.created_at,
             updated_at: a.updated_at,
           })),
-          total: res.total || articles.length,
+          total: (res as any).total || articles.length,
         };
       })
   );

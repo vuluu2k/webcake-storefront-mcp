@@ -1,12 +1,28 @@
 import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
 const TEMPLATE_THEMES_URL = "https://api.storecake.io/api/v1/templates/list_themes";
 const THEME_CATALOG_TTL_MS = 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 15000;
 
-let _themeCatalogCache = null;
+interface ThemeEntry {
+  id: string;
+  name: string;
+  preview_url: string;
+  thumbnail: string;
+  categories: string[];
+}
 
-async function fetchTemplateThemes({ page = 1, limit = 12, lang = "vi", q = "" } = {}) {
+interface ThemeCatalogCache {
+  at: number;
+  map: Map<string, ThemeEntry>;
+}
+
+let _themeCatalogCache: ThemeCatalogCache | null = null;
+
+async function fetchTemplateThemes({ page = 1, limit = 12, lang = "vi", q = "" } = {}): Promise<any> {
   const url = new URL(TEMPLATE_THEMES_URL);
   url.searchParams.set("page", String(page));
   url.searchParams.set("limit", String(limit));
@@ -36,23 +52,23 @@ async function fetchTemplateThemes({ page = 1, limit = 12, lang = "vi", q = "" }
   }
 }
 
-async function getThemeCatalog(force = false) {
+async function getThemeCatalog(force = false): Promise<Map<string, ThemeEntry>> {
   if (!force && _themeCatalogCache && Date.now() - _themeCatalogCache.at < THEME_CATALOG_TTL_MS) {
     return _themeCatalogCache.map;
   }
-  const map = new Map();
+  const map = new Map<string, ThemeEntry>();
   let page = 1;
   const limit = 100;
   for (let i = 0; i < 5; i++) {
     const res = await fetchTemplateThemes({ page, limit });
-    const themes = (res && res.themes) || [];
+    const themes: any[] = (res && res.themes) || [];
     for (const t of themes) {
       map.set(t.id, {
         id: t.id,
         name: t.name,
         preview_url: t.preview_url || "",
         thumbnail: t.thumbnail || "",
-        categories: (t.categories || []).map((c) => c.name).filter(Boolean),
+        categories: (t.categories || []).map((c: any) => c.name).filter(Boolean),
       });
     }
     if (themes.length < limit) break;
@@ -62,7 +78,7 @@ async function getThemeCatalog(force = false) {
   return map;
 }
 
-function parseThemeDescription(d) {
+function parseThemeDescription(d: unknown): { description_vi: string; description_en: string } {
   if (typeof d !== "string") return { description_vi: "", description_en: "" };
   try {
     const j = JSON.parse(d);
@@ -75,7 +91,7 @@ function parseThemeDescription(d) {
   }
 }
 
-export function registerSiteStyleTools(server, api, handle) {
+export function registerSiteStyleTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "get_site_info",
     "Get full site information: name, domain, settings (colors, typography, layout, language, payment methods, etc.)",
@@ -83,17 +99,17 @@ export function registerSiteStyleTools(server, api, handle) {
     () =>
       handle(async () => {
         const res = await api.getSite();
-        const site = (res && res.data) || res;
+        const site = (res && (res as any).data) || res;
         if (!site) return { error: "Site not found" };
         return {
-          id: site.id,
-          name: site.name,
-          domain: site.domain,
-          custom_domain: site.custom_domain || undefined,
-          logo: site.logo || undefined,
-          favicon: site.favicon || undefined,
-          settings: site.settings || {},
-          created_at: site.created_at,
+          id: (site as any).id,
+          name: (site as any).name,
+          domain: (site as any).domain,
+          custom_domain: (site as any).custom_domain || undefined,
+          logo: (site as any).logo || undefined,
+          favicon: (site as any).favicon || undefined,
+          settings: (site as any).settings || {},
+          created_at: (site as any).created_at,
         };
       })
   );
@@ -122,12 +138,12 @@ export function registerSiteStyleTools(server, api, handle) {
           limit: limit || 12,
           lang: lang || "vi",
         });
-        const themes = ((res && res.themes) || []).map((t) => ({
+        const themes = ((res && res.themes) || []).map((t: any) => ({
           id: t.id,
           name: t.name,
           preview_url: t.preview_url,
           thumbnail: t.thumbnail,
-          categories: (t.categories || []).map((c) => c.name),
+          categories: (t.categories || []).map((c: any) => c.name),
           preview_img:
             (t.site && t.site.preview_img && (t.site.preview_img["1920_1080"] || t.site.preview_img["430_932"])) ||
             null,
@@ -156,18 +172,18 @@ export function registerSiteStyleTools(server, api, handle) {
         const cap = Math.min(Math.max(limit || 5, 1), 10);
 
         const raw = await api.semanticSearchThemes(q);
-        const pairs = Array.isArray(raw && raw.results) ? raw.results : [];
+        const pairs: any[] = Array.isArray(raw && (raw as any).results) ? (raw as any).results : [];
 
-        let catalog;
+        let catalog: Map<string, ThemeEntry>;
         try {
           catalog = await getThemeCatalog();
         } catch {
           catalog = new Map();
         }
 
-        const matches = pairs.slice(0, cap).map(([te, score]) => {
+        const matches = pairs.slice(0, cap).map(([te, score]: [any, any]) => {
           const themeId = te && te.theme_id;
-          const info = catalog.get(themeId) || {};
+          const info = catalog.get(themeId) || ({} as Partial<ThemeEntry>);
           const desc = parseThemeDescription(te && te.description);
           return {
             theme_id: themeId,

@@ -1,6 +1,9 @@
 import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
-export function registerCollectionTools(server, api, handle) {
+export function registerCollectionTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "list_collections",
     "List all database collections (tables) for the site. Returns collection names, table names, and field counts. Use get_collection for full schema details",
@@ -12,17 +15,17 @@ export function registerCollectionTools(server, api, handle) {
     ({ page, limit, term }) =>
       handle(async () => {
         const res = await api.listCollections({ page, limit, term });
-        const collections = (res && res.data) || res || [];
+        const collections = (res && (res as any).data) || res || [];
         if (!Array.isArray(collections)) return res;
         return {
-          data: collections.map((c) => ({
+          data: collections.map((c: any) => ({
             id: c.id || c._id,
             name: c.name,
             table_name: c.table_name,
             fields_count: (c.schema || []).length,
             records_count: c.records_count || undefined,
           })),
-          total: res.total || collections.length,
+          total: (res as any).total || collections.length,
         };
       })
   );

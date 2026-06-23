@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { CUSTOM_CODE_GUIDE } from "../guides.js";
 import { getConfirmMode } from "./context.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
 /**
  * Page source utilities.
@@ -16,7 +19,7 @@ import { getConfirmMode } from "./context.js";
  *   - style object generates scoped CSS via #ELEMENT-ID { ... }
  */
 
-function parseSource(sourceJson) {
+function parseSource(sourceJson: any): any {
   try {
     return typeof sourceJson === "string" ? JSON.parse(sourceJson) : sourceJson;
   } catch {
@@ -25,9 +28,9 @@ function parseSource(sourceJson) {
 }
 
 /** Walk all nodes in source tree, call fn(node). Return false from fn to stop early */
-function walkSource(source, fn) {
+function walkSource(source: any, fn: (node: any) => any): void {
   if (!source || !source.sections) return;
-  function walk(node) {
+  function walk(node: any): boolean {
     if (!node) return true;
     if (fn(node) === false) return false;
     const children = node.children || [];
@@ -42,9 +45,9 @@ function walkSource(source, fn) {
 }
 
 /** Build overview: section count, element type counts, all custom_classes */
-function buildOverview(source) {
-  const typeCounts = {};
-  const customClasses = new Set();
+function buildOverview(source: any): any {
+  const typeCounts: Record<string, number> = {};
+  const customClasses = new Set<string>();
   let total = 0;
 
   walkSource(source, (node) => {
@@ -52,7 +55,7 @@ function buildOverview(source) {
     const type = node.type || "unknown";
     typeCounts[type] = (typeCounts[type] || 0) + 1;
     const cc = node.specials && node.specials.custom_class;
-    if (cc) cc.split(",").map((s) => s.trim()).filter(Boolean).forEach((c) => customClasses.add(c));
+    if (cc) cc.split(",").map((s: string) => s.trim()).filter(Boolean).forEach((c: any) => customClasses.add(c));
   });
 
   return {
@@ -64,8 +67,8 @@ function buildOverview(source) {
 }
 
 /** Build full detail for a single node — all properties except children tree */
-function nodeToDetail(node) {
-  const entry = { id: node.id || "", type: node.type || "unknown" };
+function nodeToDetail(node: any): any {
+  const entry: any = { id: node.id || "", type: node.type || "unknown" };
 
   // Core properties
   if (node.style && Object.keys(node.style).length) entry.style = node.style;
@@ -92,7 +95,7 @@ function nodeToDetail(node) {
 }
 
 /** Find a node by ID in source tree, returns reference to the node */
-function findNodeById(source, elementId) {
+function findNodeById(source: any, elementId: string): any {
   let found = null;
   walkSource(source, (node) => {
     if (node.id === elementId) { found = node; return false; }
@@ -101,8 +104,8 @@ function findNodeById(source, elementId) {
 }
 
 /** Deep-diff two nodes — returns only changed fields with before/after */
-function computeNodeDiff(beforeNode, afterNode) {
-  const diff = {};
+function computeNodeDiff(beforeNode: any, afterNode: any): any {
+  const diff: Record<string, any> = {};
   const objFields = ["style", "config", "specials"];
   const arrFields = ["events", "bindings"];
 
@@ -110,7 +113,7 @@ function computeNodeDiff(beforeNode, afterNode) {
     const b = beforeNode[field] || {};
     const a = afterNode[field] || {};
     if (JSON.stringify(b) === JSON.stringify(a)) continue;
-    const fieldDiff = {};
+    const fieldDiff: Record<string, any> = {};
     for (const k of new Set([...Object.keys(b), ...Object.keys(a)])) {
       if (JSON.stringify(b[k]) !== JSON.stringify(a[k])) {
         fieldDiff[k] = { before: b[k] ?? null, after: a[k] ?? null };
@@ -137,7 +140,7 @@ function computeNodeDiff(beforeNode, afterNode) {
 }
 
 /** Apply updates to a node in-place (shallow merge for objects, replace for arrays) */
-function applyNodeUpdates(node, updates) {
+function applyNodeUpdates(node: any, updates: any): void {
   if (updates.style) node.style = { ...(node.style || {}), ...updates.style };
   if (updates.config) node.config = { ...(node.config || {}), ...updates.config };
   if (updates.specials) node.specials = { ...(node.specials || {}), ...updates.specials };
@@ -145,7 +148,7 @@ function applyNodeUpdates(node, updates) {
   if (updates.bindings !== undefined) node.bindings = updates.bindings;
   // Responsive breakpoints (bp1, bp2, ...)
   if (updates.responsive) {
-    for (const [bp, val] of Object.entries(updates.responsive)) {
+    for (const [bp, val] of Object.entries(updates.responsive) as [string, any][]) {
       if (/^bp\d+$/.test(bp)) {
         node[bp] = node[bp] ? { style: { ...node[bp].style, ...val.style }, config: { ...node[bp].config, ...val.config } } : val;
       }
@@ -154,8 +157,8 @@ function applyNodeUpdates(node, updates) {
 }
 
 /** Search/filter elements in source by criteria */
-function searchElements(source, filters) {
-  const results = [];
+function searchElements(source: any, filters: any): any[] {
+  const results: any[] = [];
   const limit = filters.limit || 50;
 
   walkSource(source, (node) => {
@@ -205,11 +208,11 @@ function searchElements(source, filters) {
 }
 
 /** Cache listPages for 30s to avoid repeated API calls within a session */
-let _pagesCache = null;
+let _pagesCache: any = null;
 let _pagesCacheTime = 0;
 const CACHE_TTL = 30000;
 
-async function getCachedPages(api) {
+async function getCachedPages(api: WebcakeCmsApi): Promise<any> {
   const now = Date.now();
   if (_pagesCache && now - _pagesCacheTime < CACHE_TTL) return _pagesCache;
   const res = await api.listPages();
@@ -223,7 +226,7 @@ function invalidatePageCache() {
   _pagesCacheTime = 0;
 }
 
-async function getPageWithSource(api, pageId) {
+async function getPageWithSource(api: WebcakeCmsApi, pageId: string): Promise<any> {
   const pages = await getCachedPages(api);
   if (!Array.isArray(pages)) return { error: "Failed to load pages" };
   const page = pages.find((p) => p.id === pageId);
@@ -232,7 +235,7 @@ async function getPageWithSource(api, pageId) {
   return { page, source };
 }
 
-export function registerPageTools(server, api, handle) {
+export function registerPageTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool("list_pages", "List all pages of the site (metadata only, without source)", {}, () =>
     handle(async () => {
       const pages = await getCachedPages(api);
@@ -353,7 +356,7 @@ Add include_guide=true on first call to get the coding guide`,
         const allFields = ["code_before_head", "code_before_body", "code_custom_css", "code_custom_javascript"];
         const selected = fields && fields.length ? fields : allFields;
         const values = await Promise.all(selected.map((f) => api.getSiteSettingField(f)));
-        const res = {};
+        const res: Record<string, any> = {};
         for (let i = 0; i < selected.length; i++) {
           res[selected[i]] = values[i] || "";
         }
@@ -383,7 +386,7 @@ IMPORTANT: Before calling, you MUST read existing code with get_site_custom_code
       code_custom_javascript: z.string().optional().describe("Custom JavaScript for the site"),
     },
     (codes) => {
-      const settings = {};
+      const settings: Record<string, any> = {};
       for (const [k, v] of Object.entries(codes)) {
         if (v != null) settings[k] = v;
       }
@@ -393,7 +396,7 @@ IMPORTANT: Before calling, you MUST read existing code with get_site_custom_code
 
         // Safeguard: read existing values and compare before overwriting
         const existingValues = await Promise.all(fieldsToUpdate.map((f) => api.getSiteSettingField(f)));
-        const comparison = {};
+        const comparison: Record<string, any> = {};
         for (let i = 0; i < fieldsToUpdate.length; i++) {
           const field = fieldsToUpdate[i];
           const existing = existingValues[i] || "";
@@ -532,7 +535,7 @@ IMPORTANT: Before calling, you MUST read existing content with list_page_content
 
         const detail = nodeToDetail(node);
         if (node.children && node.children.length) {
-          detail.children = node.children.map((c) => ({ id: c.id, type: c.type }));
+          detail.children = node.children.map((c: any) => ({ id: c.id, type: c.type }));
         }
         return detail;
       })
@@ -693,7 +696,7 @@ Safeguarded: blocks if new source is <50% of existing size.`,
     },
     ({ page_id, source, custom_code }) =>
       handle(async () => {
-        const body = {};
+        const body: Record<string, any> = {};
         if (source != null) {
           // Ensure source is an object — backend does Jason.encode! so we must send object, not string
           body.source = typeof source === "string" ? JSON.parse(source) : source;

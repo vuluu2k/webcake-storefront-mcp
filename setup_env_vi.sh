@@ -32,7 +32,7 @@ error()   { echo -e "${RED}[LỖI]${NC} $1"; }
 # ── Tìm MCP server đã cài ──
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEFAULT_INSTALL_DIR="$HOME/.webcake-cms-mcp"
+DEFAULT_INSTALL_DIR="$HOME/.webcake-storefront-mcp"
 
 detect_install() {
   if [ -f "$SCRIPT_DIR/index.js" ]; then

@@ -19,7 +19,7 @@ success() { echo -e "${GREEN}[OK]${NC} $1"; }
 warn()    { echo -e "${YELLOW}[CẢNH BÁO]${NC} $1"; }
 error()   { echo -e "${RED}[LỖI]${NC} $1"; }
 
-DEFAULT_INSTALL_DIR="$HOME/.webcake-cms-mcp"
+DEFAULT_INSTALL_DIR="$HOME/.webcake-storefront-mcp"
 
 echo ""
 echo -e "${CYAN}╔══════════════════════════════════════════════════╗${NC}"
@@ -40,7 +40,7 @@ if [ -z "$INSTALL_DIR" ]; then
     error "Không tìm thấy MCP server."
     echo ""
     echo "  Cách dùng: ./update_vi.sh [đường-dẫn]"
-    echo "  Ví dụ: ./update_vi.sh ~/.webcake-cms-mcp"
+    echo "  Ví dụ: ./update_vi.sh ~/.webcake-storefront-mcp"
     echo ""
     exit 1
   fi
@@ -119,7 +119,7 @@ if [ -d ".git" ]; then
 else
   warn "Không phải git repo — không thể pull."
   echo "  Để cập nhật, cài lại từ git:"
-  echo "  git clone https://github.com/vuluu2k/webcake_cms_mcp.git $INSTALL_DIR"
+  echo "  git clone https://github.com/vuluu2k/webcake-storefront-mcp.git $INSTALL_DIR"
   exit 1
 fi
 

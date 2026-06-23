@@ -1,6 +1,9 @@
 import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
-export function registerAppTools(server, api, handle) {
+export function registerAppTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "list_apps",
     "List all installed applications/subscriptions of the site. Returns app type, status, and settings",

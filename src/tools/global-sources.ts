@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { getConfirmMode } from "./context.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
 /**
  * Global Sources tools — manage site-wide components: cart, popup, overview, etc.
@@ -16,7 +19,7 @@ import { getConfirmMode } from "./context.js";
 
 // ── Source tree helpers ──
 
-function parseSource(sourceJson) {
+function parseSource(sourceJson: any): any {
   try {
     return typeof sourceJson === "string" ? JSON.parse(sourceJson) : sourceJson;
   } catch {
@@ -28,7 +31,7 @@ function parseSource(sourceJson) {
  *  - Page format: { sections: [...] } → returns sections array
  *  - Global source format: { id, type, children: [...] } → returns [rootNode]
  */
-function getRoots(source) {
+function getRoots(source: any): any[] {
   if (!source) return [];
   if (source.sections) return source.sections;
   if (source.id) return [source];
@@ -36,8 +39,8 @@ function getRoots(source) {
 }
 
 /** Walk all nodes in source tree — handles both page and global source format */
-function walkSource(source, fn) {
-  function walk(node) {
+function walkSource(source: any, fn: (node: any) => boolean | void): void {
+  function walk(node: any): boolean {
     if (!node) return true;
     if (fn(node) === false) return false;
     for (const child of node.children || []) {
@@ -50,16 +53,16 @@ function walkSource(source, fn) {
   }
 }
 
-function buildOverview(source) {
-  const typeCounts = {};
-  const customClasses = new Set();
+function buildOverview(source: any): { sections: number; elements: number; types: Record<string, number>; classes: string[] } {
+  const typeCounts: Record<string, number> = {};
+  const customClasses = new Set<string>();
   let total = 0;
   walkSource(source, (node) => {
     total++;
     const t = node.type || "unknown";
     typeCounts[t] = (typeCounts[t] || 0) + 1;
     const cc = node.specials && node.specials.custom_class;
-    if (cc) cc.split(",").map((s) => s.trim()).filter(Boolean).forEach((c) => customClasses.add(c));
+    if (cc) cc.split(",").map((s: string) => s.trim()).filter(Boolean).forEach((c: string) => customClasses.add(c));
   });
   const roots = getRoots(source);
   return {
@@ -70,8 +73,8 @@ function buildOverview(source) {
   };
 }
 
-function nodeToDetail(node) {
-  const entry = { id: node.id || "", type: node.type || "unknown" };
+function nodeToDetail(node: any): any {
+  const entry: any = { id: node.id || "", type: node.type || "unknown" };
   if (node.style && Object.keys(node.style).length) entry.style = node.style;
   if (node.config && Object.keys(node.config).length) entry.config = node.config;
   if (node.specials && Object.keys(node.specials).length) entry.specials = node.specials;
@@ -87,8 +90,8 @@ function nodeToDetail(node) {
   return entry;
 }
 
-function findNodeById(source, elementId) {
-  let found = null;
+function findNodeById(source: any, elementId: string): any {
+  let found: any = null;
   walkSource(source, (node) => {
     if (node.id === elementId) { found = node; return false; }
   });
@@ -100,8 +103,8 @@ function findNodeById(source, elementId) {
  *  Arrays (events, bindings) show full before/after.
  *  Responsive breakpoints diffed individually.
  */
-function computeNodeDiff(beforeNode, afterNode) {
-  const diff = {};
+function computeNodeDiff(beforeNode: any, afterNode: any): any {
+  const diff: any = {};
   const objFields = ["style", "config", "specials"];
   const arrFields = ["events", "bindings"];
 
@@ -109,7 +112,7 @@ function computeNodeDiff(beforeNode, afterNode) {
     const b = beforeNode[field] || {};
     const a = afterNode[field] || {};
     if (JSON.stringify(b) === JSON.stringify(a)) continue;
-    const fieldDiff = {};
+    const fieldDiff: any = {};
     for (const k of new Set([...Object.keys(b), ...Object.keys(a)])) {
       if (JSON.stringify(b[k]) !== JSON.stringify(a[k])) {
         fieldDiff[k] = { before: b[k] ?? null, after: a[k] ?? null };
@@ -135,7 +138,7 @@ function computeNodeDiff(beforeNode, afterNode) {
   return Object.keys(diff).length ? diff : null;
 }
 
-function applyNodeUpdates(node, updates) {
+function applyNodeUpdates(node: any, updates: any): void {
   if (updates.style) node.style = { ...(node.style || {}), ...updates.style };
   if (updates.config) node.config = { ...(node.config || {}), ...updates.config };
   if (updates.specials) node.specials = { ...(node.specials || {}), ...updates.specials };
@@ -145,15 +148,15 @@ function applyNodeUpdates(node, updates) {
     for (const [bp, val] of Object.entries(updates.responsive)) {
       if (/^bp\d+$/.test(bp)) {
         node[bp] = node[bp]
-          ? { style: { ...node[bp].style, ...val.style }, config: { ...node[bp].config, ...val.config } }
+          ? { style: { ...node[bp].style, ...(val as any).style }, config: { ...node[bp].config, ...(val as any).config } }
           : val;
       }
     }
   }
 }
 
-function searchElements(source, filters) {
-  const results = [];
+function searchElements(source: any, filters: any): any[] {
+  const results: any[] = [];
   const limit = filters.limit || 50;
   walkSource(source, (node) => {
     if (results.length >= limit) return false;
@@ -186,19 +189,19 @@ function searchElements(source, filters) {
  *   │  └─ TEXT-2 [text] "Product name"
  *   └─ BUTTON-1 [button] "Thanh toán" .checkout-btn [2ev]
  */
-function buildTreeText(source) {
+function buildTreeText(source: any): string {
   const roots = getRoots(source);
   if (!roots.length) return "(empty)";
-  const lines = [];
+  const lines: string[] = [];
 
-  function walk(node, prefix, isLast) {
+  function walk(node: any, prefix: string, isLast: boolean): void {
     const connector = prefix === "" ? "" : (isLast ? "└─ " : "├─ ");
     const nextPrefix = prefix === "" ? "" : prefix + (isLast ? "   " : "│  ");
 
     let line = `${prefix}${connector}${node.id || "?"} [${node.type || "?"}]`;
 
     // Compact annotations
-    const tags = [];
+    const tags: string[] = [];
     if (node.specials) {
       if (node.specials.text) {
         const t = node.specials.text.replace(/[\n\r]+/g, " ").substring(0, 50);
@@ -234,11 +237,11 @@ function buildTreeText(source) {
 // from API with the correct filter and feed results into the cache. Subsequent
 // detail/search/element tools can resolve by ID from cache without re-fetching.
 
-const _gsById = new Map(); // id → { gs, time }
+const _gsById = new Map<string, { gs: any; time: number }>(); // id → { gs, time }
 const CACHE_TTL = 30000;
 
 /** Feed API results into cache */
-function cacheItems(items) {
+function cacheItems(items: any[]): void {
   if (!Array.isArray(items)) return;
   const now = Date.now();
   for (const item of items) {
@@ -246,12 +249,12 @@ function cacheItems(items) {
   }
 }
 
-function invalidateGsCache() {
+function invalidateGsCache(): void {
   _gsById.clear();
 }
 
 /** Fetch global sources by component from API and cache results */
-async function fetchByComponent(api, component) {
+async function fetchByComponent(api: WebcakeCmsApi, component: string): Promise<any[]> {
   const res = component === "cart-droppable"
     ? await api.getSourceCart()
     : await api.getGlobalSources({ component });
@@ -261,7 +264,7 @@ async function fetchByComponent(api, component) {
 }
 
 /** Fetch ALL global sources (general + cart) and cache */
-async function fetchAll(api) {
+async function fetchAll(api: WebcakeCmsApi): Promise<any[]> {
   const [gsRes, cartRes] = await Promise.all([
     api.getGlobalSources({}).catch(() => null),
     api.getSourceCart().catch(() => null),
@@ -274,7 +277,11 @@ async function fetchAll(api) {
 }
 
 /** Resolve global source by ID. Source is the original object — no wrapping. */
-async function getGsWithSource(api, globalSourceId, componentHint) {
+async function getGsWithSource(
+  api: WebcakeCmsApi,
+  globalSourceId: any,
+  componentHint?: string
+): Promise<{ gs?: any; source?: any; error?: string }> {
   const id = String(globalSourceId);
 
   // 1. Cache hit?
@@ -309,7 +316,7 @@ const elementUpdateShape = z.object({
 
 // ── Tool registration ──
 
-export function registerGlobalSourceTools(server, api, handle) {
+export function registerGlobalSourceTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
 
   // ── List ──
 
@@ -445,7 +452,7 @@ Examples:
 
         const detail = nodeToDetail(node);
         if (node.children && node.children.length) {
-          detail.children = node.children.map((c) => ({ id: c.id, type: c.type }));
+          detail.children = node.children.map((c: any) => ({ id: c.id, type: c.type }));
         }
         return detail;
       })
@@ -517,7 +524,7 @@ Merge rules: style/config/specials = shallow merge, events/bindings = replace ar
         }
 
         const isCart = gs.component === "cart-droppable";
-        let res;
+        let res: any;
         if (isCart) {
           res = await api.updateSourceCart({ source, type: gs.type, site_id: api.siteId });
         } else {
@@ -554,7 +561,7 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
         if (error) return { error };
         if (!source) return { error: "Global source has no source data" };
 
-        const results = [];
+        const results: any[] = [];
         for (const upd of elementUpdates) {
           const node = findNodeById(source, upd.element_id);
           if (!node) {
@@ -589,7 +596,7 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
         }
 
         const isCart = gs.component === "cart-droppable";
-        let res;
+        let res: any;
         if (isCart) {
           res = await api.updateSourceCart({ source, type: gs.type, site_id: api.siteId });
         } else {
@@ -723,7 +730,7 @@ IMPORTANT: Before calling, you MUST read existing contents with get_global_sourc
           if (!Array.isArray(existingList)) continue;
 
           const existing = existingList.find(
-            (c) => String(c.global_source_id) === String(entry.global_source_id) && c.language_code === entry.language_code
+            (c: any) => String(c.global_source_id) === String(entry.global_source_id) && c.language_code === entry.language_code
           );
           if (existing && existing.content) {
             const existingStr = JSON.stringify(existing.content);

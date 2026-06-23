@@ -32,7 +32,7 @@ error()   { echo -e "${RED}[ERROR]${NC} $1"; }
 # ── Detect MCP server installation ──
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEFAULT_INSTALL_DIR="$HOME/.webcake-cms-mcp"
+DEFAULT_INSTALL_DIR="$HOME/.webcake-storefront-mcp"
 
 detect_install() {
   # Check if running from repo directory

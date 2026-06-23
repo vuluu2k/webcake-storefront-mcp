@@ -1,6 +1,9 @@
 import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { WebcakeCmsApi } from "../api.js";
+import type { Handle } from "../server.js";
 
-export function registerOrderTools(server, api, handle) {
+export function registerOrderTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "list_orders",
     "List orders of the site (metadata only). Use get_order for full details including items",
@@ -15,7 +18,7 @@ export function registerOrderTools(server, api, handle) {
         const orders = (res && res.data) || res || [];
         if (!Array.isArray(orders)) return res;
         return {
-          data: orders.map((o) => ({
+          data: orders.map((o: any) => ({
             id: o.id,
             bill_full_name: o.bill_full_name,
             bill_phone_number: o.bill_phone_number,

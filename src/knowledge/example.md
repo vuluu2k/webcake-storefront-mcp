@@ -263,30 +263,30 @@ Instead of manually editing each IDE config, use the automated setup scripts.
 
 ```bash
 # English
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install.sh | bash
 
 # Vietnamese
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/install_vi.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install_vi.sh | bash
 ```
 
 **Setup knowledge env vars (after install):**
 
 ```bash
 # English
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/setup_env.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/setup_env.sh | bash
 
 # Vietnamese
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/setup_env_vi.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/setup_env_vi.sh | bash
 ```
 
 **Update to latest version:**
 
 ```bash
 # English
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/update.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/update.sh | bash
 
 # Vietnamese
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/update_vi.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/update_vi.sh | bash
 ```
 
 > **Tip:** Replace `| bash` with `| less` to review the script before running

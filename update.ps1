@@ -4,7 +4,7 @@
 
 $ErrorActionPreference = "Stop"
 
-$DEFAULT_DIR = "$env:USERPROFILE\.webcake-cms-mcp"
+$DEFAULT_DIR = "$env:USERPROFILE\.webcake-storefront-mcp"
 
 Write-Host ""
 Write-Host "  ══════════════════════════════════════════════════" -ForegroundColor Cyan
@@ -155,7 +155,7 @@ if (Test-Path ".git") {
 } else {
     Write-Host "  [WARN] Not a git repo - cannot pull updates." -ForegroundColor Yellow
     Write-Host "  To enable updates, re-install from git:"
-    Write-Host "  git clone https://github.com/vuluu2k/webcake_cms_mcp.git $InstallDir"
+    Write-Host "  git clone https://github.com/vuluu2k/webcake-storefront-mcp.git $InstallDir"
     Pop-Location
     exit 1
 }

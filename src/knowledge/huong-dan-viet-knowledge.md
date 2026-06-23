@@ -400,30 +400,30 @@ Thay vì sửa thủ công từng file cấu hình IDE, bạn có thể dùng sc
 
 ```bash
 # Tiếng Việt
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/install_vi.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install_vi.sh | bash
 
 # English
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install.sh | bash
 ```
 
 **Cấu hình biến knowledge (sau khi đã cài):**
 
 ```bash
 # Tiếng Việt
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/setup_env_vi.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/setup_env_vi.sh | bash
 
 # English
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/setup_env.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/setup_env.sh | bash
 ```
 
 **Cập nhật lên bản mới nhất:**
 
 ```bash
 # Tiếng Việt
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/update_vi.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/update_vi.sh | bash
 
 # English
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/update.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/update.sh | bash
 ```
 
 > **Lưu ý:** Nếu muốn xem nội dung script trước khi chạy, thay `| bash` bằng `| less`
@@ -440,7 +440,7 @@ curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake_cms_mcp/main/update
 
 ### Script làm gì?
 
-1. **Tự động tìm** MCP server đã cài (thư mục hiện tại hoặc `~/.webcake-cms-mcp`)
+1. **Tự động tìm** MCP server đã cài (thư mục hiện tại hoặc `~/.webcake-storefront-mcp`)
 2. **Hỏi bạn** 3 biến môi trường knowledge:
 
 | Biến | Mô tả | Bắt buộc |
@@ -461,7 +461,7 @@ $ ./setup_env_vi.sh
 ║  WebCake CMS MCP - Cấu hình biến môi trường        ║
 ╚══════════════════════════════════════════════════════╝
 
-[OK] MCP server tại /Users/you/.webcake-cms-mcp
+[OK] MCP server tại /Users/you/.webcake-storefront-mcp
 [OK] Node.js v20.11.0
 
 ── Cấu hình Knowledge ──
