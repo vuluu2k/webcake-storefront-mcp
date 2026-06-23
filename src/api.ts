@@ -163,8 +163,14 @@ export class WebcakeCmsApi {
   listPages() {
     return this.request("GET", `/api/v1/site/${this.siteId}/pages`);
   }
+  /** Create a page. The backend creates the page AND its source in one call, so `source`
+   *  is REQUIRED and must be a JSON string (stringified here if an object is passed).
+   *  `slug`/`is_homepage` are NOT applied at create — set them afterwards via updatePage. */
   createPage(params: any) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/page`, { body: params });
+    const body: any = { ...params };
+    if (body.source != null && typeof body.source !== "string") body.source = JSON.stringify(body.source);
+    if (body.source == null) body.source = JSON.stringify({ sections: [] });
+    return this.request("POST", `/api/v1/site/${this.siteId}/page`, { body });
   }
   updatePage(pageId: string, params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/${pageId}/update_page`, { body: params });
@@ -193,8 +199,21 @@ export class WebcakeCmsApi {
   saveSite(params: any = {}) {
     return this.request("POST", `/api/v1/site/${this.siteId}/save`, { body: params, timeout: 60000 });
   }
-  publishSite(params: any = {}) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/publish`, { body: params, timeout: 60000 });
+  /** Publish the site live. /publish runs the full "save" pipeline, which OVERWRITES
+   *  site.settings with the body's `settings` — so we send the CURRENT settings (else
+   *  they'd be nulled, disabling use_store/use_blog/etc.). Other collections default to []. */
+  async publishSite(params: any = {}) {
+    let settings = params.settings;
+    if (settings === undefined) {
+      settings = await this.getSiteSettings().catch(() => ({}));
+    }
+    // The save pipeline stores site.settings as a JSON STRING — an object body is
+    // rejected (422). Stringify unless the caller already passed a string.
+    const settingsStr = typeof settings === "string" ? settings : JSON.stringify(settings || {});
+    return this.request("POST", `/api/v1/site/${this.siteId}/publish`, {
+      body: { global_sources: [], global_sections: [], page_contents: [], ...params, settings: settingsStr },
+      timeout: 60000,
+    });
   }
   uploadImageBase64({ base64, content_type }: { base64?: string; content_type?: string } = {}) {
     return this.request("POST", `/api/v1/site/${this.siteId}/media/content/b64`, {

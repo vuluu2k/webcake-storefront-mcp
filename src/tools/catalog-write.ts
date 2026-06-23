@@ -78,20 +78,23 @@ Images must be HOSTED URLs — get them from search_images or upload_images firs
         const productParams: any = {
           name,
           variations: vars,
+          // These MUST be arrays — the backend does Enum.reduce over them and 500s on nil.
+          categories: category_ids || [],
+          ribbons: [],
           ...(description ? { description } : {}),
           ...(attributes ? { product_attributes: attributes } : {}),
-          ...(category_ids ? { categories: category_ids } : {}),
           ...(images && images.length ? { image: images[0] } : {}),
         };
 
         const res: any = await api.createProduct(productParams);
-        const data = res?.data;
-        const productId = data?.attributes?.id || data?.id || data?.product?.id || null;
+        // Success response is { product: {...} } at the top level (not under data).
+        const prod = res?.product || res?.data?.product || res?.data?.attributes || res?.data || {};
+        const productId = prod?.id || null;
         return {
           success: true,
           product_id: productId,
           name,
-          slug: data?.attributes?.slug || data?.slug || null,
+          slug: prod?.slug || null,
           variations: vars.length,
           categories: category_ids || [],
           raw: productId ? undefined : res, // surface raw response only if we couldn't find the id

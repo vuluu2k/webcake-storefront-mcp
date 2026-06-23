@@ -164,15 +164,21 @@ The source must be { sections: [...] } — build sections with new_section. Vali
           }
         }
 
-        const created = await api.createPage({ name, slug, ...(typeNum != null ? { type: typeNum } : {}), is_homepage });
-        const pageId = newPageId(created);
-        if (!pageId) {
-          return { error: "Page created but no id was returned; cannot save source.", created };
-        }
-
         // Expand runtime -> bp1..bp4 so the saved source actually renders on the storefront.
         finalizeForRender(parsed);
-        const saved = await api.updatePageSource(pageId, { source: parsed });
+
+        // createPage saves the page AND its source in one call (source is required there).
+        const created = await api.createPage({ name, source: parsed, ...(typeNum != null ? { type: typeNum } : {}) });
+        const pageId = newPageId(created);
+        if (!pageId) {
+          return { error: "Page created but no id was returned.", created };
+        }
+        // slug / homepage are not applied at create — set them via update_page.
+        if (slug || is_homepage) {
+          await api
+            .updatePage(pageId, { ...(slug ? { slug } : {}), ...(is_homepage ? { is_homepage: true } : {}) })
+            .catch(() => {});
+        }
         return {
           success: true,
           page_id: pageId,
@@ -180,7 +186,6 @@ The source must be { sections: [...] } — build sections with new_section. Vali
           slug,
           page_type: kind ?? null,
           ...(feature ? { data_source: { flag: feature.flag, newly_enabled: feature.changed } } : {}),
-          page_source_id: saved && saved.data && saved.data.id,
           stats: validation.stats,
         };
       })
