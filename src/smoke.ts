@@ -7,6 +7,7 @@ import {
   newPageSkeleton,
   buildSection,
   validatePage,
+  finalizeForRender,
   reassignIds,
   walk,
 } from "./builder/page.js";
@@ -58,14 +59,24 @@ console.log("== page: grid composition + validation ==");
     { type: "text", opts: { text: "Welcome" } },
     { type: "button", opts: { text: "Buy" } },
   ]);
-  check("section grid is 1xN", hero.runtime.config.grid === "1x2", hero.runtime.config.grid);
-  check("children get grid positions", hero.children.every((c: any) => c.runtime.config.columnStart === 1));
+  // A section uses the builder's centred 3-column grid; children sit in the centre column.
+  check("section grid is 3xN", hero.runtime.config.grid === "3x2", hero.runtime.config.grid);
+  check("children placed in centre column", hero.children.every((c: any) => c.runtime.config.columnStart === 2));
 
   const src = newPageSkeleton();
   src.sections.push(hero);
   const v: any = validatePage(src);
   check("built page validates", v.valid === true, v.errors);
   check("stats count elements", v.stats.total_elements === 3, v.stats);
+
+  // finalizeForRender must convert runtime -> bp1..bp4 (the shape the storefront renders).
+  finalizeForRender(src);
+  const sec0 = src.sections[0] as any;
+  check("finalize removes runtime", !("runtime" in sec0), Object.keys(sec0));
+  check("finalize adds bp1..bp4", ["bp1", "bp2", "bp3", "bp4"].every((bp) => sec0[bp]?.config), Object.keys(sec0));
+  check("section bp4 is mobile grid", sec0.bp4.config.grid === "3x2" && sec0.bp4.config.columns[0].absValue === 5, sec0.bp4.config.columns?.[0]);
+  check("child bp1 keeps centre column", sec0.children[0].bp1.config.columnStart === 2, sec0.children[0].bp1?.config);
+  check("finalize is idempotent", (finalizeForRender(src), !("runtime" in sec0)));
 
   // duplicate ids must fail validation
   const dup = newPageSkeleton();

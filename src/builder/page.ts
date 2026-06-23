@@ -7,6 +7,14 @@
 
 import { buildElement, isKnownType, ELEMENT_TYPES } from "./catalog.js";
 import { randomString } from "./factory.js";
+import {
+  BREAKPOINTS,
+  genGridByBp,
+  SECTION_CONTENT_COL_START,
+  SECTION_CONTENT_COL_END,
+} from "./grid.js";
+
+const clone = (o: any) => structuredClone(o);
 
 /** Walk every node in a source tree (depth-first). Return false from fn to stop. */
 export function walk(source: any, fn: (node: any) => any) {
@@ -41,11 +49,28 @@ export function reassignIds(node: any) {
   return node;
 }
 
+interface StackOpts {
+  /** Number of grid columns the container declares (default 1). */
+  gridCols?: number;
+  /** Column unit objects for the container grid (default single fr). */
+  columns?: any[];
+  /** 1-based grid line where each child starts horizontally (default 1). */
+  contentColStart?: number;
+  /** 1-based grid line where each child ends horizontally (default 2). */
+  contentColEnd?: number;
+}
+
 /**
- * Lay children out vertically inside a section/container using a single-column grid —
- * the same shape the builder emits. `children` are placed top-to-bottom, one grid row each.
+ * Lay children out vertically inside a section/container — one grid row per child,
+ * top-to-bottom — the same shape the builder emits. Values are written to `runtime`;
+ * finalizeForRender() later expands `runtime` into the per-breakpoint keys the
+ * storefront actually reads (bp1..bp4).
  */
-export function stackChildren(container: any, children: any[]) {
+export function stackChildren(container: any, children: any[], opts: StackOpts = {}) {
+  const gridCols = opts.gridCols || 1;
+  const colStart = opts.contentColStart || 1;
+  const colEnd = opts.contentColEnd || 2;
+
   const rows = children.map((child: any) => {
     const h = (child.runtime && child.runtime.style && child.runtime.style.height) || 50;
     return { unit: "min/max", min: { unit: "px", absValue: h }, max: { unit: "max-c" } };
@@ -54,8 +79,8 @@ export function stackChildren(container: any, children: any[]) {
   container.runtime = container.runtime || {};
   container.runtime.config = {
     ...(container.runtime.config || {}),
-    grid: `1x${children.length || 1}`,
-    columns: [{ unit: "fr", value: 1 }],
+    grid: `${gridCols}x${children.length || 1}`,
+    columns: opts.columns || [{ unit: "fr", value: 1 }],
     rows: rows.length ? rows : [{ unit: "min/max", min: { unit: "px", absValue: 50 }, max: { unit: "max-c" } }],
     heightUnit: "auto",
   };
@@ -64,8 +89,8 @@ export function stackChildren(container: any, children: any[]) {
     child.runtime = child.runtime || {};
     child.runtime.config = {
       ...(child.runtime.config || {}),
-      columnStart: 1,
-      columnEnd: 2,
+      columnStart: colStart,
+      columnEnd: colEnd,
       rowStart: i + 1,
       rowEnd: i + 2,
       constraintX: (child.runtime.config && child.runtime.config.constraintX) || ["centerLeft"],
@@ -81,11 +106,19 @@ export function stackChildren(container: any, children: any[]) {
 /**
  * Build a ready-to-place section from a list of child specs.
  * Each spec: { type, opts?, children? } where children is a nested array of specs.
+ * A section uses the builder's centred 3-column grid (margin · content · margin); the
+ * children live in the centre content column. finalizeForRender() sets the correct
+ * per-breakpoint column widths via genGridByBp.
  */
 export function buildSection(childSpecs: any[] = [], sectionOpts: any = {}) {
   const section = buildElement("section", sectionOpts);
   const children = childSpecs.map((spec: any) => buildFromSpec(spec));
-  stackChildren(section, children);
+  stackChildren(section, children, {
+    gridCols: 3,
+    columns: genGridByBp(BREAKPOINTS.bp1[0]).columns,
+    contentColStart: SECTION_CONTENT_COL_START,
+    contentColEnd: SECTION_CONTENT_COL_END,
+  });
   return section;
 }
 
@@ -152,6 +185,54 @@ export function validatePage(source: any) {
     ...(warnings.length ? { warnings } : {}),
     stats: { sections: source.sections.length, total_elements: total, element_types: typeCounts },
   };
+}
+
+/**
+ * Expand one node's `runtime.{style,config}` into the per-breakpoint keys the storefront
+ * renderer reads (bp1..bp4). Mirrors builderx_spa's syncBreakpoint: the authored
+ * (desktop) values are copied onto every breakpoint. Sections additionally get their
+ * centred 3-column grid recomputed per breakpoint via genGridByBp (the side-margin
+ * widths shrink on smaller screens). Nodes already in breakpoint shape are left as-is,
+ * so this is safe to run over a mixed source (e.g. add_section onto an existing page).
+ */
+function expandNodeToBreakpoints(node: any): any {
+  const rt = node && node.runtime;
+  if (rt && (rt.style || rt.config)) {
+    const baseStyle = rt.style || {};
+    const baseConfig = { ...(rt.config || {}), loaded: true };
+    const isSection = node.type === "section";
+
+    for (const [bp, [minW]] of Object.entries(BREAKPOINTS)) {
+      const style = clone(baseStyle);
+      const config = clone(baseConfig);
+      if (isSection) {
+        const g = genGridByBp(minW);
+        const sectionRows =
+          baseConfig.rows && baseConfig.rows.length ? clone(baseConfig.rows) : clone(g.rows);
+        config.columns = clone(g.columns);
+        config.rows = sectionRows;
+        config.grid = `3x${sectionRows.length}`;
+        config.heightUnit = config.heightUnit || "auto";
+      }
+      node[bp] = { style, config };
+    }
+    delete node.runtime;
+  }
+
+  for (const child of node.children || []) expandNodeToBreakpoints(child);
+  return node;
+}
+
+/**
+ * Convert a freshly-built page source (whose nodes carry `runtime`) into the shape the
+ * storefront actually renders: every node gets bp1..bp4 `{style,config}` and `runtime`
+ * is removed. MUST be called before saving a page built with new_section/new_element —
+ * otherwise the page renders with no styling or grid placement.
+ */
+export function finalizeForRender(source: any): any {
+  const sections = source && Array.isArray(source.sections) ? source.sections : [];
+  for (const s of sections) expandNodeToBreakpoints(s);
+  return source;
 }
 
 export { ELEMENT_TYPES };

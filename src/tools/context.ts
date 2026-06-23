@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getConfig, setConfig } from "../db.js";
+import { resolvePreviewUrl } from "../config.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -80,6 +81,70 @@ export function registerContextTools(server: McpServer, api: WebcakeCmsApi, hand
           sites,
           total: (res as any)?.data?.total_entries || sites.length,
           page,
+        };
+      })
+  );
+
+  server.tool(
+    "create_site",
+    `Create a brand-new storefront site for the current account, then (by default) switch to it.
+The backend seeds sample categories, products and a blog, but creates NO pages — so after this,
+build a homepage: get_build_guide → new_section → build_page (type:'main', is_homepage:true).
+Note: free accounts are limited to 4 sites (creation fails with a quota error past that).`,
+    {
+      name: z.string().describe("Display name of the new site, e.g. 'My Coffee Shop'"),
+      slug: z
+        .string()
+        .describe("URL-safe site slug (lowercase letters, digits, hyphens), e.g. 'my-coffee-shop'. Becomes the preview subdomain and must be unique."),
+      switch_to: z
+        .boolean()
+        .default(true)
+        .describe("Switch the session to the new site after creating it (saved for next session). Default true."),
+    },
+    ({ name, slug, switch_to }) =>
+      handle(async () => {
+        let res: any;
+        try {
+          res = await api.createSite({ name, slug });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          if (msg.includes("403")) {
+            throw new Error(
+              "Cannot create site: your account's site quota is reached (free plan allows up to 4 sites). Delete an unused site or upgrade your plan, then retry."
+            );
+          }
+          throw new Error(`Site creation failed: ${msg}. Check the slug is unique and URL-safe (lowercase, hyphens).`);
+        }
+
+        const site = res?.data?.site || res?.data || res?.site || res;
+        const newId = site?.id;
+        if (!newId) {
+          throw new Error("Site was not created (no id returned by the backend).");
+        }
+        const createdSlug = site?.site_slug?.slug || slug;
+
+        let switched = false;
+        let previewUrl: string | null = null;
+        const previousSiteId = api.siteId;
+        if (switch_to) {
+          api.switchSite(newId);
+          setConfig("site_id", newId);
+          setConfig("site_name", site?.name || name);
+          setConfig("site_domain", createdSlug || "");
+          switched = true;
+          previewUrl = await resolvePreviewUrl(api).catch(() => null);
+        }
+
+        return {
+          success: true,
+          site_id: newId,
+          name: site?.name || name,
+          slug: createdSlug,
+          switched,
+          ...(switched ? { current_site_id: api.siteId, previous_site_id: previousSiteId } : {}),
+          preview_url: previewUrl,
+          next_step:
+            "New site has sample products/categories/blog but NO pages. Create a homepage with build_page (type:'main', is_homepage:true), then add store/member/blog pages as needed. Publish site-level with publish_site.",
         };
       })
   );

@@ -8,6 +8,7 @@ import {
   buildSection,
   newPageSkeleton,
   validatePage,
+  finalizeForRender,
   walk,
   reassignIds,
 } from "../builder/page.js";
@@ -141,8 +142,9 @@ The source must be { sections: [...] } — build sections with new_section. Vali
             validation,
             request: { name, slug, type: kind ?? null, page_type_num: typeNum ?? null, is_homepage, sections: (parsed && parsed.sections || []).length },
             will_enable_feature: requiredFlag ?? null,
+            renders_at_breakpoints: ["bp1", "bp2", "bp3", "bp4"],
             hint: validation.valid
-              ? `Looks valid. Call again with dry_run=false to create and save the page.${requiredFlag ? ` Will also enable site.settings.${requiredFlag} so its data bindings resolve.` : ""}`
+              ? `Looks valid. On save, every node's runtime is expanded into the bp1..bp4 keys the storefront renders. Call again with dry_run=false to create and save the page.${requiredFlag ? ` Will also enable site.settings.${requiredFlag} so its data bindings resolve.` : ""}`
               : "Fix the errors above before saving.",
           };
         }
@@ -168,6 +170,8 @@ The source must be { sections: [...] } — build sections with new_section. Vali
           return { error: "Page created but no id was returned; cannot save source.", created };
         }
 
+        // Expand runtime -> bp1..bp4 so the saved source actually renders on the storefront.
+        finalizeForRender(parsed);
         const saved = await api.updatePageSource(pageId, { source: parsed });
         return {
           success: true,
@@ -223,6 +227,9 @@ Two-step safety: dry_run=true (default) previews; dry_run=false saves.`,
 
         if (!validation.valid) return { error: "Validation failed — not saving.", validation };
 
+        // Expand the newly-added section's runtime -> bp1..bp4 (existing sections are
+        // already in breakpoint shape and are left untouched).
+        finalizeForRender(source);
         const saved = await api.updatePageSource(page_id, { source });
         return {
           success: true,

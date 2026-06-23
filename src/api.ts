@@ -92,6 +92,12 @@ export class WebcakeCmsApi {
   listMySites(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/all`, { query });
   }
+  /** Create a brand-new personal site. The backend seeds sample categories/products/blog
+   *  but NO pages. Returns { data: { site: { id, site_slug:{slug}, ... } } }.
+   *  Fails with 403 when the account's site quota is reached (free plan: 4 sites). */
+  createSite(params: { name: string; slug: string }) {
+    return this.request("POST", `/api/v1/dashboard/site/create`, { body: params, timeout: 60000 });
+  }
   getSiteInfo() {
     return this.request("GET", `/api/v1/site/${this.siteId}/`);
   }
