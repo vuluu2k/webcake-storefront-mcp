@@ -26,10 +26,11 @@ This is a **TypeScript** project (strict). All source lives in `src/` and compil
 
 ## Environment Variables
 
-Required (auth + target):
+Required (auth):
 - `WEBCAKE_TOKEN` — storefront JWT Bearer token (the builder's `jwt` cookie / `store_jwt`)
 - `WEBCAKE_SESSION_ID` — session id, sent as the `x-session-id` header (the builder's `wsid` cookie)
-- `WEBCAKE_SITE_ID` — Target site ID
+
+The **site is not set from env** — it's chosen at runtime via the `list_my_sites` + `switch_site` tools (persisted to the local db, restored next session). `WEBCAKE_SITE_ID` still works as an optional override if you want to pin a site, and remote mode can pass `x-webcake-site-id` / `?site_id=` per request.
 
 Endpoints come from a **named environment** so you don't set base URLs by hand:
 - `WEBCAKE_ENV` (or `--env`) = `local` | `staging` | `prod` — **default `prod`**. Presets live in `src/config.ts` (`ENVIRONMENTS`):

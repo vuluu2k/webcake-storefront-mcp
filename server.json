@@ -31,10 +31,6 @@
           "isSecret": true
         },
         {
-          "name": "WEBCAKE_SITE_ID",
-          "description": "Target site id."
-        },
-        {
           "name": "WEBCAKE_ENV",
           "description": "Named environment preset that fills the API + app base URLs (default prod).",
           "choices": [

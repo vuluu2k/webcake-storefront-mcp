@@ -103,7 +103,7 @@ Không cần cài, luôn mới nhất, cần Node.js 18+. **Một dòng** cấu 
 npx -y webcake-storefront-mcp install
 
 # Phi tương tác — cấu hình mọi IDE hỗ trợ cùng lúc
-npx -y webcake-storefront-mcp install --ide all --token <token> --session <session-id> --site <site-id>
+npx -y webcake-storefront-mcp install --ide all --token <token> --session <session-id>
 
 # Gỡ khỏi mọi IDE
 npx -y webcake-storefront-mcp uninstall
@@ -126,8 +126,8 @@ Mở **trang kết nối** của builder; bấm *Kết nối* là token + sessio
 npx -y webcake-storefront-mcp serve --port 8787
 ```
 
-Rồi trỏ client tới `http://<host>:8787/mcp?jwt=<TOKEN>&site_id=<SITE_ID>` (client hỗ trợ header có thể
-gửi `x-webcake-jwt` / `x-webcake-site-id`). Secret phía server như `PEXELS_API_KEY` đặt trên host — tiện cho VPS.
+Rồi trỏ client tới `http://<host>:8787/mcp?jwt=<TOKEN>` (client hỗ trợ header có thể gửi `x-webcake-jwt`;
+chọn site trong chat bằng `switch_site`). Secret phía server như `PEXELS_API_KEY` đặt trên host — tiện cho VPS.
 
 > ⚠️ Link `?jwt=` chứa token cá nhân — coi như mật khẩu, dùng **HTTPS** khi chạy thật.
 
@@ -135,8 +135,9 @@ gửi `x-webcake-jwt` / `x-webcake-site-id`). Secret phía server như `PEXELS_A
 
 ## ⚙️ Cấu hình
 
-Chỉ cần ba giá trị: **`WEBCAKE_TOKEN`** (JWT Bearer), **`WEBCAKE_SESSION_ID`** (gửi qua `x-session-id`),
-và **`WEBCAKE_SITE_ID`**.
+Chỉ cần hai giá trị: **`WEBCAKE_TOKEN`** (JWT Bearer) và **`WEBCAKE_SESSION_ID`** (gửi qua `x-session-id`).
+Bạn chọn **site lúc chạy** — chỉ cần hỏi trong chat, AI sẽ gọi `list_my_sites` / `switch_site` (lựa chọn được
+lưu lại cho lần sau), nên không cần `WEBCAKE_SITE_ID`.
 
 URL gốc lấy theo **môi trường có tên** — đặt `WEBCAKE_ENV` (hoặc `--env`) là khỏi gõ URL:
 
@@ -156,7 +157,7 @@ trong chat bằng `update_auth` và `switch_site` — lưu vào SQLite tại `~/
 1. Mở trình tạo trang WebCake và đăng nhập.
 2. Mở DevTools (`F12`) → tab **Network** → bấm một request API.
 3. Trong **Request Headers**: `Authorization: Bearer …` → `WEBCAKE_TOKEN`; `x-session-id: …` → `WEBCAKE_SESSION_ID`.
-4. `WEBCAKE_SITE_ID` nằm trong URL builder, hoặc dùng tool `list_my_sites`.
+4. Không cần site id từ đầu — trong chat, chạy `list_my_sites` rồi `switch_site` để chọn site (được nhớ cho lần sau).
 
 </details>
 

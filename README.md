@@ -103,7 +103,7 @@ Zero install, always the latest version, needs Node.js 18+. **One line** configu
 npx -y webcake-storefront-mcp install
 
 # Non-interactive — configure every supported IDE at once
-npx -y webcake-storefront-mcp install --ide all --token <token> --session <session-id> --site <site-id>
+npx -y webcake-storefront-mcp install --ide all --token <token> --session <session-id>
 
 # Remove the server from every IDE config
 npx -y webcake-storefront-mcp uninstall
@@ -126,8 +126,8 @@ Opens the builder's **connect page**; click *Connect* and your token + session a
 npx -y webcake-storefront-mcp serve --port 8787
 ```
 
-Then point any client at `http://<host>:8787/mcp?jwt=<TOKEN>&site_id=<SITE_ID>` (clients that support
-headers can send `x-webcake-jwt` / `x-webcake-site-id` instead). Server-side secrets like `PEXELS_API_KEY`
+Then point any client at `http://<host>:8787/mcp?jwt=<TOKEN>` (clients that support headers can send
+`x-webcake-jwt` instead; pick the site in chat with `switch_site`). Server-side secrets like `PEXELS_API_KEY`
 live on the host — handy on a VPS.
 
 > ⚠️ A `?jwt=` link contains your personal token — treat it like a password and use **HTTPS** in production.
@@ -136,8 +136,9 @@ live on the host — handy on a VPS.
 
 ## ⚙️ Configuration
 
-Only three values are required: **`WEBCAKE_TOKEN`** (Bearer JWT), **`WEBCAKE_SESSION_ID`** (sent as
-`x-session-id`), and **`WEBCAKE_SITE_ID`**.
+Two values are required: **`WEBCAKE_TOKEN`** (Bearer JWT) and **`WEBCAKE_SESSION_ID`** (sent as
+`x-session-id`). You pick the **site at runtime** — just ask in chat and the AI calls `list_my_sites` /
+`switch_site` (your choice is saved and reused next session), so no `WEBCAKE_SITE_ID` is needed.
 
 Base URLs come from a **named environment** — set `WEBCAKE_ENV` (or `--env`) and you never type a URL:
 
@@ -157,7 +158,7 @@ in chat via `update_auth` and `switch_site` — saved to a local SQLite db at `~
 1. Open the WebCake builder and log in.
 2. Open DevTools (`F12`) → **Network** tab → click any API request.
 3. In **Request Headers**: `Authorization: Bearer …` → `WEBCAKE_TOKEN`; `x-session-id: …` → `WEBCAKE_SESSION_ID`.
-4. `WEBCAKE_SITE_ID` is in the builder URL, or use the `list_my_sites` tool.
+4. No site id needed up front — in chat, run `list_my_sites` then `switch_site` to choose the site (remembered next time).
 
 </details>
 

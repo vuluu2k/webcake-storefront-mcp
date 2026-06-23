@@ -122,10 +122,11 @@ async function promptMissing(opts: InstallOpts): Promise<void> {
       const t = (await rl.question("Token (paste JWT, or leave blank to set later): ")).trim();
       if (t) opts.token = t;
     }
-    if (!opts.uninstall && !opts.siteId && !process.env.WEBCAKE_SITE_ID) {
-      const s = (await rl.question("Site ID (optional): ")).trim();
-      if (s) opts.siteId = s;
+    if (!opts.uninstall && !opts.sessionId && !process.env.WEBCAKE_SESSION_ID) {
+      const s = (await rl.question("Session id (x-session-id, or leave blank to set later): ")).trim();
+      if (s) opts.sessionId = s;
     }
+    // Site is chosen at runtime — use the list_my_sites / switch_site tools in chat.
   } finally {
     rl.close();
   }

@@ -29,7 +29,7 @@ IMPORTANT: When the user asks ANY question about their website, store, products,
 You can also BUILD pages: use get_build_guide, list_elements, get_element to learn the BuilderX component model, new_section/new_element to compose, validate_page to check, then build_page (dry_run first) to create. Publishing is site-level via publish_site.
 
 Workflow:
-1. On first interaction, call get_current_context to confirm the connected site.
+1. On first interaction, call get_current_context. The site is NOT set from env — if no site is selected yet, call list_my_sites and ask the user which site to work on, then switch_site (the choice is saved and reused next session).
 2. Before answering a site-specific question, query the relevant tool.
 3. When building a page, read get_build_guide first and validate before saving.
 4. Always reply in the user's language; keep Vietnamese with full diacritics.`;
