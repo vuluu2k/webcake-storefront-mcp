@@ -5,6 +5,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.5.1] - 2026-06-23
+
+### Fixed
+- `build_page` now passes the finalized page `source` to `create_page` in the initial create call (required by the backend), then sets `slug` and `is_homepage` via a follow-up `update_page` call; the previously broken separate `updatePageSource` step is removed.
+- `create_product` now always sends `categories` and `ribbons` as arrays, preventing a 500 error from the backend when either field is nil; the new product id is now correctly parsed from `res.product.id`.
+- `publish_site` now fetches the current site settings before publishing and sends them as a JSON string, preventing a 422/500 error that previously nulled out settings (disabling `use_store`, `use_blog`, and similar flags) on each publish.
+
 ## [1.5.0] - 2026-06-23
 
 ### Added

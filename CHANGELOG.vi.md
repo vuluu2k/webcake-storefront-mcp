@@ -5,6 +5,13 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.5.1] - 2026-06-23
+
+### Fixed
+- `build_page` nay truyền `source` trang đã hoàn thiện vào lời gọi `create_page` ban đầu (bắt buộc bởi backend), sau đó đặt `slug` và `is_homepage` qua một lời gọi `update_page` tiếp theo; bước `updatePageSource` riêng biệt bị lỗi trước đây đã được loại bỏ.
+- `create_product` nay luôn gửi `categories` và `ribbons` dưới dạng mảng, tránh lỗi 500 từ backend khi một trong hai trường là nil; id sản phẩm mới nay được phân tích chính xác từ `res.product.id`.
+- `publish_site` nay lấy cài đặt site hiện tại trước khi publish và gửi chúng dưới dạng chuỗi JSON, tránh lỗi 422/500 từng làm mất toàn bộ settings (vô hiệu hoá `use_store`, `use_blog` và các flag tương tự) sau mỗi lần publish.
+
 ## [1.5.0] - 2026-06-23
 
 ### Added
