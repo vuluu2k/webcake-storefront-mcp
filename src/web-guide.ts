@@ -27,8 +27,8 @@ const DOCS_URL = `${GITHUB_URL}#readme`;
 const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="7" fill="url(#sg)"/>
   <defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0%" stop-color="#3FBB57"/>
-    <stop offset="100%" stop-color="#108B67"/>
+    <stop offset="0%" stop-color="#6d5efc"/>
+    <stop offset="100%" stop-color="#8b5cf6"/>
   </linearGradient></defs>
   <text x="16" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="17" fill="white">S</text>
   <circle cx="24" cy="9" r="4" fill="#FFD591"/>
@@ -79,7 +79,7 @@ const ICONS: Record<string, string> = {
     '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20"/><path d="M6 6.5h.01"/><path d="M9 6.5h.01"/>',
   moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
-  copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2v1"/>',
   terminal:
     '<polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/>',
   flame:
@@ -101,17 +101,17 @@ const META: Record<
   { title: string; desc: string; keywords: string; locale: string }
 > = {
   vi: {
-    title: "WebCake Storefront MCP — AI tự dựng trang storefront WebCake cho bạn",
-    desc: "Mô tả trang bằng lời — AI tự dựng, kiểm tra và xuất bản thẳng lên storefront WebCake/StoreCake. ~101 tool MCP cho Claude, Cursor, Windsurf và mọi client MCP.",
+    title: "WebCake Storefront — Tạo website bán hàng chỉ bằng cách trò chuyện",
+    desc: "Bạn nói ý tưởng, trợ lý AI dựng trang, bạn xem trước rồi đăng lên — không cần kéo-thả hay biết lập trình. Kết nối Claude, Cursor, Windsurf với cửa hàng WebCake/StoreCake của bạn.",
     keywords:
-      "WebCake, StoreCake, storefront, MCP, Model Context Protocol, AI, Claude, Cursor, Windsurf, tạo trang bằng AI, BuilderX, no-code, bán hàng online",
+      "WebCake, StoreCake, storefront, AI, Claude, Cursor, Windsurf, tạo trang bán hàng, website bán hàng, no-code, bán hàng online, tạo trang bằng AI",
     locale: "vi_VN",
   },
   en: {
-    title: "WebCake Storefront MCP — let AI build WebCake store pages for you",
-    desc: "Describe a store page in plain words — AI builds it, validates it, and publishes it to your WebCake/StoreCake storefront. ~101 MCP tools for Claude, Cursor, Windsurf and any MCP client.",
+    title: "WebCake Storefront — Build your online store just by chatting",
+    desc: "Tell your AI assistant what you want, it builds the page on your WebCake store, you review and publish — no dragging blocks, no coding required. Works with Claude, Cursor, Windsurf and more.",
     keywords:
-      "WebCake, StoreCake, storefront, MCP, Model Context Protocol, AI, Claude, Cursor, Windsurf, AI page builder, BuilderX, no-code, e-commerce",
+      "WebCake, StoreCake, storefront, AI, Claude, Cursor, Windsurf, AI page builder, no-code, e-commerce, online store builder",
     locale: "en_US",
   },
 };
@@ -120,46 +120,46 @@ const META: Record<
 const FAQ: Record<Lang, Array<{ q: string; a: string }>> = {
   vi: [
     {
-      q: "WebCake Storefront MCP là gì?",
-      a: "Là một MCP server giúp AI (Claude, Cursor…) tự dựng trang storefront WebCake/StoreCake từ một câu mô tả, tự kiểm tra rồi lưu vào site của bạn. AI nắm toàn bộ mô hình component BuilderX — bạn chỉ cần mô tả và xem lại.",
+      q: "Tôi không biết code có dùng được không?",
+      a: "Hoàn toàn được. Bạn chỉ cần nói chuyện với trợ lý AI bằng tiếng Việt thông thường — ví dụ \"Tạo cho tôi trang sản phẩm cho serum dưỡng da, có gallery ảnh và nút mua hàng\". Mọi phần kỹ thuật đều do trợ lý lo.",
     },
     {
-      q: "Tôi có cần biết lập trình không?",
-      a: "Không. Bạn chỉ cần mô tả trang bằng lời trong ứng dụng AI. Mọi phần kỹ thuật — dựng JSON, kiểm tra cấu trúc, gọi API — đều do công cụ lo.",
+      q: "Có mất phí không?",
+      a: "Công cụ kết nối này hoàn toàn miễn phí và mã nguồn mở (MIT). Bạn chỉ cần tài khoản WebCake/StoreCake để lưu và xuất bản trang của mình.",
     },
     {
-      q: "Có miễn phí không?",
-      a: "Có. Công cụ miễn phí, mã nguồn mở (MIT). Bạn chỉ cần tài khoản WebCake/StoreCake để lưu và xuất bản trang.",
+      q: "Trang có sửa lại được không?",
+      a: "Có, dễ dàng. Bạn chỉ cần nói \"đổi màu nút sang tím\" hay \"thêm phần đánh giá khách hàng\" — trợ lý sửa đúng chỗ bạn muốn mà không làm hỏng phần còn lại của trang.",
     },
     {
-      q: "Dùng được với ứng dụng nào?",
-      a: "Claude Desktop, Claude Code, Claude.ai (qua Connectors), Cursor, Windsurf, VS Code, Augment — và bất kỳ client nào hỗ trợ chuẩn MCP.",
+      q: "Dữ liệu của tôi có an toàn không?",
+      a: "An toàn. Mọi thay đổi đều được xem trước, bạn xác nhận mới lưu thật. Thông tin đăng nhập của bạn chỉ truyền qua HTTPS và không bao giờ bị lưu lại phía server.",
     },
     {
-      q: "Thông tin của tôi có an toàn không?",
-      a: "Có. Mọi thay đổi đều dry-run trước, chắc chắn rồi mới lưu thật. Token đăng nhập chỉ truyền qua HTTPS và không bao giờ bị log hay lưu lại phía server.",
+      q: "Cần cài gì không?",
+      a: "Không bắt buộc. Bạn có thể dùng ngay qua trình duyệt (claude.ai) chỉ bằng cách thêm địa chỉ kết nối. Nếu dùng ứng dụng Claude Desktop, Cursor hay Windsurf trên máy tính, chỉ cần một lệnh cài nhanh là xong.",
     },
   ],
   en: [
     {
-      q: "What is WebCake Storefront MCP?",
-      a: "It's an MCP server that lets AI (Claude, Cursor…) build WebCake/StoreCake store pages from a single description, check the result, then save it to your site. The AI knows the full BuilderX component model — you just describe and review.",
-    },
-    {
       q: "Do I need to know how to code?",
-      a: "No. Just describe the page in plain words inside your AI app. Every technical step — JSON assembly, structure validation, API calls — is handled by the tool.",
+      a: "Not at all. Just describe what you want in plain words — for example \"Create a product page for my skincare serum with a photo gallery and a buy button\". The AI assistant handles everything technical.",
     },
     {
       q: "Is it free?",
-      a: "Yes. The tool is free and open-source (MIT). You only need a WebCake/StoreCake account to save and publish pages.",
+      a: "Yes. This connector is completely free and open-source (MIT). You only need a WebCake/StoreCake account to save and publish your pages.",
     },
     {
-      q: "Which apps work with it?",
-      a: "Claude Desktop, Claude Code, Claude.ai (via Connectors), Cursor, Windsurf, VS Code, Augment — and any client that supports the MCP standard.",
+      q: "Can I edit a page after it's created?",
+      a: "Absolutely. Just say \"change the button colour to purple\" or \"add a customer reviews section\" — the assistant edits exactly what you asked for without touching the rest of the page.",
     },
     {
-      q: "Is my information safe?",
-      a: "Yes. Every change is dry-run first, confirmed before it touches your site. Your login token is only sent over HTTPS and is never logged or stored server-side.",
+      q: "Is my data safe?",
+      a: "Yes. Every change is previewed first; nothing is saved until you confirm. Your login credentials are only sent over HTTPS and are never stored server-side.",
+    },
+    {
+      q: "Do I need to install anything?",
+      a: "Not necessarily. You can use it right in your browser (claude.ai) by adding a connection address. If you use Claude Desktop, Cursor, or Windsurf on your computer, a single quick command is all it takes.",
     },
   ],
 };
@@ -206,157 +206,157 @@ type Strings = {
 
 const T: Record<Lang, Strings> = {
   vi: {
-    sub: "Để AI tự dựng & xuất bản trang storefront WebCake/StoreCake cho bạn, chỉ bằng lời nói",
+    sub: "Tạo website bán hàng chỉ bằng cách trò chuyện — không cần biết lập trình",
     running: "Đang hoạt động",
     leadPre:
-      "Bạn mô tả trang bằng lời, AI (Claude, Cursor…) tự dựng, kiểm tra và ",
-    leadGrad: "xuất bản thẳng lên storefront WebCake",
+      "Bạn nói điều mình muốn, trợ lý AI dựng trang trên cửa hàng WebCake của bạn, bạn xem trước rồi ",
+    leadGrad: "đăng lên là xong",
     leadPost:
-      " của bạn. Không kéo-thả, không tự viết JSON, không học schema.",
-    ctaStart: "Bắt đầu kết nối",
+      ". Không kéo-thả, không học gì thêm — chỉ cần nói chuyện như bình thường.",
+    ctaStart: "Bắt đầu ngay",
     ctaStar: "Tặng sao trên GitHub",
-    flowH2: "Mọi thứ diễn ra thế nào",
+    flowH2: "Chỉ 4 bước đơn giản",
     flow: [
-      { icon: "bulb", t: "Bạn", s: "ý tưởng của bạn" },
+      { icon: "bulb", t: "Bạn nói", s: "mô tả trang bạn muốn" },
       { icon: "brain", t: "Trợ lý AI", s: "Claude · Cursor · Windsurf…" },
-      { icon: "server", t: "Storefront MCP", s: "cầu nối thông minh" },
-      { icon: "window", t: "WebCake / StoreCake", s: "trang web thật" },
+      { icon: "server", t: "WebCake", s: "lưu & kiểm tra trang" },
+      { icon: "window", t: "Cửa hàng của bạn", s: "trang web thật, live" },
     ],
     flowCap:
-      "Bạn nói ý tưởng → AI học mô hình BuilderX từ MCP → ráp + kiểm tra cấu trúc trang → lưu & xuất bản thật trên site. Bạn nhận link preview, mở lên xem, chỉnh nếu thích.",
-    howH2: "Vì sao đáng tin",
+      "① Bạn nói mong muốn → ② Trợ lý AI dựng trang → ③ Bạn xem trước, chỉnh nếu thích → ④ Đăng lên là xong. Không cần biết lập trình, không cần kéo-thả block.",
+    howH2: "Tại sao dùng được ngay, không lo hỏng",
     how: [
       {
         icon: "layers",
-        t: "Nắm mô hình component thật",
-        d: "Cung cấp 130+ loại component BuilderX (text, ảnh, nút, form, lưới sản phẩm, giỏ hàng, đếm ngược…) port thẳng từ factory của builder — đúng y hình dạng editor tạo ra.",
+        t: "Trang đẹp, đúng ý",
+        d: "Trợ lý hiểu đúng bố cục cửa hàng WebCake — banner, lưới sản phẩm, form đặt hàng, đếm ngược — và dựng trang trông chuyên nghiệp ngay từ đầu.",
       },
       {
         icon: "check2",
-        t: "Kiểm tra trước khi lưu",
-        d: "validate_page bắt id trùng, lưới hỏng, form thiếu tên trường, event trỏ sai — trước khi bất kỳ thứ gì được lưu xuống site của bạn.",
+        t: "Không lo hỏng layout",
+        d: "Trước khi lưu, trang được kiểm tra tự động: bố cục có đúng không, các phần có khớp nhau không. Nếu có gì sai, trợ lý sẽ tự sửa.",
       },
       {
         icon: "shield",
-        t: "Mặc định an toàn",
-        d: "Mọi ghi đều dry-run trước — xem chính xác thay đổi, site không bị đụng tới cho tới khi bạn xác nhận.",
+        t: "An toàn — luôn xem trước khi lưu",
+        d: "Mọi thay đổi đều được hiển thị để bạn xem trước. Chưa xác nhận thì cửa hàng chưa bị đụng tới — bạn hoàn toàn kiểm soát.",
       },
       {
         icon: "edit",
-        t: "Sửa chính xác từng element",
-        d: "Nói \"đổi nút CTA sang xanh\" thì nó chỉ sửa đúng element đó — mọi id, style, block khác giữ nguyên không đụng.",
+        t: "Sửa nhẹ nhàng, đúng chỗ",
+        d: "Nói \"đổi nút sang màu tím\" hay \"thêm phần đánh giá\" — chỉ đúng chỗ đó được sửa, mọi thứ còn lại giữ nguyên.",
       },
     ],
-    buildH2: "Bạn có thể dựng gì",
+    buildH2: "Bạn có thể tạo những trang nào",
     uses: [
       {
         icon: "cart",
-        t: "Trang sản phẩm",
-        e: '"Trang một sản phẩm cho serum dưỡng da — gallery, giá, form đặt hàng có giỏ."',
+        t: "Trang bán 1 sản phẩm",
+        e: '"Tạo trang cho serum dưỡng da của tôi — có ảnh gallery, giá bán và nút đặt hàng."',
       },
       {
         icon: "window",
-        t: "Trang chủ shop",
-        e: '"Trang chủ — banner hero, lưới sản phẩm nổi bật, form đăng ký nhận tin."',
+        t: "Trang chủ cửa hàng",
+        e: '"Tạo trang chủ — banner giới thiệu, các sản phẩm nổi bật, ô đăng ký nhận tin."',
       },
       {
         icon: "flame",
-        t: "Flash sale",
-        e: '"Trang flash-sale — đếm ngược lớn, lưới sản phẩm giảm giá, nút Mua dính."',
+        t: "Trang flash sale",
+        e: '"Tạo trang flash sale — đồng hồ đếm ngược, danh sách sản phẩm giảm giá, nút mua dính cố định."',
       },
       {
         icon: "ticket",
-        t: "Sự kiện / webinar",
-        e: '"Trang đăng ký — đếm ngược, agenda, form đăng ký."',
+        t: "Trang sự kiện / webinar",
+        e: '"Tạo trang đăng ký sự kiện — thời gian, lịch trình, form đăng ký tham dự."',
       },
       {
         icon: "mail",
         t: "Thiệp mời",
-        e: '"Thiệp cưới — tên, ngày, bản đồ, form RSVP."',
+        e: '"Tạo thiệp cưới online — tên, ngày tháng, địa chỉ, form xác nhận tham dự."',
       },
       {
         icon: "newspaper",
-        t: "Blog / nội dung",
-        e: '"Trang blog với bài nổi bật và ô đăng ký nhận tin."',
+        t: "Trang blog / nội dung",
+        e: '"Tạo trang blog với các bài viết nổi bật và ô đăng ký nhận bản tin."',
       },
       {
         icon: "link",
         t: "Link-in-bio",
-        e: '"Link-in-bio — avatar, bio ngắn, 5 nút liên kết, mạng xã hội."',
+        e: '"Tạo trang link-in-bio — ảnh đại diện, giới thiệu ngắn, 5 nút liên kết, mạng xã hội."',
       },
       {
-        icon: "flame",
-        t: "Bất cứ trang nào",
-        e: '"…rồi \"đổi CTA sang xanh\" hay \"thêm tính năng thứ 4\" — chỉ sửa đúng block đó."',
+        icon: "wand",
+        t: "Bất cứ trang nào bạn muốn",
+        e: '"…rồi \"đổi màu nút\" hay \"thêm phần hỏi đáp\" — trợ lý sửa đúng chỗ đó thôi."',
       },
     ],
-    connectH2: "Kết nối — chọn 1 trong 2 cách",
-    m1Tag: "Cách ① · Cài trên máy của bạn (npx)",
+    connectH2: "Kết nối trợ lý AI với cửa hàng của bạn",
+    m1Tag: "Cách ① · Dùng trên máy tính (Claude Desktop, Cursor, Windsurf…)",
     m1Sub:
-      "Phù hợp khi bạn tự dùng và muốn chủ động. Cần Node.js 18+ (miễn phí). Một lệnh cấu hình IDE:",
+      "Phù hợp khi bạn dùng ứng dụng AI trên máy tính. Cần Node.js 18+ (miễn phí, tải tại nodejs.org). Chỉ một lệnh là xong:",
     m1Steps: [
       "<b>Cài Node.js 18+</b> (miễn phí) nếu máy chưa có — tải tại <b>nodejs.org</b>.",
-      "<b>Mở Terminal</b>, dán lệnh dưới đây và nhấn Enter:<pre>" + INSTALL_CMD + "</pre>",
-      '<b>Làm theo hướng dẫn:</b> chọn IDE (Claude, Cursor, Windsurf…) → đăng nhập WebCake → token + session được lưu tự động.',
-      '<b>Mở lại ứng dụng AI.</b> Thấy <code class="inl">webcake-storefront</code> xuất hiện là kết nối thành công.',
+      "<b>Mở Terminal</b> (hoặc Command Prompt), dán lệnh sau và nhấn Enter:<pre>" + INSTALL_CMD + "</pre>",
+      "<b>Làm theo hướng dẫn hiện ra:</b> chọn ứng dụng bạn dùng (Claude, Cursor, Windsurf…) → đăng nhập tài khoản WebCake khi được hỏi.",
+      '<b>Mở lại ứng dụng AI.</b> Khi thấy <code class="inl">webcake-storefront</code> xuất hiện trong danh sách công cụ là bạn đã kết nối thành công — hãy thử nói "Tạo cho tôi trang sản phẩm…"',
     ],
-    m1Note: "Cài cho tất cả IDE cùng lúc — dán token + session vào lệnh này:",
-    m2Tag: "Cách ② · Remote URL — không cần cài gì",
+    m1Note: "Muốn cài cho nhiều ứng dụng cùng lúc — dùng lệnh này:",
+    m2Tag: "Cách ② · Dùng ngay trên trình duyệt (claude.ai) — không cần cài gì",
     m2Sub:
-      "Phù hợp khi dùng claude.ai trên web, dùng theo nhóm, hoặc không muốn cài gì trên máy. OAuth chạy tự động.",
+      "Phù hợp khi bạn dùng Claude trên web (claude.ai) hoặc không muốn cài thêm gì trên máy. Chỉ cần thêm địa chỉ kết nối, đăng nhập WebCake là dùng được.",
     m2Steps: [
-      '<b>Copy URL remote</b> bên dưới (đã có sẵn trong trang):<a class="btn" href="{REMOTE}">{REMOTE} {ARROW}</a>',
-      '<b>Mở Connectors trong ứng dụng:</b><br>• claude.ai: <i>Settings → Connectors → Add custom connector</i><br>• Cursor / Claude Code: mở file <code class="inl">.mcp.json</code>',
-      "<b>Dán URL</b> vừa copy — OAuth sẽ mở trình duyệt để bạn đăng nhập tự động:<pre>{REMOTE}</pre>",
-      "<b>Bấm Add</b> (hoặc lưu file). Biểu tượng WebCake chuyển xanh là dùng được. Site được chọn ngay trong chat bằng <code class=\"inl\">switch_site</code>.",
+      '<b>Copy địa chỉ kết nối</b> bên dưới:<a class="btn" href="{REMOTE}">{REMOTE} {ARROW}</a>',
+      '<b>Mở ứng dụng AI của bạn:</b><br>• claude.ai: vào <i>Settings → Connectors → Add custom connector</i><br>• Cursor / Claude Code: mở file <code class="inl">.mcp.json</code>',
+      "<b>Dán địa chỉ vừa copy vào</b> — trình duyệt sẽ mở trang đăng nhập WebCake tự động:<pre>{REMOTE}</pre>",
+      "<b>Bấm Thêm</b> (hoặc lưu file). Khi biểu tượng WebCake chuyển màu tím là kết nối thành công. Nói \"Tạo cho tôi trang…\" là bắt đầu được.",
     ],
     m2Note:
-      "Token + session chỉ cần đặt một lần phía server; site được chọn ngay trong chat với switch_site — không cần WEBCAKE_SITE_ID cứng.",
-    toolsH2: "~101 tool — 7 nhóm chức năng",
+      "Bạn chỉ cần đăng nhập một lần. Sau đó có thể chuyển đổi giữa các cửa hàng của mình ngay trong cuộc trò chuyện.",
+    toolsH2: "Trợ lý có thể giúp bạn làm gì",
     toolsSub:
-      "Nhóm dựng trang hoạt động không cần backend; mọi thứ đọc/ghi site cần token + session.",
+      "Nói chuyện bình thường với trợ lý — bạn không cần biết tên công cụ hay lệnh nào cả.",
     toolGroups: [
       {
         icon: "layers",
-        t: "Dựng trang",
-        d: "get_build_guide · list_elements · get_element · new_element · new_section · new_page_skeleton · validate_page · build_page · add_section",
+        t: "Tạo & sửa trang",
+        d: "Dựng trang mới, thêm phần, sửa bố cục, thay nội dung, xuất bản lên cửa hàng.",
       },
       {
         icon: "window",
-        t: "Trang & code",
-        d: "list_pages · get_page_source · search_page_elements · update_page_element(s) · create_page · update_page · update_page_source · CSS/JS tùy chỉnh · global sections · publish_site",
+        t: "Quản lý trang web",
+        d: "Xem danh sách trang, tìm và sửa từng phần, thêm CSS/JS riêng, quản lý các phần dùng chung.",
       },
       {
         icon: "cart",
-        t: "Thương mại",
-        d: "products · orders · collections · promotions · combos · customers",
+        t: "Quản lý sản phẩm & đơn hàng",
+        d: "Xem sản phẩm, đơn hàng, bộ sưu tập, khuyến mãi, combo và thông tin khách hàng.",
       },
       {
         icon: "newspaper",
-        t: "Nội dung & media",
-        d: "blog articles · themes · apps · search_images (Pexels) · upload_image · ingest_html · ingest_url",
+        t: "Viết bài blog & media",
+        d: "Tạo và sửa bài viết, tìm ảnh miễn phí (Pexels), tải ảnh lên, đổi giao diện cửa hàng.",
       },
       {
         icon: "server",
-        t: "Backend code",
-        d: "get_http_function · edit_http_function · run_function · debug_function · list_cms_files",
+        t: "Tính năng nâng cao",
+        d: "Viết & chạy code phía server (HTTP functions) cho cửa hàng của bạn.",
       },
       {
         icon: "terminal",
-        t: "Context & auth",
-        d: "get_current_context · list_my_sites · switch_site · update_auth · toggle_confirm_mode",
+        t: "Chuyển đổi cửa hàng",
+        d: "Xem thông tin hiện tại, chuyển giữa các site, cập nhật tài khoản.",
       },
       {
         icon: "mail",
-        t: "Automation",
-        d: "send_mail — gửi email giao dịch qua automation API của WebCake",
+        t: "Gửi email tự động",
+        d: "Gửi email thông báo đơn hàng, xác nhận đăng ký và các email giao dịch khác.",
       },
     ],
-    promptH2: "Kết nối xong, chỉ cần nói",
+    promptH2: "Ví dụ — nói với trợ lý như thế này",
     promptSub:
-      "Dán prompt gợi ý này vào AI để bắt đầu:",
+      "Bạn có thể nói tự nhiên bằng tiếng Việt. Ví dụ:",
     promptEx:
-      "Dựng trang storefront WebCake cho <thương hiệu/sản phẩm>. Dùng webcake-storefront MCP:\ngọi get_build_guide, list_elements, dựng các section với new_section,\nvalidate_page cho đến khi không còn lỗi, rồi build_page (dry-run trước) và publish_site.",
+      "Tạo cho tôi một trang sản phẩm trên WebCake cho thương hiệu [tên thương hiệu].\nTrang cần có: ảnh sản phẩm lớn, tên và giá, mô tả ngắn, nút \"Mua ngay\".\nKiểm tra kỹ trước khi lưu, rồi xuất bản lên cửa hàng của tôi.",
     faqH2: "Câu hỏi thường gặp",
     starH2: "Thấy hữu ích? Tặng dự án một ngôi sao nhé",
     starP:
@@ -369,162 +369,162 @@ const T: Record<Lang, Strings> = {
       { href: "#how", label: "Vì sao tin" },
       { href: "#build", label: "Tạo được gì" },
       { href: "#connect", label: "Kết nối" },
-      { href: "#tools", label: "Công cụ" },
+      { href: "#tools", label: "Trợ lý làm gì" },
       { href: "#faq", label: "Hỏi đáp" },
     ],
   },
   en: {
-    sub: "Let AI build & publish WebCake/StoreCake store pages for you, just by talking to it",
+    sub: "Build your online store just by chatting — no coding or drag-and-drop needed",
     running: "Up and running",
     leadPre:
-      "Describe a store page in plain words — AI (Claude, Cursor…) builds it, validates it, and ",
-    leadGrad: "publishes it straight to your WebCake storefront",
+      "You describe what you want, your AI assistant builds the page on your WebCake store, you review it and ",
+    leadGrad: "publish it — done",
     leadPost:
-      ". No drag-and-drop, no hand-writing JSON, no learning the schema.",
-    ctaStart: "Get connected",
+      ". No dragging blocks, nothing to learn — just talk like you normally would.",
+    ctaStart: "Get started",
     ctaStar: "Star on GitHub",
-    flowH2: "How it all works",
+    flowH2: "Just 4 simple steps",
     flow: [
-      { icon: "bulb", t: "You", s: "your idea" },
+      { icon: "bulb", t: "You describe", s: "what you want the page to be" },
       { icon: "brain", t: "AI assistant", s: "Claude · Cursor · Windsurf…" },
-      { icon: "server", t: "Storefront MCP", s: "the smart bridge" },
-      { icon: "window", t: "WebCake / StoreCake", s: "a real live page" },
+      { icon: "server", t: "WebCake", s: "saves & checks the page" },
+      { icon: "window", t: "Your store", s: "a real, live page" },
     ],
     flowCap:
-      "You describe your idea → the AI learns the BuilderX model from the MCP → assembles + validates the page structure → saves and publishes for real on your site. You get a preview link, open it, tweak if you like.",
-    howH2: "Why it's reliable",
+      "① You say what you want → ② The AI builds the page → ③ You preview it, tweak if you like → ④ Publish and you're done. No coding, no drag-and-drop.",
+    howH2: "Why you can trust it straight away",
     how: [
       {
         icon: "layers",
-        t: "Knows the real component model",
-        d: "Serves 130+ BuilderX component types (text, image, button, form, product grid, cart, countdown…) ported straight from the builder's own factory — the exact shapes the editor produces.",
+        t: "Pages that look great",
+        d: "The assistant understands WebCake's store layout — banners, product grids, order forms, countdowns — and builds a professional-looking page right from your first message.",
       },
       {
         icon: "check2",
-        t: "Validates before saving",
-        d: "validate_page catches duplicate ids, broken grids, form fields without names, invalid event targets — before anything touches your site.",
+        t: "No broken layouts",
+        d: "Before saving, the page is automatically checked: is the layout correct, do the sections fit together? If anything is off, the assistant fixes it itself.",
       },
       {
         icon: "shield",
-        t: "Safe by default",
-        d: "Every write is dry-run first — preview the exact change, nothing touches your site until you confirm.",
+        t: "Safe — always preview before saving",
+        d: "Every change is shown to you first. Nothing touches your store until you confirm — you stay in full control.",
       },
       {
         icon: "edit",
-        t: "Surgical edits",
-        d: "Ask for one change (\"make the CTA green\") and it edits only that element — every other id, style, and block stays exactly as it was.",
+        t: "Easy, precise edits",
+        d: "Say \"change the button to purple\" or \"add a reviews section\" — only that exact spot is updated, everything else stays as it was.",
       },
     ],
-    buildH2: "What you can build",
+    buildH2: "What you can create",
     uses: [
       {
         icon: "cart",
-        t: "Product page",
-        e: '"A one-product page for my skincare serum — gallery, price, an order form with cart."',
+        t: "Single product page",
+        e: '"Create a page for my skincare serum — photo gallery, price, and an order button."',
       },
       {
         icon: "window",
-        t: "Storefront home",
-        e: '"A homepage — hero banner, featured product grid, a newsletter form."',
+        t: "Store homepage",
+        e: '"Create a homepage — intro banner, featured products, newsletter sign-up."',
       },
       {
         icon: "flame",
-        t: "Flash sale",
-        e: '"A flash-sale page — big countdown, discounted product grid, a sticky Buy button."',
+        t: "Flash sale page",
+        e: '"Create a flash sale page — big countdown timer, discounted products, sticky buy button."',
       },
       {
         icon: "ticket",
-        t: "Event / webinar",
-        e: '"A registration page — countdown, agenda, a sign-up form."',
+        t: "Event / webinar page",
+        e: '"Create an event sign-up page — date, schedule, registration form."',
       },
       {
         icon: "mail",
         t: "Invitation",
-        e: '"A wedding invite — names, date, a map, an RSVP form."',
+        e: '"Create a wedding invite — names, date, location, RSVP form."',
       },
       {
         icon: "newspaper",
-        t: "Blog / content",
-        e: '"A blog index with featured posts and a subscribe box."',
+        t: "Blog / content page",
+        e: '"Create a blog page with featured posts and a newsletter subscribe box."',
       },
       {
         icon: "link",
         t: "Link-in-bio",
-        e: '"A link-in-bio — avatar, short bio, 5 link buttons, socials."',
+        e: '"Create a link-in-bio — profile photo, short bio, 5 link buttons, socials."',
       },
       {
-        icon: "flame",
-        t: "Anything, really",
-        e: '"…then \"make the CTA green\" or \"add a 4th feature\" — it edits only that block."',
+        icon: "wand",
+        t: "Anything you can think of",
+        e: '"…then \"change the button colour\" or \"add an FAQ section\" — just that part gets updated."',
       },
     ],
-    connectH2: "Connect — pick one of two ways",
-    m1Tag: "Way ① · Install on your machine (npx)",
+    connectH2: "Connect your AI assistant to your store",
+    m1Tag: "Option ① · On your computer (Claude Desktop, Cursor, Windsurf…)",
     m1Sub:
-      "Best when it's just for you and you want full control. Needs Node.js 18+ (free). One command configures your IDE:",
+      "Best if you use an AI app on your computer. Needs Node.js 18+ (free, from nodejs.org). One command and you're set:",
     m1Steps: [
-      "<b>Install Node.js 18+</b> (free) if you don't have it — get it at <b>nodejs.org</b>.",
-      "<b>Open a terminal</b>, paste the command below, and press Enter:<pre>" + INSTALL_CMD + "</pre>",
-      "<b>Follow the prompts:</b> pick your IDE(s) (Claude, Cursor, Windsurf…) → sign in to WebCake → token + session are saved automatically.",
-      '<b>Reopen your AI app.</b> When you see <code class="inl">webcake-storefront</code> listed, you\'re connected.',
+      "<b>Install Node.js 18+</b> (free) if you don't have it yet — get it at <b>nodejs.org</b>.",
+      "<b>Open Terminal</b> (or Command Prompt), paste the command below and press Enter:<pre>" + INSTALL_CMD + "</pre>",
+      "<b>Follow the prompts that appear:</b> pick your app (Claude, Cursor, Windsurf…) → sign in to your WebCake account when asked.",
+      '<b>Reopen your AI app.</b> When you see <code class="inl">webcake-storefront</code> in the tools list, you\'re connected — try saying "Create a product page for…"',
     ],
-    m1Note: "Configure every IDE at once — paste your token + session into:",
-    m2Tag: "Way ② · Remote URL — nothing to install",
+    m1Note: "Want to set up multiple apps at once — use this command:",
+    m2Tag: "Option ② · In your browser (claude.ai) — nothing to install",
     m2Sub:
-      "Best for claude.ai on the web, teams, or when you can't install software. OAuth runs automatically.",
+      "Best if you use Claude on the web (claude.ai) or prefer not to install anything. Just add the connection address, sign in to WebCake, and you're ready.",
     m2Steps: [
-      '<b>Copy the remote URL</b> below:<a class="btn" href="{REMOTE}">{REMOTE} {ARROW}</a>',
-      '<b>Open Connectors in your app:</b><br>• claude.ai: <i>Settings → Connectors → Add custom connector</i><br>• Cursor / Claude Code: open <code class="inl">.mcp.json</code>',
-      "<b>Paste the URL</b> — OAuth will open your browser to sign in automatically:<pre>{REMOTE}</pre>",
-      "<b>Hit Add</b> (or save the file). When the WebCake icon turns green, you're connected. Pick your site in chat with <code class=\"inl\">switch_site</code>.",
+      '<b>Copy the connection address</b> below:<a class="btn" href="{REMOTE}">{REMOTE} {ARROW}</a>',
+      '<b>Open your AI app:</b><br>• claude.ai: go to <i>Settings → Connectors → Add custom connector</i><br>• Cursor / Claude Code: open <code class="inl">.mcp.json</code>',
+      "<b>Paste the address you copied</b> — your browser will open the WebCake login page automatically:<pre>{REMOTE}</pre>",
+      "<b>Click Add</b> (or save the file). When the WebCake icon turns purple, you're connected. Just say \"Create a page for…\" to get started.",
     ],
     m2Note:
-      "Token + session are set once on the server; the site is chosen in chat with switch_site — no WEBCAKE_SITE_ID needed up front.",
-    toolsH2: "~101 tools — 7 groups",
+      "You only need to sign in once. After that you can switch between your stores anytime during a conversation.",
+    toolsH2: "What your assistant can help you do",
     toolsSub:
-      "The build + catalog group works with zero config; everything that reads or writes your site needs a token + session.",
+      "Just talk to your assistant naturally — you don't need to know any tool names or commands.",
     toolGroups: [
       {
         icon: "layers",
-        t: "Build a page",
-        d: "get_build_guide · list_elements · get_element · new_element · new_section · new_page_skeleton · validate_page · build_page · add_section",
+        t: "Create & edit pages",
+        d: "Build new pages, add sections, rearrange layouts, update content, publish to your store.",
       },
       {
         icon: "window",
-        t: "Pages & code",
-        d: "list_pages · get_page_source · search_page_elements · update_page_element(s) · create_page · update_page · update_page_source · custom CSS/JS · global sections · publish_site",
+        t: "Manage your website",
+        d: "Browse your pages, find and update specific sections, add custom CSS/JS, manage shared sections.",
       },
       {
         icon: "cart",
-        t: "Commerce",
-        d: "products · orders · collections · promotions · combos · customers",
+        t: "Products & orders",
+        d: "View products, orders, collections, promotions, bundles, and customer information.",
       },
       {
         icon: "newspaper",
-        t: "Content & media",
-        d: "blog articles · themes · apps · search_images (Pexels) · upload_image · ingest_html · ingest_url",
+        t: "Blog posts & media",
+        d: "Write and edit blog articles, find free photos (Pexels), upload images, switch store themes.",
       },
       {
         icon: "server",
-        t: "Backend code",
-        d: "get_http_function · edit_http_function · run_function · debug_function · list_cms_files",
+        t: "Advanced features",
+        d: "Write and run server-side code (HTTP functions) for your store.",
       },
       {
         icon: "terminal",
-        t: "Context & auth",
-        d: "get_current_context · list_my_sites · switch_site · update_auth · toggle_confirm_mode",
+        t: "Switch stores",
+        d: "Check current context, switch between your sites, update account credentials.",
       },
       {
         icon: "mail",
-        t: "Automation",
-        d: "send_mail — send transactional email via the WebCake automation API",
+        t: "Automated emails",
+        d: "Send order confirmations, sign-up notifications, and other transactional emails.",
       },
     ],
-    promptH2: "Once connected, just say",
-    promptSub: "Paste this suggested prompt to get started:",
+    promptH2: "Example — here's what to say to your assistant",
+    promptSub: "You can speak naturally. For example:",
     promptEx:
-      "Build me a WebCake storefront page for <brand/offer>. Use the webcake-storefront MCP:\ncall get_build_guide, list_elements, build the sections with new_section,\nvalidate_page until zero errors, then build_page (dry-run first) and publish_site.",
-    faqH2: "FAQ",
+      "Create a product page on my WebCake store for [brand name].\nThe page should have: a large product image, name and price, a short description, and a \"Buy Now\" button.\nPlease check everything looks right before saving, then publish it to my store.",
+    faqH2: "Frequently asked questions",
     starH2: "Find it useful? Give the project a star",
     starP:
       "It's a free, open-source project — every star is a little encouragement to keep it growing and helps more people find it.",
@@ -536,7 +536,7 @@ const T: Record<Lang, Strings> = {
       { href: "#how", label: "Why trust it" },
       { href: "#build", label: "What you build" },
       { href: "#connect", label: "Connect" },
-      { href: "#tools", label: "Tools" },
+      { href: "#tools", label: "What it does" },
       { href: "#faq", label: "FAQ" },
     ],
   },
@@ -617,7 +617,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
 <meta name="keywords" content="${m.keywords}">
 <meta name="author" content="WebCake">
 <meta name="robots" content="index,follow">
-<meta name="theme-color" content="#1DB954">
+<meta name="theme-color" content="#6d5efc">
 <link rel="canonical" href="${canonical}">
 <link rel="alternate" hreflang="vi" href="${origin}/">
 <link rel="alternate" hreflang="en" href="${origin}/?lang=en">
@@ -642,13 +642,13 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
 <meta name="twitter:image:alt" content="${m.title}">
 <script type="application/ld+json">${jsonLdScript}</script>
 <style>
-  :root{--g:#1DB954;--g7:#178f43;--ink:#11231b;--mut:#5e6d65;--bg:#f5f9f7;--card:#ffffff;
-    --line:rgba(16,40,30,.09);--shadow:0 1px 2px rgba(16,40,30,.05),0 6px 20px -12px rgba(16,40,30,.18);--code:#0e1714;
-    --ic-fg:#178f43;--btn-hover:#178f43;--navbg:rgba(245,249,247,.82)}
-  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#e8f0ec;--mut:#9aaba2;--bg:#0b110e;--card:#141b17;
-    --line:rgba(255,255,255,.07);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7);--code:#070f0b;--g7:#5ee08a;--ic-fg:#6fe79a;--btn-hover:#21c264;--navbg:rgba(11,17,14,.82)}}
-  :root[data-theme="dark"]{--ink:#e8f0ec;--mut:#9aaba2;--bg:#0b110e;--card:#141b17;
-    --line:rgba(255,255,255,.07);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7);--code:#070f0b;--g7:#5ee08a;--ic-fg:#6fe79a;--btn-hover:#21c264;--navbg:rgba(11,17,14,.82)}
+  :root{--g:#6d5efc;--g7:#5546e0;--ink:#11121e;--mut:#5e5f7a;--bg:#f6f5ff;--card:#ffffff;
+    --line:rgba(16,14,40,.09);--shadow:0 1px 2px rgba(16,14,40,.05),0 6px 20px -12px rgba(16,14,40,.18);--code:#0e0d1a;
+    --ic-fg:#5546e0;--btn-hover:#5546e0;--navbg:rgba(246,245,255,.82)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#e8e6ff;--mut:#9a98b8;--bg:#0c0b14;--card:#141320;
+    --line:rgba(255,255,255,.07);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7);--code:#07060f;--g7:#b6a8ff;--ic-fg:#c4b8ff;--btn-hover:#7c6df6;--navbg:rgba(12,11,20,.82)}}
+  :root[data-theme="dark"]{--ink:#e8e6ff;--mut:#9a98b8;--bg:#0c0b14;--card:#141320;
+    --line:rgba(255,255,255,.07);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7);--code:#07060f;--g7:#b6a8ff;--ic-fg:#c4b8ff;--btn-hover:#7c6df6;--navbg:rgba(12,11,20,.82)}
   *{box-sizing:border-box}
   html{scroll-behavior:auto}
   html.smooth{scroll-behavior:smooth}
@@ -656,8 +656,8 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     background:var(--bg);line-height:1.62;overflow-x:hidden}
   .blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
   .blobs b{position:absolute;border-radius:50%;filter:blur(90px);opacity:.16;will-change:transform}
-  .blobs b:nth-child(1){width:560px;height:560px;right:-160px;top:-180px;background:radial-gradient(circle,#1DB954,transparent 70%);animation:drift1 40s ease-in-out infinite}
-  .blobs b:nth-child(2){width:440px;height:440px;left:-160px;bottom:-160px;background:radial-gradient(circle,#16b89a,transparent 70%);animation:drift2 48s ease-in-out infinite}
+  .blobs b:nth-child(1){width:560px;height:560px;right:-160px;top:-180px;background:radial-gradient(circle,#6d5efc,transparent 70%);animation:drift1 40s ease-in-out infinite}
+  .blobs b:nth-child(2){width:440px;height:440px;left:-160px;bottom:-160px;background:radial-gradient(circle,#8b5cf6,transparent 70%);animation:drift2 48s ease-in-out infinite}
   @keyframes drift1{50%{transform:translate(-50px,60px)}}
   @keyframes drift2{50%{transform:translate(40px,-50px)}}
   .wrap{max-width:900px;margin:0 auto;padding:48px 20px 72px}
@@ -667,7 +667,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     transition:box-shadow .2s ease,border-color .2s ease}
   header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
   header .logo{width:50px;height:50px;border-radius:14px;overflow:hidden;flex:0 0 auto;
-    box-shadow:0 6px 16px -4px rgba(29,185,84,.4)}
+    box-shadow:0 6px 16px -4px rgba(109,94,252,.4)}
   header .logo svg{width:100%;height:100%;display:block}
   .hgrow{flex:1 1 auto;min-width:0}
   .controls{margin-left:auto;flex:0 0 auto;display:flex;align-items:center;gap:8px}
@@ -682,16 +682,16 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   .sub{color:var(--mut);margin:3px 0 0;font-size:.98rem}
   .lead{font-size:1.16rem;margin:20px 0 18px;max-width:60ch}
   .lead b{color:var(--ink)}
-  .grad{background:linear-gradient(95deg,#1DB954,#16b89a 60%,#37d979);-webkit-background-clip:text;background-clip:text;color:transparent;
+  .grad{background:linear-gradient(95deg,#6d5efc,#8b5cf6 60%,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent;
     background-size:200% auto;animation:shim 7s linear infinite}
   @keyframes shim{to{background-position:200% center}}
   .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;font-size:.82rem;font-weight:600;
-    color:var(--g7);background:rgba(29,185,84,.10);border:1px solid var(--line)}
-  .dot{width:8px;height:8px;border-radius:50%;background:var(--g);box-shadow:0 0 0 0 rgba(29,185,84,.5);animation:pulse 2s infinite}
-  @keyframes pulse{70%{box-shadow:0 0 0 7px rgba(29,185,84,0)}100%{box-shadow:0 0 0 0 rgba(29,185,84,0)}}
+    color:var(--g7);background:rgba(109,94,252,.10);border:1px solid var(--line)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--g);box-shadow:0 0 0 0 rgba(109,94,252,.5);animation:pulse 2s infinite}
+  @keyframes pulse{70%{box-shadow:0 0 0 7px rgba(109,94,252,0)}100%{box-shadow:0 0 0 0 rgba(109,94,252,0)}}
   h2{font-size:1.32rem;margin:46px 0 16px;font-weight:800;letter-spacing:-.01em;scroll-margin-top:72px}
   .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:0 0 auto;color:var(--ic-fg);
-    background:rgba(29,185,84,.11);border:1px solid var(--line);transition:transform .2s ease}
+    background:rgba(109,94,252,.11);border:1px solid var(--line);transition:transform .2s ease}
   .ic .i{width:22px;height:22px}
   .grid{display:grid;gap:16px;grid-template-columns:1fr 1fr}
   .grid-3{display:grid;gap:16px;grid-template-columns:1fr 1fr 1fr}
@@ -704,16 +704,16 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     text-transform:uppercase;letter-spacing:.04em;flex-wrap:wrap}
   .tag .ic{width:30px;height:30px;border-radius:9px}
   .tag .ic .i{width:16px;height:16px}
-  pre{margin:0;background:var(--code);color:#e8f0ec;border-radius:11px;padding:12px 14px;overflow-x:auto;
+  pre{margin:0;background:var(--code);color:#e8e6ff;border-radius:11px;padding:12px 14px;overflow-x:auto;
     border:1px solid rgba(255,255,255,.06);font:600 .82rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
   .codewrap{position:relative}
   .codewrap pre{padding-right:46px}
   .copy{position:absolute;top:8px;right:8px;width:30px;height:30px;display:grid;place-items:center;cursor:pointer;
-    border:1px solid rgba(255,255,255,.15);border-radius:8px;background:rgba(255,255,255,.06);color:#cfe9d8;
+    border:1px solid rgba(255,255,255,.15);border-radius:8px;background:rgba(255,255,255,.06);color:#cfc9ff;
     transition:background .15s ease,color .15s ease,border-color .15s ease}
   .copy:hover{background:rgba(255,255,255,.13);color:#fff}
   .copy svg{width:15px;height:15px}
-  .copy.done{color:#5ee08a;border-color:rgba(94,224,138,.55)}
+  .copy.done{color:#b6a8ff;border-color:rgba(182,168,255,.55)}
   .feat{list-style:none;padding:0;margin:0;display:grid;gap:12px}
   .feat li{display:flex;gap:13px;align-items:center;font-size:.97rem;padding:13px 16px}
   .feat li b{color:var(--ink)}
@@ -725,9 +725,9 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   .flow .node b{font-size:.93rem}
   .flow .node span{font-size:.75rem;color:var(--mut)}
   .flow .wire{flex:1 1 auto;min-width:30px;position:relative;height:2px;margin-top:27px;
-    background:linear-gradient(90deg,var(--line),rgba(29,185,84,.45),var(--line))}
+    background:linear-gradient(90deg,var(--line),rgba(109,94,252,.45),var(--line))}
   .flow .wire .pkt{position:absolute;top:50%;left:0;width:9px;height:9px;margin:-5px 0 0 -4px;border-radius:50%;
-    background:var(--g);box-shadow:0 0 9px 1px rgba(29,185,84,.7)}
+    background:var(--g);box-shadow:0 0 9px 1px rgba(109,94,252,.7)}
   .flow .wire::after{content:"";position:absolute;right:-1px;top:50%;width:7px;height:7px;margin-top:-4px;
     border-top:2px solid var(--g7);border-right:2px solid var(--g7);transform:rotate(45deg)}
   .flow-cap{color:var(--mut);font-size:.9rem;margin:2px 2px 0;max-width:68ch}
@@ -737,10 +737,10 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     .flow .node .ic{animation:nodepop 2.4s ease-in-out infinite}
   }
   @media(prefers-reduced-motion:reduce){.flow .wire .pkt{display:none}}
-  @keyframes nodepop{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 4px rgba(29,185,84,.12)}}
+  @keyframes nodepop{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 4px rgba(109,94,252,.12)}}
   .btn{display:inline-flex;align-items:center;gap:9px;padding:11px 19px;border-radius:11px;cursor:pointer;
     background:var(--g);color:#fff;text-decoration:none;font-weight:700;font-size:.93rem;
-    box-shadow:0 4px 12px -4px rgba(29,185,84,.5);transition:transform .15s ease,background .15s ease}
+    box-shadow:0 4px 12px -4px rgba(109,94,252,.5);transition:transform .15s ease,background .15s ease}
   .btn .i{width:18px;height:18px}
   .btn:hover{transform:translateY(-1px);background:var(--btn-hover)}
   .btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:none}
@@ -751,17 +751,17 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   .nav::-webkit-scrollbar{display:none}
   .nav a{flex:0 0 auto;font-size:.84rem;font-weight:600;color:var(--mut);text-decoration:none;
     padding:7px 13px;border-radius:999px;white-space:nowrap;transition:color .15s ease,background .15s ease}
-  .nav a:hover{color:var(--g7);background:rgba(29,185,84,.10)}
-  .nav a.active{color:var(--g7);background:rgba(29,185,84,.13)}
+  .nav a:hover{color:var(--g7);background:rgba(109,94,252,.10)}
+  .nav a.active{color:var(--g7);background:rgba(109,94,252,.13)}
   .uses{display:grid;gap:14px;grid-template-columns:1fr 1fr;padding:0;margin:0;list-style:none}
   @media(max-width:640px){.uses{grid-template-columns:1fr}}
   .uses li{display:flex;gap:13px;padding:16px 18px;align-items:flex-start;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
-  .uses li:hover{transform:translateY(-3px);border-color:rgba(29,185,84,.4);box-shadow:0 10px 26px -14px rgba(16,40,30,.4)}
+  .uses li:hover{transform:translateY(-3px);border-color:rgba(109,94,252,.4);box-shadow:0 10px 26px -14px rgba(16,14,40,.4)}
   .uses b{display:block;font-size:.96rem;margin-bottom:2px}
   .uses span{color:var(--mut);font-size:.88rem}
   .card{transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
-  .card:hover{transform:translateY(-3px);box-shadow:0 10px 26px -14px rgba(16,40,30,.4)}
-  .card:hover,.method:hover{border-color:rgba(29,185,84,.32)}
+  .card:hover{transform:translateY(-3px);box-shadow:0 10px 26px -14px rgba(16,14,40,.4)}
+  .card:hover,.method:hover{border-color:rgba(109,94,252,.32)}
   .method{margin-bottom:16px;padding:24px}
   .method>.tag{margin-bottom:4px}
   .msub{color:var(--mut);font-size:.92rem;margin:.5rem 0 1.2rem}
@@ -769,16 +769,16 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   .steps li{display:flex;gap:14px;align-items:flex-start;position:relative}
   .steps li:not(:last-child)::after{content:"";position:absolute;left:13px;top:30px;bottom:-18px;width:2px;background:var(--line)}
   .steps .n{flex:0 0 auto;width:28px;height:28px;border-radius:50%;color:var(--ic-fg);
-    background:rgba(29,185,84,.12);border:1px solid var(--line);
+    background:rgba(109,94,252,.12);border:1px solid var(--line);
     font:800 .85rem/1 system-ui;display:flex;align-items:center;justify-content:center}
   .steps .body{flex:1;min-width:0;font-size:.95rem}
   .steps .body pre{margin-top:9px}
   .steps .body .btn{display:flex;width:fit-content;margin-top:10px}
-  code.inl{background:rgba(29,185,84,.13);color:var(--g7);padding:1px 6px;border-radius:6px;font-size:.85em;font-weight:600;
+  code.inl{background:rgba(109,94,252,.13);color:var(--g7);padding:1px 6px;border-radius:6px;font-size:.85em;font-weight:600;
     overflow-wrap:anywhere;word-break:break-word}
   .note{font-size:.86rem;color:var(--mut);margin-top:10px}
   .note + pre,.note + .codewrap{margin-top:9px}
-  .tip{margin-top:16px;background:rgba(29,185,84,.06);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+  .tip{margin-top:16px;background:rgba(109,94,252,.06);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
   .tip .note{margin:0}
   details{padding:2px 18px;margin-bottom:11px}
   details summary{cursor:pointer;font-weight:600;padding:15px 0;list-style:none;display:flex;align-items:center;gap:10px}
@@ -789,7 +789,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   details p{color:var(--mut);font-size:.92rem;margin:0 0 16px;padding-left:0}
   .star{margin-top:48px;text-align:center;padding:38px 24px;overflow:hidden;position:relative}
   .star::before{content:"";position:absolute;inset:-40% 0 auto;height:70%;
-    background:radial-gradient(closest-side,rgba(29,185,84,.10),transparent);pointer-events:none}
+    background:radial-gradient(closest-side,rgba(109,94,252,.10),transparent);pointer-events:none}
   .star h2{margin:0 0 6px;position:relative;display:inline-flex;align-items:center;gap:9px;justify-content:center}
   .star h2 .i{color:var(--g7)}
   .star p{color:var(--mut);max-width:48ch;margin:0 auto 18px;position:relative}
@@ -847,7 +847,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     </div>
   </header>
 
-  <p class="hero-in" style="display:flex;gap:9px;flex-wrap:wrap"><span class="pill"><span class="dot"></span> ${t.running}</span><span class="pill">~101 tools</span></p>
+  <p class="hero-in" style="display:flex;gap:9px;flex-wrap:wrap"><span class="pill"><span class="dot"></span> ${t.running}</span><span class="pill">WebCake · StoreCake</span></p>
 
   <p class="lead hero-in">${t.leadPre}<b class="grad">${t.leadGrad}</b>${t.leadPost}</p>
 
@@ -857,8 +857,8 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   </div>
 
   <div class="badges hero-in">
-    <a href="${NPM_URL}" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/v/webcake-storefront-mcp?label=npm&color=108B67" alt="npm version"></a>
-    <a href="${NPM_URL}" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/dm/webcake-storefront-mcp?color=3FBB57" alt="npm downloads"></a>
+    <a href="${NPM_URL}" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/v/webcake-storefront-mcp?label=npm&color=6d5efc" alt="npm version"></a>
+    <a href="${NPM_URL}" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/dm/webcake-storefront-mcp?color=8b5cf6" alt="npm downloads"></a>
     <a href="${GITHUB_URL}/blob/main/LICENSE" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
     <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/Model_Context_Protocol-server-6E56CF" alt="MCP server"></a>
   </div>
@@ -910,6 +910,11 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
       ${steps(t.m1Steps.map(fill))}
     </ol>
     <div class="tip"><p class="note">${t.m1Note}</p><pre>${INSTALL_ALL_CMD}</pre></div>
+    <details style="margin-top:18px;padding:0">
+      <summary>${L === "vi" ? "Dành cho người dùng nâng cao / lập trình viên" : "For advanced users / developers"}</summary>
+      <p>${L === "vi" ? "Danh sách đầy đủ các công cụ và lệnh kỹ thuật:" : "Full list of tools and technical commands:"}</p>
+      <pre>${L === "vi" ? "~101 tool: get_build_guide · list_elements · get_element · new_element · new_section · new_page_skeleton · validate_page · build_page · add_section · list_pages · get_page_source · search_page_elements · update_page_element · create_page · update_page · update_page_source · publish_site · list_cms_files · get_http_function · edit_http_function · run_function · debug_function · get_current_context · list_my_sites · switch_site · update_auth · toggle_confirm_mode · send_mail · …và nhiều hơn nữa" : "~101 tools: get_build_guide · list_elements · get_element · new_element · new_section · new_page_skeleton · validate_page · build_page · add_section · list_pages · get_page_source · search_page_elements · update_page_element · create_page · update_page · update_page_source · publish_site · list_cms_files · get_http_function · edit_http_function · run_function · debug_function · get_current_context · list_my_sites · switch_site · update_auth · toggle_confirm_mode · send_mail · …and more"}</pre>
+    </details>
   </div>
 
   <div class="glass card method reveal">
@@ -1028,10 +1033,10 @@ export function ogImageSvg(): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0d1411"/><stop offset="1" stop-color="#102a1c"/>
+      <stop stop-color="#0c0b14"/><stop offset="1" stop-color="#16122a"/>
     </linearGradient>
     <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(960 70) rotate(130) scale(620)" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#1DB954" stop-opacity="0.40"/><stop offset="1" stop-color="#1DB954" stop-opacity="0"/>
+      <stop stop-color="#6d5efc" stop-opacity="0.40"/><stop offset="1" stop-color="#6d5efc" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="1200" height="630" fill="url(#bg)"/>
@@ -1040,24 +1045,24 @@ export function ogImageSvg(): string {
     <svg x="0" y="0" width="80" height="80" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
       <rect width="32" height="32" rx="7" fill="url(#sg2)"/>
       <defs><linearGradient id="sg2" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#3FBB57"/>
-        <stop offset="100%" stop-color="#108B67"/>
+        <stop offset="0%" stop-color="#6d5efc"/>
+        <stop offset="100%" stop-color="#8b5cf6"/>
       </linearGradient></defs>
       <text x="16" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="17" fill="white">S</text>
       <circle cx="24" cy="9" r="4" fill="#FFD591"/>
     </svg>
     <text x="100" y="42" fill="#ffffff" font-size="40" font-weight="800" letter-spacing="-1">WebCake Storefront MCP</text>
-    <text x="100" y="74" fill="#7fe0a0" font-size="22" font-weight="600">Model Context Protocol · AI storefront builder · ~101 tools</text>
+    <text x="100" y="74" fill="#b6a8ff" font-size="22" font-weight="600">Tạo website bán hàng chỉ bằng cách trò chuyện · Build your store just by chatting</text>
   </g>
-  <text x="90" y="300" fill="#ffffff" font-size="64" font-weight="800" letter-spacing="-2">Describe a store page —</text>
-  <text x="90" y="380" fill="#ffffff" font-size="64" font-weight="800" letter-spacing="-2">AI builds it, validates it,</text>
-  <text x="90" y="460" fill="#1DB954" font-size="64" font-weight="800" letter-spacing="-2">publishes it.</text>
-  <text x="90" y="534" fill="#9fb1a8" font-size="28" font-weight="500">BuilderX component model · dry-run safe · surgical edits</text>
+  <text x="90" y="300" fill="#ffffff" font-size="64" font-weight="800" letter-spacing="-2">Bạn nói điều mình muốn —</text>
+  <text x="90" y="380" fill="#ffffff" font-size="64" font-weight="800" letter-spacing="-2">AI dựng trang, kiểm tra,</text>
+  <text x="90" y="460" fill="#6d5efc" font-size="64" font-weight="800" letter-spacing="-2">đăng lên là xong.</text>
+  <text x="90" y="534" fill="#9a98b8" font-size="28" font-weight="500">Không cần kéo-thả · Không cần biết lập trình · Luôn xem trước khi lưu</text>
   <g transform="translate(90 560)">
-    <rect width="540" height="52" rx="12" fill="#1DB954"/>
+    <rect width="540" height="52" rx="12" fill="#6d5efc"/>
     <text x="270" y="34" fill="#ffffff" font-size="22" font-weight="700" text-anchor="middle">npx -y webcake-storefront-mcp install</text>
   </g>
-  <text x="1110" y="600" fill="#5b6b63" font-size="22" font-weight="600" text-anchor="end">github.com/vuluu2k/webcake-storefront-mcp</text>
+  <text x="1110" y="600" fill="#5b5a7a" font-size="22" font-weight="600" text-anchor="end">github.com/vuluu2k/webcake-storefront-mcp</text>
 </svg>`;
 }
 

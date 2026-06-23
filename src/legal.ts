@@ -20,7 +20,7 @@ function page(title: string, bodyHtml: string): string {
   h1{font-size:1.9rem;margin:0 0 4px}
   h2{font-size:1.2rem;margin:32px 0 8px}
   .meta{color:#64748b;font-size:.9rem;margin-bottom:28px}
-  a{color:#108B67}
+  a{color:#6d5efc}
   code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(127,127,127,.15);padding:1px 5px;border-radius:4px}
   ul{padding-left:22px}
   footer{margin-top:48px;padding-top:20px;border-top:1px solid rgba(127,127,127,.25);color:#64748b;font-size:.85rem}
