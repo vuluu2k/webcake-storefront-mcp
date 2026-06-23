@@ -5,6 +5,21 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.8.0] - 2026-06-23
+
+### Added
+- New `list_automations` tool returns each automation's `id`, `name`, `status`, and trigger info so agents can find the `automation_id` required by `send_mail` or by `sendMail` inside an HTTP function.
+- New `create_automation` tool creates a site automation with a `name`, `status`, and `rule` (trigger + actions map), and automatically installs the Automation app on the site if it is not already present.
+- New `update_automation` tool updates any combination of `name`, `description`, `status`, or `rule` on an existing automation by `id`.
+- New `delete_automation` tool deletes one or more automations by their `id` values.
+- New `install_app` tool registers a named application (e.g. `automation`, `send_email`, `cms`) on the current site and is idempotent — it returns immediately if the app is already installed.
+
+### Changed
+- `send_mail` now uses the correct `{ automation_id, data }` request contract; the former `to` / `subject` / `body` parameters are replaced by `automation_id` (a UUID from `list_automations`) and a `data` payload object passed to the email template.
+- `list_apps` now returns a normalized `apps` list that includes a `type_name` string alongside the numeric `type` code, and appends an `app_types` reference map to the response.
+- `get_app` now accepts the app type as either a numeric code or a human-readable name string (e.g. `"automation"`).
+- The embedded HTTP function guide returned by `get_http_function` and `get_site_custom_code` is substantially expanded: the full `request` argument shape is documented, each `@webcake/*` module now shows its exact backend endpoint and accepted fields, sandbox globals and runtime limits are listed, and a complete end-to-end example function is included.
+
 ## [1.7.0] - 2026-06-23
 
 ### Changed

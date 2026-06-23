@@ -5,6 +5,21 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.8.0] - 2026-06-23
+
+### Added
+- Tool mới `list_automations` trả về `id`, `name`, `status` và thông tin trigger của từng automation, giúp agent tìm được `automation_id` cần truyền vào `send_mail` hoặc vào `sendMail` bên trong HTTP function.
+- Tool mới `create_automation` tạo một automation cho site với `name`, `status` và `rule` (map gồm trigger + actions), đồng thời tự động cài đặt ứng dụng Automation nếu chưa có trên site.
+- Tool mới `update_automation` cập nhật bất kỳ tổ hợp nào trong các trường `name`, `description`, `status` hoặc `rule` của một automation theo `id`.
+- Tool mới `delete_automation` xoá một hoặc nhiều automation theo danh sách `id`.
+- Tool mới `install_app` đăng ký một ứng dụng theo tên (ví dụ `automation`, `send_email`, `cms`) lên site hiện tại và có tính idempotent — trả về ngay nếu ứng dụng đó đã được cài.
+
+### Changed
+- `send_mail` nay sử dụng đúng contract `{ automation_id, data }`; các tham số cũ `to` / `subject` / `body` được thay bằng `automation_id` (UUID lấy từ `list_automations`) và đối tượng `data` truyền vào template email.
+- `list_apps` nay trả về danh sách `apps` đã chuẩn hoá, bao gồm trường `type_name` dạng chuỗi bên cạnh mã số `type`, kèm thêm bản đồ tham chiếu `app_types` trong response.
+- `get_app` nay chấp nhận kiểu ứng dụng dưới dạng mã số hoặc chuỗi tên (ví dụ `"automation"`).
+- Hướng dẫn HTTP function nhúng trong response của `get_http_function` và `get_site_custom_code` được mở rộng đáng kể: hình dạng đầy đủ của đối số `request` được tài liệu hoá, mỗi module `@webcake/*` nay hiển thị chính xác endpoint backend và các trường chấp nhận, các global và giới hạn của sandbox được liệt kê, và một ví dụ function đầy đủ từ đầu đến cuối được bổ sung.
+
 ## [1.7.0] - 2026-06-23
 
 ### Changed
