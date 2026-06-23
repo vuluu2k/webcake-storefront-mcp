@@ -27,10 +27,13 @@ This is a **TypeScript** project (strict). All source lives in `src/` and compil
 ## Required Environment Variables
 
 - `WEBCAKE_API_URL` — Backend API base URL (e.g. `https://api.storecake.io`)
-- `WEBCAKE_TOKEN` — JWT Bearer token from the WebCake dashboard
+- `WEBCAKE_TOKEN` — storefront JWT Bearer token (the builder's `jwt` cookie / `store_jwt`)
+- `WEBCAKE_SESSION_ID` — session id, sent as the `x-session-id` header (the builder's `wsid` cookie)
 - `WEBCAKE_SITE_ID` — Target site ID
 
-CMS admin token and CMS API key are auto-fetched at runtime via `api.fetchCmsTokens()` — no manual config needed.
+Optional, configured server-side (e.g. on the VPS running `serve`): `PEXELS_API_KEY` (search_images), `MONGO_URI` (image-alt cache).
+
+CMS-file / HTTP-function endpoints additionally require a CMS admin token + CMS API key, which are auto-fetched at runtime via `api.fetchCmsTokens()` (no manual config) and bundled into those request bodies.
 
 ## Architecture
 
@@ -52,13 +55,12 @@ src/                — TypeScript source (strict); compiles to dist/
     catalog.ts      — Auto-built type→factory registry + curated category/summary metadata
     page.ts         — Page skeleton, grid-layout composition (stackChildren/buildSection), re-id, validatePage
     guide.ts        — BUILD_GUIDE: the grid model, breakpoints, forms/data, build workflow
-  knowledge/        — markdown knowledge base (copied into dist by scripts/copy-assets.mjs)
-  tools/            — one register*Tools(server, api, handle) per file (~107 tools total):
+  tools/            — one register*Tools(server, api, handle) per file (~101 tools total):
     cms-files, pages, collections, articles, customers, automation, products, orders,
-    site-style, apps, promotions, combos, knowledge, global-sources, images, context,
+    site-style, apps, promotions, combos, global-sources, images, context,
     builder (get_build_guide, list_elements, new_section, build_page…), builder-extras
     (search_images, upload_image, publish_site, ingest_html/ingest_url)
-scripts/copy-assets.mjs — post-tsc: copies src/knowledge → dist + chmod +x dist/index.js
+scripts/copy-assets.mjs — post-tsc: chmod +x dist/index.js
 ```
 
 ### BuilderX page model (for builder/ and tools/builder*.js)
@@ -71,7 +73,7 @@ A page's content is `{ sections: [ <node>, ... ] }`. A node is `{ id, type, spec
 - **Unified error handling**: The `handle()` wrapper in `src/server.ts` catches all errors and returns `{ isError: true }` MCP responses.
 - **TypeScript**: strict mode, ES2022 + Node16 modules. Relative imports must keep the `.js` extension (Node16 resolution) even though sources are `.ts`. Dynamic CMS data is typically typed `any`.
 - **Schema validation**: All tool inputs validated with `zod` schemas passed directly to `server.tool()`.
-- **API client**: `WebcakeCmsApi` uses native `fetch` with a 15-second timeout (`AbortController`). Auth token bundling (`fetchCmsTokens`) is called lazily before CMS file mutations.
+- **API client**: `WebcakeCmsApi` uses native `fetch` with a 15-second timeout (`AbortController`). Every request sends `Authorization: Bearer <token>` and `x-session-id: <sessionId>`. CMS-file/HTTP-function mutations also lazily call `fetchCmsTokens()` and bundle the admin token + CMS API key into the body.
 - **Guide injection**: `get_http_function` and `get_site_custom_code` tools return embedded guides alongside data, teaching the AI agent the WebCake coding conventions (function naming, SDK usage, available globals).
 
 ### HTTP Function Convention (backend code on WebCake)

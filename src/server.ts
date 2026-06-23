@@ -14,7 +14,6 @@ import { registerSiteStyleTools } from "./tools/site-style.js";
 import { registerAppTools } from "./tools/apps.js";
 import { registerPromotionTools } from "./tools/promotions.js";
 import { registerComboTools } from "./tools/combos.js";
-import { registerKnowledgeTools } from "./tools/knowledge.js";
 import { registerGlobalSourceTools } from "./tools/global-sources.js";
 import { registerImageTools } from "./tools/images.js";
 import { registerBuilderTools } from "./tools/builder.js";
@@ -68,7 +67,6 @@ export function createServer(api: WebcakeCmsApi): McpServer {
   registerAppTools(server, api, handle);
   registerPromotionTools(server, api, handle);
   registerComboTools(server, api, handle);
-  registerKnowledgeTools(server, handle);
   registerGlobalSourceTools(server, api, handle);
   registerImageTools(server, api, handle);
   registerBuilderTools(server, api, handle);

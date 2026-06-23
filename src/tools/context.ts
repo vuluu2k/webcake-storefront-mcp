@@ -51,7 +51,7 @@ export function registerContextTools(server: McpServer, api: WebcakeCmsApi, hand
               }
             : null,
           confirm_mode: getConfirmMode(),
-          hint: "Use list_my_sites to see all sites, switch_site to change site. Use toggle_confirm_mode to switch between 'always_confirm' (safe) and 'auto_apply' (fast). Use sync_knowledge then list_knowledge to load knowledge base — always check knowledge before answering site-specific questions.",
+          hint: "Use list_my_sites to see all sites, switch_site to change site. Use toggle_confirm_mode to switch between 'always_confirm' (safe) and 'auto_apply' (fast).",
         };
       })
   );

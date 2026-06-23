@@ -30,6 +30,8 @@ export class WebcakeCmsApi {
     this._cmsApiKey = null;
   }
 
+  // CMS file / HTTP-function endpoints require an extra admin token + CMS API key
+  // bundled into the body. Fetched lazily and cached; reset on token/site switch.
   async fetchCmsTokens(): Promise<void> {
     if (this._adminToken && this._cmsApiKey) return;
 

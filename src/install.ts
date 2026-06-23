@@ -13,6 +13,7 @@ interface InstallOpts {
   ides: string[];
   env?: string;
   token?: string;
+  sessionId?: string;
   siteId?: string;
   apiUrl?: string;
   launch?: "npx" | "local";
@@ -31,6 +32,7 @@ function parseArgs(argv: string[]): InstallOpts {
     else if (a === "--ide") o.ides.push(...(argv[++i] || "").split(",").map((s) => s.trim()).filter(Boolean));
     else if (a === "--env") o.env = argv[++i];
     else if (a === "--token" || a === "--jwt") o.token = argv[++i];
+    else if (a === "--session" || a === "--session-id" || a === "--wsid") o.sessionId = argv[++i];
     else if (a === "--site" || a === "--site-id") o.siteId = argv[++i];
     else if (a === "--api-url" || a === "--api-base") o.apiUrl = argv[++i];
     else if (a === "--npx") o.launch = "npx";
@@ -67,6 +69,7 @@ function buildEnv(opts: InstallOpts): Record<string, string> {
   if (opts.env) env.WEBCAKE_ENV = opts.env;
   if (opts.apiUrl) env.WEBCAKE_API_URL = opts.apiUrl;
   if (opts.token) env.WEBCAKE_TOKEN = opts.token;
+  if (opts.sessionId) env.WEBCAKE_SESSION_ID = opts.sessionId;
   if (opts.siteId) env.WEBCAKE_SITE_ID = opts.siteId;
   return env;
 }

@@ -2,7 +2,6 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createServer } from "./server.js";
 import { makeApi, resolveSettings } from "./config.js";
-import { autoSync } from "./tools/knowledge.js";
 
 const HELP = `webcake-storefront-mcp — MCP server for the WebCake/StoreCake storefront builder
 
@@ -63,9 +62,6 @@ async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("[webcake-storefront] MCP server ready on stdio.");
-
-  // Refresh knowledge from GitHub in the background (non-blocking).
-  autoSync().catch(() => {});
 }
 
 main().catch((err) => {
