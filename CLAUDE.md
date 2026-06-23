@@ -42,7 +42,7 @@ Endpoints come from a **named environment** so you don't set base URLs by hand:
 
 So with `--env prod` (the default) you only need token + session (+ site). `--env local` flips everything to localhost for testing.
 
-Optional, configured server-side (e.g. on the VPS running `serve`): `PEXELS_API_KEY` (search_images), `MONGO_URI` (image-alt cache).
+Optional, configured server-side (e.g. on the VPS running `serve`): `PEXELS_API_KEY` (search_images).
 
 CMS-file / HTTP-function endpoints additionally require a CMS admin token + CMS API key, which are auto-fetched at runtime via `api.fetchCmsTokens()` (no manual config) and bundled into those request bodies.
 
@@ -58,7 +58,6 @@ src/                — TypeScript source (strict); compiles to dist/
   http.ts           — remote Streamable-HTTP transport; per-session JWT/site via headers or ?query
   db.ts             — JSON files at ~/.webcake-storefront-mcp/; config + image-alt cache
   api.ts            — WebcakeCmsApi class: all HTTP calls to the WebCake/StoreCake backend
-  mongo.ts          — optional MongoDB sync for the image-alt cache (MONGO_URI)
   guides.ts         — embedded HTTP_FUNCTION_GUIDE / CUSTOM_CODE_GUIDE strings
   builder/          — Page-authoring engine for the BuilderX storefront component model
     factory.ts      — Verbatim port of builderx_spa/src/common/factory.js (~132 create* fns);
@@ -70,7 +69,7 @@ src/                — TypeScript source (strict); compiles to dist/
     cms-files, pages, collections, articles, customers, automation, products, orders,
     site-style, apps, promotions, combos, global-sources, images, context,
     builder (get_build_guide, list_elements, new_section, build_page…), builder-extras
-    (search_images, upload_image, publish_site, ingest_html/ingest_url)
+    (search_images, upload_images, publish_site, ingest_html/ingest_url)
 scripts/copy-assets.mjs — post-tsc: chmod +x dist/index.js
 ```
 

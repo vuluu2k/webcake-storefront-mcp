@@ -41,8 +41,6 @@ services:
       # Optional: override the WebCake API / app base URLs
       # WEBCAKE_API_URL: ${WEBCAKE_API_URL}
       # WEBCAKE_APP_URL: ${WEBCAKE_APP_URL}
-      # Optional: MongoDB for image-alt cache
-      # MONGO_URI: ${MONGO_URI}
       # Optional: Pexels image search (search_images). Set PEXELS_API_KEY in
       # Coolify's Environment Variables; this line forwards it into the container.
       PEXELS_API_KEY: ${PEXELS_API_KEY:-}

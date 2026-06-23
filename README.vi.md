@@ -148,7 +148,7 @@ URL gốc lấy theo **môi trường có tên** — đặt `WEBCAKE_ENV` (hoặ
 | **`prod`** (mặc định) | `https://api.storefront.webcake.io` | `https://webcake.io` | `<site_slug>.webcake.me` |
 
 Override bằng `WEBCAKE_API_URL` / `WEBCAKE_APP_URL`. Tuỳ chọn, đặt phía server:
-`PEXELS_API_KEY` (search_images), `MONGO_URI` (cache alt ảnh). Token / session / site cũng có thể đặt
+`PEXELS_API_KEY` (search_images). Token / session / site cũng có thể đặt
 trong chat bằng `update_auth` và `switch_site` — lưu vào file cấu hình tại `~/.webcake-storefront-mcp/`.
 
 <details>
@@ -170,7 +170,7 @@ trong chat bằng `update_auth` và `switch_site` — lưu vào file cấu hình
 | Nhóm | Tool | Cần |
 |-------|-------|-------|
 | **Dựng trang** | `get_build_guide` · `list_elements` · `get_element` · `new_element` · `new_section` · `new_page_skeleton` · `validate_page` · `build_page` · `add_section` | tool catalog: không cần |
-| **Media & ingest** | `search_images` (Pexels) · `upload_image` (CDN) · `ingest_html` · `ingest_url` (dựng lại trang tham khảo) | — |
+| **Media & ingest** | `search_images` (Pexels) · `upload_images` (CDN) · `ingest_html` · `ingest_url` (dựng lại trang tham khảo) | — |
 | **Trang & code** | `list_pages` · `get_page_source` · `search_page_elements` · `get_page_element` · `update_page_element(s)` · `create_page` · `update_page` · `update_page_source` · custom CSS/JS · nội dung trang · global section · `publish_site` | token + session |
 | **Thương mại** | sản phẩm · đơn hàng · collection · khuyến mãi · combo | token + session |
 | **Nội dung & store** | bài blog · theme / site style · app · khách hàng · `send_mail` | token + session |

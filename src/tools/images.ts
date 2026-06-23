@@ -1,6 +1,4 @@
 import { z } from "zod";
-import { getImageAlt, setImageAlts as dbSetImageAlts, listImageAlts, countImageAlts } from "../db.js";
-import { isMongoEnabled, mongoUpsertAlts, mongoFindAlts, mongoListAlts } from "../mongo.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -417,7 +415,6 @@ Note: global_sections are read-only via the API and are not included.`,
             if (!isImageElement(node)) return;
             const { src, alt, src_path, alt_path } = probeImagePaths(node);
             if (only_missing_alt && alt && alt.trim()) return;
-            const cached = src ? getImageAlt(normalizeUrl(src)) : null;
             out.push({
               source_type: meta.source_type,
               source_id: meta.source_id,
@@ -428,7 +425,6 @@ Note: global_sections are read-only via the API and are not included.`,
               alt: alt || "",
               src_path,
               alt_path,
-              ...(cached && { cached_alt: cached.alt, cached_source: cached.source, cached_at: cached.updated_at }),
             });
           });
         }
@@ -575,25 +571,11 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
 
           try {
             await saver(source);
-            // Auto-cache: save alt per src URL so re-runs can skip OCR
-            const cacheBatch = [];
-            for (const u of perItem) {
-              if (u.error || !u._src) continue;
-              if (!/^https?:\/\//i.test(u._src)) continue;
-              cacheBatch.push({ url_key: normalizeUrl(u._src), url: u._src, alt: u.after, source: "ai" });
-            }
-            if (cacheBatch.length) {
-              try { dbSetImageAlts(cacheBatch as any); } catch { /* cache best-effort */ }
-              if (isMongoEnabled()) {
-                mongoUpsertAlts(cacheBatch as any).catch(() => { /* fire-and-forget */ });
-              }
-            }
             results.push({
               source_type,
               source_id,
               success: true,
               updated: perItem.filter((u) => !u.error).length,
-              cached: cacheBatch.length,
               updates: perItem.map(({ _src, ...rest }) => rest),
             });
           } catch (e) {
@@ -605,145 +587,6 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
       })
   );
 
-  // ── Alt cache tools ──
-
-  server.tool(
-    "get_cached_image_alts",
-    `Look up cached alt descriptions for image URLs. URLs are matched by normalized form (query string stripped, lowercase). Use BEFORE running read_image/OCR — skip already-described URLs.
-When MONGO_URI is set, misses are then checked against MongoDB and successful hits are backfilled into the local cache for fast re-lookup.`,
-    {
-      urls: z.array(z.string()).min(1).describe("Image URLs to look up"),
-    },
-    ({ urls }) =>
-      handle(async () => {
-        const hits = [];
-        let misses = [];
-        const keyToUrl = new Map();
-
-        for (const u of urls) {
-          if (!/^https?:\/\//i.test(u)) { misses.push(u); continue; }
-          const key = normalizeUrl(u);
-          keyToUrl.set(key, u);
-          const row = getImageAlt(key);
-          if (row) hits.push({ url: u, url_key: key, alt: row.alt, source: row.source, updated_at: row.updated_at });
-          else misses.push(u);
-        }
-
-        let mongo_hits = 0;
-        if (isMongoEnabled() && misses.length) {
-          const missKeys = misses
-            .filter((u) => /^https?:\/\//i.test(u))
-            .map((u) => normalizeUrl(u));
-          try {
-            const found = await mongoFindAlts(missKeys);
-            if (found.size) {
-              const backfill = [];
-              const stillMissing = [];
-              for (const u of misses) {
-                const k = /^https?:\/\//i.test(u) ? normalizeUrl(u) : null;
-                if (k && found.has(k)) {
-                  const doc = found.get(k);
-                  hits.push({ url: u, url_key: k, alt: doc.alt, source: doc.source || "mongo", updated_at: doc.updated_at, origin: "mongo" });
-                  backfill.push({ url_key: k, url: doc.url || u, alt: doc.alt, source: doc.source || "mongo" });
-                  mongo_hits++;
-                } else {
-                  stillMissing.push(u);
-                }
-              }
-              if (backfill.length) {
-                try { dbSetImageAlts(backfill as any); } catch { /* best-effort */ }
-              }
-              misses = stillMissing;
-            }
-          } catch { /* fall through with original misses */ }
-        }
-
-        return { hits_count: hits.length, miss_count: misses.length, mongo_hits, hits, misses };
-      })
-  );
-
-  server.tool(
-    "save_image_alts_cache",
-    `Manually save image URL → alt entries to the local cache. Useful for bulk import or saving descriptions generated outside the set_image_alts flow.`,
-    {
-      items: z.array(z.object({
-        url: z.string().describe("Image URL"),
-        alt: z.string().describe("Alt/description text"),
-        source: z.string().optional().describe("Origin tag (e.g. 'ai', 'manual', 'imported'). Default 'manual'"),
-      })).min(1),
-    },
-    ({ items }) =>
-      handle(async () => {
-        const batch = [];
-        const skipped = [];
-        for (const it of items) {
-          if (!/^https?:\/\//i.test(it.url)) { skipped.push({ url: it.url, reason: "non-http URL" }); continue; }
-          batch.push({ url_key: normalizeUrl(it.url), url: it.url, alt: it.alt, source: it.source || "manual" });
-        }
-        if (batch.length) {
-          dbSetImageAlts(batch as any);
-          if (isMongoEnabled()) {
-            mongoUpsertAlts(batch as any).catch(() => { /* fire-and-forget */ });
-          }
-        }
-        return { saved: batch.length, skipped, mongo: isMongoEnabled() ? "queued" : "disabled" };
-      })
-  );
-
-  server.tool(
-    "list_image_alts_cache",
-    `List entries in the alt cache, most recently updated first.`,
-    {
-      limit: z.number().default(100).describe("Max entries (default 100)"),
-      offset: z.number().default(0).describe("Pagination offset"),
-    },
-    ({ limit, offset }) =>
-      handle(async () => {
-        const total = countImageAlts();
-        const rows = listImageAlts(limit, offset);
-        return { total, count: rows.length, entries: rows };
-      })
-  );
-
-  // ── Mongo sync (active when MONGO_URI is set) ──
-
-  server.tool(
-    "sync_image_alts_to_mongo",
-    `Push local alt cache entries up to MongoDB. Bulk upsert keyed by url_key. Use when you want to back up local-only entries to the shared central store, or after a session of heavy AI describes.
-Requires MONGO_URI env var.`,
-    {
-      limit: z.number().default(1000).describe("Max entries to push per call"),
-      offset: z.number().default(0).describe("Offset into local cache"),
-    },
-    ({ limit, offset }) =>
-      handle(async () => {
-        if (!isMongoEnabled()) return { error: "MONGO_URI not configured" };
-        const rows = listImageAlts(limit, offset);
-        if (!rows.length) return { pushed: 0, total_local: countImageAlts() };
-        const res = await mongoUpsertAlts(rows.map((r) => ({ url_key: r.url_key, url: r.url, alt: r.alt, source: r.source })));
-        return { pushed: rows.length, ...res, total_local: countImageAlts() };
-      })
-  );
-
-  server.tool(
-    "sync_image_alts_from_mongo",
-    `Pull MongoDB alt entries down into local cache. Useful when starting on a new machine/site to warm the local cache from the central store.
-Requires MONGO_URI env var.`,
-    {
-      limit: z.number().default(1000).describe("Max entries to pull"),
-      offset: z.number().default(0).describe("Offset into Mongo collection"),
-    },
-    ({ limit, offset }) =>
-      handle(async () => {
-        if (!isMongoEnabled()) return { error: "MONGO_URI not configured" };
-        const { total, entries } = await mongoListAlts(limit, offset);
-        if (entries.length) {
-          dbSetImageAlts(entries.map((e: any) => ({ url_key: e.url_key, url: e.url, alt: e.alt, source: e.source || "mongo" })) as any);
-        }
-        return { pulled: entries.length, total_remote: total, total_local: countImageAlts() };
-      })
-  );
-
   // ── Combo: fetch images + metadata in one call so Claude can describe + call set_image_alts once ──
 
   server.tool(
@@ -752,7 +595,7 @@ Requires MONGO_URI env var.`,
 
 Workflow:
 1. Call this tool with scope/limit.
-2. Tool returns each image inline with its element_id + source_type + source_id (and skips URLs already in cache).
+2. Tool returns each image inline with its element_id + source_type + source_id.
 3. Claude reads images, drafts an alt for each, then calls set_image_alts(items) once with the template at the end of the response.
 
 The pre-built "items" template at the end contains placeholders — fill in "alt" and call set_image_alts.`,
@@ -760,11 +603,10 @@ The pre-built "items" template at the end contains placeholders — fill in "alt
       scope: z.enum(["all", "pages", "global_sources"]).default("all"),
       page_id: z.string().optional(),
       only_missing_alt: z.boolean().default(true).describe("Default true — skip elements that already have alt"),
-      skip_cached: z.boolean().default(true).describe("Skip URLs already in alt cache (Claude doesn't need to describe again)"),
       limit: z.number().default(10).describe("Max images per call (cap 20)"),
       max_size_mb: z.number().default(8),
     },
-    async ({ scope, page_id, only_missing_alt, skip_cached, limit, max_size_mb }) => {
+    async ({ scope, page_id, only_missing_alt, limit, max_size_mb }) => {
       try {
         const cap = Math.min(Math.max(limit, 1), 20);
 
@@ -817,17 +659,9 @@ The pre-built "items" template at the end contains placeholders — fill in "alt
           }
         }
 
-        // 2. Resolve cache hits → auto-prepare items; misses → need vision
-        const autoItems = [];
+        // 2. Take up to `cap` candidates that need a vision-generated description
         const needVision = [];
         for (const c of candidates) {
-          if (skip_cached) {
-            const cached = getImageAlt(normalizeUrl(c.src));
-            if (cached && cached.alt) {
-              autoItems.push({ source_type: c.source_type, source_id: c.source_id, element_id: c.element_id, alt: cached.alt });
-              continue;
-            }
-          }
           needVision.push(c);
           if (needVision.length >= cap) break;
         }
@@ -840,7 +674,7 @@ The pre-built "items" template at the end contains placeholders — fill in "alt
         const content: any[] = [];
         content.push({
           type: "text" as const,
-          text: `Fetched ${needVision.length} image(s) needing description. ${autoItems.length} auto-filled from cache. ${candidates.length - needVision.length - autoItems.length} skipped.
+          text: `Fetched ${needVision.length} image(s) needing description. ${Math.max(0, candidates.length - needVision.length)} more candidate(s) not included in this batch.
 
 For each image below, write a short alt description in the language of the site (Vietnamese unless content suggests otherwise). Focus on the SUBJECT visible — avoid generic phrases like "image of...".
 
@@ -867,9 +701,8 @@ When done, call set_image_alts with the items array. The template is at the bott
         }
 
         const template = {
-          auto_from_cache: autoItems,
           to_describe: visionItems,
-          next_step: "Replace each <FILL_ALT_FOR_#N> with your description, then call set_image_alts with items = [...auto_from_cache, ...to_describe].",
+          next_step: "Replace each <FILL_ALT_FOR_#N> with your description, then call set_image_alts with items = to_describe.",
         };
         content.push({ type: "text" as const, text: JSON.stringify(template, null, 2) });
 

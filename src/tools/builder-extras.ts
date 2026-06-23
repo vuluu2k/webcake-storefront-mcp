@@ -4,8 +4,40 @@ import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
 import { resolvePreviewUrl } from "../config.js";
 import { parse as parseHtml } from "node-html-parser";
+import { stat, readFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ALLOWED_IMG = /^image\/(jpe?g|png|webp)$/;
+const LOCAL_MAX = 200 * 1024 * 1024; // 200 MB, matches the backend multipart limit
+
+/** Is this entry a LOCAL filesystem path (vs an http(s) URL or data: URI)? */
+function isLocalPath(s: string): boolean {
+  if (s.startsWith("data:") || /^https?:\/\//i.test(s)) return false;
+  return s.startsWith("file://") || s.startsWith("/") || s.startsWith("~") || /^[a-zA-Z]:[\\/]/.test(s);
+}
+/** Resolve ~ and file:// to an absolute path. */
+function resolveLocalPath(s: string): string {
+  if (s.startsWith("file://")) return fileURLToPath(s);
+  if (s.startsWith("~")) return join(homedir(), s.slice(1));
+  return s;
+}
+/** Read a local image file into a buffer (with a size cap) + guess its content type. */
+async function readLocalImage(s: string): Promise<{ buf: Buffer; contentType: string }> {
+  const p = resolveLocalPath(s);
+  const st = await stat(p);
+  if (st.size > LOCAL_MAX) throw new Error(`File too large (${st.size} bytes, max ${LOCAL_MAX}).`);
+  const buf = await readFile(p);
+  const ext = (p.split(".").pop() || "").toLowerCase();
+  const contentType =
+    ext === "png" ? "image/png"
+    : ext === "webp" ? "image/webp"
+    : ext === "gif" ? "image/gif"
+    : ext === "jpg" || ext === "jpeg" ? "image/jpeg"
+    : "application/octet-stream";
+  return { buf, contentType };
+}
 
 /** Fetch a URL into a Buffer with a size cap. */
 async function fetchBuffer(url: string, maxBytes = 15 * 1024 * 1024) {
@@ -25,7 +57,12 @@ async function toAllowedImage(buf: Buffer, contentType: string) {
   return { buf: out, contentType: "image/jpeg" };
 }
 
-export function registerBuilderExtraTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
+export function registerBuilderExtraTools(
+  server: McpServer,
+  api: WebcakeCmsApi,
+  handle: Handle,
+  opts: { allowLocalFiles?: boolean } = {},
+) {
   // ── Stock images (Pexels) ──────────────────────────────────────────────────
   server.tool(
     "search_images",
@@ -62,32 +99,85 @@ Requires the PEXELS_API_KEY environment variable.`,
       })
   );
 
-  // ── Upload an image to the site CDN ─────────────────────────────────────────
+  // ── Upload images to the site CDN ───────────────────────────────────────────
   server.tool(
-    "upload_image",
-    `Upload an image to the site's CDN and get back a hosted URL. Accepts an http(s) URL or a data:image/...;base64 data URI. Non jpeg/png/webp inputs are converted to JPEG.
-Use this for the user's own images; stock photos from search_images are already hosted and don't need uploading.`,
+    "upload_images",
+    `Convert external image URLs, data: URIs, or LOCAL FILE PATHS into site-hosted CDN URLs by reading/downloading each image and re-uploading it to the WebCake backend. Use this whenever the user supplies their OWN images (their URLs or files from their machine), or a page is built from a reference HTML/URL. The returned hosted URLs go straight into an image element's specials.src / runtime.config.src — same as search_images results. Stock photos from search_images are already hosted and don't need uploading.
+Processes up to 20 entries per call in parallel; non jpeg/png/webp inputs are converted to JPEG. UPLOADS BY DEFAULT (dry_run defaults to FALSE — this touches no account data): returns an "images" map (original source → hosted URL). Pass dry_run:true to only preview the entries that WOULD be processed (local paths report whether the file exists + its size) without any network/filesystem upload. Local file paths are only permitted when the MCP server runs locally (stdio); on the remote HTTP transport they are rejected per-entry.`,
     {
-      url: z.string().describe("http(s) URL or data:image/...;base64,... data URI"),
+      urls: z
+        .array(z.string())
+        .min(1)
+        .max(20)
+        .describe(
+          "Image sources — 1–20 per call. Accepts: http(s) URLs, data:image/...;base64,... URIs, or local file paths (absolute /path, ~/path, file:// — stdio mode only).",
+        ),
+      dry_run: z
+        .boolean()
+        .default(false)
+        .describe("Default FALSE — actually reads/downloads and uploads, returning hosted URLs. Set true to only preview what would be processed."),
     },
-    ({ url }) =>
+    ({ urls, dry_run }) =>
       handle(async () => {
-        let buf: Buffer, contentType: string;
-        if (url.startsWith("data:")) {
-          const m = url.match(/^data:([^;]+);base64,(.*)$/s);
-          if (!m) return { error: "Malformed data URI." };
-          contentType = m[1];
-          buf = Buffer.from(m[2], "base64");
-        } else {
-          ({ buf, contentType } = await fetchBuffer(url));
+        const deduped = [...new Set(urls)];
+        const localAllowed = opts.allowLocalFiles === true;
+
+        if (dry_run) {
+          const entries = await Promise.all(
+            deduped.map(async (entry) => {
+              if (entry.startsWith("data:")) return { entry, kind: "data-uri" };
+              if (isLocalPath(entry)) {
+                if (!localAllowed)
+                  return { entry, kind: "local", error: "Local file paths are only supported in stdio mode." };
+                try {
+                  const st = await stat(resolveLocalPath(entry));
+                  return { entry, kind: "local", exists: true, size: st.size };
+                } catch (e: any) {
+                  return { entry, kind: "local", exists: false, error: e?.message ?? String(e) };
+                }
+              }
+              return { entry, kind: "url" };
+            }),
+          );
+          return { dry_run: true, count: deduped.length, entries };
         }
 
-        const norm = await toAllowedImage(buf, contentType);
-        const dataUri = `data:${norm.contentType};base64,${norm.buf.toString("base64")}`;
-        const res = await api.uploadImageBase64({ base64: dataUri, content_type: norm.contentType });
-        const hosted = (res && res.data) || (res && res.url) || null;
-        if (!hosted) return { error: "Upload returned no URL.", raw: res };
-        return { success: true, url: hosted, content_type: norm.contentType };
+        const images: Record<string, string> = {};
+        const errors: Array<{ url: string; error: string }> = [];
+        await Promise.all(
+          deduped.map(async (entry) => {
+            try {
+              let buf: Buffer, contentType: string;
+              if (entry.startsWith("data:")) {
+                const m = entry.match(/^data:([^;]+);base64,(.*)$/s);
+                if (!m) throw new Error("Malformed data URI.");
+                contentType = m[1];
+                buf = Buffer.from(m[2], "base64");
+              } else if (isLocalPath(entry)) {
+                if (!localAllowed)
+                  throw new Error("Local file paths are only supported when the server runs locally (stdio). Send a public URL or data: URI instead.");
+                ({ buf, contentType } = await readLocalImage(entry));
+              } else {
+                ({ buf, contentType } = await fetchBuffer(entry));
+              }
+              const norm = await toAllowedImage(buf, contentType);
+              const dataUri = `data:${norm.contentType};base64,${norm.buf.toString("base64")}`;
+              const res = await api.uploadImageBase64({ base64: dataUri, content_type: norm.contentType });
+              const hosted = (res && res.data) || (res && res.url) || null;
+              if (!hosted) throw new Error("Upload returned no URL.");
+              images[entry] = hosted;
+            } catch (e: any) {
+              errors.push({ url: entry, error: e?.message ?? String(e) });
+            }
+          }),
+        );
+
+        return {
+          uploaded: Object.keys(images).length,
+          failed: errors.length,
+          images,
+          ...(errors.length ? { errors } : {}),
+        };
       })
   );
 
@@ -172,7 +262,7 @@ Two-step safety: dry_run=true (default) describes what will happen; dry_run=fals
       images,
       buttons,
       palette: [...colors].slice(0, 24),
-      hint: "Rebuild this as BuilderX sections: map each heading group + its text/image/button into a new_section call. Generate fresh copy where useful; re-host external images with upload_image if you want them on the site CDN. This is a structural blueprint, not a 1:1 clone.",
+      hint: "Rebuild this as BuilderX sections: map each heading group + its text/image/button into a new_section call. Generate fresh copy where useful; re-host external images with upload_images if you want them on the site CDN. This is a structural blueprint, not a 1:1 clone.",
     };
   }
 

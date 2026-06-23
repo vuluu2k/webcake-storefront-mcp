@@ -48,7 +48,6 @@ You only need to add extras like:
 ```
 WEBCAKE_API_URL=https://api.storecake.io
 WEBCAKE_APP_URL=https://builder.storecake.io
-MONGO_URI=mongodb+srv://...       # optional: image-alt cache
 PEXELS_API_KEY=...                # optional: image search
 ```
 

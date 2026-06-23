@@ -149,7 +149,7 @@ Base URLs come from a **named environment** — set `WEBCAKE_ENV` (or `--env`) a
 | **`prod`** (default) | `https://api.storefront.webcake.io` | `https://webcake.io` | `<site_slug>.webcake.me` |
 
 Override a preset with `WEBCAKE_API_URL` / `WEBCAKE_APP_URL`. Optional, configured server-side:
-`PEXELS_API_KEY` (search_images), `MONGO_URI` (image-alt cache). Token / session / site can also be set
+`PEXELS_API_KEY` (search_images). Token / session / site can also be set
 in chat via `update_auth` and `switch_site` — saved to a local config file at `~/.webcake-storefront-mcp/`.
 
 <details>
@@ -171,7 +171,7 @@ in chat via `update_auth` and `switch_site` — saved to a local config file at 
 | Group | Tools | Needs |
 |-------|-------|-------|
 | **Build a page** | `get_build_guide` · `list_elements` · `get_element` · `new_element` · `new_section` · `new_page_skeleton` · `validate_page` · `build_page` · `add_section` | catalog tools: nothing |
-| **Media & ingest** | `search_images` (Pexels) · `upload_image` (CDN) · `ingest_html` · `ingest_url` (recreate a reference page) | — |
+| **Media & ingest** | `search_images` (Pexels) · `upload_images` (CDN) · `ingest_html` · `ingest_url` (recreate a reference page) | — |
 | **Pages & code** | `list_pages` · `get_page_source` · `search_page_elements` · `get_page_element` · `update_page_element(s)` · `create_page` · `update_page` · `update_page_source` · custom CSS/JS · page contents · global sections · `publish_site` | token + session |
 | **Commerce** | products · orders · collections · promotions · combos | token + session |
 | **Content & store** | blog articles · themes / site style · apps · customers · `send_mail` | token + session |

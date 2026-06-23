@@ -38,8 +38,14 @@ function makeResult(data: unknown): McpResult {
   return { content: [{ type: "text", text: JSON.stringify(data) }] };
 }
 
+export interface ServerOptions {
+  /** Allow upload_images to read LOCAL file paths — only safe in stdio mode (the
+   *  user's own machine), never on the shared remote HTTP transport. */
+  allowLocalFiles?: boolean;
+}
+
 /** Build a fully-wired MCP server bound to the given API client. */
-export function createServer(api: WebcakeCmsApi): McpServer {
+export function createServer(api: WebcakeCmsApi, opts: ServerOptions = {}): McpServer {
   const server = new McpServer(
     { name: "webcake-storefront", version: "1.0.0" },
     { instructions: INSTRUCTIONS }
@@ -70,7 +76,7 @@ export function createServer(api: WebcakeCmsApi): McpServer {
   registerGlobalSourceTools(server, api, handle);
   registerImageTools(server, api, handle);
   registerBuilderTools(server, api, handle);
-  registerBuilderExtraTools(server, api, handle);
+  registerBuilderExtraTools(server, api, handle, { allowLocalFiles: opts.allowLocalFiles === true });
 
   return server;
 }

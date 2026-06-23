@@ -402,7 +402,7 @@ export async function startHttpServer(port: number): Promise<void> {
             if (transport.sessionId) transports.delete(transport.sessionId);
           };
           const api = apiFromRequest(req);
-          const server = createServer(api);
+          const server = createServer(api, { allowLocalFiles: false }); // remote: never read server-side files
           await server.connect(transport);
           await transport.handleRequest(req, res, body);
           return;
