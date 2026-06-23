@@ -46,5 +46,23 @@
         }
       ]
     }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://store.toolvn.io.vn/mcp",
+      "headers": [
+        {
+          "name": "x-webcake-jwt",
+          "description": "Storefront Bearer JWT (or authenticate via the OAuth flow / ?jwt= link).",
+          "isSecret": true
+        },
+        {
+          "name": "x-webcake-session-id",
+          "description": "Session id (the builder's wsid).",
+          "isSecret": true
+        }
+      ]
+    }
   ]
 }
