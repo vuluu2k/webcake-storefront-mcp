@@ -5,6 +5,17 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.5.0] - 2026-06-23
+
+### Added
+- Tool mới `create_product` tạo sản phẩm cho storefront (đơn giản với tên + giá, hoặc nâng cao với `attributes` và `variations` theo từng SKU); nhận URL ảnh đã lưu trữ và `category_ids` để các binding `grid-product` / `slider-product` có hàng hoá thực để hiển thị.
+- Tool mới `create_product_category` tạo danh mục sản phẩm và trả về `category_id` mới để truyền vào `create_product`.
+- Tool mới `create_blog_category` tạo danh mục bài viết/blog và trả về `category_id` mới để truyền vào `create_article`.
+
+### Changed
+- `create_article` được viết lại để sử dụng command pipeline của dashboard: `category_ids` (mảng) thay thế `category_id`, các tham số `slug` / `tags` / `is_hidden` bị xoá, tất cả trường ngoài `name` là tuỳ chọn, và backend tự sinh id cùng slug cho bài viết.
+- Hướng dẫn server nay ghi lại luồng khuyến nghị để điền dữ liệu cho một site mới: `create_site` → `create_product_category` / `create_blog_category` → `create_product` / `create_article` → `build_page` → `publish_site`.
+
 ## [1.4.0] - 2026-06-23
 
 ### Changed

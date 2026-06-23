@@ -5,6 +5,17 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.5.0] - 2026-06-23
+
+### Added
+- New `create_product` tool creates a storefront product (simple name + price, or advanced with named `attributes` and per-SKU `variations`); accepts hosted image URLs and `category_ids` so `grid-product` and `slider-product` bindings have real merchandise to display.
+- New `create_product_category` tool creates a product category and returns the new `category_id` to pass to `create_product`.
+- New `create_blog_category` tool creates a blog/article category and returns the new `category_id` to pass to `create_article`.
+
+### Changed
+- `create_article` is rewritten to use the dashboard command pipeline: `category_ids` (array) replaces `category_id`, the `slug` / `tags` / `is_hidden` parameters are removed, all fields except `name` are now optional, and the backend generates the article id and slug.
+- Server instructions now document the recommended data-population flow for a fresh site: `create_site` → `create_product_category` / `create_blog_category` → `create_product` / `create_article` → `build_page` → `publish_site`.
+
 ## [1.4.0] - 2026-06-23
 
 ### Changed
