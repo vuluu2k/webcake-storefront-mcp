@@ -1,203 +1,49 @@
 **🌐 [Tiếng Việt](README_VI.md)** | English
 
-# WebCake CMS MCP Server
+# WebCake Storefront MCP Server
 
-MCP server exposing WebCake CMS features for AI agents.
+MCP server for the WebCake/StoreCake storefront builder — lets AI agents read your site data and build pages.
 
-## Quick Install (Recommended)
+## Install
 
-Run the auto-install script — it handles everything: clone, install dependencies, configure your IDE.
+Published to npm, so there is nothing to clone — everything runs through `npx`.
 
-### macOS / Linux
+### Configure your IDE automatically (recommended)
 
-**Option A — Interactive** (prompts for input):
-
-If you already cloned the repo:
 ```bash
-./install.sh
+npx -y webcake-storefront-mcp install
 ```
 
-Or download and run directly:
-```bash
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install.sh -o install.sh && bash install.sh
-```
-
-**Option B — Non-interactive** (via `curl` pipe or CI):
+Interactive: pick your IDE(s) and paste your credentials. Or non-interactive:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install.sh | bash -s -- \
+npx -y webcake-storefront-mcp install \
+  --ide all \
   --token YOUR_TOKEN \
-  --session-id YOUR_SESSION_ID \
-  --site-id YOUR_SITE_ID
+  --session YOUR_SESSION_ID \
+  --site YOUR_SITE_ID
 ```
 
-**All flags:**
+Supported IDEs: `claude-desktop`, `claude-code`, `cursor`, `windsurf`, `vscode`, or `all`.
+Uninstall with `npx -y webcake-storefront-mcp uninstall`.
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--token TOKEN` | JWT Bearer token | *(required)* |
-| `--session-id ID` | Session ID (`x-session-id`) | *(optional)* |
-| `--site-id ID` | Target site ID | *(required)* |
-| `--api-url URL` | API base URL | `https://api.storecake.io` |
-| `--ide IDE` | IDE to configure: `claude-desktop`, `claude`, `cursor`, `windsurf`, `augment`, `codex`, `all` | `all` |
-| `--dir PATH` | Install directory | `~/.webcake-storefront-mcp` |
-| `--uninstall` | Remove MCP server and IDE configs | — |
-
-**Examples:**
+### Or connect via the browser (no token copy/paste)
 
 ```bash
-# Install and configure only Claude Code
-curl -fsSL .../install.sh | bash -s -- --token abc123 --site-id site_xyz --ide claude
-
-# Install and configure Cursor + Windsurf
-./install.sh --token abc123 --site-id site_xyz --ide cursor
-./install.sh --token abc123 --site-id site_xyz --ide windsurf
-
-# Uninstall
-./install.sh --uninstall
+npx -y webcake-storefront-mcp login
 ```
 
-### Windows (PowerShell)
+This opens the builder's connect page; approve it and your token + session are saved to a local config db and picked up automatically.
 
-If you already cloned the repo:
-```powershell
-.\install.ps1
-```
-
-Or download and run directly:
-```powershell
-irm https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install.ps1 -OutFile install.ps1; .\install.ps1
-```
-
-Uninstall:
-```powershell
-.\install.ps1 --uninstall
-```
-
----
-
-## Update
-
-Update to the latest version:
-
-### macOS / Linux
-
-```bash
-# Auto-detect install path
-~/.webcake-storefront-mcp/update.sh
-```
-
-Or specify the path:
-```bash
-./update.sh ~/.webcake-storefront-mcp
-```
-
-Or download and run:
-```bash
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/update.sh | bash
-```
-
-### Windows (PowerShell)
-
-```powershell
-# Auto-detect install path
-.\update.ps1
-```
-
-Or specify the path:
-```powershell
-.\update.ps1 C:\Users\you\.webcake-storefront-mcp
-```
-
-Or download and run:
-```powershell
-irm https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/update.ps1 -OutFile update.ps1; .\update.ps1
-```
-
----
-
-## Setup Knowledge (Optional)
-
-Add custom knowledge files so AI agents understand your business rules, policies, and coding standards.
-
-```bash
-# If you already cloned the repo
-./setup_env.sh
-
-# Or download and run directly
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/setup_env.sh | bash
-```
-
-This script will:
-1. Ask for knowledge env vars (`WEBCAKE_KNOWLEDGE_DIR`, `WEBCAKE_KNOWLEDGE_REPO`, `WEBCAKE_KNOWLEDGE_TOKEN`)
-2. Auto-detect IDEs already configured with webcake-cms
-3. Merge the new env vars into existing IDE configs
-
-See the `knowledge/` folder for examples and writing guides.
-
----
-
-## Manual Setup
-
-```bash
-git clone https://github.com/vuluu2k/webcake-storefront-mcp.git
-cd webcake-storefront-mcp
-npm install
-```
-
-## Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `WEBCAKE_API_URL` | Yes | WebCake API base URL (e.g. `https://api.storecake.io`) |
-| `WEBCAKE_TOKEN` | No* | JWT Bearer token (dashboard auth) |
-| `WEBCAKE_SESSION_ID` | No* | Session ID (`x-session-id` header) |
-| `WEBCAKE_SITE_ID` | No* | Target site ID |
-| `WEBCAKE_KNOWLEDGE_DIR` | No | Path to local knowledge files directory (default: `./knowledge`) |
-| `WEBCAKE_KNOWLEDGE_REPO` | No | GitHub repo for knowledge files (e.g. `owner/repo` or full URL) |
-| `WEBCAKE_KNOWLEDGE_TOKEN` | No | GitHub token for private repos |
-| `MONGO_URI` | No | MongoDB connection string. If set, image alt cache is mirrored to Mongo for cross-instance reuse |
-| `MONGO_DB` | No | MongoDB database name (default: `webcake_mcp`) |
-| `MONGO_COLLECTION` | No | MongoDB collection name (default: `image_alt_cache`) |
-
-> \* Token, session_id, site_id can be set later via `update_auth` and `switch_site` tools in chat. When set via tools, values are **saved to SQLite** (`webcake-mcp.db`) and auto-restored in the next session.
-
-> CMS admin token and CMS API key are automatically fetched via API when needed (no manual config required).
-
-### How to get `WEBCAKE_TOKEN` and `WEBCAKE_SESSION_ID`
-
-1. Open [WebCake Dashboard](https://storecake.io) and log in
-2. Open DevTools (`F12` or `Cmd + Option + I`)
-3. Go to **Network** tab > click any page
-4. Find an API request (e.g. `@me`, `site/all`...)
-5. In **Request Headers**:
-   - `Authorization: Bearer ...` → copy the value after "Bearer " → this is your `WEBCAKE_TOKEN`
-   - `x-session-id: ...` → copy the value → this is your `WEBCAKE_SESSION_ID`
-6. `WEBCAKE_SITE_ID` is in the dashboard URL: `https://storecake.io/site/{site_id}/...` or use the `list_my_sites` tool to list all sites
-
----
-
-## Configuration by IDE / AI Tool
-
-> Replace `/absolute-path/webcake-storefront-mcp/index.js` below with the actual path where you cloned the repo.
-> Example: `/Users/username/webcake-storefront-mcp/index.js`
-
-### 1. Claude Desktop
-
-Open Settings > Developer > Edit Config, or edit the file directly:
-
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+### Manual config (`.mcp.json`)
 
 ```json
 {
   "mcpServers": {
-    "webcake-cms": {
-      "command": "node",
-      "args": ["/absolute-path/webcake-storefront-mcp/index.js"],
+    "webcake-storefront": {
+      "command": "npx",
+      "args": ["-y", "webcake-storefront-mcp"],
       "env": {
-        "WEBCAKE_API_URL": "https://api.storecake.io",
         "WEBCAKE_TOKEN": "<your-token>",
         "WEBCAKE_SESSION_ID": "<your-session-id>",
         "WEBCAKE_SITE_ID": "<your-site-id>"
@@ -207,151 +53,35 @@ Open Settings > Developer > Edit Config, or edit the file directly:
 }
 ```
 
-Restart Claude Desktop. The MCP tools will appear in the chat input (hammer icon).
-
----
-
-### 2. Claude Code (CLI)
-
-Run in terminal:
+### Remote server (Streamable-HTTP)
 
 ```bash
-claude mcp add webcake-cms \
-  -e WEBCAKE_API_URL=https://api.storecake.io \
-  -e WEBCAKE_TOKEN=<your-token> \
-  -e WEBCAKE_SESSION_ID=<your-session-id> \
-  -e WEBCAKE_SITE_ID=<your-site-id> \
-  -- node /absolute-path/webcake-storefront-mcp/index.js
+npx -y webcake-storefront-mcp serve --port 8787
+# MCP endpoint: http://localhost:8787/mcp?jwt=<token>&site_id=<id>
 ```
 
-Or create `.claude.json` at project root:
+## Environment Variables
 
-```json
-{
-  "mcpServers": {
-    "webcake-cms": {
-      "command": "node",
-      "args": ["/absolute-path/webcake-storefront-mcp/index.js"],
-      "env": {
-        "WEBCAKE_API_URL": "https://api.storecake.io",
-        "WEBCAKE_TOKEN": "<your-token>",
-        "WEBCAKE_SESSION_ID": "<your-session-id>",
-        "WEBCAKE_SITE_ID": "<your-site-id>",
-      }
-    }
-  }
-}
-```
+Required: `WEBCAKE_TOKEN` (Bearer JWT), `WEBCAKE_SESSION_ID` (sent as `x-session-id`), `WEBCAKE_SITE_ID`.
 
-Or configure globally at `~/.claude.json`.
+Endpoints come from a named environment, so you don't set base URLs by hand:
 
-Verify:
-```bash
-claude mcp list
-```
+| `WEBCAKE_ENV` / `--env` | api | app (login) | preview |
+|---|---|---|---|
+| `local` | `http://localhost:24679` | `http://localhost:5173` | `demo.localhost:24679/<siteId>` |
+| `staging` | `https://api.staging.storecake.io` | `https://staging.webcake.io` | `staging2.webcake.me/<siteId>` |
+| `prod` (default) | `https://api.storefront.webcake.io` | `https://webcake.io` | `<site_slug>.webcake.me` |
 
----
+Override a preset with `WEBCAKE_API_URL` / `WEBCAKE_APP_URL`. Optional, configured server-side (e.g. on the VPS running `serve`): `PEXELS_API_KEY` (search_images), `MONGO_URI` / `MONGO_DB` / `MONGO_COLLECTION` (image-alt cache).
 
-### 3. Cursor
+Token / session / site can also be set later from chat via the `update_auth` and `switch_site` tools — values are saved to a local SQLite db at `~/.webcake-storefront-mcp/` and restored next session. The CMS admin token + CMS API key (needed for HTTP-function tools) are fetched automatically.
 
-Create `.cursor/mcp.json` at project root:
+### How to get `WEBCAKE_TOKEN` and `WEBCAKE_SESSION_ID`
 
-```json
-{
-  "mcpServers": {
-    "webcake-cms": {
-      "command": "node",
-      "args": ["/absolute-path/webcake-storefront-mcp/index.js"],
-      "env": {
-        "WEBCAKE_API_URL": "https://api.storecake.io",
-        "WEBCAKE_TOKEN": "<your-token>",
-        "WEBCAKE_SESSION_ID": "<your-session-id>",
-        "WEBCAKE_SITE_ID": "<your-site-id>",
-      }
-    }
-  }
-}
-```
-
-Or global config at `~/.cursor/mcp.json`. Restart Cursor and check Settings > MCP Servers for **"Connected"** status.
-
----
-
-### 4. Windsurf
-
-Create `~/.codeium/windsurf/mcp_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "webcake-cms": {
-      "command": "node",
-      "args": ["/absolute-path/webcake-storefront-mcp/index.js"],
-      "env": {
-        "WEBCAKE_API_URL": "https://api.storecake.io",
-        "WEBCAKE_TOKEN": "<your-token>",
-        "WEBCAKE_SESSION_ID": "<your-session-id>",
-        "WEBCAKE_SITE_ID": "<your-site-id>",
-      }
-    }
-  }
-}
-```
-
-Restart Windsurf. Type `@` in Cascade chat to see `webcake-cms` tools.
-
----
-
-### 5. Augment (VS Code Extension)
-
-Open Command Palette: `Cmd + Shift + P` > **"Augment: Edit MCP Settings"**, then add:
-
-```json
-{
-  "mcpServers": {
-    "webcake-cms": {
-      "command": "node",
-      "args": ["/absolute-path/webcake-storefront-mcp/index.js"],
-      "env": {
-        "WEBCAKE_API_URL": "https://api.storecake.io",
-        "WEBCAKE_TOKEN": "<your-token>",
-        "WEBCAKE_SESSION_ID": "<your-session-id>",
-        "WEBCAKE_SITE_ID": "<your-site-id>",
-      }
-    }
-  }
-}
-```
-
-Restart VS Code.
-
----
-
-### 6. Codex (OpenAI CLI)
-
-Add to `~/.codex/config.toml`:
-
-```toml
-[mcp_servers.webcake-cms]
-command = "node"
-args = ["/absolute-path/webcake-storefront-mcp/index.js"]
-env = { "WEBCAKE_API_URL" = "https://api.storecake.io", "WEBCAKE_TOKEN" = "<your-token>", "WEBCAKE_SESSION_ID" = "<your-session-id>", "WEBCAKE_SITE_ID" = "<your-site-id>" }
-```
-
-Or via CLI:
-```bash
-codex mcp add webcake-cms \
-  --env WEBCAKE_API_URL=https://api.storecake.io \
-  --env WEBCAKE_TOKEN=<your-token> \
-  --env WEBCAKE_SESSION_ID=<your-session-id> \
-  --env WEBCAKE_SITE_ID=<your-site-id> \
-  -- node /absolute-path/webcake-storefront-mcp/index.js
-```
-
-Verify:
-```bash
-codex mcp list
-```
+1. Open the WebCake builder and log in.
+2. Open DevTools (`F12`), go to the **Network** tab, and click any API request.
+3. In **Request Headers**: `Authorization: Bearer ...` → `WEBCAKE_TOKEN`; `x-session-id: ...` → `WEBCAKE_SESSION_ID`.
+4. `WEBCAKE_SITE_ID` is in the builder URL, or use the `list_my_sites` tool to list your sites.
 
 ---
 

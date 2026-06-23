@@ -1,366 +1,87 @@
 **🌐 [English](README.md)** | Tiếng Việt
 
-# WebCake CMS MCP Server
+# WebCake Storefront MCP Server
 
-MCP server cung cấp các tính năng CMS của WebCake cho AI agent sử dụng.
+MCP server cho trình tạo trang WebCake/StoreCake — giúp AI đọc dữ liệu site và tạo trang web.
 
-## Cài đặt nhanh (Khuyên dùng)
+## Cài đặt
 
-Chạy script tự động — tự clone, cài dependencies, cấu hình IDE cho bạn.
+Đã publish lên npm nên không cần clone — mọi thứ chạy qua `npx`.
 
-### macOS / Linux
-
-**Cách A — Tương tác** (script sẽ hỏi từng bước):
-
-Nếu đã clone repo:
-```bash
-./install_vi.sh
-```
-
-Hoặc tải về rồi chạy:
-```bash
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install_vi.sh -o install_vi.sh && bash install_vi.sh
-```
-
-Script sẽ hướng dẫn bạn:
-1. Cài Node.js (nếu chưa có)
-2. Clone MCP server
-3. Nhập thông tin kết nối (token, session_id, site_id — **đều có thể bỏ qua**, set sau qua AI)
-4. Chọn IDE để cấu hình
-
-> **Cách lấy token & session_id:** Đăng nhập dashboard WebCake → F12 DevTools → tab Network → click bất kỳ trang → copy header `Authorization: Bearer ...` (token) và `x-session-id` (session_id)
-
-**Gỡ cài đặt:**
-```bash
-./install_vi.sh --uninstall
-```
-
-### Windows (PowerShell)
-
-Nếu đã clone repo:
-```powershell
-.\install.ps1
-```
-
-Hoặc tải về rồi chạy:
-```powershell
-irm https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/install.ps1 -OutFile install.ps1; .\install.ps1
-```
-
-Gỡ cài đặt:
-```powershell
-.\install.ps1 --uninstall
-```
-
----
-
-## Cập nhật
-
-Cập nhật lên phiên bản mới nhất:
-
-### macOS / Linux
+### Tự cấu hình IDE (khuyên dùng)
 
 ```bash
-# Tự tìm thư mục cài đặt
-~/.webcake-storefront-mcp/update_vi.sh
+npx -y webcake-storefront-mcp install
 ```
 
-Hoặc chỉ định đường dẫn:
-```bash
-./update_vi.sh ~/.webcake-storefront-mcp
-```
-
-Hoặc tải về rồi chạy:
-```bash
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/update_vi.sh | bash
-```
-
-### Windows (PowerShell)
-
-```powershell
-# Tự tìm thư mục cài đặt
-.\update.ps1
-```
-
-Hoặc chỉ định đường dẫn:
-```powershell
-.\update.ps1 C:\Users\you\.webcake-storefront-mcp
-```
-
-Hoặc tải về rồi chạy:
-```powershell
-irm https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/update.ps1 -OutFile update.ps1; .\update.ps1
-```
-
----
-
-## Cấu hình Knowledge (Tuỳ chọn)
-
-Thêm knowledge files để AI hiểu quy tắc kinh doanh, chính sách, chuẩn code của bạn.
+Tương tác: chọn IDE và dán thông tin đăng nhập. Hoặc phi tương tác:
 
 ```bash
-# Nếu đã clone repo
-./setup_env_vi.sh
-
-# Hoặc tải về rồi chạy
-curl -fsSL https://raw.githubusercontent.com/vuluu2k/webcake-storefront-mcp/main/setup_env_vi.sh | bash
+npx -y webcake-storefront-mcp install \
+  --ide all \
+  --token YOUR_TOKEN \
+  --session YOUR_SESSION_ID \
+  --site YOUR_SITE_ID
 ```
 
-Script sẽ:
-1. Hỏi các biến knowledge (`WEBCAKE_KNOWLEDGE_DIR`, `WEBCAKE_KNOWLEDGE_REPO`, `WEBCAKE_KNOWLEDGE_TOKEN`)
-2. Tự phát hiện IDE đã cấu hình webcake-cms
-3. Gộp biến mới vào config hiện có — không ghi đè biến cũ
+IDE hỗ trợ: `claude-desktop`, `claude-code`, `cursor`, `windsurf`, `vscode`, hoặc `all`.
+Gỡ cài đặt: `npx -y webcake-storefront-mcp uninstall`.
 
-Xem thư mục `knowledge/` để biết cách viết và ví dụ mẫu.
-
----
-
-## Cài đặt thủ công
+### Hoặc kết nối qua trình duyệt (không cần copy token)
 
 ```bash
-git clone https://github.com/vuluu2k/webcake-storefront-mcp.git
-cd webcake-storefront-mcp
-npm install
+npx -y webcake-storefront-mcp login
+```
+
+Lệnh này mở trang kết nối của builder; bấm đồng ý là token + session được lưu vào db cấu hình cục bộ và tự nạp.
+
+### Cấu hình thủ công (`.mcp.json`)
+
+```json
+{
+  "mcpServers": {
+    "webcake-storefront": {
+      "command": "npx",
+      "args": ["-y", "webcake-storefront-mcp"],
+      "env": {
+        "WEBCAKE_TOKEN": "<token-của-bạn>",
+        "WEBCAKE_SESSION_ID": "<session-id-của-bạn>",
+        "WEBCAKE_SITE_ID": "<site-id-của-bạn>"
+      }
+    }
+  }
+}
+```
+
+### Chạy remote (Streamable-HTTP)
+
+```bash
+npx -y webcake-storefront-mcp serve --port 8787
+# Endpoint MCP: http://localhost:8787/mcp?jwt=<token>&site_id=<id>
 ```
 
 ## Biến môi trường
 
-| Biến | Bắt buộc | Mô tả |
-|------|----------|-------|
-| `WEBCAKE_API_URL` | Có | URL gốc của WebCake API (vd: `https://api.storecake.io`) |
-| `WEBCAKE_TOKEN` | Không* | JWT Bearer token (xác thực dashboard) |
-| `WEBCAKE_SESSION_ID` | Không* | Session ID (`x-session-id` header) |
-| `WEBCAKE_SITE_ID` | Không* | ID của site cần thao tác |
-| `WEBCAKE_KNOWLEDGE_DIR` | Không | Đường dẫn thư mục knowledge local (mặc định: `./knowledge`) |
-| `WEBCAKE_KNOWLEDGE_REPO` | Không | GitHub repo chứa knowledge (vd: `owner/repo` hoặc URL đầy đủ) |
-| `WEBCAKE_KNOWLEDGE_TOKEN` | Không | GitHub token cho repo private |
+Bắt buộc: `WEBCAKE_TOKEN` (JWT Bearer), `WEBCAKE_SESSION_ID` (gửi qua header `x-session-id`), `WEBCAKE_SITE_ID`.
 
-> \* Token, session_id, site_id có thể set sau qua tool `update_auth` và `switch_site` trong chat. Khi set qua tool, giá trị được **lưu vào SQLite** (`webcake-mcp.db`) và tự khôi phục ở session tiếp theo.
+Endpoint lấy theo môi trường có sẵn, không cần tự đặt URL:
 
-> CMS admin token và CMS API key được tự động lấy qua API khi cần (không cần cấu hình thủ công).
+| `WEBCAKE_ENV` / `--env` | api | app (login) | preview |
+|---|---|---|---|
+| `local` | `http://localhost:24679` | `http://localhost:5173` | `demo.localhost:24679/<siteId>` |
+| `staging` | `https://api.staging.storecake.io` | `https://staging.webcake.io` | `staging2.webcake.me/<siteId>` |
+| `prod` (mặc định) | `https://api.storefront.webcake.io` | `https://webcake.io` | `<site_slug>.webcake.me` |
+
+Có thể override bằng `WEBCAKE_API_URL` / `WEBCAKE_APP_URL`. Tuỳ chọn, cấu hình phía server (vd trên VPS chạy `serve`): `PEXELS_API_KEY` (search_images), `MONGO_URI` / `MONGO_DB` / `MONGO_COLLECTION` (cache alt ảnh).
+
+Token / session / site cũng có thể đặt sau ngay trong chat bằng tool `update_auth` và `switch_site` — giá trị lưu vào SQLite tại `~/.webcake-storefront-mcp/` và tự khôi phục lần sau. Admin token + CMS API key (cho các tool HTTP function) được tự động lấy.
 
 ### Cách lấy `WEBCAKE_TOKEN` và `WEBCAKE_SESSION_ID`
 
-1. Mở [WebCake Dashboard](https://storecake.io) và đăng nhập
-2. Mở DevTools (`F12` hoặc `Cmd + Option + I`)
-3. Vào tab **Network** > click bất kỳ trang nào
-4. Tìm một API request (vd: `@me`, `site/all`...)
-5. Trong **Request Headers**:
-   - `Authorization: Bearer ...` → copy phần sau "Bearer " → đây là `WEBCAKE_TOKEN`
-   - `x-session-id: ...` → copy giá trị → đây là `WEBCAKE_SESSION_ID`
-6. `WEBCAKE_SITE_ID` nằm trong URL dashboard: `https://storecake.io/site/{site_id}/...` hoặc dùng tool `list_my_sites` để liệt kê
-
----
-
-## Cấu hình theo từng IDE / AI Tool
-
-> Thay `/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js` bằng đường dẫn thực tế nơi bạn đã clone repo.
-> Ví dụ: `/Users/username/webcake-storefront-mcp/index.js`
-
-### 1. Claude Desktop
-
-Mở Settings > Developer > Edit Config, hoặc sửa file trực tiếp:
-
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **Linux**: `~/.config/Claude/claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "webcake-cms": {
-      "command": "node",
-      "args": ["/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js"],
-      "env": {
-        "WEBCAKE_API_URL": "https://api.storecake.io",
-        "WEBCAKE_TOKEN": "<token-của-bạn>",
-        "WEBCAKE_SESSION_ID": "<session-id-của-bạn>",
-        "WEBCAKE_SITE_ID": "<site-id-của-bạn>"
-      }
-    }
-  }
-}
-```
-
-Restart Claude Desktop. Các MCP tools sẽ xuất hiện trong chat input (icon búa).
-
----
-
-### 2. Claude Code (CLI)
-
-Chạy lệnh sau trong terminal:
-
-```bash
-claude mcp add webcake-cms \
-  -e WEBCAKE_API_URL=https://api.storecake.io \
-  -e WEBCAKE_TOKEN=<token-của-bạn> \
-  -e WEBCAKE_SESSION_ID=<session-id-của-bạn> \
-  -e WEBCAKE_SITE_ID=<site-id-của-bạn> \
-  -- node /đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js
-```
-
-Hoặc tạo file `.claude.json` tại thư mục project:
-
-```json
-{
-  "mcpServers": {
-    "webcake-cms": {
-      "command": "node",
-      "args": ["/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js"],
-      "env": {
-        "WEBCAKE_API_URL": "https://api.storecake.io",
-        "WEBCAKE_TOKEN": "<token-của-bạn>",
-        "WEBCAKE_SESSION_ID": "<session-id-của-bạn>",
-        "WEBCAKE_SITE_ID": "<site-id-của-bạn>"
-      }
-    }
-  }
-}
-```
-
-Hoặc cấu hình global tại `~/.claude.json` (áp dụng cho mọi project).
-
-Kiểm tra đã cài thành công:
-```bash
-claude mcp list
-```
-
----
-
-### 3. Cursor
-
-**Bước 1:** Mở Cursor Settings: `Cmd + ,` (Mac) hoặc `Ctrl + ,` (Windows/Linux)
-
-**Bước 2:** Tìm mục **"MCP Servers"** trong sidebar bên trái
-
-**Bước 3:** Click **"Add new MCP Server"**
-
-**Bước 4:** Tạo file `.cursor/mcp.json` tại thư mục gốc project với nội dung:
-
-```json
-{
-  "mcpServers": {
-    "webcake-cms": {
-      "command": "node",
-      "args": ["/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js"],
-      "env": {
-        "WEBCAKE_API_URL": "https://api.storecake.io",
-        "WEBCAKE_TOKEN": "<token-của-bạn>",
-        "WEBCAKE_SESSION_ID": "<session-id-của-bạn>",
-        "WEBCAKE_SITE_ID": "<site-id-của-bạn>"
-      }
-    }
-  }
-}
-```
-
-Hoặc cấu hình global tại `~/.cursor/mcp.json`.
-
-**Bước 5:** Restart Cursor. Kiểm tra trong Settings > MCP Servers — sẽ thấy trạng thái **"Connected"** màu xanh.
-
----
-
-### 4. Windsurf
-
-**Bước 1:** Mở Windsurf Settings: `Cmd + ,` (Mac) hoặc `Ctrl + ,` (Windows/Linux)
-
-**Bước 2:** Tìm mục **"Cascade"** > **"MCP Servers"**
-
-**Bước 3:** Click **"Add Server"** > chọn **"Custom"**
-
-**Bước 4:** Tạo file `~/.codeium/windsurf/mcp_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "webcake-cms": {
-      "command": "node",
-      "args": ["/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js"],
-      "env": {
-        "WEBCAKE_API_URL": "https://api.storecake.io",
-        "WEBCAKE_TOKEN": "<token-của-bạn>",
-        "WEBCAKE_SESSION_ID": "<session-id-của-bạn>",
-        "WEBCAKE_SITE_ID": "<site-id-của-bạn>"
-      }
-    }
-  }
-}
-```
-
-**Bước 5:** Restart Windsurf. Trong Cascade chat, gõ `@` sẽ thấy các tools của `webcake-cms`.
-
----
-
-### 5. Augment (VS Code Extension)
-
-**Bước 1:** Cài extension **Augment** từ VS Code Marketplace
-
-**Bước 2:** Mở Command Palette: `Cmd + Shift + P` > tìm **"Augment: Edit MCP Settings"**
-
-**Bước 3:** File settings sẽ mở ra. Thêm cấu hình:
-
-```json
-{
-  "mcpServers": {
-    "webcake-cms": {
-      "command": "node",
-      "args": ["/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js"],
-      "env": {
-        "WEBCAKE_API_URL": "https://api.storecake.io",
-        "WEBCAKE_TOKEN": "<token-của-bạn>",
-        "WEBCAKE_SESSION_ID": "<session-id-của-bạn>",
-        "WEBCAKE_SITE_ID": "<site-id-của-bạn>"
-      }
-    }
-  }
-}
-```
-
-**Bước 4:** Restart VS Code. Trong Augment chat panel sẽ thấy các tools MCP.
-
----
-
-### 6. Codex (OpenAI CLI)
-
-Thêm vào file `~/.codex/config.toml`:
-
-```toml
-[mcp_servers.webcake-cms]
-command = "node"
-args = ["/đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js"]
-env = { "WEBCAKE_API_URL" = "https://api.storecake.io", "WEBCAKE_TOKEN" = "<token-của-bạn>", "WEBCAKE_SESSION_ID" = "<session-id-của-bạn>", "WEBCAKE_SITE_ID" = "<site-id-của-bạn>" }
-```
-
-Hoặc dùng CLI:
-```bash
-codex mcp add webcake-cms \
-  --env WEBCAKE_API_URL=https://api.storecake.io \
-  --env WEBCAKE_TOKEN=<token-của-bạn> \
-  --env WEBCAKE_SITE_ID=<site-id-của-bạn> \
-  -- node /đường-dẫn-tuyệt-đối/webcake-storefront-mcp/index.js
-```
-
-Kiểm tra:
-```bash
-codex mcp list
-```
-
----
-
-## Lưu ý quan trọng
-
-### Lấy token và site_id
-1. Đăng nhập dashboard WebCake
-2. Mở DevTools (F12) > tab Network
-3. Tìm bất kỳ API request nào > copy header `Authorization: Bearer <token>`
-4. `site_id` nằm trong URL: `/api/v1/dashboard/site/{site_id}/...`
-
-### Kiểm tra MCP hoạt động
-Sau khi cấu hình, thử hỏi AI agent:
-```
-Liệt kê tất cả CMS files của site
-```
-Nếu trả về danh sách files → MCP đã hoạt động.
+1. Mở trình tạo trang WebCake và đăng nhập.
+2. Mở DevTools (`F12`), vào tab **Network**, bấm một request API bất kỳ.
+3. Trong **Request Headers**: `Authorization: Bearer ...` → `WEBCAKE_TOKEN`; `x-session-id: ...` → `WEBCAKE_SESSION_ID`.
+4. `WEBCAKE_SITE_ID` nằm trong URL builder, hoặc dùng tool `list_my_sites` để liệt kê site.
 
 ---
 
