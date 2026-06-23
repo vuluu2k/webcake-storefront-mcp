@@ -1,0 +1,114 @@
+name: Auto Release
+
+# On every push to main that touches src/ (or manual dispatch): bump the version,
+# build, publish to npm, and cut a GitHub Release — so `npx -y webcake-storefront-mcp`
+# always resolves the latest build. Requires the NPM_ACCESS_TOKEN repo secret.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "package.json"
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        default: "patch"
+        type: choice
+        options: [patch, minor, major]
+
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Don't loop on the release commit this workflow itself pushes.
+    if: "!contains(github.event.head_commit.message, 'chore(release):')"
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Resolve bump type
+        id: bump
+        env:
+          INPUT_BUMP: ${{ github.event.inputs.bump }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          BUMP="$INPUT_BUMP"
+          if [ -z "$BUMP" ]; then
+            case "$COMMIT_MSG" in
+              *"BREAKING CHANGE"*|*"!:"*) BUMP="major" ;;
+              feat*|*"feat:"*|*"feat("*)  BUMP="minor" ;;
+              *)                          BUMP="patch" ;;
+            esac
+          fi
+          echo "type=$BUMP" >> "$GITHUB_OUTPUT"
+
+      - name: Install deps
+        run: npm ci --ignore-scripts
+
+      - name: Build (type-check gate)
+        run: npm run build
+
+      - name: Bump version (skip versions already on npm / existing tags)
+        id: version
+        run: |
+          PKG=$(node -p "require('./package.json').name")
+          git fetch --tags --force origin >/dev/null 2>&1 || true
+          NEW_VERSION=$(npm version ${{ steps.bump.outputs.type }} --no-git-tag-version)
+          NEW_VERSION="${NEW_VERSION#v}"
+          while npm view "${PKG}@${NEW_VERSION}" version >/dev/null 2>&1 \
+            || git ls-remote --tags origin "refs/tags/v${NEW_VERSION}" | grep -q "refs/tags/v${NEW_VERSION}$"; do
+            echo "v${NEW_VERSION} is taken — bumping patch."
+            NEW_VERSION=$(npm version patch --no-git-tag-version)
+            NEW_VERSION="${NEW_VERSION#v}"
+          done
+          echo "new=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Release notes from git log
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          RANGE="${PREV_TAG:+${PREV_TAG}..HEAD}"
+          git log ${RANGE:-HEAD} --no-merges --pretty=format:'- %s' \
+            | grep -vE '^- chore\(release\):' > RELEASE_NOTES.md || true
+          [ -s RELEASE_NOTES.md ] || echo "- Maintenance release." > RELEASE_NOTES.md
+
+      - name: Commit, tag and push
+        run: |
+          git add package.json package-lock.json
+          git commit -m "chore(release): ${{ steps.version.outputs.tag }}"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
+          git push origin HEAD:main
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      - name: Publish to npm
+        run: npm publish --access public --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" \
+            --title "${{ steps.version.outputs.tag }}" \
+            --notes-file RELEASE_NOTES.md
