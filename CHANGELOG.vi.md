@@ -5,6 +5,12 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.7.0] - 2026-06-23
+
+### Changed
+- Trang web guide (phục vụ qua lệnh `serve`) được viết lại để làm nổi bật việc xây dựng toàn bộ cửa hàng: hero, meta description, thư viện "Bạn dựng được gì", ví dụ prompt và mô tả nhóm công cụ sản phẩm giờ đây nhấn mạnh việc tạo sản phẩm, danh mục, trang bán hàng và bài viết có ảnh — thay thế nội dung trước đây chỉ tập trung vào tạo một trang đơn lẻ.
+- Giao diện nền của web guide được chuyển sang bảng màu teal/neutral (thay thế tím/lavender), dark mode được làm đậm hơn, body nay dùng gradient dọc tinh tế, bổ sung lớp lưới aurora teal, texture lưới mờ và blob hoạt hình thứ ba để tăng chiều sâu thị giác.
+
 ## [1.6.0] - 2026-06-23
 
 ### Added
