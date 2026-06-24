@@ -5,6 +5,20 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.15.0] - 2026-06-24
+
+### Added
+- Tool mới `get_global_section` trả về cây phần tử dạng compact của một global section (Header/Footer/block), liệt kê id, type, text, class, binding và event của từng phần tử với số token ít hơn 3–5 lần so với JSON thô; truyền `raw=true` để lấy toàn bộ cây qua large-result cache.
+- Tool mới `search_global_section_elements` tìm kiếm và lọc các phần tử bên trong một global section theo type, id substring, custom class, nội dung text, hoặc sự hiện diện của binding/event, mà không cần tải toàn bộ cây phần tử.
+- Tool mới `get_global_section_element` trả về toàn bộ chi tiết (style, config, specials, events, bindings, responsive bp1..bp4, children ids) của một phần tử đơn lẻ bên trong một global section.
+- Tool mới `create_global_section` tạo một global section tái sử dụng (Header, Footer hoặc block dùng chung) thông qua pipeline `/save` của builder và đồng thời nhúng cùng một section node vào page source của các trang để nó render xuyên suốt toàn site; hỗ trợ `dry_run=true` (mặc định) để xem trước các trang sẽ thay đổi trước khi thực hiện.
+- Tool mới `delete_global_section` xóa bản ghi global section và loại bỏ node của nó khỏi page source của mọi trang trong một lần lưu duy nhất; hỗ trợ `dry_run=true` (mặc định) để xem trước các trang bị ảnh hưởng.
+- Tool mới `read_cached_result` đọc từng phần (phân trang) của một kết quả lớn được lưu trong session cache bởi một tool khác, cho phép truy cập tuần tự các payload quá lớn để trả về trong một lần gọi tool.
+- Tool mới `list_cached_results` liệt kê tất cả kết quả lớn hiện đang được lưu trong session cache, hiển thị cache_id, nhãn, kích thước tính bằng ký tự và thời gian tồn tại.
+
+### Changed
+- `list_global_sections` nay trả về bản tóm tắt gọn nhẹ (id, slot, số phần tử, histogram type, custom class, ~1 KB) thay vì toàn bộ cây JSON nhiều megabyte, tránh tràn token trên các site thực; dùng `get_global_section` để xem chi tiết cây phần tử của một section cụ thể.
+
 ## [1.14.0] - 2026-06-24
 
 ### Added

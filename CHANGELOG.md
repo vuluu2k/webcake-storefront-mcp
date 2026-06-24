@@ -5,6 +5,20 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.15.0] - 2026-06-24
+
+### Added
+- New `get_global_section` tool returns a compact tree representation of a single global section (Header/Footer/block), listing each element's id, type, text, class, bindings, and events in 3–5x fewer tokens than raw JSON; pass `raw=true` to retrieve the full tree via the large-result cache instead.
+- New `search_global_section_elements` tool searches and filters elements within a global section by type, id substring, custom class, text content, or presence of bindings/events, without loading the full element tree.
+- New `get_global_section_element` tool returns full detail (style, config, specials, events, bindings, responsive bp1..bp4, children ids) for a single element inside a global section.
+- New `create_global_section` tool creates a reusable global section (Header, Footer, or shared block) via the builder's `/save` pipeline and atomically embeds the same section node into page sources so it renders across the site; supports `dry_run=true` (default) to preview which pages would change before committing.
+- New `delete_global_section` tool deletes a global section record and removes its node from every page source in a single atomic save; supports `dry_run=true` (default) to preview affected pages.
+- New `read_cached_result` tool reads a paginated slice of a large result stored in the session cache by another tool, enabling chunk-by-chunk access to payloads that are too large to fit in a single tool result.
+- New `list_cached_results` tool lists all large results currently held in the session cache, showing cache_id, label, size in characters, and age.
+
+### Changed
+- `list_global_sections` now returns a slim summary (id, slot, element count, type histogram, custom classes, ~1 KB) instead of the raw multi-megabyte tree, preventing token overflow on real sites; use `get_global_section` to drill into a specific section's element tree.
+
 ## [1.14.0] - 2026-06-24
 
 ### Added
