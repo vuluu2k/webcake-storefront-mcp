@@ -5,6 +5,18 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.14.0] - 2026-06-24
+
+### Added
+- Tool mới `list_events` trả về danh mục sự kiện tương tác đầy đủ: 9 trigger (click, hover, submit, success, ...) và 38 action (open_page, scroll_to, toggle, open_popup, add_to_cart, buy_now, phone_call, open_link, ...) kèm theo các trường bổ sung chính xác mà mỗi action yêu cầu; truyền sự kiện vào `new_element` hoặc `new_section` qua `opts.events`.
+- Tool mới `list_bindings` trả về danh mục data binding đầy đủ: 14 dataset (product, cart_item, order, order_item, post, category, customer, customer_address, ...) với tên trường `target` chính xác, loại trang `type` mà mỗi dataset yêu cầu, và cách các phần tử con trong repeater (grid-product, cart-items, post-list, ...) tự động resolve binding theo từng item; truyền binding vào `new_element` qua `opts.bindings`.
+
+### Changed
+- `new_element` và `new_section` nay tự động gắn và chuẩn hóa `opts.bindings` và `opts.events` lên node được trả về, tự động sinh giá trị `id` hợp lệ và suy ra `name`/`eventName` — người dùng không còn cần tự đặt id bằng tay.
+- `validate_page` nay kiểm tra mảng `events` và `bindings` của từng node dựa trên danh mục chuẩn, báo cảnh báo khi gặp trigger không xác định, action không xác định, thiếu các trường bắt buộc của action, target sự kiện nội bộ bị dangling (`toggle_id`, `scroll_to_id`, `change_tab_id`, `target_id`) và binding target không được nhận ra.
+- `get_build_guide` nay bổ sung mục Events đầy đủ với tài liệu về trigger, các action phổ biến cùng trường bắt buộc và ví dụ code dùng `add_to_cart`; phần bindings được mở rộng với các quy tắc ngữ cảnh repeater (cách `grid-product → product`, `cart-items → cart_item` và `post-list → post` resolve dữ liệu theo từng item).
+- `get_element` nay bổ sung gợi ý gọi `list_events` và `list_bindings` cùng với các gợi ý layout hiện có.
+
 ## [1.13.0] - 2026-06-24
 
 ### Added

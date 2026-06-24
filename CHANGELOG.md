@@ -5,6 +5,18 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.14.0] - 2026-06-24
+
+### Added
+- New `list_events` tool returns the authoritative interaction-events catalog: 9 triggers (click, hover, submit, success, ...) and 38 actions (open_page, scroll_to, toggle, open_popup, add_to_cart, buy_now, phone_call, open_link, ...) with the exact extra fields each action requires; pass events to `new_element` or `new_section` via `opts.events`.
+- New `list_bindings` tool returns the authoritative data-binding catalog: 14 datasets (product, cart_item, order, order_item, post, category, customer, customer_address, ...) with their exact `target` field names, the page `type` each dataset requires, and how repeater children (grid-product, cart-items, post-list, ...) resolve per-item bindings automatically; pass bindings to `new_element` via `opts.bindings`.
+
+### Changed
+- `new_element` and `new_section` now automatically attach and normalize `opts.bindings` and `opts.events` on the returned node, auto-minting valid `id` values and inferring `name`/`eventName` — callers no longer need to set ids by hand.
+- `validate_page` now validates every node's `events` and `bindings` arrays against the authoritative catalogs, reporting warnings for unknown triggers, unknown actions, missing required action fields, dangling in-page event targets (`toggle_id`, `scroll_to_id`, `change_tab_id`, `target_id`), and unrecognized binding targets.
+- `get_build_guide` now includes a full Events section documenting triggers, the most-used actions with their required fields, and a code example using `add_to_cart`; the bindings section is expanded with repeater-context rules (how `grid-product → product`, `cart-items → cart_item`, and `post-list → post` per-item resolution works).
+- `get_element` now surfaces hints to call `list_events` and `list_bindings` alongside its existing layout hints.
+
 ## [1.13.0] - 2026-06-24
 
 ### Added
