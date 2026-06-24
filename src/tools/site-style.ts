@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { setConfig } from "../db.js";
+import { resolvePreviewUrl } from "../config.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -13,6 +15,7 @@ interface ThemeEntry {
   preview_url: string;
   thumbnail: string;
   categories: string[];
+  site_id?: string; // the template's source site — duplicate it to create a site from this template
 }
 
 interface ThemeCatalogCache {
@@ -69,6 +72,7 @@ async function getThemeCatalog(force = false): Promise<Map<string, ThemeEntry>> 
         preview_url: t.preview_url || "",
         thumbnail: t.thumbnail || "",
         categories: (t.categories || []).map((c: any) => c.name).filter(Boolean),
+        site_id: (t.site && t.site.id) || undefined,
       });
     }
     if (themes.length < limit) break;
@@ -187,6 +191,7 @@ export function registerSiteStyleTools(server: McpServer, api: WebcakeCmsApi, ha
           const desc = parseThemeDescription(te && te.description);
           return {
             theme_id: themeId,
+            template_site_id: info.site_id || null, // pass to create_site_from_template
             score: typeof score === "number" ? Number(score.toFixed(4)) : null,
             name: info.name || null,
             preview_url: info.preview_url || null,
@@ -197,7 +202,86 @@ export function registerSiteStyleTools(server: McpServer, api: WebcakeCmsApi, ha
           };
         });
 
-        return { query: q, count: matches.length, matches };
+        return {
+          query: q,
+          count: matches.length,
+          matches,
+          hint: "Pick one and call create_site_from_template with its theme_id (or template_site_id) to clone it into a new editable site.",
+        };
+      })
+  );
+
+  server.tool(
+    "create_site_from_template",
+    `Create a NEW site by CLONING a marketplace template (all its pages + settings), so the
+customer starts from a finished design and then edits it. Resolve a template with
+semantic_search_themes / list_template_themes first, then pass its theme_id (or
+template_site_id). After cloning, switch to the new site and edit layout/content with
+update_page_element(s), colours/typography with the site-style tools, and republish.`,
+    {
+      name: z.string().describe("Name for the new site"),
+      theme_id: z.string().optional().describe("Marketplace theme id (from semantic_search_themes / list_template_themes)"),
+      template_site_id: z.string().optional().describe("The template's source site id (alternative to theme_id; semantic_search_themes returns it as template_site_id)"),
+      slug: z.string().optional().describe("URL-safe slug for the new site (auto-generated if omitted)"),
+      switch_to: z.boolean().default(true).describe("Switch the session to the new site after cloning (saved for next session)"),
+    },
+    ({ name, theme_id, template_site_id, slug, switch_to }) =>
+      handle(async () => {
+        // Resolve the template's source site id.
+        let sourceSiteId = template_site_id;
+        if (!sourceSiteId && theme_id) {
+          const catalog = await getThemeCatalog().catch(() => new Map<string, ThemeEntry>());
+          sourceSiteId = catalog.get(theme_id)?.site_id;
+        }
+        if (!sourceSiteId) {
+          throw new Error("Could not resolve the template's source site. Pass template_site_id, or a theme_id that exists in the marketplace (list_template_themes / semantic_search_themes).");
+        }
+
+        // The duplicate endpoint returns success-only (no id), so snapshot the site list
+        // first, clone, then resolve the new site by diff.
+        const listIds = async () => {
+          const r: any = await api.listMySites({ page: 1, limit: 100 }).catch(() => null);
+          const arr = r?.data?.sites || r?.data || [];
+          return Array.isArray(arr) ? arr : [];
+        };
+        const before = await listIds();
+        const beforeIds = new Set(before.map((s: any) => s.id));
+
+        try {
+          await api.duplicateSite({ site_id: sourceSiteId, name, ...(slug ? { slug } : {}) });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          if (msg.includes("403")) throw new Error("Cannot create site: account site quota reached (free plan allows up to 4 sites).");
+          throw new Error(`Cloning the template failed: ${msg}`);
+        }
+
+        const after = await listIds();
+        const fresh = after.filter((s: any) => !beforeIds.has(s.id));
+        const newSite = fresh.find((s: any) => s.name === name) || fresh[0];
+        const newId = newSite?.id;
+        if (!newId) throw new Error("Template was cloned but the new site could not be located in your site list — check list_my_sites.");
+
+        let switched = false;
+        let previewUrl: string | null = null;
+        const previousSiteId = api.siteId;
+        if (switch_to) {
+          api.switchSite(newId);
+          setConfig("site_id", newId);
+          setConfig("site_name", newSite?.name || name);
+          switched = true;
+          previewUrl = await resolvePreviewUrl(api).catch(() => null);
+        }
+
+        return {
+          success: true,
+          site_id: newId,
+          name: newSite?.name || name,
+          from_template: { theme_id: theme_id || null, source_site_id: sourceSiteId },
+          switched,
+          ...(switched ? { current_site_id: api.siteId, previous_site_id: previousSiteId } : {}),
+          preview_url: previewUrl,
+          next_step: "Site cloned with all template pages. Edit content with search_page_elements + update_page_element(s), change colours/fonts via list_themes/site-style, then publish_site.",
+        };
       })
   );
 }
