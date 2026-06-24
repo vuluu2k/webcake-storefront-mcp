@@ -5,6 +5,15 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.10.0] - 2026-06-24
+
+### Added
+- Tool mới `scaffold_store_pages` tạo các trang storefront tiêu chuẩn (Category, Product, Cart, Checkout, Thank-you) để các liên kết điều hướng không bị 404; tuỳ chọn `include_member` và `include_blog` bổ sung thêm các trang login/register/profile và blog/post; các trang đã tồn tại sẽ bị bỏ qua; `dry_run=true` (mặc định) xem trước những gì sẽ được tạo mà không thực hiện thay đổi nào.
+
+### Changed
+- Các section được tạo bởi `new_section` nay nhận padding dọc mặc định (56 px trên và dưới) và các phần tử con xếp chồng có `rowGap` mặc định 16 px để bố cục thoáng hơn thay vì các phần tử bị dồn sát nhau.
+- `get_build_guide` nay bổ sung một chương trình hướng dẫn "Make it look DESIGNED" bao gồm: thêm padding và màu nền xen kẽ cho section, nhịp điệu khoảng cách, phân cấp typography, yêu cầu bắt buộc đặt màu cho button (`background` và `color` phải được khai báo rõ ràng), bố cục hero với hình nền, các config key cho card product-grid (`cardBorderRadius`, `cardBoxShadow`, `productNameColor`, `productPriceColor`) và cách dùng màu accent nhất quán qua biến theme `var(--color_NN)`.
+
 ## [1.9.0] - 2026-06-24
 
 ### Added

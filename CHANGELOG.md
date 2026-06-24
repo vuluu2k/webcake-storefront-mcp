@@ -5,6 +5,15 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.10.0] - 2026-06-24
+
+### Added
+- New `scaffold_store_pages` tool creates the standard storefront pages (Category, Product, Cart, Checkout, Thank-you) so navigation links resolve instead of returning 404; optional `include_member` and `include_blog` flags add login/register/profile and blog/post pages; pages that already exist are skipped; `dry_run=true` (default) previews what would be created without making any changes.
+
+### Changed
+- Sections built by `new_section` now receive default vertical padding (56 px top and bottom) and stacked children get a 16 px `rowGap` so layouts breathe instead of cramming elements edge-to-edge.
+- `get_build_guide` now includes a "Make it look DESIGNED" playbook covering section padding and background variety, spacing rhythm, typography hierarchy, required button colour styling (`background` and `color` must be set explicitly), hero-with-background-image layout, product-grid card config keys (`cardBorderRadius`, `cardBoxShadow`, `productNameColor`, `productPriceColor`), and brand accent colour usage via `var(--color_NN)` theme variables.
+
 ## [1.9.0] - 2026-06-24
 
 ### Added
