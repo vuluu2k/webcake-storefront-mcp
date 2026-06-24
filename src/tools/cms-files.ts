@@ -321,14 +321,15 @@ Example: "get_Products" → function_name="Products", method="GET"`,
       is_public: z.boolean().default(false).describe("Mark as public version"),
     },
     ({ cms_file_id, content, is_public }) =>
-      handle(() => api.saveFileVersion({ cms_file_id, content, is_public }))
+      // Backend reads `file_id` (it stores it as cms_file_id); a `cms_file_id` key alone is ignored.
+      handle(() => api.saveFileVersion({ file_id: cms_file_id, content, is_public }))
   );
 
   server.tool(
     "get_file_versions",
-    "View version history of a CMS file",
+    "View version history of a CMS file. Each version includes its saved content — to restore, pass that content back to update_http_function (the http_function file) or update_cms_file.",
     { cms_file_id: z.string().describe("CMS file ID") },
-    ({ cms_file_id }) => handle(() => api.getFileVersions({ cms_file_id }))
+    ({ cms_file_id }) => handle(() => api.getFileVersions({ file_id: cms_file_id }))
   );
 
   server.tool(
