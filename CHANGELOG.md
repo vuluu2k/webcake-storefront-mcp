@@ -5,6 +5,12 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.11.0] - 2026-06-24
+
+### Added
+- New `create_site_from_template` tool clones a marketplace template (all its pages, page-sources, and settings) into a new account-owned site, switches to it automatically, and returns a preview URL; accepts `theme_id` (from `semantic_search_themes` / `list_template_themes`) or `template_site_id` directly, with an optional `slug` and a `switch_to` flag (default `true`).
+- `semantic_search_themes` and `list_template_themes` results now include a `template_site_id` field exposing the template's source site id, and the response now includes a top-level `hint` directing agents to call `create_site_from_template` after picking a theme.
+
 ## [1.10.0] - 2026-06-24
 
 ### Added

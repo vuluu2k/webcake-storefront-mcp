@@ -5,6 +5,12 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.11.0] - 2026-06-24
+
+### Added
+- Tool mới `create_site_from_template` nhân bản một template marketplace (toàn bộ trang, page-source và cài đặt) thành một site mới thuộc tài khoản hiện tại, tự động chuyển sang site đó và trả về preview URL; nhận `theme_id` (từ `semantic_search_themes` / `list_template_themes`) hoặc `template_site_id` trực tiếp, cùng `slug` tùy chọn và cờ `switch_to` (mặc định `true`).
+- Kết quả của `semantic_search_themes` và `list_template_themes` nay bổ sung trường `template_site_id` chứa id site nguồn của template, và response nay có thêm trường `hint` cấp cao hướng dẫn agent gọi `create_site_from_template` sau khi chọn được theme.
+
 ## [1.10.0] - 2026-06-24
 
 ### Added
