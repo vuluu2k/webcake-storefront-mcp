@@ -65,7 +65,9 @@ key — only bp1..bp4.)
 
 ## Content & data
 - Text: \`specials.text\` (HTML allowed), \`specials.tag\` ("h1".."p").
-- Image: \`runtime.config.src\` (URL). Use search_images / upload before referencing.
+- Image: \`runtime.config.src\` (URL). The URL MUST be a WebCake CDN url — the storefront
+  whitelists image domains, so external URLs (Pexels, random sites) won't render. Get CDN
+  urls from search_images (uploads by default → use its cdn_url) or upload_images.
 - Form: wrap inputs in a \`form\`; set \`form.specials.type\`
   (form_order | form_login | form_signup | form_discount | order_tracking). Each input
   needs \`specials.field_name\`.

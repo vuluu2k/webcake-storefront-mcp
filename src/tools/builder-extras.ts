@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
 import { resolvePreviewUrl } from "../config.js";
+import { getCachedUpload, setCachedUpload } from "../persistence/imageCache.js";
 import { parse as parseHtml } from "node-html-parser";
 import { stat, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -57,6 +58,31 @@ async function toAllowedImage(buf: Buffer, contentType: string) {
   return { buf: out, contentType: "image/jpeg" };
 }
 
+/** Re-host one external image (http(s) URL or data: URI) on the WebCake CDN, with a
+ *  per-site cache so the same source is never uploaded twice. Returns the hosted URL.
+ *  The storefront only renders whitelisted (WebCake CDN) image domains, so every image
+ *  used on a page/product MUST go through this — external URLs (Pexels, etc.) won't show. */
+async function cdnUpload(api: WebcakeCmsApi, source: string): Promise<string> {
+  const cached = await getCachedUpload(api.siteId, source);
+  if (cached) return cached;
+  let buf: Buffer, contentType: string;
+  if (source.startsWith("data:")) {
+    const m = source.match(/^data:([^;]+);base64,(.*)$/s);
+    if (!m) throw new Error("Malformed data URI.");
+    contentType = m[1];
+    buf = Buffer.from(m[2], "base64");
+  } else {
+    ({ buf, contentType } = await fetchBuffer(source));
+  }
+  const norm = await toAllowedImage(buf, contentType);
+  const dataUri = `data:${norm.contentType};base64,${norm.buf.toString("base64")}`;
+  const res: any = await api.uploadImageBase64({ base64: dataUri, content_type: norm.contentType });
+  const hosted = (res && res.data) || (res && res.url) || null;
+  if (!hosted) throw new Error("Upload returned no URL.");
+  await setCachedUpload(api.siteId, source, hosted);
+  return hosted;
+}
+
 export function registerBuilderExtraTools(
   server: McpServer,
   api: WebcakeCmsApi,
@@ -66,14 +92,21 @@ export function registerBuilderExtraTools(
   // ── Stock images (Pexels) ──────────────────────────────────────────────────
   server.tool(
     "search_images",
-    `Search stock photos (Pexels) to use on a page. Returns hosted image URLs you can put straight into an image element's runtime.config.src.
+    `Search stock photos (Pexels) for a page/product. IMPORTANT: the storefront only renders
+images served from the WebCake CDN (image domains are whitelisted) — raw Pexels URLs will
+NOT display. By default this re-hosts each result on the WebCake CDN and returns a ready-to-use
+cdn_url (cached, so repeats are free). Use cdn_url for image src / product images.
 Requires the PEXELS_API_KEY environment variable.`,
     {
       query: z.string().describe("Subject to search, e.g. 'coffee shop interior'"),
       per_page: z.number().min(1).max(30).default(6).describe("How many results (default 6)"),
       orientation: z.enum(["landscape", "portrait", "square"]).optional().describe("Preferred orientation"),
+      upload: z
+        .boolean()
+        .default(true)
+        .describe("Re-host each result on the WebCake CDN and return cdn_url (default true — required for the image to show). Set false to only browse Pexels URLs."),
     },
-    ({ query, per_page, orientation }) =>
+    ({ query, per_page, orientation, upload }) =>
       handle(async () => {
         const key = process.env.PEXELS_API_KEY;
         if (!key) return { error: "PEXELS_API_KEY env var is not set. Add it to use stock image search." };
@@ -86,7 +119,7 @@ Requires the PEXELS_API_KEY environment variable.`,
         const res = await fetch(url, { headers: { Authorization: key } });
         if (!res.ok) return { error: `Pexels error ${res.status}` };
         const json: any = await res.json();
-        const photos = (json.photos || []).map((p: any) => ({
+        let photos = (json.photos || []).map((p: any) => ({
           url: p.src && (p.src.large || p.src.original),
           thumbnail: p.src && p.src.medium,
           width: p.width,
@@ -95,14 +128,34 @@ Requires the PEXELS_API_KEY environment variable.`,
           credit: p.photographer,
           source: p.url,
         }));
-        return { query, total_results: json.total_results, photos };
+
+        if (upload) {
+          photos = await Promise.all(
+            photos.map(async (ph: any) => {
+              try {
+                return { ...ph, cdn_url: await cdnUpload(api, ph.url) };
+              } catch (e: any) {
+                return { ...ph, cdn_url: null, upload_error: e?.message ?? String(e) };
+              }
+            }),
+          );
+        }
+        return {
+          query,
+          total_results: json.total_results,
+          uploaded_to_cdn: upload,
+          note: upload
+            ? "Use each photo's cdn_url (WebCake-hosted) for image src / product images — NOT url (Pexels, not whitelisted)."
+            : "These are Pexels URLs and will NOT render on the storefront. Run upload_images (or upload:true) to re-host them on the CDN first.",
+          photos,
+        };
       })
   );
 
   // ── Upload images to the site CDN ───────────────────────────────────────────
   server.tool(
     "upload_images",
-    `Convert external image URLs, data: URIs, or LOCAL FILE PATHS into site-hosted CDN URLs by reading/downloading each image and re-uploading it to the WebCake backend. Use this whenever the user supplies their OWN images (their URLs or files from their machine), or a page is built from a reference HTML/URL. The returned hosted URLs go straight into an image element's specials.src / runtime.config.src — same as search_images results. Stock photos from search_images are already hosted and don't need uploading.
+    `Convert external image URLs, data: URIs, or LOCAL FILE PATHS into site-hosted CDN URLs by reading/downloading each image and re-uploading it to the WebCake backend. Use this whenever the user supplies their OWN images (their URLs or files from their machine), or a page is built from a reference HTML/URL. The returned CDN URLs go straight into an image element's specials.src / runtime.config.src, or a product/category image. This is REQUIRED for any external image (incl. Pexels search results) because the storefront only renders whitelisted WebCake-CDN image domains. Results are cached per site, so re-uploading the same source is free.
 Processes up to 20 entries per call in parallel; non jpeg/png/webp inputs are converted to JPEG. UPLOADS BY DEFAULT (dry_run defaults to FALSE — this touches no account data): returns an "images" map (original source → hosted URL). Pass dry_run:true to only preview the entries that WOULD be processed (local paths report whether the file exists + its size) without any network/filesystem upload. Local file paths are only permitted when the MCP server runs locally (stdio); on the remote HTTP transport they are rejected per-entry.`,
     {
       urls: z
@@ -147,25 +200,23 @@ Processes up to 20 entries per call in parallel; non jpeg/png/webp inputs are co
         await Promise.all(
           deduped.map(async (entry) => {
             try {
-              let buf: Buffer, contentType: string;
-              if (entry.startsWith("data:")) {
-                const m = entry.match(/^data:([^;]+);base64,(.*)$/s);
-                if (!m) throw new Error("Malformed data URI.");
-                contentType = m[1];
-                buf = Buffer.from(m[2], "base64");
-              } else if (isLocalPath(entry)) {
+              if (isLocalPath(entry)) {
                 if (!localAllowed)
                   throw new Error("Local file paths are only supported when the server runs locally (stdio). Send a public URL or data: URI instead.");
-                ({ buf, contentType } = await readLocalImage(entry));
+                const cached = await getCachedUpload(api.siteId, entry);
+                if (cached) { images[entry] = cached; return; }
+                const { buf, contentType } = await readLocalImage(entry);
+                const norm = await toAllowedImage(buf, contentType);
+                const dataUri = `data:${norm.contentType};base64,${norm.buf.toString("base64")}`;
+                const res: any = await api.uploadImageBase64({ base64: dataUri, content_type: norm.contentType });
+                const hosted = (res && res.data) || (res && res.url) || null;
+                if (!hosted) throw new Error("Upload returned no URL.");
+                await setCachedUpload(api.siteId, entry, hosted);
+                images[entry] = hosted;
               } else {
-                ({ buf, contentType } = await fetchBuffer(entry));
+                // http(s) URL or data: URI — cdnUpload handles fetch/convert/upload + cache.
+                images[entry] = await cdnUpload(api, entry);
               }
-              const norm = await toAllowedImage(buf, contentType);
-              const dataUri = `data:${norm.contentType};base64,${norm.buf.toString("base64")}`;
-              const res = await api.uploadImageBase64({ base64: dataUri, content_type: norm.contentType });
-              const hosted = (res && res.data) || (res && res.url) || null;
-              if (!hosted) throw new Error("Upload returned no URL.");
-              images[entry] = hosted;
             } catch (e: any) {
               errors.push({ url: entry, error: e?.message ?? String(e) });
             }

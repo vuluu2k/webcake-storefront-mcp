@@ -51,3 +51,20 @@ export function delConfig(key: string): void {
 export function getAllConfig(): Record<string, string> {
   return { ...config };
 }
+
+// ── Image upload cache (source URL/path → WebCake CDN URL, per site) ──────────
+// Re-hosting the same stock photo / external image twice wastes an upload, so we
+// remember the CDN URL the first time. Keyed by site because CDN URLs are per-site.
+const IMAGE_CACHE_FILE = join(CONFIG_DIR, "image-cache.json");
+const imageCache: Record<string, string> = readJson<Record<string, string>>(IMAGE_CACHE_FILE, {});
+
+export function getCachedUpload(siteId: string, source: string): string | null {
+  const k = `${siteId}::${source}`;
+  return k in imageCache ? imageCache[k] : null;
+}
+
+export function setCachedUpload(siteId: string, source: string, cdnUrl: string): void {
+  if (!siteId || !source || !cdnUrl) return;
+  imageCache[`${siteId}::${source}`] = cdnUrl;
+  writeJson(IMAGE_CACHE_FILE, imageCache);
+}
