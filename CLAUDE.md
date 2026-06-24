@@ -65,11 +65,19 @@ src/                — TypeScript source (strict); compiles to dist/
     catalog.ts      — Auto-built type→factory registry + curated category/summary metadata
     page.ts         — Page skeleton, grid-layout composition (stackChildren/buildSection), re-id, validatePage
     guide.ts        — BUILD_GUIDE: the grid model, breakpoints, forms/data, build workflow
-  tools/            — one register*Tools(server, api, handle) per file (~101 tools total):
+  tools/            — one register*Tools(server, api, handle) per file (~271 tools total):
     cms-files, pages, collections, articles, customers, automation, products, orders,
     site-style, apps, promotions, combos, global-sources, images, context,
     builder (get_build_guide, list_elements, new_section, build_page…), builder-extras
-    (search_images, upload_images, publish_site, ingest_html/ingest_url)
+    (search_images, upload_images, publish_site, ingest_html/ingest_url),
+    reviews, appointment, affiliate, catalog-extras (brands/tags/ribbons/materials…),
+    site-config (domains/SEO/shipping/utms/fonts/settings), marketing (email/contacts/
+    subscribers/employees/insight), multilingual, media (library+pwa), apps-extra
+    (product_design/ppd/course), sale-channels (sitemap/partner-feeds)
+    registry.ts     — tool-group manifest + search gateway. Captures every register*Tools
+                      via a collector, registers only CORE groups natively, exposes the rest
+                      through list_tool_groups / search_tools / invoke_tool (progressive
+                      disclosure so clients don't load all ~271 schemas at once).
 scripts/copy-assets.mjs — post-tsc: chmod +x dist/index.js
 ```
 
@@ -79,7 +87,7 @@ A page's content is `{ sections: [ <node>, ... ] }`. A node is `{ id, type, spec
 
 ### Key Patterns
 
-- **Tool registration**: Each `src/tools/*.ts` file exports a `register*Tools(server, api, handle)` function. `server` is the McpServer instance, `api` is the WebcakeCmsApi client, `handle` wraps async calls with error handling. All are wired in `src/server.ts`.
+- **Tool registration**: Each `src/tools/*.ts` file exports a `register*Tools(server, api, handle)` function. `server` is the McpServer instance, `api` is the WebcakeCmsApi client, `handle` wraps async calls with error handling. They are NOT called directly in `server.ts` anymore — `src/tools/registry.ts` (`installTools`) groups every module, registers only the CORE groups natively, and exposes the rest via the **search gateway** (`search_tools`/`invoke_tool`). Which groups load natively is controlled by `WEBCAKE_TOOLS` (env) or `ServerOptions.tools` / per-request `?tools=` / `x-webcake-tools` (forms: `all` | `core,marketing` | `+marketing,-store`). A new tool module just needs an entry in `registry.ts`'s `MODULES`/`GROUPS`.
 - **Unified error handling**: The `handle()` wrapper in `src/server.ts` catches all errors and returns `{ isError: true }` MCP responses.
 - **TypeScript**: strict mode, ES2022 + Node16 modules. Relative imports must keep the `.js` extension (Node16 resolution) even though sources are `.ts`. Dynamic CMS data is typically typed `any`.
 - **Schema validation**: All tool inputs validated with `zod` schemas passed directly to `server.tool()`.
@@ -92,8 +100,10 @@ Functions follow `export const [method]_[FunctionName]` naming — e.g. `get_Pro
 
 ## Dependencies
 
-Only two runtime dependencies:
+Runtime dependencies:
 - `@modelcontextprotocol/sdk` — MCP protocol implementation
 - `zod` — Input validation schemas
+- `zod-to-json-schema` — converts tool zod shapes to JSON Schema for the `search_tools` gateway
+- `node-html-parser` / `sharp` — HTML ingest + image processing
 
 ES modules (`"type": "module"` in package.json). Node.js required.
