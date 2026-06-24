@@ -58,6 +58,8 @@ interface StackOpts {
   contentColStart?: number;
   /** 1-based grid line where each child ends horizontally (default 2). */
   contentColEnd?: number;
+  /** Vertical gap (px) between stacked children (default 16). */
+  rowGap?: number;
 }
 
 /**
@@ -82,6 +84,7 @@ export function stackChildren(container: any, children: any[], opts: StackOpts =
     grid: `${gridCols}x${children.length || 1}`,
     columns: opts.columns || [{ unit: "fr", value: 1 }],
     rows: rows.length ? rows : [{ unit: "min/max", min: { unit: "px", absValue: 50 }, max: { unit: "max-c" } }],
+    rowGap: opts.rowGap ?? 16, // breathing room between stacked children
     heightUnit: "auto",
   };
 
@@ -118,7 +121,16 @@ export function buildSection(childSpecs: any[] = [], sectionOpts: any = {}) {
     columns: genGridByBp(BREAKPOINTS.bp1[0]).columns,
     contentColStart: SECTION_CONTENT_COL_START,
     contentColEnd: SECTION_CONTENT_COL_END,
+    rowGap: sectionOpts.rowGap,
   });
+  // Give sections vertical breathing room by default (a plain edge-to-edge stack looks
+  // unfinished). Caller can override via sectionOpts.style.
+  section.runtime = section.runtime || {};
+  section.runtime.style = {
+    paddingTop: 56,
+    paddingBottom: 56,
+    ...(sectionOpts.style || {}),
+  };
   return section;
 }
 

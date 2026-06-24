@@ -54,6 +54,28 @@ already in this shape — see the \`responsive\` field on get_page_element/updat
 - Colours: prefer the site THEME variables \`var(--color_00)\`, \`var(--color_01)\`, …
   (the published site themes them); plain hex or rgba() also work.
 
+## Make it look DESIGNED (not plain) — do this, every page
+A bare stack of default elements looks unfinished. Apply real styling:
+- SECTIONS: new_section already gives ~56px top/bottom padding + a centred content column.
+  Add variety: give some sections a background (\`section_opts:{ style:{ background:"var(--color_01)" } }\`
+  or a light tint) and alternate so the page has rhythm. Increase padding (72–96px) for hero/CTA.
+- SPACING: children are stacked with a rowGap; bump it (\`section_opts:{ rowGap: 24 }\`) for airy
+  layouts. Don't cram.
+- TYPOGRAPHY hierarchy: h1 40–56px / fontWeight 700, h2 28–34px / 600, body 16–18px with
+  lineHeight "1.6", muted color for sub-text. Center hero text (textAlign:"center").
+- BUTTONS HAVE NO DEFAULT COLOUR — you MUST style them or they look like plain text:
+  \`{ type:"button", opts:{ text:"Mua ngay", style:{ background:"var(--color_02)", color:"#fff",
+  borderRadius:"8px", fontWeight:"600", height:48 } } }\`.
+- HERO: prefer a section with a background image + an overlay heading/sub/button on top
+  (set section_opts.style.background or a full-width image, then text centered), rather than a
+  small image stacked above text.
+- PRODUCT GRID: style the cards — \`grid-product opts.config\`: { columns:3-4, image_ratio:"1/1",
+  img_object_fit:"cover", gap_column:20, gap_row:28, cardBorderRadius:12, cardBoxShadow:"0 6px 24px rgba(0,0,0,.08)",
+  productNameColor:"var(--color_00)", productPriceColor:"var(--color_02)" }.
+- BRAND COLOURS: reuse var(--color_00) (text), and an accent (var(--color_02)/var(--color_03))
+  for buttons, prices, highlights — consistent accent = looks intentional.
+- IMAGES: must be WebCake-CDN urls (search_images cdn_url / upload_images), else they won't show.
+
 ## Responsive breakpoints
 The four breakpoints (largest → smallest), keyed bp1..bp4, are:
 - \`bp1\` ≥1320px (desktop, the base) · \`bp2\` 993–1319 (laptop) · \`bp3\` 641–992 (tablet) · \`bp4\` 320–640 (mobile).

@@ -245,4 +245,136 @@ Two-step safety: dry_run=true (default) previews; dry_run=false saves.`,
         };
       })
   );
+
+  server.tool(
+    "scaffold_store_pages",
+    `Create the standard STOREFRONT pages a shop needs so navigation works — clicking a
+product/category/cart from any page lands on a real page instead of a 404.
+Creates only the ones MISSING (matched by slug): Category (collections), Product (products),
+Cart (cart), Checkout (checkout), Thank-you (complete) — all type 'store' (enables use_store),
+plus optional member (login/register/profile) and blog (blog/post) pages.
+Run this right after you create products/categories. dry_run=true (default) previews.`,
+    {
+      include_member: z.boolean().default(false).describe("Also create login/register/profile (type member, use_member)"),
+      include_blog: z.boolean().default(false).describe("Also create blog list + post pages (type blog, use_blog)"),
+      dry_run: z.boolean().default(true).describe("Preview (true) or actually create the missing pages (false)"),
+    },
+    ({ include_member, include_blog, dry_run }) =>
+      handle(async () => {
+        const bind = (name: string, field: string) => ({
+          id: "BINDING" + Math.random().toString(36).slice(2, 8),
+          name,
+          target: `${name}::${field}`,
+        });
+        const h1 = (text: string) => ({ type: "text", opts: { text, specials: { tag: "h1" }, style: { fontSize: "32px", fontWeight: "700" } } });
+        const accentBtn = (text: string, type = "button") => ({ type, opts: { text, style: { background: "var(--color_02)", color: "#fff", borderRadius: "8px", height: 48, fontWeight: "600" } } });
+
+        // Each spec: { name, slug, kind, build() -> { sections } }
+        const SPECS: Array<{ name: string; slug: string; kind: "store" | "member" | "blog"; flag: string; build: () => any }> = [
+          { name: "Category Page", slug: "collections", kind: "store", flag: "use_store", build: () => ({ sections: [
+            buildSection([h1("Danh mục sản phẩm"), { type: "grid-product", opts: { config: { columns: 3, image_ratio: "1/1", gap_column: 24, gap_row: 32 } } }]),
+          ] }) },
+          { name: "Product Page", slug: "products", kind: "store", flag: "use_store", build: () => ({ sections: [
+            buildSection([
+              { type: "product-gallery", opts: {} },
+              { type: "text-dataset", opts: { bindings: [bind("product", "product_name")], style: { fontSize: "28px", fontWeight: "700" } } },
+              { type: "text-dataset", opts: { bindings: [bind("product", "product_price")], style: { fontSize: "22px", fontWeight: "700", color: "var(--color_02)" } } },
+              { type: "quantity-input", opts: {} },
+              accentBtn("Thêm vào giỏ"),
+            ]),
+          ] }) },
+          { name: "Cart Page", slug: "cart", kind: "store", flag: "use_store", build: () => ({ sections: [
+            buildSection([h1("Giỏ hàng"), { type: "cart-items", opts: {} }, accentBtn("Tiến hành thanh toán")]),
+          ] }) },
+          { name: "Checkout Page", slug: "checkout", kind: "store", flag: "use_store", build: () => ({ sections: [
+            buildSection([
+              h1("Thanh toán"),
+              { type: "form", opts: { specials: { type: "form_order" } }, children: [
+                { type: "input", opts: { specials: { field_name: "full_name", label: "Họ tên", placeholder: "Họ tên", required: true, show_label: true } } },
+                { type: "phone-number", opts: { specials: { field_name: "phone_number", label: "Số điện thoại", required: true, show_label: true } } },
+                { type: "address", opts: { specials: { field_name: "address", label: "Địa chỉ", show_label: true } } },
+                accentBtn("Đặt hàng", "submit-button"),
+              ] },
+            ]),
+          ] }) },
+          { name: "Thank You Page", slug: "complete", kind: "store", flag: "use_store", build: () => ({ sections: [
+            buildSection([h1("Cảm ơn bạn đã đặt hàng!"), { type: "order-items", opts: {} }]),
+          ] }) },
+        ];
+        if (include_member) {
+          SPECS.push(
+            { name: "Login Page", slug: "login", kind: "member", flag: "use_member", build: () => ({ sections: [
+              buildSection([h1("Đăng nhập"), { type: "form", opts: { specials: { type: "form_login" } }, children: [
+                { type: "identity", opts: { specials: { field_name: "identity", label: "Email / SĐT", required: true, show_label: true } } },
+                { type: "password", opts: { specials: { field_name: "password", label: "Mật khẩu", required: true, show_label: true } } },
+                accentBtn("Đăng nhập", "submit-button"),
+              ] }]),
+            ] }) },
+            { name: "Register Page", slug: "register", kind: "member", flag: "use_member", build: () => ({ sections: [
+              buildSection([h1("Đăng ký"), { type: "form", opts: { specials: { type: "form_signup" } }, children: [
+                { type: "input", opts: { specials: { field_name: "full_name", label: "Họ tên", required: true, show_label: true } } },
+                { type: "email", opts: { specials: { field_name: "email", label: "Email", required: true, show_label: true } } },
+                { type: "password", opts: { specials: { field_name: "password", label: "Mật khẩu", required: true, show_label: true } } },
+                accentBtn("Tạo tài khoản", "submit-button"),
+              ] }]),
+            ] }) },
+            { name: "Profile Page", slug: "profile", kind: "member", flag: "use_member", build: () => ({ sections: [
+              buildSection([h1("Tài khoản"), { type: "order-history", opts: {} }, { type: "customer-address", opts: {} }]),
+            ] }) },
+          );
+        }
+        if (include_blog) {
+          SPECS.push(
+            { name: "Blog", slug: "blog", kind: "blog", flag: "use_blog", build: () => ({ sections: [buildSection([h1("Bài viết"), { type: "post-list", opts: {} }])] }) },
+            { name: "Post", slug: "post", kind: "blog", flag: "use_blog", build: () => ({ sections: [buildSection([{ type: "post-overlay", opts: {} }])] }) },
+          );
+        }
+
+        // What already exists?
+        const pagesRes = await api.listPages();
+        const pages = (pagesRes && (pagesRes as any).data) || pagesRes || [];
+        const existingSlugs = new Set((Array.isArray(pages) ? pages : []).map((p: any) => (p.slug || "").replace(/^\//, "")));
+        const missing = SPECS.filter((s) => !existingSlugs.has(s.slug));
+        const skipped = SPECS.filter((s) => existingSlugs.has(s.slug)).map((s) => s.slug);
+
+        if (dry_run) {
+          return {
+            dry_run: true,
+            will_create: missing.map((s) => ({ name: s.name, slug: s.slug, type: s.kind })),
+            already_exist: skipped,
+            hint: "Call again with dry_run=false to create the missing pages so product/category/cart links resolve.",
+          };
+        }
+
+        const created: any[] = [];
+        const errors: any[] = [];
+        const flagsEnabled = new Set<string>();
+        for (const spec of missing) {
+          try {
+            if (!flagsEnabled.has(spec.flag)) {
+              await api.enableSiteFeature(spec.flag).catch(() => {});
+              flagsEnabled.add(spec.flag);
+            }
+            const source = spec.build();
+            const validation: any = validatePage(source);
+            if (!validation.valid) { errors.push({ slug: spec.slug, validation }); continue; }
+            finalizeForRender(source);
+            const res = await api.createPage({ name: spec.name, source, type: PAGE_TYPE_NUM[spec.kind] });
+            const pid = newPageId(res);
+            if (pid) await api.updatePage(pid, { slug: spec.slug }).catch(() => {});
+            created.push({ name: spec.name, slug: spec.slug, type: spec.kind, page_id: pid });
+          } catch (e: any) {
+            errors.push({ slug: spec.slug, error: e?.message ?? String(e) });
+          }
+        }
+        return {
+          success: true,
+          created,
+          already_exist: skipped,
+          ...(errors.length ? { errors } : {}),
+          data_sources_enabled: [...flagsEnabled],
+          note: "Publish the site (publish_site) to take the new pages live.",
+        };
+      })
+  );
 }
