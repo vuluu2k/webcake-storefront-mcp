@@ -5,6 +5,15 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.11.1] - 2026-06-24
+
+### Fixed
+- `create_site_from_template` now calls the dedicated `import_store_to_theme` API instead of the generic site-duplicate endpoint, correctly cloning the template's pages, global sections, cart, popups, styles, and fonts into the new site.
+
+### Changed
+- `create_site_from_template` now requires `theme_id` as the sole template identifier; the `template_site_id` parameter is removed — pass the `theme_id` returned by `semantic_search_themes` or `list_template_themes` directly.
+- `semantic_search_themes` and `list_template_themes` results no longer include the `template_site_id` field, which was only needed to feed the now-removed parameter.
+
 ## [1.11.0] - 2026-06-24
 
 ### Added

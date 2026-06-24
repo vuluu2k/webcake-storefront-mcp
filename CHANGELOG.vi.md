@@ -5,6 +5,15 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.11.1] - 2026-06-24
+
+### Fixed
+- `create_site_from_template` nay gọi đúng API `import_store_to_theme` thay vì endpoint nhân bản site thông thường, giúp clone đầy đủ các trang, global section, giỏ hàng, popup, style và font của template vào site mới.
+
+### Changed
+- `create_site_from_template` nay chỉ nhận `theme_id` làm định danh template duy nhất; tham số `template_site_id` đã bị xoá — truyền thẳng `theme_id` trả về từ `semantic_search_themes` hoặc `list_template_themes`.
+- Kết quả của `semantic_search_themes` và `list_template_themes` không còn trả về trường `template_site_id` vốn chỉ được dùng để truyền vào tham số đã xoá.
+
 ## [1.11.0] - 2026-06-24
 
 ### Added
