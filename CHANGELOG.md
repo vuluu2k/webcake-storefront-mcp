@@ -5,6 +5,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.15.1] - 2026-06-24
+
+### Fixed
+- `update_page_element`, `update_page_elements`, `update_global_source_element`, and `update_global_source_elements` now normalize `events` and `bindings` arrays on update, ensuring every entry has a valid `id` and `eventName`; previously events were stored without `eventName` and the storefront renderer never dispatched them.
+- Event normalization now applies the correct element-type-aware default `eventName` on both creation and update paths, mirroring the builder editor: `form→success`, `swiper→tab`, `popup→hide`, `input-search→onenter`, `submit-button→hover`; all other element types default to the action's own trigger or `click`.
+- `normalizeBindings` now accepts a bare `"name::field"` string entry and converts it to a well-formed binding object, preventing a dropped binding when callers pass the shorthand target notation.
+
 ## [1.15.0] - 2026-06-24
 
 ### Added

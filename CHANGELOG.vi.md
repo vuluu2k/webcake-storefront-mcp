@@ -5,6 +5,13 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.15.1] - 2026-06-24
+
+### Fixed
+- `update_page_element`, `update_page_elements`, `update_global_source_element` và `update_global_source_elements` nay chuẩn hóa mảng `events` và `bindings` khi cập nhật, đảm bảo mỗi entry có `id` và `eventName` hợp lệ; trước đây event được lưu mà không có `eventName` nên storefront renderer không bao giờ kích hoạt chúng.
+- Quá trình chuẩn hóa event nay áp dụng `eventName` mặc định đúng theo loại phần tử trên cả hai đường dẫn tạo mới và cập nhật, phản chiếu chính xác hành vi của builder editor: `form→success`, `swiper→tab`, `popup→hide`, `input-search→onenter`, `submit-button→hover`; các loại phần tử khác mặc định theo trigger của action hoặc `click`.
+- `normalizeBindings` nay chấp nhận entry dạng chuỗi `"name::field"` và chuyển đổi thành đối tượng binding đầy đủ, tránh trường hợp binding bị bỏ qua khi caller truyền vào theo ký pháp shorthand target.
+
 ## [1.15.0] - 2026-06-24
 
 ### Added
