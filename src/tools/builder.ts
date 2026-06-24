@@ -4,6 +4,8 @@ import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
 import { BUILD_GUIDE } from "../builder/guide.js";
 import { listElements, getElement, buildElement } from "../builder/catalog.js";
+import { describeEventsCatalog } from "../builder/events.js";
+import { describeBindingsCatalog } from "../builder/bindings.js";
 import {
   buildSection,
   newPageSkeleton,
@@ -64,6 +66,20 @@ export function registerBuilderTools(server: McpServer, api: WebcakeCmsApi, hand
       type: z.string().describe("Element type, e.g. 'text', 'button', 'grid-product'"),
     },
     ({ type }) => handle(async () => getElement(type))
+  );
+
+  server.tool(
+    "list_events",
+    "List every interaction EVENT you can attach to a node: the triggers (eventName: click/hover/success/submit/…) and the actions (open_page, scroll_to, toggle, open_popup, add_to_cart, buy_now, phone_call, open_link, …) with the exact extra fields each action needs. Attach via new_element/new_section opts.events (ids are auto-minted, e.g. opts.events=[{ action:'add_to_cart', open_page:'cart' }]).",
+    {},
+    () => handle(async () => describeEventsCatalog())
+  );
+
+  server.tool(
+    "list_bindings",
+    "List every dynamic-data BINDING target: the datasets (product, cart_item, order, order_item, post, category, customer, customer_address, …) and their exact field names ('product::product_price', …), which page type each needs (store/member/blog), and how repeater children (grid-product, cart-items, post-list) bind per-item. Attach via new_element opts.bindings (ids auto-minted, e.g. opts.bindings=[{ target:'product::product_price' }]).",
+    {},
+    () => handle(async () => describeBindingsCatalog())
   );
 
   server.tool(

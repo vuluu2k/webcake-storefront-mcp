@@ -7,6 +7,8 @@
 
 import { buildElement, isKnownType, ELEMENT_TYPES } from "./catalog.js";
 import { randomString } from "./factory.js";
+import { validateEvents } from "./events.js";
+import { validateBindings } from "./bindings.js";
 import {
   BREAKPOINTS,
   genGridByBp,
@@ -155,8 +157,8 @@ export function validatePage(source: any) {
     return { valid: false, errors: ["Source must be an object shaped { sections: [...] }."] };
   }
 
-  const ids = new Set();
-  const allIds = new Set();
+  const ids = new Set<string>();
+  const allIds = new Set<string>();
   let total = 0;
   const typeCounts: Record<string, number> = {};
 
@@ -181,13 +183,19 @@ export function validatePage(source: any) {
     }
   });
 
-  // Second pass: event targets must point at an element that exists in the page.
+  // Second pass: events + bindings against the authoritative catalogs (unknown
+  // trigger/action/dataset, missing required fields, dangling in-page event targets,
+  // unknown binding fields). These are warnings — they don't block a save.
   walk(source, (node) => {
-    for (const ev of node.events || []) {
-      const target = ev.open_page_id ? null : ev.target || ev.target_id;
-      if (target && !allIds.has(target)) {
-        warnings.push(`Event on "${node.id}" targets missing element "${target}".`);
-      }
+    if (node.events && node.events.length) {
+      const r = validateEvents(node, allIds);
+      errors.push(...r.errors);
+      warnings.push(...r.warnings);
+    }
+    if (node.bindings && node.bindings.length) {
+      const r = validateBindings(node);
+      errors.push(...r.errors);
+      warnings.push(...r.warnings);
     }
   });
 

@@ -93,14 +93,35 @@ key — only bp1..bp4.)
 - Form: wrap inputs in a \`form\`; set \`form.specials.type\`
   (form_order | form_login | form_signup | form_discount | order_tracking). Each input
   needs \`specials.field_name\`.
-- Dataset elements (text-dataset, image-dataset, rectangle-dataset...) pull live data via
-  a \`bindings\` array. Each binding is \`{ id:"BINDING"+random, name:<source>, target:"<source>::<field>" }\`.
-  Real target field names (use these EXACTLY — there is no \`product::price\`):
-  - product:  \`product::product_image\`, \`product::product_name\`, \`product::product_price\`
+- Dataset elements (text-dataset, image-dataset, rectangle-dataset…) and the CHILDREN of
+  a repeater (grid-product, cart-items, order-items, post-list, grid-category, customer-address)
+  pull live data via a \`bindings\` array. Each binding is
+  \`{ id, name:<dataset>, target:"<dataset>::<field>" }\` — you DON'T set the id, the builder
+  mints it. Just pass \`opts.bindings:[{ target:"product::product_price" }]\` to new_element.
+  Common targets (call \`list_bindings\` for the full catalog — use these EXACTLY, there is no \`product::price\`):
+  - product:  \`product::product_image\`, \`product::product_name\`, \`product::product_price\`, \`product::product_original_price\`, \`product::short_description\`
   - cart_item: \`cart_item::cart_item_image\`, \`cart_item::cart_item_name\`, \`cart_item::cart_item_price\`, \`cart_item::cart_item_total_price\`, \`cart_item::cart_item_prod_attr\`
   - order_item: \`order_item::product_image\`, \`order_item::product_name\`, \`order_item::product_quantity\`, \`order_item::items_sum_up_price\`, \`order_item::product_attrs\`
   - customer_address: \`customer_address::full_name\`, \`customer_address::phone_number\`, \`customer_address::address\`, \`customer_address::pdc\`
-  A target only resolves on a page of the matching \`type\` (see below).
+  REPEATER CONTEXT: inside a \`grid-product\` each cell IS a product, so a child
+  \`text-dataset\` with \`product::product_name\` resolves to that cell's product (no extra
+  wiring). Same for cart-items→cart_item, order-items→order_item, post-list→post,
+  grid-category→category. A target only resolves on a page of the matching \`type\` (below).
+
+## Events (clicks, navigation, cart, popups)
+Interactive nodes (button, text, image, container, rectangle, icons) carry an \`events\`
+array. Each event is \`{ id, eventName, action, ...fields }\` — you set \`action\` (+ its
+fields); the builder mints the id and picks a sensible \`eventName\` (trigger). Pass via
+\`opts.events\`. Call \`list_events\` for the full trigger/action catalog. Most-used:
+- Navigate: \`{ action:"open_page", open_page_id:"<page id>" }\`, \`{ action:"open_link", link_target:"https://…", link_target_url:"_blank" }\`, \`{ action:"open_category", open_category_id:"<id>" }\`.
+- Scroll on this page: \`{ action:"scroll_to", scroll_to_id:"<section id on this page>" }\`.
+- Show/hide: \`{ action:"toggle", toggle_id:"<element id on this page>" }\`, \`{ action:"open_popup", popup_id:"<popup id>" }\`.
+- Commerce: \`{ action:"add_to_cart", open_page:"cart" }\`, \`{ action:"buy_now" }\`, \`{ action:"apply_promotion" }\`.
+- Contact: \`{ action:"phone_call", phone_call_number:"+84…" }\`, \`{ action:"open_email", open_email:"hi@shop.vn" }\`.
+- Hover style (set eventName:"hover"): \`{ eventName:"hover", action:"scale" }\`.
+Example: \`new_element("button", { text:"Mua ngay", style:{…}, events:[{ action:"add_to_cart", open_page:"cart" }] })\`.
+validate_page warns on unknown actions, missing required fields, and events whose
+in-page target (toggle_id/scroll_to_id/…) doesn't exist on the page.
 
 ## Page types & data sources (IMPORTANT for special pages)
 A page's \`type\` decides which live data it can bind to. A SPECIAL page only works if the

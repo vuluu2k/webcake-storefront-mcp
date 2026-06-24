@@ -365,6 +365,8 @@ export function describeAttributes(type: string, skeleton: any): any {
     notes: curated.notes,
     common_specials_note: "custom_class/custom_css/element_async/event_name_custom work on almost every element.",
     layout_hint: "runtime.style holds CSS (width/height/color/fontSize/background/border…); runtime.config holds grid placement (see get_build_guide). On save these expand into bp1..bp4.",
+    events_hint: "Attach interactions via opts.events (ids auto-minted). Call list_events for the trigger/action catalog + required fields.",
+    bindings_hint: "Attach dynamic data via opts.bindings (ids auto-minted). Call list_bindings for the dataset/field catalog. Inside a repeater (grid-product/cart-items/post-list…) children bind to the per-item dataset.",
     coverage: obs.seen ? `${obs.seen} real instances mined` : "factory default only",
   };
 }

@@ -7,6 +7,8 @@
 
 import * as F from "./factory.js";
 import { describeAttributes } from "./attributes.js";
+import { normalizeBindings } from "./bindings.js";
+import { normalizeEvents } from "./events.js";
 
 // Probe every factory once with safe default opts to learn the type string it produces
 // and whether it is a container (has a children array). Calling with {children:[]} is
@@ -157,7 +159,14 @@ export function buildElement(type: string, opts: any = {}) {
     throw err;
   }
   // Guarantee children-using factories never throw on a missing children array.
-  return fn({ children: [], ...opts });
+  const node = fn({ children: [], ...opts });
+  // Some factories ignore opts.bindings/events — attach them so any element the AI passes
+  // them to gets them — then normalize so each binding/event has a valid id (+ name/eventName).
+  if (opts.bindings && !node.bindings) node.bindings = opts.bindings;
+  if (opts.events && !node.events) node.events = opts.events;
+  if (Array.isArray(node.bindings) && node.bindings.length) node.bindings = normalizeBindings(node.bindings);
+  if (Array.isArray(node.events) && node.events.length) node.events = normalizeEvents(node.events);
+  return node;
 }
 
 export function isKnownType(type: string) {
