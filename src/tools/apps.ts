@@ -61,4 +61,41 @@ App types: ${APP_TYPE_REFERENCE}.`,
         return { app, type, installed: true };
       })
   );
+
+  server.tool(
+    "uninstall_app",
+    `Uninstall (remove) an installed application from the current site.
+Pass the app's subscription id — get it from list_apps (the \`id\` field) or get_app.`,
+    {
+      id: z.string().describe("App subscription id (from list_apps / get_app)"),
+    },
+    ({ id }) =>
+      handle(async () => {
+        await api.uninstallApp(id);
+        return { id, uninstalled: true };
+      })
+  );
+
+  server.tool(
+    "update_app",
+    `Update an installed app's configuration. Pass the app subscription id and an \`attrs\` object
+that is merged onto the subscription — usually \`{ settings: {...} }\`, optionally \`{ status }\`.
+For the product-review app, prefer update_app_review (it also propagates shop_info).`,
+    {
+      id: z.string().describe("App subscription id (from list_apps / get_app)"),
+      attrs: z.record(z.any()).describe('Fields to update, e.g. { "settings": { ... }, "status": 1 }'),
+    },
+    ({ id, attrs }) => handle(() => api.updateApp(id, attrs)),
+  );
+
+  server.tool(
+    "update_app_review",
+    `Update the product-review app's settings (e.g. shop_info, auto-approve, display options).
+Pass the review app's subscription id (get_app with type "product_review") and the full \`settings\` object.`,
+    {
+      id: z.string().describe("Review app subscription id (get_app type=product_review)"),
+      settings: z.record(z.any()).describe('Review app settings object, e.g. { "shop_info": { ... }, "auto_approve": true }'),
+    },
+    ({ id, settings }) => handle(() => api.updateAppReview(id, settings)),
+  );
 }
