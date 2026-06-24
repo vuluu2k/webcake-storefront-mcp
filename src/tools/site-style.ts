@@ -15,7 +15,6 @@ interface ThemeEntry {
   preview_url: string;
   thumbnail: string;
   categories: string[];
-  site_id?: string; // the template's source site — duplicate it to create a site from this template
 }
 
 interface ThemeCatalogCache {
@@ -72,7 +71,6 @@ async function getThemeCatalog(force = false): Promise<Map<string, ThemeEntry>> 
         preview_url: t.preview_url || "",
         thumbnail: t.thumbnail || "",
         categories: (t.categories || []).map((c: any) => c.name).filter(Boolean),
-        site_id: (t.site && t.site.id) || undefined,
       });
     }
     if (themes.length < limit) break;
@@ -191,7 +189,6 @@ export function registerSiteStyleTools(server: McpServer, api: WebcakeCmsApi, ha
           const desc = parseThemeDescription(te && te.description);
           return {
             theme_id: themeId,
-            template_site_id: info.site_id || null, // pass to create_site_from_template
             score: typeof score === "number" ? Number(score.toFixed(4)) : null,
             name: info.name || null,
             preview_url: info.preview_url || null,
@@ -213,53 +210,32 @@ export function registerSiteStyleTools(server: McpServer, api: WebcakeCmsApi, ha
 
   server.tool(
     "create_site_from_template",
-    `Create a NEW site by CLONING a marketplace template (all its pages + settings), so the
-customer starts from a finished design and then edits it. Resolve a template with
-semantic_search_themes / list_template_themes first, then pass its theme_id (or
-template_site_id). After cloning, switch to the new site and edit layout/content with
-update_page_element(s), colours/typography with the site-style tools, and republish.`,
+    `Create a NEW site from a marketplace TEMPLATE (the dedicated "use this template" API).
+Clones the template's pages, global sections, cart, popups, styles and fonts into a fresh
+site. Pick a template with semantic_search_themes / list_template_themes, then pass its
+theme_id here. Switches to the new site so you can immediately edit layout/content with
+update_page_element(s), colours/fonts via the site-style tools, then publish_site.`,
     {
       name: z.string().describe("Name for the new site"),
-      theme_id: z.string().optional().describe("Marketplace theme id (from semantic_search_themes / list_template_themes)"),
-      template_site_id: z.string().optional().describe("The template's source site id (alternative to theme_id; semantic_search_themes returns it as template_site_id)"),
+      theme_id: z.string().describe("Marketplace theme id (from semantic_search_themes / list_template_themes)"),
       slug: z.string().optional().describe("URL-safe slug for the new site (auto-generated if omitted)"),
-      switch_to: z.boolean().default(true).describe("Switch the session to the new site after cloning (saved for next session)"),
+      switch_to: z.boolean().default(true).describe("Switch the session to the new site after creating it (saved for next session)"),
     },
-    ({ name, theme_id, template_site_id, slug, switch_to }) =>
+    ({ name, theme_id, slug, switch_to }) =>
       handle(async () => {
-        // Resolve the template's source site id.
-        let sourceSiteId = template_site_id;
-        if (!sourceSiteId && theme_id) {
-          const catalog = await getThemeCatalog().catch(() => new Map<string, ThemeEntry>());
-          sourceSiteId = catalog.get(theme_id)?.site_id;
-        }
-        if (!sourceSiteId) {
-          throw new Error("Could not resolve the template's source site. Pass template_site_id, or a theme_id that exists in the marketplace (list_template_themes / semantic_search_themes).");
-        }
-
-        // The duplicate endpoint returns success-only (no id), so snapshot the site list
-        // first, clone, then resolve the new site by diff.
-        const listIds = async () => {
-          const r: any = await api.listMySites({ page: 1, limit: 100 }).catch(() => null);
-          const arr = r?.data?.sites || r?.data || [];
-          return Array.isArray(arr) ? arr : [];
-        };
-        const before = await listIds();
-        const beforeIds = new Set(before.map((s: any) => s.id));
-
+        let res: any;
         try {
-          await api.duplicateSite({ site_id: sourceSiteId, name, ...(slug ? { slug } : {}) });
+          res = await api.importStoreToTheme({ id: theme_id, name, ...(slug ? { slug } : {}) });
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           if (msg.includes("403")) throw new Error("Cannot create site: account site quota reached (free plan allows up to 4 sites).");
-          throw new Error(`Cloning the template failed: ${msg}`);
+          throw new Error(`Creating the site from the template failed: ${msg}. Check the theme_id exists (list_template_themes / semantic_search_themes).`);
         }
 
-        const after = await listIds();
-        const fresh = after.filter((s: any) => !beforeIds.has(s.id));
-        const newSite = fresh.find((s: any) => s.name === name) || fresh[0];
+        const data = res?.data || res;
+        const newSite = data?.site || data?.new_site || data;
         const newId = newSite?.id;
-        if (!newId) throw new Error("Template was cloned but the new site could not be located in your site list — check list_my_sites.");
+        if (!newId) throw new Error("Site created from template but no id was returned.");
 
         let switched = false;
         let previewUrl: string | null = null;
@@ -276,11 +252,11 @@ update_page_element(s), colours/typography with the site-style tools, and republ
           success: true,
           site_id: newId,
           name: newSite?.name || name,
-          from_template: { theme_id: theme_id || null, source_site_id: sourceSiteId },
+          from_template: theme_id,
           switched,
           ...(switched ? { current_site_id: api.siteId, previous_site_id: previousSiteId } : {}),
           preview_url: previewUrl,
-          next_step: "Site cloned with all template pages. Edit content with search_page_elements + update_page_element(s), change colours/fonts via list_themes/site-style, then publish_site.",
+          next_step: "Site created from the template (pages, sections, popups, styles, fonts). Edit content with search_page_elements + update_page_element(s), colours/fonts via list_themes/site-style, then publish_site.",
         };
       })
   );

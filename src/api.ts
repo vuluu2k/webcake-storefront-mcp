@@ -98,11 +98,12 @@ export class WebcakeCmsApi {
   createSite(params: { name: string; slug: string }) {
     return this.request("POST", `/api/v1/dashboard/site/create`, { body: params, timeout: 60000 });
   }
-  /** Duplicate an existing site (its settings AND all pages/page-sources) into a NEW site
-   *  owned by the current account. Used to spin up a site FROM a marketplace template
-   *  (pass the template's source site id). Body: { site_id (source), name, slug? }. */
-  duplicateSite(params: { site_id: string; name: string; slug?: string }) {
-    return this.request("POST", `/api/v1/dashboard/site/duplicate`, { body: params, timeout: 90000 });
+  /** Create a NEW site from a marketplace TEMPLATE by its theme id — the dedicated
+   *  "use this template" API. Clones the template's pages, global sections, cart, popups,
+   *  styles and fonts into a fresh account-owned site. Body: { id: <theme_id>, name, slug }.
+   *  Returns { data: { site: { id, ... } } }. (403 if the free 4-site quota is reached, prod.) */
+  importStoreToTheme(params: { id: string; name: string; slug?: string }) {
+    return this.request("POST", `/api/v1/dashboard/site/import_store_to_theme`, { body: params, timeout: 120000 });
   }
   getSiteInfo() {
     return this.request("GET", `/api/v1/site/${this.siteId}/`);
