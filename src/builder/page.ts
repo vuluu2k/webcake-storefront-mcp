@@ -108,6 +108,88 @@ export function stackChildren(container: any, children: any[], opts: StackOpts =
   return container;
 }
 
+const ROW_PLACEHOLDER_ROW = () => ({ unit: "min/max", min: { unit: "px", absValue: 50 }, max: { unit: "max-c" } });
+
+/** Default responsive collapse for a multi-column row: full columns on desktop/laptop,
+ *  2 columns on tablet, 1 column on mobile. `null` = keep the full column count. */
+const ROW_COLLAPSE_DEFAULT: Record<string, number | null> = { bp1: null, bp2: null, bp3: 2, bp4: 1 };
+
+interface RowOpts {
+  /** Horizontal gap (px) between columns (default 24). */
+  columnGap?: number;
+  /** Vertical gap (px) between wrapped rows (default 24). */
+  rowGap?: number;
+  /** Explicit per-column unit objects (length must equal child count). Default: equal `fr`. */
+  colWidths?: any[];
+  /** Columns to show per breakpoint, e.g. { bp3: 2, bp4: 1 }. Merged over the default. */
+  collapse?: Record<string, number>;
+}
+
+/**
+ * Lay children out HORIZONTALLY — side by side in one grid row — the way real BuilderX
+ * pages build feature cards, category tiles, footer columns, 2-col hero, etc. The grid is
+ * `Nx1` with N equal `fr` columns and each child placed in its own column. Values go to
+ * `runtime` plus `__row`/`__cell` markers that finalizeForRender() reads to emit a
+ * RESPONSIVE grid per breakpoint (it auto-collapses to fewer columns on tablet/mobile so
+ * the row never renders as cramped slivers).
+ */
+export function rowChildren(container: any, children: any[], opts: RowOpts = {}) {
+  const cols = children.length || 1;
+  const colWidths =
+    opts.colWidths && opts.colWidths.length === cols
+      ? opts.colWidths
+      : Array.from({ length: cols }, () => ({ unit: "fr", value: 1 }));
+  const collapse = { ...ROW_COLLAPSE_DEFAULT, ...(opts.collapse || {}) };
+  const columnGap = opts.columnGap ?? 24;
+  const rowGap = opts.rowGap ?? 24;
+  const meta = { cols, count: children.length, collapse, columnGap, rowGap };
+
+  container.runtime = container.runtime || {};
+  container.runtime.config = {
+    ...(container.runtime.config || {}),
+    grid: `${cols}x1`,
+    columns: colWidths,
+    rows: [ROW_PLACEHOLDER_ROW()],
+    columnGap,
+    rowGap,
+    heightUnit: "auto",
+    __row: meta,
+  };
+
+  children.forEach((child: any, i: number) => {
+    child.runtime = child.runtime || {};
+    child.runtime.config = {
+      ...(child.runtime.config || {}),
+      columnStart: i + 1,
+      columnEnd: i + 2,
+      rowStart: 1,
+      rowEnd: 2,
+      constraintX: (child.runtime.config && child.runtime.config.constraintX) || ["centerLeft"],
+      constraintY: (child.runtime.config && child.runtime.config.constraintY) || ["top"],
+      loaded: true,
+      __cell: { index: i, ...meta },
+    };
+  });
+
+  container.children = children;
+  return container;
+}
+
+/** Build a standalone multi-column ROW container from child specs (each laid side by side).
+ *  Used by the new_row tool; inside new_section pass `layout:"row"` on a container spec. */
+export function buildRow(childSpecs: any[] = [], opts: RowOpts & { containerOpts?: any } = {}) {
+  const container = buildElement("container", opts.containerOpts || {});
+  const children = childSpecs.map((spec: any) => buildFromSpec(spec));
+  return rowChildren(container, children, opts);
+}
+
+/** How many columns a row shows at a given breakpoint (clamped to its real column count). */
+function colsForBp(meta: any, bp: string): number {
+  const c = meta.collapse ? meta.collapse[bp] : null;
+  const k = c == null ? meta.cols : Math.min(c, meta.cols);
+  return Math.max(1, k);
+}
+
 /**
  * Build a ready-to-place section from a list of child specs.
  * Each spec: { type, opts?, children? } where children is a nested array of specs.
@@ -143,7 +225,18 @@ function buildFromSpec(spec: any) {
   const node = buildElement(spec.type, spec.opts || {});
   if (Array.isArray(spec.children) && spec.children.length) {
     const kids = spec.children.map((c: any) => buildFromSpec(c));
-    stackChildren(node, kids);
+    // `layout:"row"` lays the children out side by side (responsive); default is a
+    // top-to-bottom vertical stack. rowGap/columnGap/colWidths/collapse tune the layout.
+    if (spec.layout === "row") {
+      rowChildren(node, kids, {
+        columnGap: spec.columnGap,
+        rowGap: spec.rowGap,
+        colWidths: spec.colWidths,
+        collapse: spec.collapse,
+      });
+    } else {
+      stackChildren(node, kids, { rowGap: spec.rowGap });
+    }
   }
   return node;
 }
@@ -221,10 +314,15 @@ function expandNodeToBreakpoints(node: any): any {
     const baseStyle = rt.style || {};
     const baseConfig = { ...(rt.config || {}), loaded: true };
     const isSection = node.type === "section";
+    const rowMeta = baseConfig.__row; // this node is a multi-column row container
+    const cellMeta = baseConfig.__cell; // this node is a cell inside a row
 
     for (const [bp, [minW]] of Object.entries(BREAKPOINTS)) {
       const style = clone(baseStyle);
       const config = clone(baseConfig);
+      // Internal build-time markers never get persisted.
+      delete config.__row;
+      delete config.__cell;
       if (isSection) {
         const g = genGridByBp(minW);
         const sectionRows =
@@ -233,6 +331,29 @@ function expandNodeToBreakpoints(node: any): any {
         config.rows = sectionRows;
         config.grid = `3x${sectionRows.length}`;
         config.heightUnit = config.heightUnit || "auto";
+      }
+      // A multi-column row collapses to fewer columns on smaller screens so cards never
+      // shrink to slivers: recompute the grid + this container's columns per breakpoint.
+      if (rowMeta) {
+        const k = colsForBp(rowMeta, bp);
+        const nrows = Math.ceil(rowMeta.count / k);
+        config.columns =
+          k === rowMeta.cols && Array.isArray(baseConfig.columns) && baseConfig.columns.length === k
+            ? clone(baseConfig.columns)
+            : Array.from({ length: k }, () => ({ unit: "fr", value: 1 }));
+        config.rows = Array.from({ length: nrows }, () => ROW_PLACEHOLDER_ROW());
+        config.grid = `${k}x${nrows}`;
+        config.heightUnit = config.heightUnit || "auto";
+      }
+      // A cell repositions itself into the collapsed grid (wraps to a new row as needed).
+      if (cellMeta) {
+        const k = colsForBp(cellMeta, bp);
+        const c = cellMeta.index % k;
+        const r = Math.floor(cellMeta.index / k);
+        config.columnStart = c + 1;
+        config.columnEnd = c + 2;
+        config.rowStart = r + 1;
+        config.rowEnd = r + 2;
       }
       node[bp] = { style, config };
     }

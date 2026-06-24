@@ -8,6 +8,7 @@ import { describeEventsCatalog } from "../builder/events.js";
 import { describeBindingsCatalog } from "../builder/bindings.js";
 import {
   buildSection,
+  buildRow,
   newPageSkeleton,
   validatePage,
   finalizeForRender,
@@ -20,6 +21,11 @@ const elementSpec = z.object({
   type: z.string().describe("Element type (see list_elements)"),
   opts: z.record(z.any()).optional().describe("Factory opts: { style, config, specials, text, src, width, height, ... }"),
   children: z.array(z.any()).optional().describe("Nested child specs (same shape) for container types"),
+  layout: z.enum(["row", "column"]).optional().describe("How this node's children are laid out: 'row' = side by side (responsive columns, auto-collapses on tablet/mobile), 'column' = stacked top-to-bottom (default). Use 'row' on a container to make feature cards / category tiles / footer columns / 2-col hero."),
+  rowGap: z.number().optional().describe("Vertical gap (px) between stacked children / wrapped rows"),
+  columnGap: z.number().optional().describe("Horizontal gap (px) between columns (layout:'row' only)"),
+  colWidths: z.array(z.any()).optional().describe("layout:'row' only — explicit per-column unit objects (length = #children), e.g. [{unit:'fr',value:2},{unit:'fr',value:1}] for a 2:1 split. Default: equal columns."),
+  collapse: z.record(z.number()).optional().describe("layout:'row' only — columns to show per breakpoint, e.g. {bp3:2,bp4:1}. Default: tablet 2, mobile 1."),
 });
 
 function parseSource(src: any): any {
@@ -102,6 +108,33 @@ Example children: [{ "type":"text", "opts":{"text":"Welcome","style":{"fontSize"
       section_opts: z.record(z.any()).optional().describe("Optional factory opts for the section node itself"),
     },
     ({ children, section_opts }) => handle(async () => buildSection(children || [], section_opts || {}))
+  );
+
+  server.tool(
+    "new_row",
+    `Build a multi-column ROW container: children laid out SIDE BY SIDE (not stacked).
+This is how real pages build feature cards, category tiles, footer columns, a 2-col hero, etc.
+The row is RESPONSIVE — it auto-collapses to fewer columns on tablet/mobile (default tablet 2, mobile 1) so cards never become cramped slivers.
+Place the returned node as a child inside a section (section children still stack vertically; nest a row for horizontal layout).
+Example children: [{ "type":"container", "children":[{"type":"image","opts":{...}},{"type":"text","opts":{...}}] }, { ... }, { ... }]`,
+    {
+      children: z.array(elementSpec).default([]).describe("Child specs, one per column (laid out left-to-right)"),
+      column_gap: z.number().optional().describe("Horizontal gap (px) between columns (default 24)"),
+      row_gap: z.number().optional().describe("Vertical gap (px) between wrapped rows (default 24)"),
+      col_widths: z.array(z.any()).optional().describe("Explicit per-column unit objects (length = #children), e.g. [{unit:'fr',value:2},{unit:'fr',value:1}]. Default: equal columns."),
+      collapse: z.record(z.number()).optional().describe("Columns to show per breakpoint, e.g. {bp3:2,bp4:1}. Default: tablet 2, mobile 1."),
+      container_opts: z.record(z.any()).optional().describe("Optional factory opts for the row container node itself (e.g. { style:{...} })"),
+    },
+    ({ children, column_gap, row_gap, col_widths, collapse, container_opts }) =>
+      handle(async () =>
+        buildRow(children || [], {
+          columnGap: column_gap,
+          rowGap: row_gap,
+          colWidths: col_widths,
+          collapse,
+          containerOpts: container_opts || {},
+        })
+      )
   );
 
   server.tool(
