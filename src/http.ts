@@ -53,6 +53,7 @@ const QUERY_TO_HEADER: Record<string, string> = {
   api_url: "x-webcake-api-url",
   session_id: "x-webcake-session-id",
   env: "x-webcake-env",
+  tools: "x-webcake-tools",
 };
 
 function header(req: IncomingMessage, name: string): string | undefined {
@@ -402,7 +403,7 @@ export async function startHttpServer(port: number): Promise<void> {
             if (transport.sessionId) transports.delete(transport.sessionId);
           };
           const api = apiFromRequest(req);
-          const server = createServer(api, { allowLocalFiles: false }); // remote: never read server-side files
+          const server = createServer(api, { allowLocalFiles: false, tools: header(req, "x-webcake-tools") }); // remote: never read server-side files
           await server.connect(transport);
           await transport.handleRequest(req, res, body);
           return;
