@@ -337,10 +337,46 @@ export class WebcakeCmsApi {
       timeout: 60000,
     });
   }
+  /** Update a product. Body wraps fields in `product_params` and identifies the product by
+   *  product_params.product_id. */
+  updateProduct(productParams: any) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/products/update`, {
+      body: { site_id: this.siteId, product_params: productParams },
+      timeout: 60000,
+    });
+  }
+  /** Delete products by id. Body: { site_id, ids }. */
+  removeProducts(ids: string[]) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/products/remove`, {
+      body: { site_id: this.siteId, ids },
+      timeout: 60000,
+    });
+  }
+  /** Publish/unpublish products. Body: { site_id, data: [{ product_id, is_published }] }. */
+  setProductsPublished(data: Array<{ product_id: string; is_published: boolean }>) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/products/published`, {
+      body: { site_id: this.siteId, data },
+    });
+  }
   /** Create a product category. Command-based: pass a `commands` array whose entries each
    *  carry a caller-generated `data.id` (the new category id). Response is generic. */
   createProductCategory(commands: any[]) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/categories/create`, {
+      body: { site_id: this.siteId, commands },
+      timeout: 60000,
+    });
+  }
+  /** Update a product category — command-based (name_category / image_category /
+   *  multi_description / set_category_visible), each command's data.id = the category id. */
+  updateProductCategory(commands: any[]) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/categories/update`, {
+      body: { site_id: this.siteId, commands },
+      timeout: 60000,
+    });
+  }
+  /** Delete product categories — command bulk_delete_category with data.ids. */
+  deleteProductCategory(commands: any[]) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/categories/delete`, {
       body: { site_id: this.siteId, commands },
       timeout: 60000,
     });

@@ -150,4 +150,107 @@ Returns the new category id — pass it to create_product's category_ids. Image 
         return { success: true, category_id: id, name };
       })
   );
+
+  // ── Edits: products & product categories ─────────────────────────────────────
+  server.tool(
+    "update_product",
+    `Update an existing product. Pass product_id + only the fields to change. To change
+price/stock, pass variations (get_product first to see the existing variation shape).
+Images must be hosted CDN urls (search_images cdn_url / upload_images).`,
+    {
+      product_id: z.string().describe("Product id to update"),
+      name: z.string().optional().describe("New name"),
+      description: z.string().optional().describe("New description (HTML allowed)"),
+      images: z.array(z.string()).optional().describe("New hosted image URLs; first becomes the thumbnail"),
+      category_ids: z.array(z.string()).optional().describe("Replace the product's categories"),
+      is_published: z.boolean().optional().describe("Publish/unpublish the product"),
+      variations: z.array(variationSpec).optional().describe("Replace variations (price/stock/SKU per variant). Reuse existing custom_ids from get_product to edit in place."),
+    },
+    ({ product_id, name, description, images, category_ids, is_published, variations }) =>
+      handle(async () => {
+        const productParams: any = { product_id };
+        if (name != null) productParams.name = name;
+        if (description != null) productParams.description = description;
+        if (images) productParams.image = images[0];
+        if (category_ids) { productParams.categories = category_ids; productParams.ribbons = []; }
+        if (is_published != null) productParams.is_published = is_published;
+        if (variations) {
+          productParams.variations = variations.map((v) => ({
+            custom_id: v.custom_id || `SKU-${randomUUID().slice(0, 8)}`,
+            retail_price: v.retail_price,
+            original_price: v.original_price ?? v.retail_price,
+            remain_quantity: v.remain_quantity ?? 100,
+            images: v.images || (images ? images : []),
+            weight: v.weight ?? 0,
+            fields: v.fields || [],
+            is_hidden: false,
+          }));
+        }
+        await api.updateProduct(productParams);
+        return { success: true, product_id, updated: Object.keys(productParams).filter((k) => k !== "product_id") };
+      })
+  );
+
+  server.tool(
+    "set_product_published",
+    "Publish or unpublish one or more products quickly (without a full update).",
+    {
+      product_ids: z.array(z.string()).describe("Product ids"),
+      is_published: z.boolean().describe("true = publish (visible), false = hide"),
+    },
+    ({ product_ids, is_published }) =>
+      handle(async () => {
+        await api.setProductsPublished(product_ids.map((product_id) => ({ product_id, is_published })));
+        return { success: true, product_ids, is_published };
+      })
+  );
+
+  server.tool(
+    "delete_product",
+    "Delete one or more products by id.",
+    {
+      product_ids: z.array(z.string()).describe("Product ids to delete"),
+    },
+    ({ product_ids }) =>
+      handle(async () => {
+        await api.removeProducts(product_ids);
+        return { success: true, deleted: product_ids };
+      })
+  );
+
+  server.tool(
+    "update_product_category",
+    "Update a product category (name, image, description, or visibility). Pass id + fields to change.",
+    {
+      id: z.string().describe("Category id"),
+      name: z.string().optional().describe("New name"),
+      image: z.string().optional().describe("New hosted image URL"),
+      description: z.string().optional().describe("New description"),
+      hidden: z.boolean().optional().describe("Hide (true) or show (false) the category"),
+    },
+    ({ id, name, image, description, hidden }) =>
+      handle(async () => {
+        const commands: any[] = [];
+        if (name != null) commands.push({ name: "name_category", data: { id, name } });
+        if (image != null) commands.push({ name: "image_category", data: { id, image } });
+        if (description != null) commands.push({ name: "multi_description", data: { id, multi_description: [{ id: randomUUID(), title: name || "", description }] } });
+        if (hidden != null) commands.push({ name: "set_category_visible", data: { id, is_hidden: hidden } });
+        if (!commands.length) throw new Error("Nothing to update — pass at least one of name/image/description/hidden.");
+        await api.updateProductCategory(commands);
+        return { success: true, category_id: id, updated: commands.map((c) => c.name) };
+      })
+  );
+
+  server.tool(
+    "delete_product_category",
+    "Delete one or more product categories by id.",
+    {
+      ids: z.array(z.string()).describe("Category ids to delete"),
+    },
+    ({ ids }) =>
+      handle(async () => {
+        await api.deleteProductCategory([{ name: "bulk_delete_category", data: { ids } }]);
+        return { success: true, deleted: ids };
+      })
+  );
 }
