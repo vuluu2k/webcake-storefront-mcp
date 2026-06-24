@@ -5,6 +5,16 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.9.0] - 2026-06-24
+
+### Added
+- `search_images` now accepts an `upload` parameter (default `true`) that re-hosts each Pexels result on the WebCake CDN and adds a `cdn_url` field to every photo entry ready to use in `runtime.config.src` or product images; pass `upload:false` to browse raw Pexels URLs without re-hosting.
+- Image CDN uploads are now cached per site so that uploading the same source URL or local file path a second time returns the cached CDN URL instantly; in `serve` mode the cache is stored in Redis (shared across instances, survives redeploys), with an automatic fallback to a local JSON file in stdio/npx mode.
+
+### Changed
+- `search_images` now re-hosts results to the WebCake CDN by default, because the storefront whitelists image domains and raw Pexels URLs will not render on a page; the response includes an `uploaded_to_cdn` flag and a `note` field indicating which URL to use.
+- `get_build_guide` now documents that `runtime.config.src` for image elements must be a WebCake CDN URL, since external URLs from Pexels or other sources are not whitelisted and will not display on the storefront.
+
 ## [1.8.0] - 2026-06-23
 
 ### Added

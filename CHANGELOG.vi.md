@@ -5,6 +5,16 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.9.0] - 2026-06-24
+
+### Added
+- `search_images` nay nhận thêm tham số `upload` (mặc định `true`) để tự động tải từng kết quả Pexels lên WebCake CDN và bổ sung trường `cdn_url` vào mỗi ảnh, sẵn sàng dùng trực tiếp trong `runtime.config.src` hoặc ảnh sản phẩm; truyền `upload:false` để chỉ duyệt URL Pexels thuần mà không tải lên.
+- Upload ảnh lên CDN nay được cache theo từng site, giúp việc tải cùng một URL hoặc đường dẫn file lần thứ hai trả về URL CDN đã lưu ngay lập tức; trong chế độ `serve`, cache được lưu trên Redis (dùng chung giữa các instance, tồn tại qua các lần redeploy), với cơ chế tự động fallback về file JSON cục bộ trong chế độ stdio/npx.
+
+### Changed
+- `search_images` nay mặc định tải kết quả lên WebCake CDN vì storefront chỉ cho phép hiển thị ảnh từ các domain được whitelist và URL Pexels thuần sẽ không render trên trang; response nay gồm trường `uploaded_to_cdn` và trường `note` hướng dẫn URL nào nên dùng.
+- `get_build_guide` nay ghi rõ rằng `runtime.config.src` của các element ảnh phải là URL WebCake CDN, vì URL từ Pexels hoặc nguồn ngoài khác không nằm trong danh sách whitelist và sẽ không hiển thị trên storefront.
+
 ## [1.8.0] - 2026-06-23
 
 ### Added
