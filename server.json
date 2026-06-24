@@ -8,13 +8,13 @@
     "source": "github"
   },
   "websiteUrl": "https://github.com/vuluu2k/webcake-storefront-mcp#readme",
-  "version": "1.12.1",
+  "version": "1.13.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "webcake-storefront-mcp",
-      "version": "1.12.1",
+      "version": "1.13.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"

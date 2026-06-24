@@ -5,6 +5,14 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.13.0] - 2026-06-24
+
+### Added
+- Tool mới `restore_file_version` khôi phục CMS file về một phiên bản đã lưu chỉ trong một bước: đọc nội dung phiên bản được chọn (qua `get_file_versions`) rồi ghi lại bằng `update_cms_file`; bỏ qua `version_id` để khôi phục về snapshot gần nhất, hoàn thiện vòng lặp versioning save/list/restore.
+
+### Changed
+- Mô tả của `get_file_versions` nay đề cập đến `restore_file_version` như một lựa chọn thực hiện trong một bước, thay thế cho cách thủ công truyền nội dung đã lưu vào `update_cms_file` hoặc `update_http_function`.
+
 ## [1.12.1] - 2026-06-24
 
 ### Fixed
