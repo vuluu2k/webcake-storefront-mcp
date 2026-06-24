@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { CUSTOM_CODE_GUIDE } from "../guides.js";
 import { getConfirmMode } from "./context.js";
+import { normalizeEvents } from "../builder/events.js";
+import { normalizeBindings } from "../builder/bindings.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -144,8 +146,11 @@ function applyNodeUpdates(node: any, updates: any): void {
   if (updates.style) node.style = { ...(node.style || {}), ...updates.style };
   if (updates.config) node.config = { ...(node.config || {}), ...updates.config };
   if (updates.specials) node.specials = { ...(node.specials || {}), ...updates.specials };
-  if (updates.events !== undefined) node.events = updates.events;
-  if (updates.bindings !== undefined) node.bindings = updates.bindings;
+  // Normalize so updated events/bindings carry a valid id + eventName (and the right
+  // element-type default trigger) — the storefront renderer won't dispatch an event with
+  // no eventName. Round-trip safe: already-formed entries pass through unchanged.
+  if (updates.events !== undefined) node.events = normalizeEvents(updates.events, node.type);
+  if (updates.bindings !== undefined) node.bindings = normalizeBindings(updates.bindings);
   // Responsive breakpoints (bp1, bp2, ...)
   if (updates.responsive) {
     for (const [bp, val] of Object.entries(updates.responsive) as [string, any][]) {
@@ -547,7 +552,8 @@ STEP 1: Call with dry_run=true (default) → returns diff of what will change.
 STEP 2: Show the diff to the user and ask for confirmation. NEVER proceed without explicit user approval.
 STEP 3: Only after user confirms, call again with dry_run=false to apply.
 IMPORTANT: You MUST show the diff to the user and get explicit "yes/ok/confirm" before calling with dry_run=false. Skipping confirmation risks data loss.
-Merge rules: style/config/specials = shallow merge, events/bindings = replace array, responsive = merge by bp key.`,
+Merge rules: style/config/specials = shallow merge, responsive = merge by bp key.
+events/bindings = REPLACE the whole array — pass the COMPLETE list (read it first with get_page_element so you don't drop the others); entries are auto-normalized (id + eventName filled in, so you can pass just { action, ...fields } / { target }).`,
     {
       page_id: z.string().describe("Page ID"),
       element_id: z.string().describe("Element ID to update (e.g. 'TEXT-3', 'BUTTON-1')"),

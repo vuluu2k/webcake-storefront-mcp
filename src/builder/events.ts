@@ -107,24 +107,46 @@ export function getEventAction(action: string): EventAction | undefined {
   return ACTION_BY_NAME[action];
 }
 
+// Element types whose events only fire on a specific trigger — mirrors builderx_spa
+// components/editor/traits/Events.vue `addEvent()`. For these the element-type trigger
+// is the right default (a click handler on a form never fires); for everything else the
+// action's usual trigger (or "click") wins.
+const SPECIAL_EVENT_TRIGGER: Record<string, string> = {
+  form: "success",
+  swiper: "tab",
+  popup: "hide",
+  "input-search": "onenter",
+  "submit-button": "hover",
+};
+
+/** The trigger the builder defaults to for a given element type, if it is a special one. */
+export function defaultTriggerForType(type?: string): string | undefined {
+  return type ? SPECIAL_EVENT_TRIGGER[type] : undefined;
+}
+
 /**
  * Mint a structurally-valid event object. Pass at least `action`; extra action-specific
  * fields are merged verbatim. The id and a sensible eventName are filled in.
+ * eventName precedence (mirrors the editor): explicit > element-type default
+ * (form→success, swiper→tab, popup→hide, input-search→onenter, submit-button→hover) >
+ * the action's usual trigger > "click".
  *   makeEvent({ action: "scroll_to", scroll_to_id: "SECTION-x" })
- *   makeEvent({ action: "open_link", eventName: "click", link_target: "https://…" })
+ *   makeEvent({ action: "open_page", open_page_id: "…" }, "form") // eventName → "success"
  */
-export function makeEvent(spec: any): any {
+export function makeEvent(spec: any, elementType?: string): any {
   if (!spec || typeof spec !== "object") throw new Error("Event spec must be an object with at least an `action`.");
   const def = spec.action ? ACTION_BY_NAME[spec.action] : undefined;
-  const eventName = spec.eventName || (def ? def.trigger : "click");
+  const eventName = spec.eventName || defaultTriggerForType(elementType) || (def ? def.trigger : "click");
   const { eventName: _e, action: _a, id: _id, ...rest } = spec;
   return { id: spec.id || `EVENT-${randomString(6)}`, eventName, ...(spec.action ? { action: spec.action } : {}), ...rest };
 }
 
-/** Ensure every event in an array has an id + an eventName (mint where missing). */
-export function normalizeEvents(events: any[]): any[] {
+/** Ensure every event in an array has an id + an eventName (mint where missing).
+ *  Pass the owning element's type so special types get the right default trigger.
+ *  Round-trip safe: events that already carry id/eventName are preserved verbatim. */
+export function normalizeEvents(events: any[], elementType?: string): any[] {
   if (!Array.isArray(events)) return events;
-  return events.map((e) => (e && typeof e === "object" ? makeEvent(e) : e));
+  return events.map((e) => (e && typeof e === "object" ? makeEvent(e, elementType) : e));
 }
 
 /** Validate one element's events against the catalog + the set of ids present in the page. */

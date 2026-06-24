@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { getConfirmMode } from "./context.js";
+import { normalizeEvents } from "../builder/events.js";
+import { normalizeBindings } from "../builder/bindings.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -142,8 +144,9 @@ function applyNodeUpdates(node: any, updates: any): void {
   if (updates.style) node.style = { ...(node.style || {}), ...updates.style };
   if (updates.config) node.config = { ...(node.config || {}), ...updates.config };
   if (updates.specials) node.specials = { ...(node.specials || {}), ...updates.specials };
-  if (updates.events !== undefined) node.events = updates.events;
-  if (updates.bindings !== undefined) node.bindings = updates.bindings;
+  // Normalize so updated events/bindings get a valid id + eventName (renderer needs it).
+  if (updates.events !== undefined) node.events = normalizeEvents(updates.events, node.type);
+  if (updates.bindings !== undefined) node.bindings = normalizeBindings(updates.bindings);
   if (updates.responsive) {
     for (const [bp, val] of Object.entries(updates.responsive)) {
       if (/^bp\d+$/.test(bp)) {
@@ -467,7 +470,8 @@ STEP 1: Call with dry_run=true (default) → returns diff of what will change.
 STEP 2: Show the diff to the user and ask for confirmation. NEVER proceed without explicit user approval.
 STEP 3: Only after user confirms, call again with dry_run=false to apply.
 IMPORTANT: You MUST show the diff to the user and get explicit "yes/ok/confirm" before calling with dry_run=false. Skipping confirmation risks data loss.
-Merge rules: style/config/specials = shallow merge, events/bindings = replace array, responsive = merge by bp key.`,
+Merge rules: style/config/specials = shallow merge, responsive = merge by bp key.
+events/bindings = REPLACE the whole array — pass the COMPLETE list (read it first); entries are auto-normalized (id + eventName filled in).`,
     {
       global_source_id: z.string().describe("Global source ID"),
       element_id: z.string().describe("Element ID to update (e.g. 'TEXT-3', 'BUTTON-1')"),

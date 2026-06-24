@@ -165,7 +165,7 @@ export function buildElement(type: string, opts: any = {}) {
   if (opts.bindings && !node.bindings) node.bindings = opts.bindings;
   if (opts.events && !node.events) node.events = opts.events;
   if (Array.isArray(node.bindings) && node.bindings.length) node.bindings = normalizeBindings(node.bindings);
-  if (Array.isArray(node.events) && node.events.length) node.events = normalizeEvents(node.events);
+  if (Array.isArray(node.events) && node.events.length) node.events = normalizeEvents(node.events, node.type);
   return node;
 }
 

@@ -209,6 +209,7 @@ export function makeBinding(spec: any, extra: Record<string, any> = {}): any {
 export function normalizeBindings(bindings: any[]): any[] {
   if (!Array.isArray(bindings)) return bindings;
   return bindings.map((b) => {
+    if (typeof b === "string") return makeBinding(b); // bare "name::field" target
     if (!b || typeof b !== "object") return b;
     if (b.id && b.name) return b; // already well-formed
     return makeBinding(b);
