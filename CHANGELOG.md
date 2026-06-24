@@ -5,6 +5,15 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.12.0] - 2026-06-24
+
+### Added
+- New `update_product` tool updates an existing product's `name`, `description`, `images`, `category_ids`, `is_published` flag, or `variations` (price/stock/SKU per variant); pass only the fields to change alongside `product_id`.
+- New `set_product_published` tool publishes or unpublishes one or more products by `product_ids` in a single call, without requiring a full `update_product`.
+- New `delete_product` tool deletes one or more products by `product_ids`.
+- New `update_product_category` tool updates a product category's `name`, `image`, `description`, or visibility (`hidden` flag) by category `id`.
+- New `delete_product_category` tool deletes one or more product categories by `ids`.
+
 ## [1.11.1] - 2026-06-24
 
 ### Fixed

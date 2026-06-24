@@ -5,6 +5,15 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.12.0] - 2026-06-24
+
+### Added
+- Tool mới `update_product` cập nhật `name`, `description`, `images`, `category_ids`, cờ `is_published` hoặc `variations` (giá/tồn kho/SKU theo từng biến thể) của sản phẩm hiện có; chỉ cần truyền các trường cần thay đổi cùng với `product_id`.
+- Tool mới `set_product_published` phát hành hoặc ẩn một hoặc nhiều sản phẩm theo `product_ids` trong một lần gọi duy nhất, không cần thực hiện `update_product` đầy đủ.
+- Tool mới `delete_product` xoá một hoặc nhiều sản phẩm theo `product_ids`.
+- Tool mới `update_product_category` cập nhật `name`, `image`, `description` hoặc trạng thái hiển thị (cờ `hidden`) của danh mục sản phẩm theo `id`.
+- Tool mới `delete_product_category` xoá một hoặc nhiều danh mục sản phẩm theo `ids`.
+
 ## [1.11.1] - 2026-06-24
 
 ### Fixed
