@@ -511,9 +511,8 @@ IMPORTANT: Before calling, you MUST read existing content with list_page_content
       })
   );
 
-  server.tool("list_global_sections", "List reusable global sections", {}, () =>
-    handle(() => api.listGlobalSections())
-  );
+  // list_global_sections (+ get/search/element drill-downs) live in tools/global-sections.ts
+  // — they return SLIM summaries instead of the raw multi-MB tree this endpoint produces.
 
   // ── Element interaction tools ──
 

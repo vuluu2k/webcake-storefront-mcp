@@ -200,6 +200,29 @@ export class WebcakeCmsApi {
   listGlobalSections() {
     return this.request("GET", `/api/v1/site/${this.siteId}/global_sections`);
   }
+  /** Upsert/delete global sections (Header/Footer/reusable blocks) via the site /save
+   *  pipeline — the SAME endpoint the builder uses. Each entry carries a `status`
+   *  ("new"|"update"|"delete") and is matched by (site_id, section_id). `section` is sent
+   *  as an OBJECT (backend Jason.encode!s it). Optionally pass `pages` (each { id, source }
+   *  with source a JSON STRING) to embed the section node into page sources in the same
+   *  atomic save — required for a header/footer to actually render. `settings` MUST be the
+   *  current site settings (string) or /save would null them; we fetch them when omitted. */
+  async saveGlobalSections({ global_sections = [], pages = [], settings, changes }: { global_sections?: any[]; pages?: any[]; settings?: any; changes?: any } = {}) {
+    let s = settings;
+    if (s === undefined) s = await this.getSiteSettings().catch(() => ({}));
+    const settingsStr = typeof s === "string" ? s : JSON.stringify(s || {});
+    return this.request("POST", `/api/v1/site/${this.siteId}/save`, {
+      body: {
+        settings: settingsStr,
+        global_sources: [],
+        page_contents: [],
+        changes: changes || {},
+        pages,
+        global_sections,
+      },
+      timeout: 120000,
+    });
+  }
   getSite() {
     return this.request("GET", `/api/v1/site/${this.siteId}/`);
   }

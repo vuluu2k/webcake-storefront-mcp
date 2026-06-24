@@ -19,7 +19,7 @@ import type { Handle } from "../server.js";
 
 // ── Source tree helpers ──
 
-function parseSource(sourceJson: any): any {
+export function parseSource(sourceJson: any): any {
   try {
     return typeof sourceJson === "string" ? JSON.parse(sourceJson) : sourceJson;
   } catch {
@@ -31,7 +31,7 @@ function parseSource(sourceJson: any): any {
  *  - Page format: { sections: [...] } → returns sections array
  *  - Global source format: { id, type, children: [...] } → returns [rootNode]
  */
-function getRoots(source: any): any[] {
+export function getRoots(source: any): any[] {
   if (!source) return [];
   if (source.sections) return source.sections;
   if (source.id) return [source];
@@ -53,7 +53,7 @@ function walkSource(source: any, fn: (node: any) => boolean | void): void {
   }
 }
 
-function buildOverview(source: any): { sections: number; elements: number; types: Record<string, number>; classes: string[] } {
+export function buildOverview(source: any): { sections: number; elements: number; types: Record<string, number>; classes: string[] } {
   const typeCounts: Record<string, number> = {};
   const customClasses = new Set<string>();
   let total = 0;
@@ -73,7 +73,7 @@ function buildOverview(source: any): { sections: number; elements: number; types
   };
 }
 
-function nodeToDetail(node: any): any {
+export function nodeToDetail(node: any): any {
   const entry: any = { id: node.id || "", type: node.type || "unknown" };
   if (node.style && Object.keys(node.style).length) entry.style = node.style;
   if (node.config && Object.keys(node.config).length) entry.config = node.config;
@@ -90,7 +90,7 @@ function nodeToDetail(node: any): any {
   return entry;
 }
 
-function findNodeById(source: any, elementId: string): any {
+export function findNodeById(source: any, elementId: string): any {
   let found: any = null;
   walkSource(source, (node) => {
     if (node.id === elementId) { found = node; return false; }
@@ -155,7 +155,7 @@ function applyNodeUpdates(node: any, updates: any): void {
   }
 }
 
-function searchElements(source: any, filters: any): any[] {
+export function searchElements(source: any, filters: any): any[] {
   const results: any[] = [];
   const limit = filters.limit || 50;
   walkSource(source, (node) => {
@@ -189,7 +189,7 @@ function searchElements(source: any, filters: any): any[] {
  *   │  └─ TEXT-2 [text] "Product name"
  *   └─ BUTTON-1 [button] "Thanh toán" .checkout-btn [2ev]
  */
-function buildTreeText(source: any): string {
+export function buildTreeText(source: any): string {
   const roots = getRoots(source);
   if (!roots.length) return "(empty)";
   const lines: string[] = [];
