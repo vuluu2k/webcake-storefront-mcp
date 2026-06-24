@@ -5,6 +5,14 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.12.1] - 2026-06-24
+
+### Fixed
+- `save_file_version` và `get_file_versions` đều gửi tham số dưới key `cms_file_id`, trong khi backend đọc `file_id`; các phiên bản được lưu mà không liên kết với file nào và lịch sử version luôn trả về rỗng.
+
+### Changed
+- Mô tả của `get_file_versions` nay ghi rõ rằng mỗi version trả về bao gồm toàn bộ nội dung đã lưu, đồng thời hướng dẫn cách khôi phục phiên bản cũ bằng cách truyền nội dung đó vào `update_http_function` (với file HTTP function) hoặc `update_cms_file`.
+
 ## [1.12.0] - 2026-06-24
 
 ### Added

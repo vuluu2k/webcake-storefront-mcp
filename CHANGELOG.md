@@ -5,6 +5,14 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.12.1] - 2026-06-24
+
+### Fixed
+- `save_file_version` and `get_file_versions` both sent the parameter as `cms_file_id`, but the backend reads `file_id`; versions were saved unlinked to any file and version history always returned empty.
+
+### Changed
+- `get_file_versions` description now states that each returned version includes its full saved content, and documents how to restore a prior version by passing that content to `update_http_function` (for HTTP-function files) or `update_cms_file`.
+
 ## [1.12.0] - 2026-06-24
 
 ### Added
