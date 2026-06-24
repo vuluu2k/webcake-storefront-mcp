@@ -37,7 +37,26 @@ children with a grid:
 - each child config also has \`rowStart/rowEnd\` (1-based grid lines),
   \`constraintX\` (['left'|'right'|'centerLeft']), \`constraintY\` (['top'|'bottom'|'centerTop']).
 new_section does ALL of this for you: pass children and they are stacked one row each in
-the centre column. To build multi-column layouts, nest a container child with its own grid.
+the centre column.
+
+## Multi-column rows (cards side by side) — USE THIS, real pages are full of them
+A plain vertical stack looks like a blog post, not a designed page. Feature cards,
+category tiles, footer columns, a text+image hero — all are HORIZONTAL rows. Two ways:
+- new_row(children=[colA, colB, colC]) → a container whose children sit SIDE BY SIDE in
+  equal columns. Place the returned node as a child of a section.
+- Inside new_section, add \`layout:"row"\` to a CONTAINER child spec and its children become
+  columns: \`{ type:"container", layout:"row", children:[ {..}, {..}, {..} ] }\`.
+Rows are RESPONSIVE automatically: finalizeForRender collapses them on small screens
+(default tablet=2 columns, mobile=1) so cards never shrink to slivers — override with
+\`collapse:{bp3:2,bp4:1}\`. Uneven columns via \`colWidths\` (e.g. a 2:1 text/image split:
+\`colWidths:[{unit:'fr',value:2},{unit:'fr',value:1}]\`), spacing via \`columnGap\`/\`rowGap\`.
+Each column is usually a \`container\` holding its own stacked children (image + title +
+text). Example feature row:
+\`new_row(children=[
+  { type:"container", children:[ {type:"image",opts:{...}}, {type:"text",opts:{text:"Giao nhanh"}} ] },
+  { type:"container", children:[ {type:"image",opts:{...}}, {type:"text",opts:{text:"Chất lượng"}} ] },
+  { type:"container", children:[ {type:"image",opts:{...}}, {type:"text",opts:{text:"Bảo hành"}} ] },
+])\`
 
 ## Where layout/style live: per-breakpoint keys (NOT \`runtime\`)
 new_section / new_element emit a temporary \`runtime: { style, config }\`. That is a
