@@ -5,6 +5,22 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.22.0] - 2026-06-25
+
+### Added
+- `list_bindings` nay trả về map `meta_keys` tài liệu hóa các combine-key liên kết dữ liệu được khai thác từ 34 template production — `name_style`, `attr_id`, `prefix_content`, `separator`, `value` (hiển thị tính toán từ hai nguồn), `number_of_line_title` và các key khác — kiểm soát cách một trường liên kết được hiển thị hoặc kết hợp bên trong một phần tử.
+- Ba dataset liên kết mới: `agency` (thông tin chi nhánh store-locator: `name`, `phone_number`, `address`, `time`), `blog` (tiêu đề danh mục blog trên trang danh sách) và `search_result` (truy vấn tìm kiếm và sản phẩm khớp trên trang tìm kiếm).
+- Dataset `product` nay bổ sung `discount_price_to_original_price` và tám trường course/LMS: `total_course`, `total_course_learning`, `course_member_quantity`, `course_total_time`, `course_video_quantity`, `lesson_name`, `lesson_description` và `video_lesson`.
+- Dataset `cart_item` nay bổ sung `cart_surcharge_fee`, `discount_percent`, `discount_reward_point` và `total_price_all_promotions`.
+- Dataset `order` nay bổ sung `order_promotion_coupon`; dataset `customer` nay bổ sung `succeed_order_count`.
+- 21 event action trước đây bị `validate_page` gắn cờ là unknown nay đã được nhận diện: `search`, `open_quick_view`, `back_to_menu_parent`, `toggle_group`, `add_wishlist_product`, `wishlist_remove_item`, `close_search`, `close_cart_item`, `edit_cart_item`, `change_column_grid_prd`, `open_product_page`, `set_address_default`, `copy_promotion`, `use_reward_point`, `transform_x`, `transform_y`, `cursor`, `lightbox`, `change_avatar` và `open_preview_product_gallery`; số lượng event action được hỗ trợ tăng từ 37 lên 58.
+- `get_build_guide` nay bổ sung mục "Composition recipes" mô tả các repeater tự render (`grid-product`, `slider-product`, `post-list`) so với các hàng dataset-cell được ghép thủ công (`cart-items`, `order-items`, `layout-dataset`, `promotions`), và pattern header dual-menu chuẩn (desktop `menu` nằm ngang + mobile `menu` dạng hamburger/collapse kèm `cart-icon`, `input-search`, `member-bar` và `language-menu`).
+
+### Changed
+- `list_elements` nay tài liệu hóa thêm hai giá trị `type` của `menu` — `collapse` và `grid` — và phần ghi chú mô tả pattern header dual-menu (hai phần tử `menu` riêng biệt cho desktop và mobile) phổ biến trong các template production thực tế.
+- `open_popup`, `open_page`, `add_to_cart` và các hover action (`change_background`, `change_text_color`, `change_border_color`, `scale`) nay cung cấp thêm các trường optional (`apply_element`, `cursor`, `el_target_id`, `open_page_id`, `open_popup_id`, v.v.) được khai thác từ cách dùng trong template thực tế.
+- Tài liệu binding trong `get_build_guide` nay bao gồm các combine-key (`name_style`, `prefix_content`, `value` cho node tính toán từ hai nguồn, `number_of_line_title`, `attr_id`) và hướng người dùng đến `list_bindings → meta_keys` để xem đầy đủ.
+
 ## [1.21.0] - 2026-06-25
 
 ### Changed

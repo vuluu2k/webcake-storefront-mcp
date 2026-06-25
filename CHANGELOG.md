@@ -5,6 +5,22 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.22.0] - 2026-06-25
+
+### Added
+- `list_bindings` now returns a `meta_keys` map documenting binding combine-keys mined from 34 production templates — `name_style`, `attr_id`, `prefix_content`, `separator`, `value` (dual-source computed display), `number_of_line_title`, and others — that control how a bound field renders or combines inside an element.
+- Three new binding datasets are available: `agency` (store-locator branch fields: `name`, `phone_number`, `address`, `time`), `blog` (blog category heading on list pages), and `search_result` (search query and matched products on a search page).
+- The `product` binding dataset now includes `discount_price_to_original_price` and eight course/LMS fields: `total_course`, `total_course_learning`, `course_member_quantity`, `course_total_time`, `course_video_quantity`, `lesson_name`, `lesson_description`, and `video_lesson`.
+- The `cart_item` binding dataset now includes `cart_surcharge_fee`, `discount_percent`, `discount_reward_point`, and `total_price_all_promotions`.
+- The `order` binding dataset now includes `order_promotion_coupon`; the `customer` dataset now includes `succeed_order_count`.
+- 21 event actions previously flagged as unknown by `validate_page` are now recognized: `search`, `open_quick_view`, `back_to_menu_parent`, `toggle_group`, `add_wishlist_product`, `wishlist_remove_item`, `close_search`, `close_cart_item`, `edit_cart_item`, `change_column_grid_prd`, `open_product_page`, `set_address_default`, `copy_promotion`, `use_reward_point`, `transform_x`, `transform_y`, `cursor`, `lightbox`, `change_avatar`, and `open_preview_product_gallery`; the recognized event action count grows from 37 to 58.
+- `get_build_guide` now includes a "Composition recipes" section describing self-rendering repeaters (`grid-product`, `slider-product`, `post-list`) versus hand-composed dataset-cell rows (`cart-items`, `order-items`, `layout-dataset`, `promotions`), and the canonical dual-menu header pattern (horizontal desktop `menu` + hamburger/collapse mobile `menu` with `cart-icon`, `input-search`, `member-bar`, and `language-menu`).
+
+### Changed
+- `list_elements` now documents two additional `menu` `type` values — `collapse` and `grid` — and its notes now describe the dual-menu header pattern (separate desktop and mobile `menu` elements) found in real production templates.
+- `open_popup`, `open_page`, `add_to_cart`, and hover actions (`change_background`, `change_text_color`, `change_border_color`, `scale`) now expose additional optional fields (`apply_element`, `cursor`, `el_target_id`, `open_page_id`, `open_popup_id`, etc.) drawn from real template usage.
+- `get_build_guide` binding documentation now covers the combine-keys (`name_style`, `prefix_content`, `value` for dual-source computed nodes, `number_of_line_title`, `attr_id`) and points callers to `list_bindings → meta_keys` for the complete reference.
+
 ## [1.21.0] - 2026-06-25
 
 ### Changed
