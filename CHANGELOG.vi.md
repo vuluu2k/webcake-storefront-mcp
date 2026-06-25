@@ -5,6 +5,15 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.17.0] - 2026-06-24
+
+### Added
+- Tool mới `new_row` tạo một container đa cột responsive với các phần tử con được đặt nằm ngang cạnh nhau (từ trái sang phải); hàng tự động thu gọn xuống 2 cột trên tablet và 1 cột trên mobile, có thể tinh chỉnh qua `column_gap`, `row_gap`, `col_widths` và `collapse`.
+- Spec phần tử con truyền vào `new_section` và `build_page` nay chấp nhận trường `layout`; đặt `layout:"row"` trên một container spec để các phần tử con nằm ngang thay vì xếp chồng dọc, với các tùy chọn `columnGap`, `rowGap`, `colWidths` và `collapse` để kiểm soát responsive chi tiết.
+
+### Changed
+- `get_build_guide` nay bổ sung mục "Multi-column rows" hướng dẫn cách dùng tool `new_row` và pattern `layout:"row"` trên container spec, kèm ví dụ thực tế cho thẻ tính năng, ô danh mục, cột footer và bố cục hero hai cột.
+
 ## [1.16.0] - 2026-06-24
 
 ### Added

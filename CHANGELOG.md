@@ -5,6 +5,15 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.17.0] - 2026-06-24
+
+### Added
+- New `new_row` tool builds a multi-column responsive row container where child elements are placed side by side (left to right); the row auto-collapses to two columns on tablet and one column on mobile, with `column_gap`, `row_gap`, `col_widths`, and `collapse` parameters available for tuning.
+- Container child specs passed to `new_section` and `build_page` now accept a `layout` field; set `layout:"row"` to place that container's children side by side instead of stacked, with optional `columnGap`, `rowGap`, `colWidths`, and `collapse` fields for fine-grained responsive control.
+
+### Changed
+- `get_build_guide` now includes a "Multi-column rows" section documenting the `new_row` tool and the `layout:"row"` container spec pattern, with examples for feature cards, category tiles, footer columns, and two-column hero layouts.
+
 ## [1.16.0] - 2026-06-24
 
 ### Added
