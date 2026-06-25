@@ -229,9 +229,44 @@ export class WebcakeCmsApi {
   saveSite(params: any = {}) {
     return this.request("POST", `/api/v1/site/${this.siteId}/save`, { body: params, timeout: 60000 });
   }
+  /** Rebuild every page's compiled CSS (page_source.app_css) by replaying the builder's
+   *  /save pipeline — the ONLY path that regenerates the storefront's dynamic CSS. The
+   *  backend builds CSS per page in `params["pages"]` from that page's `source`; /publish
+   *  does NOT do this, so a site changed only through the MCP renders with stale/empty CSS
+   *  until this runs. Sends each page's CURRENT saved source (stringified) + current
+   *  settings; empty global arrays leave globals/popups untouched. */
+  async rebuildSiteCss(settings?: any): Promise<{ rebuilt: number }> {
+    const res: any = await this.listPages();
+    const list = (res && res.data) || res || [];
+    const pages = (Array.isArray(list) ? list : [])
+      .map((p: any) => {
+        const src = p && p.source && p.source.source;
+        if (src == null || src === "") return null;
+        return {
+          id: p.id,
+          source: typeof src === "string" ? src : JSON.stringify(src),
+          settings: JSON.stringify(p.settings || {}),
+          custom_code: p.custom_code || {},
+        };
+      })
+      .filter(Boolean);
+    if (!pages.length) return { rebuilt: 0 };
+    let s = settings;
+    if (s === undefined) s = await this.getSiteSettings().catch(() => ({}));
+    const settingsStr = typeof s === "string" ? s : JSON.stringify(s || {});
+    const changes: Record<string, number> = {};
+    for (const p of pages as any[]) changes[p.id] = 1;
+    await this.request("POST", `/api/v1/site/${this.siteId}/save`, {
+      body: { pages, settings: settingsStr, changes, global_sources: [], global_sections: [], page_contents: [] },
+      timeout: 120000,
+    });
+    return { rebuilt: pages.length };
+  }
   /** Publish the site live. /publish runs the full "save" pipeline, which OVERWRITES
    *  site.settings with the body's `settings` — so we send the CURRENT settings (else
-   *  they'd be nulled, disabling use_store/use_blog/etc.). Other collections default to []. */
+   *  they'd be nulled, disabling use_store/use_blog/etc.). Other collections default to [].
+   *  We ALSO rebuild every page's CSS first (rebuildSiteCss) because /publish alone does
+   *  not regenerate the storefront's dynamic CSS — without it the live site looks unstyled. */
   async publishSite(params: any = {}) {
     let settings = params.settings;
     if (settings === undefined) {
@@ -240,6 +275,8 @@ export class WebcakeCmsApi {
     // The save pipeline stores site.settings as a JSON STRING — an object body is
     // rejected (422). Stringify unless the caller already passed a string.
     const settingsStr = typeof settings === "string" ? settings : JSON.stringify(settings || {});
+    // Regenerate compiled CSS for every page before publishing (no-op-safe on failure).
+    await this.rebuildSiteCss(settingsStr).catch(() => {});
     return this.request("POST", `/api/v1/site/${this.siteId}/publish`, {
       body: { global_sources: [], global_sections: [], page_contents: [], ...params, settings: settingsStr },
       timeout: 60000,

@@ -79,10 +79,12 @@ Images must be HOSTED URLs — get them from search_images or upload_images firs
           name,
           variations: vars,
           // These MUST be arrays — the backend does Enum.reduce over them and 500s on nil.
+          // (product_attributes is reduced by get_all_attrs on the storefront product-attrs
+          //  endpoint, so it must be [] — never omitted — even for a no-variation product.)
           categories: category_ids || [],
           ribbons: [],
+          product_attributes: attributes || [],
           ...(description ? { description } : {}),
-          ...(attributes ? { product_attributes: attributes } : {}),
           ...(images && images.length ? { image: images[0] } : {}),
         };
 
