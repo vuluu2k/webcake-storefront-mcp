@@ -70,6 +70,29 @@ interface StackOpts {
  * finalizeForRender() later expands `runtime` into the per-breakpoint keys the
  * storefront actually reads (bp1..bp4).
  */
+/**
+ * Element types that must FILL their grid cell's width to lay out correctly — the
+ * storefront renderer turns a single-value `constraintX` ("centerLeft") into
+ * `justify-self: center`, which shrinks the element to its content width. For repeaters
+ * (a grid-product then computes `repeat(auto-fit, minmax(min, 1fr))` against that width)
+ * that collapses the whole grid to ONE column. Giving them `["left","right"]` makes the
+ * renderer emit `justify-self: stretch` so they span the full content column.
+ */
+const FILL_WIDTH_TYPES = new Set([
+  "grid-product", "slider-product", "cart-items", "order-items", "post-list",
+  "grid-category", "grid-blog", "product-gallery", "product-image-carousel",
+  "custom-layout", "layout-dataset", "form",
+]);
+
+/** Default horizontal constraint for a child: stretch for fill-width components,
+ *  else the builder's usual centred placement. Respects an explicit constraintX. */
+function defaultConstraintX(child: any): string[] {
+  return (
+    (child.runtime && child.runtime.config && child.runtime.config.constraintX) ||
+    (FILL_WIDTH_TYPES.has(child.type) ? ["left", "right"] : ["centerLeft"])
+  );
+}
+
 export function stackChildren(container: any, children: any[], opts: StackOpts = {}) {
   const gridCols = opts.gridCols || 1;
   const colStart = opts.contentColStart || 1;
@@ -98,7 +121,7 @@ export function stackChildren(container: any, children: any[], opts: StackOpts =
       columnEnd: colEnd,
       rowStart: i + 1,
       rowEnd: i + 2,
-      constraintX: (child.runtime.config && child.runtime.config.constraintX) || ["centerLeft"],
+      constraintX: defaultConstraintX(child),
       constraintY: (child.runtime.config && child.runtime.config.constraintY) || ["top"],
       loaded: true,
     };
@@ -164,7 +187,7 @@ export function rowChildren(container: any, children: any[], opts: RowOpts = {})
       columnEnd: i + 2,
       rowStart: 1,
       rowEnd: 2,
-      constraintX: (child.runtime.config && child.runtime.config.constraintX) || ["centerLeft"],
+      constraintX: defaultConstraintX(child),
       constraintY: (child.runtime.config && child.runtime.config.constraintY) || ["top"],
       loaded: true,
       __cell: { index: i, ...meta },
