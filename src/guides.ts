@@ -95,6 +95,32 @@ they pick up site_id. Below is EXACTLY what each call sends to the backend + wha
         automation set up on the site — find it with the MCP tool list_automations.
         data is the payload passed into that automation/email template.
 
+## File / media uploads → CDN url
+Three ways, all returning a permanent CDN url:
+
+1) A client POSTs a real file (multipart/form-data) to your function — it is auto-stored on
+   the CDN and request.params.<field> / request.data.<field> is simply its CDN url (string).
+   Use it directly, no upload call needed. (A function never sees raw file bytes.)
+
+2) Upload from inside the function with '@webcake/media':
+       import { upload } from '@webcake/media';
+       const url = await upload(request, { url: someRemoteUrl });          // rehost a link
+       const url = await upload(request, { base64, content_type });        // bytes you hold
+   - { url }  — rehost a remote file (image/video/any); the SERVER fetches it (no base64).
+     Use for an AI-generated image url, an external API's file, etc.
+   - { base64, content_type } — content the function built/holds (data URI or raw base64;
+     content_type e.g. "image/png", "application/pdf"). Throws on failure.
+
+3) Direct call (admin/server, with the site's cms admin token):
+       POST /api/v1/cms_function/{site_id}/media/upload   (Authorization: Bearer <token>)
+       multipart field "file"  OR  JSON { url }  OR  JSON { base64, content_type }
+       → { success: true, data: "<cdn url>" }
+
+All three save the file into the site's media library under a dedicated, non-deletable
+folder ("API Uploads") and count toward the site's storage quota (BASIC < 3GB, STANDARD
+< 8GB, PRO unlimited). Over quota: upload() / the direct call return an error; a multipart
+file POSTed to a function comes through as null for that field.
+
 ## Sandbox globals (no import)
 - fetch(url, options)            — HTTP requests; response.ok/status/text()/json().
 - URLSearchParams                — build/parse query strings.
