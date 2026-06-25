@@ -137,23 +137,16 @@ const trustBadge = (icon: string, label: string, p: Required<Palette>) => ({
   ],
 });
 
-/** A styled product grid card config that looks like a real shop, not a bare list. */
+/** A product-grid card config matching real designer templates. grid-product self-renders
+ *  image + name + price; the factory now ships the real designer defaults (image_ratio 4/5,
+ *  products_per_load 36, gap_column 30/gap_row 15, bold price, show original/discount price),
+ *  so here we only set the column count + the price accent colour from the palette. */
 const productGrid = (p: Required<Palette>, columns = 4) => ({
   type: "grid-product",
   opts: {
     config: {
       columns,
-      image_ratio: "1/1",
-      img_object_fit: "cover",
-      gap_column: 24,
-      gap_row: 32,
-      cardBorderRadius: 14,
-      cardBoxShadow: "0 6px 22px rgba(0,0,0,0.06)",
-      cardPadding: 12,
-      cardBackground: p.surface,
-      productNameColor: p.text,
       productPriceColor: p.accent,
-      showAddToCart: true,
     },
   },
 });
@@ -267,14 +260,33 @@ export function cartPageSource(p: Required<Palette>) {
 }
 
 export function checkoutPageSource(p: Required<Palette>) {
+  // form_order config keys mirror real designer templates: input background, placeholder
+  // colour, label colour/gap, input padding. The success event (eventName defaults to
+  // "success" for a form) redirects to the Thank-you page once it exists (navTo sentinel).
+  const fieldStyle = { borderColor: p.border, borderRadius: "8px" };
+  const formConfig = {
+    backgroundInput: "#ffffff",
+    placeholderColor: p.muted,
+    labelColor: p.text,
+    labelMarginBottom: 8,
+    textPadding: 15,
+    columnGap: 15,
+    rowGap: 15,
+  };
   const form = {
     type: "form",
-    opts: { specials: { type: "form_order" }, style: { background: p.surface } },
+    opts: {
+      specials: { type: "form_order" },
+      config: formConfig,
+      events: [{ action: "open_page", _navTo: "complete" }],
+      style: { background: p.surface },
+    },
     children: [
-      { type: "input", opts: { specials: { field_name: "full_name", label: "Họ và tên", placeholder: "Nguyễn Văn A", required: true, show_label: true }, style: { borderColor: p.border, borderRadius: "8px" } } },
-      { type: "phone-number", opts: { specials: { field_name: "phone_number", label: "Số điện thoại", required: true, show_label: true }, style: { borderColor: p.border, borderRadius: "8px" } } },
-      { type: "address", opts: { specials: { field_name: "address", label: "Địa chỉ nhận hàng", show_label: true }, style: { borderColor: p.border, borderRadius: "8px" } } },
-      { type: "text-area", opts: { specials: { field_name: "note", label: "Ghi chú", show_label: true }, style: { borderColor: p.border, borderRadius: "8px" } } },
+      { type: "input", opts: { specials: { field_name: "full_name", label: "Họ và tên", placeholder: "Nguyễn Văn A", required: true, show_label: true }, config: formConfig, style: fieldStyle } },
+      { type: "phone-number", opts: { specials: { field_name: "phone_number", label: "Số điện thoại", placeholder: "09xx xxx xxx", required: true, show_label: true }, config: formConfig, style: fieldStyle } },
+      { type: "email", opts: { specials: { field_name: "email", label: "Email", placeholder: "email@example.com", show_label: true }, config: formConfig, style: fieldStyle } },
+      { type: "address", opts: { specials: { field_name: "address", label: "Địa chỉ nhận hàng", show_label: true }, config: formConfig, style: fieldStyle } },
+      { type: "text-area", opts: { specials: { field_name: "note", label: "Ghi chú", placeholder: "Ghi chú cho đơn hàng (tuỳ chọn)", show_label: true }, config: formConfig, style: fieldStyle } },
       { type: "submit-button", opts: { text: "Đặt hàng", style: { background: p.accent, color: p.onAccent, borderRadius: "10px", height: 52, fontWeight: "600", width: "100%", textAlign: "center" } } },
     ],
   };
@@ -355,7 +367,7 @@ export function headerSection(opts: { brand?: string; links?: NavLink[]; palette
     colWidths: [{ unit: "px", absValue: 32 }, { unit: "max-c" } as any],
     collapse: { bp4: 2 },
     children: [
-      { type: "cart-icon", opts: { config: { color: p.text }, style: { width: 26, height: 26 } } },
+      { type: "cart-icon", opts: { style: { width: 26, height: 26, color: p.text } } },
       cta(opts.cta || "Đặt mua ngay", p, { navTo: "collections", height: 44 }),
     ],
   };

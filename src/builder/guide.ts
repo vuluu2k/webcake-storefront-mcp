@@ -88,9 +88,13 @@ A bare stack of default elements looks unfinished. Apply real styling:
 - HERO: prefer a section with a background image + an overlay heading/sub/button on top
   (set section_opts.style.background or a full-width image, then text centered), rather than a
   small image stacked above text.
-- PRODUCT GRID: style the cards — \`grid-product opts.config\`: { columns:3-4, image_ratio:"1/1",
-  img_object_fit:"cover", gap_column:20, gap_row:28, cardBorderRadius:12, cardBoxShadow:"0 6px 24px rgba(0,0,0,.08)",
-  productNameColor:"var(--color_00)", productPriceColor:"var(--color_02)" }.
+- PRODUCT GRID: grid-product SELF-RENDERS the image+name+price card; you mostly set
+  \`opts.config\`: { columns:3-4, image_ratio:"4/5" (a tall fashion card; "1/1" for square),
+  img_object_fit:"cover", gap_column:30, gap_row:15, product_info_padding_y:15,
+  productNameFontSize:18, productPriceFontSize:18, productPriceFontWeight:"bold" } and
+  \`opts.specials\`: { products_per_load:36, show_original_price:true, show_discount_on_price:true }.
+  (These are the real designer-template defaults — the factory now ships them, so a bare
+  grid-product already looks right; there are NO cardBorderRadius/cardBoxShadow keys.)
 - BRAND COLOURS: reuse var(--color_00) (text), and an accent (var(--color_02)/var(--color_03))
   for buttons, prices, highlights — consistent accent = looks intentional.
 - IMAGES: must be WebCake-CDN urls (search_images cdn_url / upload_images), else they won't show.
@@ -138,7 +142,12 @@ fields); the builder mints the id and picks a sensible \`eventName\` (trigger). 
 - Commerce: \`{ action:"add_to_cart", open_page:"cart" }\`, \`{ action:"buy_now" }\`, \`{ action:"apply_promotion" }\`.
 - Contact: \`{ action:"phone_call", phone_call_number:"+84…" }\`, \`{ action:"open_email", open_email:"hi@shop.vn" }\`.
 - Hover style (set eventName:"hover"): \`{ eventName:"hover", action:"scale" }\`.
+- Form follow-up (eventName defaults to "success" on a form): a form_order commonly carries
+  \`{ action:"open_page", open_page_id:"<thank-you page>" }\` so a successful order redirects.
 Example: \`new_element("button", { text:"Mua ngay", style:{…}, events:[{ action:"add_to_cart", open_page:"cart" }] })\`.
+NAV EXCEPTION — \`menu\`/\`menu-item\`: a menu-item's navigation lives in its SPECIALS, not events.
+For a page link set \`menu-item specials\`: { linkType:"page", linkPage:"<page id>", pageId:"<page id>", name:"Trang chủ" }.
+(Only generic elements — text/container/button/image/rectangle — navigate via the events array above.)
 validate_page warns on unknown actions, missing required fields, and events whose
 in-page target (toggle_id/scroll_to_id/…) doesn't exist on the page.
 

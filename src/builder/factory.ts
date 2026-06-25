@@ -454,6 +454,9 @@ export const buildElementWithBreakpoint = (el: any, breakpoint: string) => {
   delete el.runtime
 }
 
+// Real designer-template grid-product defaults (mined from prod theme "Mode Féminine"):
+// the card self-renders image + name + price; these keys control its look. Callers may
+// override any of them via opts.config / opts.specials.
 export const createGridProduct = (opts: any = {}) => {
   const product = cloneDeep(SKELETON)
 
@@ -462,10 +465,35 @@ export const createGridProduct = (opts: any = {}) => {
 
   product.runtime.style = {
     width: opts.width,
-    height: 354
+    height: 354,
+    ...(opts.style || {})
   }
 
-  product.runtime.config = { heightUnit: 'auto' }
+  product.runtime.config = {
+    columns: 4,
+    image_ratio: '4/5',
+    img_object_fit: 'cover',
+    gap_column: 30,
+    gap_row: 15,
+    product_info_padding_y: 15,
+    price_padding_y: 5,
+    productNameFontSize: 18,
+    productPriceFontSize: 18,
+    productPriceFontWeight: 'bold',
+    productOriginalPriceFontSize: 18,
+    responsive: 'custom',
+    heightUnit: 'auto',
+    ...(opts.config || {})
+  }
+
+  product.specials = {
+    element_async: true,
+    products_per_load: 36,
+    show_original_price: true,
+    show_discount_on_price: true,
+    show_quick_view: false,
+    ...(opts.specials || {})
+  }
 
   return product
 }
@@ -568,20 +596,32 @@ export const createMemberBar = (opts: any = {}) => {
   return menuBar
 }
 
-export const createCartIcon = ({ svg, itemCount, config, children }: any = {}) => {
+// Default shopping-bag icon (real prod template svg, 28×28, fill=currentColor so it
+// inherits the element's colour). Used when a caller doesn't supply its own svg, so a
+// header cart-icon is never blank.
+const DEFAULT_CART_SVG = '<svg width="100%" height="100%" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M14.0166 3.76758C10.2864 3.76758 7.38924 7.04233 7.38924 10.9179C7.38924 10.9179 7.38924 10.9179 7.38924 10.918H4.94829C4.21457 10.918 3.66298 11.5872 3.8031 12.3074L5.89025 23.0355C6.10354 24.1318 7.06378 24.9232 8.18064 24.9232H19.8444C20.9613 24.9232 21.9215 24.1318 22.1348 23.0355L24.2219 12.3074C24.3621 11.5872 23.8105 10.918 23.0767 10.918H20.644C20.644 10.9179 20.644 10.9179 20.644 10.9179C20.644 7.04233 17.7468 3.76758 14.0166 3.76758ZM18.894 10.918C18.894 10.9179 18.894 10.9179 18.894 10.9179C18.894 7.86235 16.6401 5.51758 14.0166 5.51758C11.3931 5.51758 9.13924 7.86235 9.13924 10.9179C9.13924 10.9179 9.13924 10.9179 9.13924 10.918H18.894ZM7.60804 22.7013L5.65605 12.668H22.369L20.417 22.7013C20.3637 22.9754 20.1236 23.1732 19.8444 23.1732H8.18064C7.90143 23.1732 7.66137 22.9754 7.60804 22.7013Z" fill="currentColor"></path></svg>'
+
+export const createCartIcon = ({ svg, itemCount, config, style, children }: any = {}) => {
   const cart = cloneDeep(SKELETON)
 
   cart.id = 'CART-ICON-' + randomString(8)
   cart.type = 'cart-icon'
 
-  cart.runtime.config = { ...config }
+  cart.runtime.config = {
+    itemCountFontFamily: 'Roboto',
+    itemCountFontSize: '11px',
+    itemCountColor: 'white',
+    itemCountBorderRadius: '50%',
+    ...config
+  }
   cart.runtime.style = {
     width: 24,
-    height: 24
+    height: 24,
+    ...(style || {})
   }
 
-  cart.specials.svg = svg
-  cart.specials.itemCount = itemCount
+  cart.specials.svg = svg || DEFAULT_CART_SVG
+  cart.specials.itemCount = itemCount ?? 0
 
   if (children) cart.children = children || []
 
@@ -716,7 +756,11 @@ export const createProductGallery = (opts: any = {}) => {
   gallery.type = 'product-gallery'
 
   gallery.runtime.style = opts.style || {}
-  gallery.runtime.config = opts.config || {}
+  gallery.runtime.config = {
+    sizeThumbnail: { width: 580, height: 580 },
+    heightUnit: 'auto',
+    ...(opts.config || {})
+  }
 
   return gallery
 }
