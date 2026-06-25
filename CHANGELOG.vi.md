@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.17.1] - 2026-06-25
+
+### Changed
+- `get_http_function` và `get_site_custom_code` nay bổ sung mục "File / media uploads" vào hướng dẫn HTTP function nhúng sẵn, tài liệu hóa ba cách tải file từ bên trong một function để nhận về CDN URL cố định: tự động inject URL cho file POST dạng multipart/form-data, `@webcake/media` `upload()` để rehost một URL từ xa hoặc tải lên bytes base64, và gọi trực tiếp admin API.
+
 ## [1.17.0] - 2026-06-24
 
 ### Added

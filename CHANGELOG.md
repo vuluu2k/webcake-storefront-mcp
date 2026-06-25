@@ -5,6 +5,11 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.17.1] - 2026-06-25
+
+### Changed
+- `get_http_function` and `get_site_custom_code` now include a "File / media uploads" section in the embedded HTTP function guide, documenting three ways to upload files from inside a function and receive a permanent CDN URL: automatic URL injection for multipart form-data file POSTs, `@webcake/media` `upload()` for re-hosting a remote URL or uploading base64 bytes, and a direct admin API call.
+
 ## [1.17.0] - 2026-06-24
 
 ### Added
