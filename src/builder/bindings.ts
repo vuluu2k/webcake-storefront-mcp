@@ -36,7 +36,12 @@ export const BINDING_DATASETS: Record<string, BindingDataset> = {
       "product::product_categories", "product::brand_name", "product::product_tag",
       "product::product_remain_quantity", "product::total_sold_web", "product::rating_point",
       "product::rating_count", "product::variation_sku", "product::product_wholesale_price",
-      "product::discount_price_from_original_price", "product::preorder_text", "product::product_note",
+      "product::discount_price_from_original_price", "product::discount_price_to_original_price",
+      "product::preorder_text", "product::product_note",
+      // course / LMS products (use_store + course app):
+      "product::total_course", "product::total_course_learning", "product::course_member_quantity",
+      "product::course_total_time", "product::course_video_quantity", "product::lesson_name",
+      "product::lesson_description", "product::video_lesson",
     ],
   },
   "product-overlay": {
@@ -56,7 +61,9 @@ export const BINDING_DATASETS: Record<string, BindingDataset> = {
       "cart_item::cart_item_original_price", "cart_item::cart_item_subtotal", "cart_item::cart_item_total_price",
       "cart_item::cart_item_total_quantity", "cart_item::cart_item_prod_attr", "cart_item::sku",
       "cart_item::cart_total_price", "cart_item::cart_total_tax", "cart_item::cart_shipping_fee",
-      "cart_item::cart_promotion_discount", "cart_item::subtotal_before_discount", "cart_item::product_note",
+      "cart_item::cart_surcharge_fee", "cart_item::cart_promotion_discount", "cart_item::discount_percent",
+      "cart_item::discount_reward_point", "cart_item::total_price_all_promotions",
+      "cart_item::subtotal_before_discount", "cart_item::product_note",
     ],
   },
   order: {
@@ -68,6 +75,7 @@ export const BINDING_DATASETS: Record<string, BindingDataset> = {
       "order::order_payment_method", "order::shipping_fee", "order::subtotal", "order::total_price",
       "order::total_tax", "order::code_order", "order::order_status", "order::payment_status",
       "order::order_quantity", "order::order_date", "order::order_coupon", "order::order_promotion_discount",
+      "order::order_promotion_coupon",
     ],
   },
   order_item: {
@@ -107,6 +115,7 @@ export const BINDING_DATASETS: Record<string, BindingDataset> = {
       "customer::profile_avatar", "customer::profile_name", "customer::phone_number", "customer::email",
       "customer::gender", "customer::birthday", "customer::order_count", "customer::purchased_amount",
       "customer::pos_reward_point", "customer::pos_reward_point_level", "customer::pos_level_discount",
+      "customer::succeed_order_count",
     ],
   },
   customer_address: {
@@ -156,6 +165,47 @@ export const BINDING_DATASETS: Record<string, BindingDataset> = {
     summary: "Page / site info.",
     fields: ["general_info::page_name", "general_info::site_name", "general_info::menu_title"],
   },
+  agency: {
+    name: "agency",
+    page_type: "any",
+    repeater_parents: ["agency"],
+    summary: "A store / branch in a store-locator (agency) list.",
+    fields: ["agency::name", "agency::phone_number", "agency::address", "agency::time"],
+  },
+  blog: {
+    name: "blog",
+    page_type: "blog",
+    summary: "The current blog CATEGORY (heading on a blog list page) — distinct from `post`.",
+    fields: ["blog::category_name", "blog::category_description"],
+  },
+  search_result: {
+    name: "search_result",
+    page_type: "store",
+    summary: "Search-results context (the query + matched products) on a search page.",
+    fields: ["search_result::search_name", "search_result::products"],
+  },
+};
+
+// Binding META keys beyond {id,name,target} — these are HOW a source field combines into the
+// element (mined from 34 real templates). makeBinding preserves any of them verbatim, e.g.
+// new_element('text-dataset',{ bindings:[{ target:'product::product_name', name_style:'sku',
+// number_of_line_title:1 }] }). Listed so the AI knows the real combine-keys (no invented keys).
+export const BINDING_META_KEYS: Record<string, string> = {
+  name_style: "Render style of a name/value: 'sku' | 'variation-sku' (show the SKU/variation form).",
+  attr_id: "Bind a SPECIFIC product attribute by id (ATTR-xxxx) — used with attr::attr_name / attr::attr_value.",
+  target_attr: "For cart_item::cart_item_prod_attr — pick one attribute by name (e.g. 'Màu sắc').",
+  value_attr: "Companion to target_attr — which part to show ('value').",
+  prefix_content: "Text prepended before the value (e.g. '-' or a label).",
+  separator: "Separator string when the field is a list.",
+  value: "A SECOND source for a COMPUTED display, e.g. cart_item::cart_total_price with value:'form::coupon_price' subtracts the coupon. Combine two datasets in one node.",
+  order: "Index into a multi-value field (pick the Nth).",
+  order_value: "Which sub-value of an ordered field to show (e.g. 'description').",
+  number_of_line_title: "Clamp the text to N lines.",
+  showText: "Show the field label/text alongside the value (boolean).",
+  max_item_show: "Max items to render for a list-valued field.",
+  bind_image_by_category_id: "For images: resolve from a category instead of the product.",
+  auto_hide_without_star: "Hide the node when there's no rating (boolean).",
+  show_video_demo: "Show the product video demo (boolean).",
 };
 
 // Build fast lookups.
@@ -245,8 +295,9 @@ export function validateBindings(node: any): { errors: string[]; warnings: strin
 /** Catalog for the list_bindings discovery tool. */
 export function describeBindingsCatalog() {
   return {
-    note: "Dataset elements (text-dataset/image-dataset/…) and children of a repeater (grid-product, cart-items, post-list…) carry bindings:[{ id, name, target }]. Build via new_element opts.bindings (ids auto-minted) — e.g. new_element('text-dataset',{ bindings:[{ target:'product::product_price', show_tax:true }] }). A target only resolves on a page whose type enables its dataset (store→use_store, member→use_member, blog→use_blog) — build_page handles the flag.",
-    page_type_required: { store: ["product", "product-overlay", "cart_item", "order", "order_item", "category", "bonus_item", "promotion_item", "attr"], member: ["customer", "customer_address"], blog: ["post"], any: ["form", "general_info"] },
+    note: "Dataset elements (text-dataset/image-dataset/…) and children of a repeater (grid-product, cart-items, post-list…) carry bindings:[{ id, name, target, ...meta }]. Build via new_element opts.bindings (ids auto-minted) — e.g. new_element('text-dataset',{ bindings:[{ target:'product::product_price', show_tax:true }] }). A target only resolves on a page whose type enables its dataset (store→use_store, member→use_member, blog→use_blog) — build_page handles the flag. The optional meta keys (name_style, prefix_content, value, attr_id, …) control HOW the value renders/combines — see meta_keys.",
+    meta_keys: BINDING_META_KEYS,
+    page_type_required: { store: ["product", "product-overlay", "cart_item", "order", "order_item", "category", "bonus_item", "promotion_item", "attr", "search_result"], member: ["customer", "customer_address"], blog: ["post", "blog"], any: ["form", "general_info", "agency"] },
     repeater_context: REPEATER_CONTEXT,
     datasets: Object.values(BINDING_DATASETS).map((ds) => ({
       name: ds.name,

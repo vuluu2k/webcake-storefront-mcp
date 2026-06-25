@@ -51,22 +51,22 @@ export interface EventAction {
 
 export const EVENT_ACTIONS: EventAction[] = [
   // navigation
-  { action: "open_page", trigger: "click", category: "navigation", summary: "Go to a page in this site.", required: ["open_page_id"], optional: ["scrollTarget", "scroll_to_id", "scroll_to_element_id", "scrollMore", "no_follow", "active_color"] },
+  { action: "open_page", trigger: "click", category: "navigation", summary: "Go to a page in this site.", required: ["open_page_id"], optional: ["scrollTarget", "scroll_to_id", "scroll_to_element_id", "scrollMore", "no_follow", "active_color", "popup_id", "popup_overlay", "close_all_other_popup", "open_category_id", "open_blog_category_id", "open_menu_id", "activeNotify"] },
   { action: "open_link", trigger: "click", category: "navigation", summary: "Open an external URL.", required: ["link_target"], optional: ["link_target_url", "no_follow"] },
   { action: "open_category", trigger: "click", category: "navigation", summary: "Open a product category page.", required: ["open_category_id"], optional: ["no_follow"] },
   { action: "open_blog_category", trigger: "click", category: "navigation", summary: "Open a blog category page.", required: ["open_blog_category_id"], optional: ["no_follow"] },
   { action: "scroll_to", trigger: "click", category: "navigation", summary: "Smooth-scroll to a section/element on this page.", required: ["scroll_to_id"], optional: ["scroll_to_element_id", "scrollMore", "scrollTarget"], target_in_page: ["scroll_to_id", "scroll_to_element_id"] },
   { action: "direction_login", trigger: "click", category: "navigation", summary: "Redirect by login state: open_page_id if logged in, target_direction_id if not.", required: ["open_page_id"], optional: ["target_direction_id"] },
   // ui control
-  { action: "toggle", trigger: "click", category: "ui", summary: "Show/hide another element on this page.", required: ["toggle_id"], optional: ["toggle_status", "only_mode"], target_in_page: ["toggle_id"] },
-  { action: "open_popup", trigger: "click", category: "ui", summary: "Open a popup.", required: ["popup_id"], optional: ["popup_overlay", "close_all_other_popup"] },
+  { action: "toggle", trigger: "click", category: "ui", summary: "Show/hide another element on this page (the most common interaction — accordions, drawers, filters).", required: ["toggle_id"], optional: ["toggle_status", "only_mode"], target_in_page: ["toggle_id"] },
+  { action: "open_popup", trigger: "click", category: "ui", summary: "Open a popup (use mouseenter for a hover mini-cart/submenu).", required: ["popup_id"], optional: ["popup_overlay", "close_all_other_popup", "open_page_id", "only_mode", "toggle_id", "open_category_id", "scroll_to_id"] },
   { action: "close_popup", trigger: "click", category: "ui", summary: "Close a popup.", required: ["popup_id"], optional: ["popup_overlay", "close_all_other_popup"] },
   { action: "open_menu", trigger: "click", category: "ui", summary: "Open a dropdown/submenu.", required: ["open_menu_id"], target_in_page: ["open_menu_id"] },
   { action: "close_menu", trigger: "click", category: "ui", summary: "Close a menu.", optional: ["close_menu_id"] },
   { action: "change_tab", trigger: "click", category: "ui", summary: "Switch a swiper/tabs to a given tab.", required: ["change_tab_id"], optional: ["move_to", "tab_index", "tab_color"], target_in_page: ["change_tab_id"] },
   { action: "load_more", trigger: "click", category: "ui", summary: "Load more items in a list.", optional: ["load_more_id"], target_in_page: ["load_more_id"] },
   // cart / commerce
-  { action: "add_to_cart", trigger: "click", category: "cart", summary: "Add the current product to the cart.", optional: ["open_page", "auto_add_bonus", "activeNotify", "productNoteElId"] },
+  { action: "add_to_cart", trigger: "click", category: "cart", summary: "Add the current product to the cart.", optional: ["open_page", "open_page_id", "open_popup_id", "open_target", "open_category_id", "auto_add_bonus", "activeNotify", "productNoteElId"] },
   { action: "buy_now", trigger: "click", category: "cart", summary: "Add to cart and go straight to checkout.", optional: ["open_page", "auto_add_bonus", "activeNotify"] },
   { action: "add_to_cart_form", trigger: "success", category: "cart", summary: "Add to cart from a form submit (product form).", optional: ["open_page"] },
   { action: "open_cart", trigger: "click", category: "cart", summary: "Open the cart sidebar/drawer." },
@@ -91,10 +91,34 @@ export const EVENT_ACTIONS: EventAction[] = [
   { action: "send_whatsapp_mess", trigger: "click", category: "contact", summary: "Open WhatsApp chat.", optional: ["whatsapp_phone_number"] },
   { action: "sharing", trigger: "click", category: "contact", summary: "Share to a social network.", optional: ["shareTarget", "shareLink", "shareLinkCustom"] },
   // hover styles (eventName must be "hover")
-  { action: "scale", trigger: "hover", category: "hover", summary: "Scale the element on hover.", optional: ["el_target_id"] },
-  { action: "change_background", trigger: "hover", category: "hover", summary: "Change background colour on hover." },
-  { action: "change_text_color", trigger: "hover", category: "hover", summary: "Change text colour on hover." },
-  { action: "change_border_color", trigger: "hover", category: "hover", summary: "Change border colour on hover." },
+  { action: "scale", trigger: "hover", category: "hover", summary: "Scale the element on hover.", optional: ["el_target_id", "scale_value"] },
+  { action: "change_background", trigger: "hover", category: "hover", summary: "Change background colour on hover.", optional: ["change_background", "apply_element", "cursor", "el_target_id"] },
+  { action: "change_text_color", trigger: "hover", category: "hover", summary: "Change text colour on hover.", optional: ["change_text_color", "apply_element", "cursor", "el_target_id"] },
+  { action: "change_border_color", trigger: "hover", category: "hover", summary: "Change border colour on hover.", optional: ["change_border_color", "apply_element", "cursor", "el_target_id"] },
+  { action: "transform_y", trigger: "hover", category: "hover", summary: "Shift the element vertically on hover (lift effect).", optional: ["transform_y", "apply_element"] },
+  { action: "transform_x", trigger: "hover", category: "hover", summary: "Shift the element horizontally on hover.", optional: ["transform_x", "apply_element"] },
+  { action: "cursor", trigger: "hover", category: "hover", summary: "Change the cursor on hover.", optional: ["cursor"] },
+
+  // commerce / cart interactions (mined from 34 real templates)
+  { action: "open_quick_view", trigger: "click", category: "cart", summary: "Open a product quick-view popup from a product card.", optional: ["popup_id", "activeNotify", "active_color"] },
+  { action: "open_product_page", trigger: "click", category: "navigation", summary: "Open the product detail page for this card's product." },
+  { action: "open_preview_product_gallery", trigger: "click", category: "media", summary: "Open the product image in a gallery preview.", optional: ["open_preview_product_gallery_id", "target"] },
+  { action: "close_cart_item", trigger: "click", category: "cart", summary: "Remove this line item from the cart." },
+  { action: "edit_cart_item", trigger: "click", category: "cart", summary: "Edit this cart line item (qty / variation)." },
+  { action: "change_column_grid_prd", trigger: "click", category: "ui", summary: "Switch the product grid's column count.", optional: ["columnNumber", "target_id"], target_in_page: ["target_id"] },
+  { action: "add_wishlist_product", trigger: "click", category: "cart", summary: "Add the product to the wishlist.", optional: ["activeNotify"] },
+  { action: "wishlist_remove_item", trigger: "click", category: "cart", summary: "Remove an item from the wishlist.", optional: ["target_custom_links"] },
+  { action: "use_reward_point", trigger: "click", category: "cart", summary: "Apply loyalty reward points to the order.", optional: ["reward_point", "target"] },
+  { action: "copy_promotion", trigger: "click", category: "cart", summary: "Copy a promotion/coupon code to the clipboard.", optional: ["has_text", "is_hidden", "text_change"] },
+
+  // search + menu + account interactions
+  { action: "search", trigger: "click", category: "navigation", summary: "Run a storefront product search.", optional: ["open_page_id", "open_category_id"] },
+  { action: "close_search", trigger: "click", category: "ui", summary: "Close the search box/droppable.", optional: ["close_search_id"], target_in_page: ["close_search_id"] },
+  { action: "toggle_group", trigger: "click", category: "ui", summary: "Toggle a group of elements together (e.g. a mobile menu / filter group).", optional: ["actions", "data", "data_more", "show"] },
+  { action: "back_to_menu_parent", trigger: "click", category: "ui", summary: "Go back up one level in a multi-level mobile menu." },
+  { action: "lightbox", trigger: "click", category: "media", summary: "Open an image in a lightbox.", optional: ["lightboxLink"] },
+  { action: "set_address_default", trigger: "click", category: "account", summary: "Mark a saved address as the default." },
+  { action: "change_avatar", trigger: "click", category: "account", summary: "Change the member avatar." },
 ];
 
 const ACTION_BY_NAME: Record<string, EventAction> = {};

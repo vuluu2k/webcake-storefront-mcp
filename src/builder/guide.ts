@@ -132,6 +132,28 @@ key — only bp1..bp4.)
   \`text-dataset\` with \`product::product_name\` resolves to that cell's product (no extra
   wiring). Same for cart-items→cart_item, order-items→order_item, post-list→post,
   grid-category→category. A target only resolves on a page of the matching \`type\` (below).
+- BINDING COMBINE-KEYS (how a field renders/combines — mined from real templates; pass them
+  alongside \`target\`): \`name_style:"sku"|"variation-sku"\`, \`prefix_content:"-"\` (prepend),
+  \`number_of_line_title:1\` (clamp lines), \`attr_id:"ATTR-…"\` (bind ONE attribute), and
+  \`value:"form::coupon_price"\` — a SECOND source so one node shows a COMPUTED value (e.g.
+  \`cart_item::cart_total_price\` with \`value:"form::coupon_price"\` = total minus coupon). Call
+  \`list_bindings\` → meta_keys for the full list.
+
+## Composition recipes (how real templates assemble components)
+Repeaters fall into two kinds (surveyed across 34 templates):
+- SELF-RENDERING (just add badges): \`grid-product\` / \`slider-product\` / \`post-list\` render the
+  card themselves — their children are only \`product-overlay\` (sale/discount badge) or, for a
+  fully custom card, a \`custom-layout\` wrapping dataset cells. \`post-list\`→\`post-overlay\` children.
+- HAND-COMPOSED from per-item dataset cells (build the row yourself):
+  - \`cart-items\` row = \`image-dataset[cart_item::cart_item_image]\`, \`text-dataset[cart_item::cart_item_name]\`,
+    \`text-dataset[cart_item::cart_item_price]\`, \`quantity-input\`, \`text-dataset[cart_item::cart_item_total_price]\`,
+    a \`container\` for name+\`cart_item::cart_item_prod_attr\`, \`line\` (config.columns sets the row template).
+  - \`order-items\` row = \`image-dataset[order_item::product_image]\` + \`text-dataset\` for
+    \`order_item::product_name\` / \`product_attrs\` / \`product_quantity\` / \`items_sum_up_price\`.
+  - \`layout-dataset\` / \`customer-address\` = a generic repeater: \`text-dataset[customer_address::full_name|phone_number|address|pdc|is_default]\` + a "Set default" button.
+  - \`promotions\` = \`text-dataset[promotion_item::code|description|end_date]\` + a copy button (\`copy_promotion\`).
+The bare \`cart-items\`/\`order-items\` (no children) self-render a DEFAULT row — fine for a quick build; compose cells only when you want a custom layout.
+HEADER patterns: real headers carry TWO menus (a horizontal desktop \`menu\` + a hamburger/collapse mobile \`menu\`), the logo (image/text), \`cart-icon\`, often \`input-search\`/\`search-droppable\`, \`member-bar\`, and \`language-menu\`. BREADCRUMB is common — keep it on category/product pages (often its own slim section, or next to a \`text-dataset\` page title).
 
 ## Events (clicks, navigation, cart, popups)
 Interactive nodes (button, text, image, container, rectangle, icons) carry an \`events\`
