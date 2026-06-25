@@ -224,8 +224,20 @@ update_page_element(s), colours/fonts via the site-style tools, then publish_sit
     ({ name, theme_id, slug, switch_to }) =>
       handle(async () => {
         let res: any;
+        // The import_store_to_theme endpoint REQUIRES a slug — omitting it 400s ("Bad
+        // Request"). Auto-generate a URL-safe one from the name when the caller didn't pass it.
+        const safeSlug =
+          (slug && slug.trim()) ||
+          (name || "site")
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[̀-ͯ]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "")
+            .slice(0, 48) || `site-${Date.now().toString(36)}`;
         try {
-          res = await api.importStoreToTheme({ id: theme_id, name, ...(slug ? { slug } : {}) });
+          res = await api.importStoreToTheme({ id: theme_id, name, slug: safeSlug });
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           if (msg.includes("403")) throw new Error("Cannot create site: account site quota reached (free plan allows up to 4 sites).");
