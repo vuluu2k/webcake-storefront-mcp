@@ -159,6 +159,49 @@ Rule of thumb: if the page shows products, a cart, customer/order data, or blog 
 set \`type\` accordingly so the binding source is turned on. A binding target like
 \`product::product_price\` REQUIRES its page to be the matching type.
 
+## Build the WHOLE storefront — every page to the SAME standard (NOT just the home page)
+A shop is multi-page. Build EACH page to a real e-commerce standard with the same palette,
+spacing and header/footer — never leave the home page rich and the rest as bare stubs.
+\`scaffold_store_pages\` creates FUNCTIONAL but MINIMAL pages (a heading + the binding element);
+treat them as STARTERS to enrich, not the finished page. After scaffolding, rebuild each page's
+source so it looks designed:
+- Category (collections, type store): banner + heading + grid-product (+ optional intro/CTA).
+- Product detail (products, type store): 2-col [product-gallery | info: text-dataset
+  product::product_name + product_price/original_price + short_description, quantity-input,
+  "Thêm vào giỏ" (add_to_cart) + "Mua ngay" (buy_now), trust badges] then a description/feature
+  band then a related grid-product ("Có thể bạn cũng thích").
+- Cart (cart, type store): heading + 2-col [cart-items | order-summary card with a
+  "Tiến hành thanh toán" button -> { action:"open_page", open_page_id:<checkout> }] + continue link.
+- Checkout (checkout, type store): heading + 2-col [form{type:form_order} with input/
+  phone-number/email/address + submit-button "Đặt hàng" | order summary (cart-items)].
+- Thank-you (complete, type store): centred confirmation + order-items + continue-shopping.
+- Optional: About / Contact (custom), Blog (type blog: post-list) + Post.
+Reuse the SAME section helpers, palette and card styling as the home page so the whole site
+feels like ONE design.
+
+## Global Header & Footer — create them for EVERY site (don't inline per page)
+A header (logo/nav/cart) and footer (links/contact/copyright) belong on EVERY page, so make them
+GLOBAL, not copied into each page. Build a header section + a footer section (new_section, same as
+any section), then:
+  create_global_section({ type:"header", name:"Header", section:<headerSection> })   // top of every page
+  create_global_section({ type:"footer", name:"Footer", section:<footerSection> })   // bottom of every page
+(omit page_ids to apply to ALL pages). ORDER MATTERS: build/save the page CONTENT first, THEN
+create the globals — they embed into each page's source. If you later overwrite a page's source
+(update_page_source/build_page) you WIPE its embedded header/footer, so re-create the globals
+(delete_global_section by the section NODE id, then create once) to re-embed cleanly. Edit a global
+later with update_global_section_element(s) and it updates on every page at once.
+
+## Popups (newsletter / promo / age-gate)
+A popup is a GLOBAL SOURCE, not a page section. Build it, store it, then trigger it:
+1. Build the popup body (new_section: heading + text + form/input + a close button), then wrap it:
+   new_element("popup", { children:[<that section>], specials:{ /* trigger + overlay */ } }).
+   Trigger/behaviour (auto-open after a delay, exit-intent, only-once, overlay) lives in specials.
+2. Save it: create_global_source({ component:"popup", source:{ sections:[<popupNode>] } }) -> returns its id.
+3. Open/close from any element via events: a button { action:"open_popup", popup_id:"<id>", popup_overlay:true };
+   a close button inside { action:"close_popup", popup_id:"<id>" }; a form can auto-close on its
+   success trigger ({ eventName:"success", action:"close_popup", popup_id:"<id>" }).
+List existing popups with list_global_sources({component:"popup"}); edit via update_global_source(_element).
+
 ## Workflow (do this every time)
 1. Intake: confirm goal, brand, colours, sections wanted (ask 3-5 questions if unclear).
 2. list_elements / get_element to pick the right component types.
