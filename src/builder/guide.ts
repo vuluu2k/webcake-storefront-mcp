@@ -162,9 +162,13 @@ set \`type\` accordingly so the binding source is turned on. A binding target li
 ## Build the WHOLE storefront — every page to the SAME standard (NOT just the home page)
 A shop is multi-page. Build EACH page to a real e-commerce standard with the same palette,
 spacing and header/footer — never leave the home page rich and the rest as bare stubs.
-\`scaffold_store_pages\` creates FUNCTIONAL but MINIMAL pages (a heading + the binding element);
-treat them as STARTERS to enrich, not the finished page. After scaffolding, rebuild each page's
-source so it looks designed:
+\`scaffold_store_pages\` now builds FULLY-DESIGNED, palette-aware store pages by DEFAULT
+(style:"rich") — banner+breadcrumb+styled grid (Category), 2-col gallery|info with price/
+quantity/add-to-cart+trust badges+related (Product), 2-col cart|summary, 2-col checkout
+form|summary, centred thank-you — and auto-wires navigation between them. Then add chrome with
+\`scaffold_global_sections({ brand, contact })\` for a designed Header+Footer in one call. Pass
+style:"minimal" only if you want bare stubs to hand-build. The per-page recipe each rich page
+follows (so you can match it when editing or building extra pages):
 - Category (collections, type store): banner + heading + grid-product (+ optional intro/CTA).
 - Product detail (products, type store): 2-col [product-gallery | info: text-dataset
   product::product_name + product_price/original_price + short_description, quantity-input,

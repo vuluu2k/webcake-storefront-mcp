@@ -14,7 +14,11 @@ export function registerProductTools(server: McpServer, api: WebcakeCmsApi, hand
     },
     ({ page, limit, term }) =>
       handle(async () => {
-        const res = await api.listProducts({ page, limit, term });
+        // Build a clean query — the /products/all endpoint 400s on undefined/blank keys,
+        // so default page/limit and drop term unless it's a real search string.
+        const query: any = { page: page ?? 1, limit: limit ?? 50 };
+        if (term && term.trim()) query.term = term.trim();
+        const res = await api.listProducts(query);
         const products = (res && res.data) || res || [];
         if (!Array.isArray(products)) return res;
         return {

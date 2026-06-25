@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
 import { validatePage, finalizeForRender } from "../builder/page.js";
+import { headerSection, footerSection, wireNavigation, type NavLink } from "../builder/templates.js";
 
 /**
  * Write tools for global SECTIONS (Header / Footer / reusable blocks).
@@ -134,6 +135,101 @@ Two-step safety: dry_run=true (default) previews which pages change; dry_run=fal
           name,
           embedded_pages: targetIds.length,
           note: "Publish the site (publish_site) to take the new header/footer live.",
+          raw: ok ? undefined : res,
+        };
+      })
+  );
+
+  server.tool(
+    "scaffold_global_sections",
+    `Generate a DESIGNED global Header and Footer in one call and embed them on every page —
+the fast path to consistent site chrome. The header has logo + nav links + cart icon + CTA;
+the footer has brand blurb + link columns + contact + copyright. Navigation is auto-wired to
+real pages (Home/Products/Cart). Colours follow the site theme vars unless you pass a palette.
+SKIPS a slot that already has a global section (won't create a second header/footer) unless
+force=true. Two-step safety: dry_run=true (default) previews; dry_run=false performs the atomic save.`,
+    {
+      brand: z.string().describe("Shop / brand name shown as the logo and in the footer."),
+      links: z.array(z.object({ label: z.string(), navTo: z.string().optional(), url: z.string().optional() })).optional().describe("Header nav links. navTo = a page slug ('home','collections','cart') auto-wired to open_page; url = external link. Defaults to Home/Products/Cart."),
+      contact: z.object({ phone: z.string().optional(), email: z.string().optional(), address: z.string().optional() }).optional().describe("Real contact info for the footer (don't invent — omit what you don't have)."),
+      cta: z.string().optional().describe("Header call-to-action button label (default 'Đặt mua ngay')."),
+      palette: z.record(z.any()).optional().describe("Optional colour overrides { accent, onAccent, text, muted, surface, surfaceAlt, border }."),
+      include: z.enum(["both", "header", "footer"]).default("both").describe("Which chrome to generate."),
+      force: z.boolean().default(false).describe("Create even if a header/footer global already exists (otherwise that slot is skipped)."),
+      dry_run: z.boolean().default(true).describe("Preview (true) or perform the atomic save (false)."),
+    },
+    ({ brand, links, contact, cta, palette, include, force, dry_run }) =>
+      handle(async () => {
+        // Which slots already have a global section? (dedupe by type unless force)
+        const existingRes: any = await api.listGlobalSections().catch(() => null);
+        const existing = (existingRes && (existingRes.data || existingRes.global_sections || existingRes)) || [];
+        const slotTaken = (slot: string) =>
+          Array.isArray(existing) && existing.some((g: any) => (g.slot || "").toLowerCase() === slot || TYPE_NUM[slot] === g.type);
+
+        const wantHeader = include !== "footer";
+        const wantFooter = include !== "header";
+        const skipped: string[] = [];
+
+        // Resolve slug -> page id for nav wiring + page embedding.
+        const allPages = await loadPages(api);
+        const slugToId: Record<string, string> = {};
+        const pagesRes: any = await api.listPages();
+        for (const pg of (pagesRes && pagesRes.data) || pagesRes || []) {
+          const sl = (pg.slug || "").replace(/^\//, "");
+          if (sl) slugToId[sl] = pg.id;
+          if (pg.is_homepage) slugToId["home"] = pg.id;
+        }
+
+        // Build the finalized, nav-wired global nodes for each requested slot.
+        const toCreate: Array<{ type: "header" | "footer"; name: string; node: any }> = [];
+        const buildNode = (type: "header" | "footer", raw: any) => {
+          raw.specials = { ...(raw.specials || {}), global: type };
+          const wrap = { sections: [raw] };
+          const validation: any = validatePage(wrap);
+          if (!validation.valid) throw new Error(`${type} failed validation: ${JSON.stringify(validation.errors)}`);
+          finalizeForRender(wrap);
+          wireNavigation(wrap, slugToId); // resolve _navTo on header links/CTA
+          return wrap.sections[0];
+        };
+        if (wantHeader) {
+          if (!force && slotTaken("header")) skipped.push("header");
+          else toCreate.push({ type: "header", name: "Header", node: buildNode("header", headerSection({ brand, links: links as NavLink[] | undefined, cta, palette })) });
+        }
+        if (wantFooter) {
+          if (!force && slotTaken("footer")) skipped.push("footer");
+          else toCreate.push({ type: "footer", name: "Footer", node: buildNode("footer", footerSection({ brand, contact, palette })) });
+        }
+
+        if (!toCreate.length) {
+          return { success: true, created: [], skipped, note: skipped.length ? "Those slots already have a global section (pass force=true to add anyway)." : "Nothing to create." };
+        }
+
+        if (dry_run) {
+          return {
+            dry_run: true,
+            will_create: toCreate.map((t) => ({ type: t.type, section_id: t.node.id })),
+            skipped,
+            embeds_into_pages: allPages.length,
+            hint: "Call again with dry_run=false to create + embed the header/footer, then publish_site.",
+          };
+        }
+
+        // Inject every node into every page, then one atomic /save with all globals + pages.
+        for (const t of toCreate) for (const p of allPages) injectNode(p.source, t.node, t.type);
+        const changedPages = allPages.map((p) => ({ id: p.id, source: JSON.stringify(p.source) }));
+        const changes = allPages.reduce((o: any, p) => { o[p.id] = 1; return o; }, {});
+        const global_sections = toCreate.map((t) => ({
+          section_id: t.node.id, name: t.name, type: TYPE_NUM[t.type],
+          pages: allPages.map((p) => p.id), section: t.node, status: "new", contents: [],
+        }));
+        const res: any = await api.saveGlobalSections({ global_sections, pages: changedPages, changes });
+        const ok = !!(res && (res.success || res.data));
+        return {
+          success: ok,
+          created: toCreate.map((t) => ({ type: t.type, section_id: t.node.id })),
+          skipped,
+          embedded_pages: changedPages.length,
+          note: "Publish the site (publish_site) to take the header/footer live.",
           raw: ok ? undefined : res,
         };
       })

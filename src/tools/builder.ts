@@ -15,6 +15,7 @@ import {
   walk,
   reassignIds,
 } from "../builder/page.js";
+import { STORE_PAGE_TEMPLATES, resolvePalette, wireNavigation } from "../builder/templates.js";
 
 // Recursive spec for new_section / build_page children.
 const elementSpec = z.object({
@@ -303,15 +304,21 @@ Creates only the ones MISSING (matched by slug): Category (collections), Product
 Cart (cart), Checkout (checkout), Thank-you (complete) — all type 'store' (enables use_store),
 plus optional member (login/register/profile) and blog (blog/post) pages.
 Run this right after you create products/categories. dry_run=true (default) previews.
-NOTE: these are MINIMAL STARTER pages (a heading + the binding element) — you MUST then
-enrich EACH one to the same standard as the home page (see get_build_guide "Build the WHOLE
-storefront"), and add a GLOBAL header/footer (create_global_section). Don't leave them bare.`,
+By default (style:"rich") each store page is a FULLY-DESIGNED, palette-aware page — banner +
+breadcrumb + styled product-grid cards (Category), 2-column gallery|info with price/quantity/
+add-to-cart + trust badges + related products (Product), 2-col cart|summary, 2-col checkout
+form|summary, and a centred thank-you — and navigation between them (cart→checkout, add-to-cart
+→cart, thank-you→home) is auto-wired. Colours follow the site theme vars unless you pass a palette.
+Still add a GLOBAL header/footer with scaffold_global_sections (or create_global_section).
+Pass style:"minimal" for the old bare stubs (heading + binding element only).`,
     {
+      style: z.enum(["rich", "minimal"]).default("rich").describe("'rich' = fully-designed, palette-aware store pages (default). 'minimal' = bare starter stubs you must enrich yourself."),
+      palette: z.record(z.any()).optional().describe("Optional colour overrides for rich pages: { accent, onAccent, text, muted, surface, surfaceAlt, border }. Defaults to the site theme CSS vars (var(--color_02) accent, var(--color_00) text)."),
       include_member: z.boolean().default(false).describe("Also create login/register/profile (type member, use_member)"),
       include_blog: z.boolean().default(false).describe("Also create blog list + post pages (type blog, use_blog)"),
       dry_run: z.boolean().default(true).describe("Preview (true) or actually create the missing pages (false)"),
     },
-    ({ include_member, include_blog, dry_run }) =>
+    ({ style, palette, include_member, include_blog, dry_run }) =>
       handle(async () => {
         const bind = (name: string, field: string) => ({
           id: "BINDING" + Math.random().toString(36).slice(2, 8),
@@ -321,38 +328,40 @@ storefront"), and add a GLOBAL header/footer (create_global_section). Don't leav
         const h1 = (text: string) => ({ type: "text", opts: { text, specials: { tag: "h1" }, style: { fontSize: "32px", fontWeight: "700" } } });
         const accentBtn = (text: string, type = "button") => ({ type, opts: { text, style: { background: "var(--color_02)", color: "#fff", borderRadius: "8px", height: 48, fontWeight: "600" } } });
 
+        // Rich (default) store pages come from the designed, palette-aware templates;
+        // 'minimal' falls back to the original bare stubs.
+        const pal = resolvePalette(palette || {});
+        const minimalStore: Record<string, () => any> = {
+          collections: () => ({ sections: [buildSection([h1("Danh mục sản phẩm"), { type: "grid-product", opts: { config: { columns: 3, image_ratio: "1/1", gap_column: 24, gap_row: 32 } } }])] }),
+          products: () => ({ sections: [buildSection([
+            { type: "product-gallery", opts: {} },
+            { type: "text-dataset", opts: { bindings: [bind("product", "product_name")], style: { fontSize: "28px", fontWeight: "700" } } },
+            { type: "text-dataset", opts: { bindings: [bind("product", "product_price")], style: { fontSize: "22px", fontWeight: "700", color: "var(--color_02)" } } },
+            { type: "quantity-input", opts: {} },
+            accentBtn("Thêm vào giỏ"),
+          ])] }),
+          cart: () => ({ sections: [buildSection([h1("Giỏ hàng"), { type: "cart-items", opts: {} }, accentBtn("Tiến hành thanh toán")])] }),
+          checkout: () => ({ sections: [buildSection([
+            h1("Thanh toán"),
+            { type: "form", opts: { specials: { type: "form_order" } }, children: [
+              { type: "input", opts: { specials: { field_name: "full_name", label: "Họ tên", placeholder: "Họ tên", required: true, show_label: true } } },
+              { type: "phone-number", opts: { specials: { field_name: "phone_number", label: "Số điện thoại", required: true, show_label: true } } },
+              { type: "address", opts: { specials: { field_name: "address", label: "Địa chỉ", show_label: true } } },
+              accentBtn("Đặt hàng", "submit-button"),
+            ] },
+          ])] }),
+          complete: () => ({ sections: [buildSection([h1("Cảm ơn bạn đã đặt hàng!"), { type: "order-items", opts: {} }])] }),
+        };
+
         // Each spec: { name, slug, kind, build() -> { sections } }
-        const SPECS: Array<{ name: string; slug: string; kind: "store" | "member" | "blog"; flag: string; build: () => any }> = [
-          { name: "Category Page", slug: "collections", kind: "store", flag: "use_store", build: () => ({ sections: [
-            buildSection([h1("Danh mục sản phẩm"), { type: "grid-product", opts: { config: { columns: 3, image_ratio: "1/1", gap_column: 24, gap_row: 32 } } }]),
-          ] }) },
-          { name: "Product Page", slug: "products", kind: "store", flag: "use_store", build: () => ({ sections: [
-            buildSection([
-              { type: "product-gallery", opts: {} },
-              { type: "text-dataset", opts: { bindings: [bind("product", "product_name")], style: { fontSize: "28px", fontWeight: "700" } } },
-              { type: "text-dataset", opts: { bindings: [bind("product", "product_price")], style: { fontSize: "22px", fontWeight: "700", color: "var(--color_02)" } } },
-              { type: "quantity-input", opts: {} },
-              accentBtn("Thêm vào giỏ"),
-            ]),
-          ] }) },
-          { name: "Cart Page", slug: "cart", kind: "store", flag: "use_store", build: () => ({ sections: [
-            buildSection([h1("Giỏ hàng"), { type: "cart-items", opts: {} }, accentBtn("Tiến hành thanh toán")]),
-          ] }) },
-          { name: "Checkout Page", slug: "checkout", kind: "store", flag: "use_store", build: () => ({ sections: [
-            buildSection([
-              h1("Thanh toán"),
-              { type: "form", opts: { specials: { type: "form_order" } }, children: [
-                { type: "input", opts: { specials: { field_name: "full_name", label: "Họ tên", placeholder: "Họ tên", required: true, show_label: true } } },
-                { type: "phone-number", opts: { specials: { field_name: "phone_number", label: "Số điện thoại", required: true, show_label: true } } },
-                { type: "address", opts: { specials: { field_name: "address", label: "Địa chỉ", show_label: true } } },
-                accentBtn("Đặt hàng", "submit-button"),
-              ] },
-            ]),
-          ] }) },
-          { name: "Thank You Page", slug: "complete", kind: "store", flag: "use_store", build: () => ({ sections: [
-            buildSection([h1("Cảm ơn bạn đã đặt hàng!"), { type: "order-items", opts: {} }]),
-          ] }) },
-        ];
+        const SPECS: Array<{ name: string; slug: string; kind: "store" | "member" | "blog"; flag: string; build: () => any }> =
+          STORE_PAGE_TEMPLATES.map((t) => ({
+            name: t.name,
+            slug: t.slug,
+            kind: "store" as const,
+            flag: "use_store",
+            build: () => (style === "minimal" ? minimalStore[t.slug]() : t.build(pal)),
+          }));
         if (include_member) {
           SPECS.push(
             { name: "Login Page", slug: "login", kind: "member", flag: "use_member", build: () => ({ sections: [
@@ -401,6 +410,16 @@ storefront"), and add a GLOBAL header/footer (create_global_section). Don't leav
         const created: any[] = [];
         const errors: any[] = [];
         const flagsEnabled = new Set<string>();
+        // slug -> page id, seeded with the pages that already exist (so cross-page nav
+        // resolves even when only some store pages are newly created).
+        const slugToId: Record<string, string> = {};
+        for (const pg of Array.isArray(pages) ? pages : []) {
+          const sl = (pg.slug || "").replace(/^\//, "");
+          if (sl) slugToId[sl] = pg.id;
+          if (pg.is_homepage) slugToId["home"] = pg.id;
+        }
+        // Keep each newly-built source so we can wire navigation once every id is known.
+        const built: Array<{ spec: any; pid: string; source: any }> = [];
         for (const spec of missing) {
           try {
             if (!flagsEnabled.has(spec.flag)) {
@@ -413,19 +432,37 @@ storefront"), and add a GLOBAL header/footer (create_global_section). Don't leav
             finalizeForRender(source);
             const res = await api.createPage({ name: spec.name, source, type: PAGE_TYPE_NUM[spec.kind] });
             const pid = newPageId(res);
-            if (pid) await api.updatePage(pid, { slug: spec.slug }).catch(() => {});
+            if (pid) {
+              await api.updatePage(pid, { slug: spec.slug }).catch(() => {});
+              slugToId[spec.slug] = pid;
+              built.push({ spec, pid, source });
+            }
             created.push({ name: spec.name, slug: spec.slug, type: spec.kind, page_id: pid });
           } catch (e: any) {
             errors.push({ slug: spec.slug, error: e?.message ?? String(e) });
           }
         }
+
+        // Second pass: resolve the _navTo sentinels the templates left on buttons/links into
+        // real open_page events (cart→checkout, thank-you→home, …), now that every page id is
+        // known. Only re-save the pages that actually changed.
+        let nav_wired = 0;
+        for (const { pid, source } of built) {
+          try {
+            const n = wireNavigation(source, slugToId);
+            if (n > 0) { nav_wired += n; await api.updatePageSource(pid, { source }).catch(() => {}); }
+          } catch { /* nav wiring is best-effort */ }
+        }
+
         return {
           success: true,
+          style,
           created,
           already_exist: skipped,
           ...(errors.length ? { errors } : {}),
           data_sources_enabled: [...flagsEnabled],
-          note: "Publish the site (publish_site) to take the new pages live.",
+          nav_links_wired: nav_wired,
+          note: "Add a header/footer with scaffold_global_sections, then publish_site to take the new pages live.",
         };
       })
   );
