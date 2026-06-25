@@ -5,6 +5,12 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.18.1] - 2026-06-25
+
+### Changed
+- `get_build_guide` now includes three new sections: "Build the WHOLE storefront" with per-page recipes for enriching category, product detail, cart, checkout, and thank-you pages to the same visual standard as the home page; "Global Header & Footer" documenting the `create_global_section` workflow (type `"header"`/`"footer"`, build-order rule — create page content first, then globals — and re-embed-after-overwrite pattern for `update_page_source`/`build_page`); and "Popups" covering the end-to-end workflow from building with `new_element("popup")` and `specials`, saving via `create_global_source` with `component:"popup"`, to triggering with `open_popup`/`close_popup` events.
+- The server instructions now direct the agent to build the whole site (not just the home page), use `create_global_section` for a consistent header and footer on every page, and build newsletter or promo offers as popup global sources rather than inline sections — pointing to `get_build_guide` for per-page recipes and workflow details; `scaffold_store_pages` also now carries a notice in its description that the pages it creates are minimal starters (heading + binding element only) requiring enrichment and a global header/footer before the site is considered complete.
+
 ## [1.18.0] - 2026-06-25
 
 ### Added

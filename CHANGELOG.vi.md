@@ -5,6 +5,12 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.18.1] - 2026-06-25
+
+### Changed
+- `get_build_guide` nay bổ sung ba mục mới: "Build the WHOLE storefront" — công thức từng trang để nâng cấp danh mục, trang chi tiết sản phẩm, giỏ hàng, checkout và trang cảm ơn lên cùng tiêu chuẩn thiết kế với trang chủ; "Global Header & Footer" — hướng dẫn quy trình `create_global_section` (type `"header"`/`"footer"`, quy tắc thứ tự — tạo nội dung trang trước, tạo global sau — và cách re-embed sau khi `update_page_source`/`build_page` ghi đè); và "Popups" — quy trình đầy đủ từ việc build popup bằng `new_element("popup")` và `specials`, lưu qua `create_global_source` với `component:"popup"`, đến kích hoạt bằng event `open_popup`/`close_popup`.
+- Server instructions nay hướng dẫn agent build toàn bộ site (không chỉ trang chủ), dùng `create_global_section` để tạo header và footer nhất quán trên mọi trang, và xây dựng newsletter hoặc ưu đãi khuyến mãi dưới dạng popup global source thay vì section inline — trỏ đến `get_build_guide` để xem công thức từng trang và chi tiết quy trình; `scaffold_store_pages` cũng được bổ sung thông báo trong mô tả tool rằng các trang được tạo ra chỉ là bản khởi điểm tối giản (heading + binding element) cần được hoàn thiện và bổ sung global header/footer trước khi coi site là hoàn chỉnh.
+
 ## [1.18.0] - 2026-06-25
 
 ### Added
