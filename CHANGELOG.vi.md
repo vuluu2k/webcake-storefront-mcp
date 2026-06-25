@@ -5,6 +5,19 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.19.0] - 2026-06-25
+
+### Added
+- Tool mới `scaffold_global_sections` tạo Header và Footer toàn cục đã thiết kế sẵn trong một lần gọi — logo, liên kết điều hướng, icon giỏ hàng, nút CTA và footer có thương hiệu kèm thông tin liên hệ và cột liên kết — rồi nhúng cả hai vào mọi trang trên site; tự động bỏ qua slot đã có global section (truyền `force=true` để ghi đè), hỗ trợ `dry_run=true` (mặc định) để xem trước các trang bị ảnh hưởng trước khi lưu.
+- `scaffold_store_pages` nay chấp nhận tham số `style` (`"rich"` mặc định hoặc `"minimal"`) và tuỳ chọn `palette`; `style:"rich"` tạo ra trang đã thiết kế đầy đủ và nhận biết bảng màu cho mọi loại trang cửa hàng — banner + breadcrumb + lưới sản phẩm có style (Danh mục), bố cục hai cột gallery/thông tin với giá, số lượng, thêm vào giỏ, trust badge và sản phẩm liên quan (Chi tiết sản phẩm), bố cục hai cột cho giỏ hàng và thanh toán (Cart/Checkout), và trang cảm ơn căn giữa (Thank-you) — với điều hướng được tự động nối giữa các trang (add-to-cart→cart, cart→checkout, thank-you→home).
+
+### Changed
+- `get_build_guide` nay mô tả quy trình build thông minh đã cập nhật: `scaffold_store_pages` mặc định tạo trang thiết kế đầy đủ và `scaffold_global_sections` bổ sung chrome Header/Footer đã thiết kế trong một lần gọi; `style:"minimal"` được tài liệu hoá là tuỳ chọn opt-out để tự build thủ công.
+- `recommended_flow` trong `get_intake_guide` nay tham chiếu `scaffold_store_pages (style:"rich")` và `scaffold_global_sections` trong trình tự build site được khuyến nghị.
+
+### Fixed
+- `list_products` không còn trả về lỗi 400 khi gọi mà không truyền rõ tham số `page` hoặc `limit`; tool nay mặc định `page` là 1 và `limit` là 50, đồng thời loại bỏ các query key undefined hoặc rỗng trước khi gửi request.
+
 ## [1.18.1] - 2026-06-25
 
 ### Changed

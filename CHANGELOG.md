@@ -5,6 +5,19 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.19.0] - 2026-06-25
+
+### Added
+- New `scaffold_global_sections` tool generates a fully-designed global Header and Footer in one call — logo, nav links, cart icon, CTA button, and a branded footer with contact info and link columns — then embeds both on every page of the site; it skips a slot that already has a global section (pass `force=true` to override), and supports `dry_run=true` (default) to preview affected pages before committing.
+- `scaffold_store_pages` now accepts a `style` parameter (`"rich"` default or `"minimal"`) and an optional `palette` override; `style:"rich"` generates fully-designed, palette-aware pages for every store page type — banner + breadcrumb + styled product grid (Category), two-column gallery/info layout with price, quantity, add-to-cart, trust badges, and related products (Product Detail), two-column cart and checkout layouts (Cart/Checkout), and a centred confirmation page (Thank-you) — with navigation automatically wired between them (add-to-cart→cart, cart→checkout, thank-you→home).
+
+### Changed
+- `get_build_guide` now describes the updated smart build flow: `scaffold_store_pages` produces fully-designed pages by default and `scaffold_global_sections` adds designed Header/Footer chrome in one call; `style:"minimal"` is documented as the opt-out for hand-built stubs.
+- `get_intake_guide` `recommended_flow` now references `scaffold_store_pages (style:"rich")` and `scaffold_global_sections` in the recommended site-build sequence.
+
+### Fixed
+- `list_products` no longer returns a 400 error when called without explicit `page` or `limit` arguments; the tool now defaults `page` to 1 and `limit` to 50, and drops undefined or blank query keys before sending the request.
+
 ## [1.18.1] - 2026-06-25
 
 ### Changed
