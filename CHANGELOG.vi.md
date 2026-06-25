@@ -5,6 +5,18 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.19.1] - 2026-06-25
+
+### Fixed
+- `create_site_from_template` nay tự động tạo slug an toàn cho URL từ tên site khi không có slug nào được cung cấp, khắc phục lỗi 400 mà backend trả về khi thiếu `slug`.
+- Factory `grid-product` nay hợp nhất `opts.config` và `opts.specials` do caller cung cấp vào các giá trị mặc định thay vì bỏ qua chúng, giúp các caller `build_page` và `new_section` có thể ghi đè bất kỳ trường nào trên card.
+
+### Changed
+- Các factory phần tử builder cho `grid-product`, `cart-icon` và `product-gallery` nay đi kèm các giá trị mặc định thực từ designer template production (`image_ratio` `4/5`, `products_per_load` 36, `gap_column` 30 / `gap_row` 15, giá in đậm, bật `show_original_price` / `show_discount_on_price`, SVG túi mặc định cho `cart-icon`, kích thước thumbnail cho `product-gallery`), giúp các trang được tạo bởi `build_page` và `new_section` đạt chất lượng template production mà không cần cấu hình thêm.
+- Template trang checkout do `scaffold_store_pages` tạo ra nay dùng các config key thực của `form_order` (`backgroundInput`, `placeholderColor`, `labelColor`, `borderColor`, `borderRadius`), bổ sung trường email và thêm success event để chuyển hướng sang trang Thank-you.
+- `get_build_guide` nay tài liệu hóa đúng các config key của `grid-product` (thay thế các key không tồn tại `cardBorderRadius` / `cardBoxShadow`), pattern điều hướng qua SPECIALS của `menu-item` (thay vì `events` trên các phần tử thông thường) và công thức success-redirect cho form.
+- `list_elements` nay trả về tài liệu phong phú hơn cho `grid-product`, `cart-icon`, `menu`, `menu-item`, `form`, `cart-items` và `order-items`, với các config key thực và ghi chú hành vi được khai thác từ template production.
+
 ## [1.19.0] - 2026-06-25
 
 ### Added
