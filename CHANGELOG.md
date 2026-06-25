@@ -5,6 +5,20 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.23.0] - 2026-06-25
+
+### Added
+- `get_build_guide` now includes a category-page filter recipe explaining how sidebar filter widgets (`checkbox-group`, `color-group`, `tags`, `two-point-range`, `radio-group`, sort `dropdown`) connect to a `grid-product` via `specials.filter_elements` and `specials.sync_tab` to re-query the product grid when an option is selected.
+
+### Changed
+- `list_elements` now documents a shared input-styling config set (`backgroundInput`, `placeholderColor`, `labelColor`, `textPadding`, `optionBorderColor`, `optionBorderWidth`, `optionBorderStyle`, `optionBorderRadius`) across all input-like field types (`input`, `email`, `phone-number`, `text-area`, `password`, `select`, `checkbox`, `radio`, `address`, `otp-input`, `identity`, and others), replacing the previous partial per-element coverage.
+- `list_elements` now documents richer `specials` for form input fields: `password`/`retype-password`/`current-password` gain `showHidePassword`; `select` gains `isRetrieve`; `checkbox` and `radio` gain `options`, `defaultValue`, and `icon_color`; `address` gains `useNewAddress`, `isColumn`, and province/district/commune placeholder keys; `postal-code` gains regex and character-count keys; `country` gains `countries[]` and `defaultValue`; `input-date` gains `field_connect_pos`; `otp-input` gains `time_otp`; `rating-input` gains star icon SVG and colour specials; `input-search` gains search-modal, scope, and full icon config.
+- `list_elements` now documents the category-page filter specials (`filter_elements`, `sync_tab`, `count`, `use_button_filter`) on `checkbox-group`, `radio-group`, `dropdown`, `color-group`, `two-point-range`, and `tags`, annotating each widget's role in driving a `grid-product`.
+- `list_elements` now documents 15 previously-undocumented element types: `search-form`, `search-droppable`, `two-point-range` (price-range slider filter), `color-group` (colour-swatch filter), `tags` (chip filter), `auto-number` (count-up animation), `agency` (store-locator list), `user-point-log` (loyalty reward-point history), `empty-product-layout`, `cart-items-empty`, `cart-droppable` (mini-cart drawer), `lesson-sidebar`, `lesson-items`, `next-lesson-droppable`, and `list-lesson-droppable` (course app).
+- `list_elements` now documents `form` with three additional `specials.type` values (`customer_data`, `reset_password`, `forgot_password`), `multiForms`/`formParent` for split order forms, `tabIndex` for account-panel binding, and `autoGetInfoCustomer`.
+- `list_elements` now documents navigation elements more completely: `menu` gains icon-mode config (`shapeType`, `url`, `mask`), `isPostList`, and hover/active style keys; `menu-item` gains `linkBlogCategory`, `linkCategoryTarget`, custom `link`, and `isSync`; `submenu` and `menu-droppable` gain animation config (`effect`, `timeAnim`); `member-bar` gains login/signup labels, popup ids (`login_popup`, `register_popup`), and avatar layout config; `member-dropdown` gains `dropdown_position`; `language-menu` gains `show_flag`, display `type`, and full colour config.
+- `list_elements` now documents `tabs` with its `tabs[]` definition array, `navMode`, `showNav`, `showBullet`, `showDivider` specials, and `navPosition`/`alignNav`/`nav_display_style` config; `switch` gains `defaultValue`, `backgroundSlider`, `colorRound`, and `colorSlider`.
+
 ## [1.22.0] - 2026-06-25
 
 ### Added

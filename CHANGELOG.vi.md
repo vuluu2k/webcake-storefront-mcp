@@ -5,6 +5,20 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.23.0] - 2026-06-25
+
+### Added
+- `get_build_guide` nay bổ sung công thức filter trang danh mục, giải thích cách các widget lọc trong sidebar (`checkbox-group`, `color-group`, `tags`, `two-point-range`, `radio-group`, sort `dropdown`) kết nối với `grid-product` thông qua `specials.filter_elements` và `specials.sync_tab` để truy vấn lại lưới sản phẩm khi người dùng chọn một tùy chọn.
+
+### Changed
+- `list_elements` nay tài liệu hóa bộ config kiểu dáng đầu vào dùng chung (`backgroundInput`, `placeholderColor`, `labelColor`, `textPadding`, `optionBorderColor`, `optionBorderWidth`, `optionBorderStyle`, `optionBorderRadius`) trên toàn bộ các kiểu trường đầu vào (`input`, `email`, `phone-number`, `text-area`, `password`, `select`, `checkbox`, `radio`, `address`, `otp-input`, `identity` và các kiểu khác), thay thế phạm vi tài liệu từng phần trước đây.
+- `list_elements` nay tài liệu hóa `specials` phong phú hơn cho các trường đầu vào của form: `password`/`retype-password`/`current-password` bổ sung `showHidePassword`; `select` bổ sung `isRetrieve`; `checkbox` và `radio` bổ sung `options`, `defaultValue` và `icon_color`; `address` bổ sung `useNewAddress`, `isColumn` và các key placeholder tỉnh/huyện/xã; `postal-code` bổ sung regex và key số ký tự; `country` bổ sung `countries[]` và `defaultValue`; `input-date` bổ sung `field_connect_pos`; `otp-input` bổ sung `time_otp`; `rating-input` bổ sung SVG icon ngôi sao và specials màu sắc; `input-search` bổ sung search-modal, phạm vi tìm kiếm và cấu hình icon đầy đủ.
+- `list_elements` nay tài liệu hóa các specials filter trang danh mục (`filter_elements`, `sync_tab`, `count`, `use_button_filter`) trên `checkbox-group`, `radio-group`, `dropdown`, `color-group`, `two-point-range` và `tags`, chú thích rõ vai trò của mỗi widget trong việc điều khiển `grid-product`.
+- `list_elements` nay tài liệu hóa 15 kiểu phần tử trước đây chưa được ghi lại: `search-form`, `search-droppable`, `two-point-range` (bộ lọc khoảng giá dạng slider), `color-group` (bộ lọc màu sắc dạng swatch), `tags` (bộ lọc dạng chip), `auto-number` (animation đếm số), `agency` (danh sách chi nhánh store-locator), `user-point-log` (lịch sử điểm thưởng), `empty-product-layout`, `cart-items-empty`, `cart-droppable` (mini-cart drawer), `lesson-sidebar`, `lesson-items`, `next-lesson-droppable` và `list-lesson-droppable` (ứng dụng khóa học).
+- `list_elements` nay tài liệu hóa `form` với ba giá trị `specials.type` bổ sung (`customer_data`, `reset_password`, `forgot_password`), `multiForms`/`formParent` cho các order form phân tách, `tabIndex` để gắn với panel tài khoản và `autoGetInfoCustomer`.
+- `list_elements` nay tài liệu hóa đầy đủ hơn các phần tử điều hướng: `menu` bổ sung cấu hình icon-mode (`shapeType`, `url`, `mask`), `isPostList` và các key style hover/active; `menu-item` bổ sung `linkBlogCategory`, `linkCategoryTarget`, `link` tùy chỉnh và `isSync`; `submenu` và `menu-droppable` bổ sung cấu hình animation (`effect`, `timeAnim`); `member-bar` bổ sung nhãn login/signup, id popup (`login_popup`, `register_popup`) và cấu hình bố cục avatar; `member-dropdown` bổ sung `dropdown_position`; `language-menu` bổ sung `show_flag`, display `type` và cấu hình màu sắc đầy đủ.
+- `list_elements` nay tài liệu hóa `tabs` với mảng định nghĩa `tabs[]`, `navMode`, `showNav`, `showBullet`, `showDivider` trong specials và `navPosition`/`alignNav`/`nav_display_style` trong config; `switch` bổ sung `defaultValue`, `backgroundSlider`, `colorRound` và `colorSlider`.
+
 ## [1.22.0] - 2026-06-25
 
 ### Added
