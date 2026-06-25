@@ -5,6 +5,16 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.18.0] - 2026-06-25
+
+### Added
+- Tool mới `get_intake_guide` trả về bảng câu hỏi từng bước và quy trình build được khuyến nghị (create_site → sản phẩm → build_page → global sections → publish_site) để sử dụng trước khi bắt đầu tạo một site hoặc trang mới; server instructions nay hướng dẫn agent gọi tool này, thu thập brief, tóm tắt lại kế hoạch và chờ xác nhận trước khi bắt đầu build.
+
+### Fixed
+- `publish_site` nay tự động gọi routine `rebuildSiteCss` mới trước khi xuất bản, phát lại pipeline `/save` của builder để tái tạo CSS đã biên dịch cho mọi trang; trước đây các site chỉ được chỉnh sửa qua MCP sẽ được publish với CSS cũ hoặc trống, khiến storefront hiển thị thiếu style.
+- `stackChildren` và `rowChildren` nay gán `constraintX: ["left","right"]` (stretch) cho các loại component chiếm toàn chiều rộng (`grid-product`, `slider-product`, `cart-items`, `order-items`, `post-list`, `grid-category`, `grid-blog`, `form` và các repeater liên quan) thay vì mặc định `["centerLeft"]` (center), giúp lưới sản phẩm và các repeater không còn bị thu gọn xuống một cột trên storefront.
+- `create_product` nay luôn gửi `product_attributes: []` trong body request ngay cả với sản phẩm không có thuộc tính, tránh lỗi 500 trên endpoint product-attributes của storefront đối với sản phẩm không có attribute.
+
 ## [1.17.1] - 2026-06-25
 
 ### Changed

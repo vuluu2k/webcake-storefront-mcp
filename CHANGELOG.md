@@ -5,6 +5,16 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.18.0] - 2026-06-25
+
+### Added
+- New `get_intake_guide` tool returns a step-by-step questionnaire and recommended build flow (create_site → products → build_page → global sections → publish_site) for use before starting a fresh site or page build; the server instructions now direct the agent to call it, gather the brief, restate the plan, and get confirmation before building.
+
+### Fixed
+- `publish_site` now automatically calls a new `rebuildSiteCss` routine before publishing, replaying the builder's `/save` pipeline to regenerate every page's compiled CSS; previously, sites edited only through the MCP shipped with stale or empty CSS and rendered unstyled on the live storefront.
+- `stackChildren` and `rowChildren` now assign `constraintX: ["left","right"]` (stretch) to fill-width component types (`grid-product`, `slider-product`, `cart-items`, `order-items`, `post-list`, `grid-category`, `grid-blog`, `form`, and related repeaters) instead of the default `["centerLeft"]` (center), so product grids and other repeater layouts no longer collapse to a single column on the storefront.
+- `create_product` now always includes `product_attributes: []` in the request body even for products with no attributes, preventing a 500 error on the storefront's product-attributes endpoint for attribute-less products.
+
 ## [1.17.1] - 2026-06-25
 
 ### Changed
