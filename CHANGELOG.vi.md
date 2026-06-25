@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.20.0] - 2026-06-25
+
+### Changed
+- Header được tạo bởi `scaffold_global_sections` nay sử dụng phần tử `menu` với các phần tử con `menu-item` cho các liên kết điều hướng, khớp với cấu trúc template production thực tế; điều hướng của mỗi mục được nối qua `specials` (`linkType`, `linkPage`, `pageId` cho trang; `linkType:"custom"` + `link` cho URL) thay vì `events`, giúp các liên kết điều hướng hiển thị và hoạt động đúng trên storefront thực.
+
 ## [1.19.1] - 2026-06-25
 
 ### Fixed
