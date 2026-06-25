@@ -302,7 +302,10 @@ product/category/cart from any page lands on a real page instead of a 404.
 Creates only the ones MISSING (matched by slug): Category (collections), Product (products),
 Cart (cart), Checkout (checkout), Thank-you (complete) — all type 'store' (enables use_store),
 plus optional member (login/register/profile) and blog (blog/post) pages.
-Run this right after you create products/categories. dry_run=true (default) previews.`,
+Run this right after you create products/categories. dry_run=true (default) previews.
+NOTE: these are MINIMAL STARTER pages (a heading + the binding element) — you MUST then
+enrich EACH one to the same standard as the home page (see get_build_guide "Build the WHOLE
+storefront"), and add a GLOBAL header/footer (create_global_section). Don't leave them bare.`,
     {
       include_member: z.boolean().default(false).describe("Also create login/register/profile (type member, use_member)"),
       include_blog: z.boolean().default(false).describe("Also create blog list + post pages (type blog, use_blog)"),
