@@ -454,9 +454,13 @@ export const buildElementWithBreakpoint = (el: any, breakpoint: string) => {
   delete el.runtime
 }
 
-// Real designer-template grid-product defaults (mined from prod theme "Mode Féminine"):
-// the card self-renders image + name + price; these keys control its look. Callers may
-// override any of them via opts.config / opts.specials.
+// grid-product card self-renders image + name + price. The defaults below are the keys that
+// are near-UNIVERSAL across real designer templates (surveyed 5 industries — fashion/kids/
+// cosmetics/food/electronics): bold price, responsive collapse, show original/discount price,
+// a neutral square image + medium gaps. INDUSTRY-DEPENDENT keys (image_ratio 4/5|2/3|3/4|1/1,
+// font family/size, column count, exact gaps, productNameColor/productPriceColor) are
+// intentionally NOT forced here — the caller / template sets them. Override via opts.config /
+// opts.specials.
 export const createGridProduct = (opts: any = {}) => {
   const product = cloneDeep(SKELETON)
 
@@ -471,16 +475,13 @@ export const createGridProduct = (opts: any = {}) => {
 
   product.runtime.config = {
     columns: 4,
-    image_ratio: '4/5',
+    image_ratio: '1/1',
     img_object_fit: 'cover',
-    gap_column: 30,
-    gap_row: 15,
-    product_info_padding_y: 15,
+    gap_column: 24,
+    gap_row: 24,
+    product_info_padding_y: 12,
     price_padding_y: 5,
-    productNameFontSize: 18,
-    productPriceFontSize: 18,
     productPriceFontWeight: 'bold',
-    productOriginalPriceFontSize: 18,
     responsive: 'custom',
     heightUnit: 'auto',
     ...(opts.config || {})
@@ -488,7 +489,7 @@ export const createGridProduct = (opts: any = {}) => {
 
   product.specials = {
     element_async: true,
-    products_per_load: 36,
+    products_per_load: 12,
     show_original_price: true,
     show_discount_on_price: true,
     show_quick_view: false,
@@ -963,7 +964,8 @@ export const createQuantityInput = (opts: any = {}) => {
   }
   input.runtime.config = opts.config || {}
 
-  input.specials = opts.specials || {}
+  // Every surveyed template hides the native number spinner on product/cart steppers.
+  input.specials = { spinner: 'hide-spin', ...(opts.specials || {}) }
 
   if (opts.breakpoint) {
     buildElementWithBreakpoint(input, opts.breakpoint)

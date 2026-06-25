@@ -88,13 +88,15 @@ A bare stack of default elements looks unfinished. Apply real styling:
 - HERO: prefer a section with a background image + an overlay heading/sub/button on top
   (set section_opts.style.background or a full-width image, then text centered), rather than a
   small image stacked above text.
-- PRODUCT GRID: grid-product SELF-RENDERS the image+name+price card; you mostly set
-  \`opts.config\`: { columns:3-4, image_ratio:"4/5" (a tall fashion card; "1/1" for square),
-  img_object_fit:"cover", gap_column:30, gap_row:15, product_info_padding_y:15,
-  productNameFontSize:18, productPriceFontSize:18, productPriceFontWeight:"bold" } and
-  \`opts.specials\`: { products_per_load:36, show_original_price:true, show_discount_on_price:true }.
-  (These are the real designer-template defaults — the factory now ships them, so a bare
-  grid-product already looks right; there are NO cardBorderRadius/cardBoxShadow keys.)
+- PRODUCT GRID: grid-product SELF-RENDERS the image+name+price card. Its look is
+  INDUSTRY-DEPENDENT (surveyed fashion/kids/cosmetics/food/electronics) — only \`bold price\`,
+  \`responsive\` collapse and \`show_original_price/show_discount_on_price\` are near-universal;
+  the factory ships those + neutral defaults (columns 4, image_ratio "1/1", gap 24). Tune per
+  brand via \`opts.config\`: { columns:3-6, image_ratio:"4/5"|"2/3"|"3/4"|"1/1", img_object_fit:"cover",
+  gap_column:8-40, gap_row, product_info_alignment:"center"?, productNameColor, productPriceColor }
+  and \`opts.specials\`: { products_per_load:8-36, on_hover:"zoom"|"swap", show_rating, show_ribbon }.
+  (There are NO cardBorderRadius/cardBoxShadow keys.) For variations use \`attr\` elements
+  (attrName:"auto"); steppers are \`quantity-input\` (defaults spinner:"hide-spin").
 - BRAND COLOURS: reuse var(--color_00) (text), and an accent (var(--color_02)/var(--color_03))
   for buttons, prices, highlights — consistent accent = looks intentional.
 - IMAGES: must be WebCake-CDN urls (search_images cdn_url / upload_images), else they won't show.
