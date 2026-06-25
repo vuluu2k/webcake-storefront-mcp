@@ -122,6 +122,32 @@ const FIELD = {
   validate: "Enable validation (boolean).",
 };
 
+// Common runtime.config keys shared by EVERY input-like field (mined from 34 templates).
+// Spread into each field's `config` so they're documented everywhere.
+const FIELD_CONFIG = {
+  backgroundInput: "Input background colour.",
+  placeholderColor: "Placeholder text colour.",
+  labelColor: "Label colour.",
+  labelMarginBottom: "Gap below the label (px).",
+  textPadding: "Inner padding of the input (px).",
+  optionBorderColor: "Input border colour.",
+  optionBorderWidth: "Input border width (e.g. '1px').",
+  optionBorderStyle: "Input border style (solid|dashed|none).",
+  optionBorderRadius: "Input corner radius.",
+};
+
+// Filter-widget specials shared by category-page filters that drive a product grid
+// (checkbox-group, color-group, radio-group, two-point-range, tags, dropdown). These wire a
+// sidebar control to a grid-product so picking an option re-queries the products.
+const FILTER_SPECIALS = {
+  filter_elements: "Ids of the grid-product(s) this filter controls, e.g. ['GRID-PRODUCT-xxx'].",
+  sync_tab: "What to filter by: attribute | brand | category | price | tag.",
+  count: "How many options to show.",
+  options: "Filter options [{id,name,...}] (auto-built when syncing).",
+  is_auto_child_categories: "Auto-include child categories (boolean).",
+  use_button_filter: "Apply only when an Apply button is clicked (boolean).",
+};
+
 export const ELEMENT_ATTRS: Record<string, ElementAttrs> = {
   // ── content ──
   text: {
@@ -176,7 +202,7 @@ export const ELEMENT_ATTRS: Record<string, ElementAttrs> = {
   },
   container: { specials: { tabIndex: "Tab order.", custom_class: "CSS class.", custom_css: "Raw CSS." }, config: { maxWidth: "Max width.", maxWidthUnit: "Max-width unit.", fixedPosition: "Sticky/fixed positioning.", animation: "Entrance animation." }, events: "click, hover — clickable groups are common.", notes: "Generic grid box; nest children with their own grid." },
   row: { events: "none", notes: "Simple horizontal wrapper." },
-  tabs: { specials: { activeTab: "Default active tab index." }, events: "none", notes: "Tabbed container." },
+  tabs: { specials: { activeTab: "Default active tab index.", tabs: "Tab definitions [{id,name}].", navMode: "How tabs switch: toggle | …", showNav: "Show the tab nav (boolean).", showBullet: "Show bullets (boolean).", showDivider: "Show a divider (boolean)." }, config: { navPosition: "top|left|right|bottom.", alignNav: "Nav alignment.", nav_display_style: "Nav style." }, events: "tab — fires when the active tab changes.", notes: "Tabbed container; each tab maps to a tab item the content reacts to (e.g. account panels, product detail/description/reviews)." },
   collapse: { events: "none", notes: "Accordion container (collapse-item children)." },
   "collapse-item": { events: "none", notes: "One accordion panel." },
   "custom-layout": { events: "none", notes: "Free-form layout container." },
@@ -193,43 +219,53 @@ export const ELEMENT_ATTRS: Record<string, ElementAttrs> = {
   // ── form ──
   form: {
     specials: {
-      type: "Form behaviour — one of: form_login | form_signup | form_order | form_discount | subscribe | order_tracking | form_booking | form_search_agency | question_form.",
+      type: "Form behaviour — one of: form_login | form_signup | form_order | form_discount | subscribe | order_tracking | form_booking | form_search_agency | question_form | customer_data | reset_password | forgot_password.",
       submit_success: "Action after a successful submit (e.g. show a message / redirect).",
       message: "Success message text.",
       show_message: "Show a success message after submit (boolean).",
       show_message_time: "How long the success message stays (seconds).",
+      multiForms: "Ids of inner sub-forms this form owns (order forms split fields across an inner form).",
+      formParent: "On an inner sub-form: the id of the owning outer form.",
+      tabIndex: "Bind the form to a tab item (TAB-ITEM-…) in a tabbed account panel.",
+      autoGetInfoCustomer: "Pre-fill from the logged-in customer (boolean).",
+      partner_id: "Partner/agency id (booking/search-agency forms).",
+      time_otp: "OTP resend countdown (seconds).",
     },
-    config: { backgroundInput: "Input background.", labelColor: "Label colour.", placeholderColor: "Placeholder colour.", textPadding: "Input padding (px).", labelMarginBottom: "Gap below label (px).", borderColor: "Input border colour (e.g. #dbe0e6).", borderRadius: "Input corner radius (e.g. 8px)." },
+    config: { ...FIELD_CONFIG, borderColor: "Input border colour (e.g. #dbe0e6).", borderRadius: "Input corner radius (e.g. 8px).", labelPadding: "Label padding.", strokeColor: "Text stroke colour.", textColor: "Form text colour." },
     events: "success — fire follow-up actions after a successful submit (a form_order commonly does open_page→Thank-you page). eventName defaults to 'success' on a form.",
     notes: "Wrap input fields as children; put a submit-button inside. specials.type selects what the form does on submit. Real order forms split fields across an inner form via specials.multiForms:[innerFormId] (inner form sets specials.formParent). A form_order uses dedicated field types: input(full_name), phone-number, email, detect-address, address (×3 province/district/ward), text-area(note).",
   },
-  input: { specials: { ...FIELD, type: "Input type (default text)." }, config: { textPadding: "Padding.", backgroundInput: "Background." }, events: "none" },
-  email: { specials: { ...FIELD, validate_email: "Email regex." }, events: "none", notes: "field_name usually 'email'." },
-  "phone-number": { specials: { ...FIELD }, events: "none", notes: "field_name usually 'phone_number'." },
-  "retype-phone-number": { specials: { ...FIELD }, events: "none" },
-  password: { specials: { ...FIELD, field_type: "password.", validate_password: "Password regex." }, events: "none", notes: "field_name 'password'." },
-  "retype-password": { specials: { ...FIELD, validate_password: "Password regex." }, events: "none" },
-  "current-password": { specials: { ...FIELD, validate_password: "Password regex." }, events: "none" },
-  "text-area": { specials: { ...FIELD }, events: "none", notes: "Multi-line; field_name often 'note'." },
-  select: { specials: { ...FIELD, options: "Choices [{id,name}] (or {type,name,image,active}).", defaultValue: "Selected option id." }, config: { arrowColor: "Dropdown arrow colour.", optionBorderColor: "Option border." }, events: "none" },
-  "group-select": { specials: { ...FIELD, options: "Choices [{id,name}]." }, events: "none" },
-  checkbox: { specials: { field_name: FIELD.field_name, label: FIELD.label, show_label: FIELD.show_label, required: FIELD.required }, events: "none" },
-  "checkbox-group": { specials: { ...FIELD, options: "Choices [{id,name}]." }, config: { gap: "Item spacing.", column: "Columns." }, events: "none" },
+  input: { specials: { ...FIELD, type: "Input type (default text).", is_manually_added: "Field was added by hand vs auto (boolean)." }, config: { ...FIELD_CONFIG }, events: "none" },
+  email: { specials: { ...FIELD, validate_email: "Email regex." }, config: { ...FIELD_CONFIG }, events: "none", notes: "field_name usually 'email'." },
+  "phone-number": { specials: { ...FIELD }, config: { ...FIELD_CONFIG }, events: "none", notes: "field_name usually 'phone_number'." },
+  "retype-phone-number": { specials: { ...FIELD }, config: { ...FIELD_CONFIG }, events: "none" },
+  password: { specials: { ...FIELD, field_type: "password.", validate_p: "Password regex (e.g. ^[a-zA-Z0-9]{6,}$).", validate_password: "Password regex (alt key).", showHidePassword: "Show the eye toggle (boolean)." }, config: { ...FIELD_CONFIG }, events: "none", notes: "field_name 'password'." },
+  "retype-password": { specials: { ...FIELD, field_type: "retype-password.", showHidePassword: "Show the eye toggle (boolean)." }, config: { ...FIELD_CONFIG }, events: "none" },
+  "current-password": { specials: { ...FIELD, field_type: "current-password.", showHidePassword: "Show the eye toggle (boolean)." }, config: { ...FIELD_CONFIG }, events: "none" },
+  "text-area": { specials: { ...FIELD }, config: { ...FIELD_CONFIG }, events: "none", notes: "Multi-line; field_name often 'note'." },
+  select: { specials: { ...FIELD, options: "Choices [{id,name}] (or {type,name,image,active}).", defaultValue: "Selected option id.", isRetrieve: "Pre-fill from saved data (boolean).", isHideImage: "Hide option images (boolean)." }, config: { ...FIELD_CONFIG, arrowColor: "Dropdown arrow colour.", strokeColor: "Text stroke.", textColor: "Option text colour." }, events: "none" },
+  "group-select": { specials: { ...FIELD, options: "Choices [{id,name}]." }, config: { ...FIELD_CONFIG }, events: "none" },
+  checkbox: { specials: { field_name: FIELD.field_name, label: FIELD.label, show_label: FIELD.show_label, required: FIELD.required, options: "Choices [{id,name,connects?}].", defaultValue: "Default checked id ('none').", icon_color: "Check colour.", isRetrieve: "Pre-fill from saved data (boolean)." }, config: { ...FIELD_CONFIG, strokeColor: "Text stroke." }, events: "none" },
+  "checkbox-group": { specials: { ...FIELD, ...FILTER_SPECIALS, icon_color: "Check colour.", is_attribute_by_category: "Build options from the category's attributes (boolean)." }, config: { ...FIELD_CONFIG, borderRadiusInput: "Checkbox corner radius.", radioButtonSize: "Checkbox size (px).", spaceButtonText: "Gap between box and label.", strokeColor: "Text stroke.", textColor: "Label colour." }, events: "none", notes: "Doubles as a category-page FILTER: set filter_elements + sync_tab ('brand'/'attribute') to drive a grid-product." },
   "checkbox-item": { specials: { label: "Option text." }, events: "none" },
-  radio: { specials: { field_name: FIELD.field_name, label: FIELD.label, show_label: FIELD.show_label, required: FIELD.required }, events: "none" },
-  "radio-group": { specials: { ...FIELD, options: "Choices [{id,name,events?,connects?}]." }, config: { gap: "Item spacing.", column: "Columns." }, events: "none" },
-  address: { specials: { field_name: "province_id/district_id/commune_id.", label: FIELD.label, placeholder: FIELD.placeholder, show_label: FIELD.show_label, country: "Country code (e.g. 84).", required_province: "Require province.", required_districts: "Require district.", required_commune: "Require commune." }, events: "none" },
-  "detect-address": { specials: { ...FIELD, field_type: "detect_address." }, events: "none" },
-  "postal-code": { specials: { ...FIELD }, events: "none" },
-  country: { specials: { ...FIELD }, events: "none" },
-  "input-file": { specials: { ...FIELD, isTransferImage: "Transfer as image (boolean)." }, events: "none" },
-  "input-number": { specials: { ...FIELD }, events: "none" },
-  "input-date": { specials: { ...FIELD, type: "date | time." }, events: "none" },
-  "input-search": { specials: { field_name: "search.", label: FIELD.label, placeholder: FIELD.placeholder }, events: "none" },
-  "otp-input": { specials: { ...FIELD, isOpenModalOtp: "Open OTP modal (boolean)." }, events: "none" },
-  "rating-input": { specials: { field_name: FIELD.field_name, label: FIELD.label, show_label: FIELD.show_label }, events: "none" },
-  identity: { specials: { ...FIELD }, events: "none", notes: "Email-or-phone login field; field_name 'identity'." },
-  switch: { events: "none", notes: "Toggle; style width/height." },
+  radio: { specials: { field_name: FIELD.field_name, label: FIELD.label, show_label: FIELD.show_label, required: FIELD.required, options: "Choices [{id,name}].", defaultValue: "Default selected id.", icon_color: "Dot colour." }, config: { ...FIELD_CONFIG, sizeInput: "Radio size (px).", strokeColor: "Text stroke.", textColor: "Label colour." }, events: "none" },
+  "radio-group": { specials: { ...FIELD, ...FILTER_SPECIALS }, config: { ...FIELD_CONFIG, radioButtonSize: "Radio size (px).", spaceButtonText: "Gap between dot and label.", strokeColor: "Text stroke." }, events: "none", notes: "Can act as a FILTER (filter_elements + sync_tab)." },
+  address: { specials: { field_name: "province_id/district_id/commune_id.", label: FIELD.label, show_label: FIELD.show_label, useNewAddress: "Use the newer province/district/commune picker (boolean).", isColumn: "Stack the three selects in a column (boolean).", provinceName: "Province placeholder.", districtName: "District placeholder.", communeName: "Commune placeholder.", default_province: "Default province id ('none').", country: "Country code (e.g. 84).", required_province: "Require province.", required_districts: "Require district.", required_commune: "Require commune." }, config: { ...FIELD_CONFIG }, events: "none", notes: "Renders 3 linked selects (province→district→commune). A form_order usually has 3 address elements." },
+  "detect-address": { specials: { ...FIELD, field_type: "detect_address." }, config: { ...FIELD_CONFIG }, events: "none", notes: "Free-text address that auto-detects province/district." },
+  "postal-code": { specials: { ...FIELD, postal_code: "Regex (e.g. [0-9]{6}).", numberCharacter: "Expected length (e.g. '4_character')." }, config: { ...FIELD_CONFIG }, events: "none" },
+  country: { specials: { ...FIELD, countries: "Country list [{country_code,country_name}].", defaultValue: "Default country code (e.g. 'VN')." }, config: { ...FIELD_CONFIG }, events: "none" },
+  "input-file": { specials: { ...FIELD, isTransferImage: "Transfer as image (boolean)." }, config: { ...FIELD_CONFIG }, events: "none", notes: "Upload box — usually a dashed optionBorderStyle." },
+  "input-number": { specials: { ...FIELD }, config: { ...FIELD_CONFIG }, events: "none" },
+  "input-date": { specials: { ...FIELD, type: "date | time.", field_connect_pos: "Map to a POS customer field (e.g. customer_birthday)." }, config: { ...FIELD_CONFIG }, events: "none" },
+  "input-search": { specials: { field_name: "search.", label: FIELD.label, placeholder: FIELD.placeholder, showIcon: "Show the search icon (boolean).", searchIcon: "Search icon SVG.", showModalSearch: "Open results in a modal (boolean).", default_search_page: "Where Enter searches ('category_page').", isSearchInCategoryPage: "Search within the current category (boolean).", isSearchInBlogPage: "Search blog too (boolean).", view_keep_keywords: "Keep recent keywords ('category')." }, config: { inputBackground: "Input bg.", inputBorderColor: "Border colour.", inputBorderRadius: "Corner radius.", inputBorderWidth: "Border width.", placeholderColor: "Placeholder colour.", iconColor: "Icon colour.", iconAlign: "left|right.", iconSize: "Icon size (px).", textAlign: "Text alignment." }, events: "onenter — fires a search on Enter.", notes: "Storefront search box; pair with search-droppable for live results." },
+  "otp-input": { specials: { ...FIELD, isOpenModalOtp: "Open OTP modal (boolean).", time_otp: "Resend countdown (seconds)." }, config: { ...FIELD_CONFIG }, events: "none" },
+  "rating-input": { specials: { field_name: FIELD.field_name, label: FIELD.label, show_label: FIELD.show_label, auto_hide_without_star: "Hide when no rating (boolean).", activeStarIcon: "Filled-star SVG.", inactiveStarIcon: "Empty-star SVG." }, config: { activeStarColor: "Filled star colour.", inactiveStarColor: "Empty star colour." }, events: "none", notes: "Star rating input (review form)." },
+  identity: { specials: { ...FIELD }, config: { ...FIELD_CONFIG }, events: "none", notes: "Email-or-phone login field; field_name 'identity'." },
+  "search-form": { specials: { ...FIELD, field_type: "search." }, config: { ...FIELD_CONFIG }, events: "none", notes: "A search field inside a form." },
+  "search-droppable": { config: { use_overlay: "Dim the page behind the results (boolean).", droppable_position: "Where results open (custom|...)." }, events: "none", notes: "Live search-results dropdown paired with an input-search." },
+  "two-point-range": { specials: { filter: "What it filters (e.g. 'filter_price').", min: "Range minimum.", max: "Range maximum.", display_type: "Handle style (round|...).", use_button_filter: "Apply only on a button (boolean)." }, config: { dotColor: "Handle colour.", dotSize: "Handle size (px).", progressColor: "Active track colour.", progressBgColor: "Inactive track colour.", progressSize: "Track thickness (px).", textColor: "Min/max label colour." }, events: "none", notes: "A price (or numeric) RANGE filter for the category page — set filter + filter_elements to drive a grid-product." },
+  "color-group": { specials: { ...FILTER_SPECIALS, options: "Swatches [{color, filter:{attrName,...}}].", sync_tab: "attribute (colour variations)." }, config: { colorWidth: "Swatch width.", colorHeight: "Swatch height.", colorGap: "Gap between swatches.", colorBorderRadius: "Swatch radius.", colorBorderColor: "Swatch border.", colorBorderColorActive: "Selected swatch border.", textPosition: "Label position.", hiddenText: "Hide the label (boolean)." }, events: "none", notes: "Colour-swatch FILTER (category page) — filter_elements + sync_tab:'attribute' drive a grid-product." },
+  switch: { specials: { defaultValue: "Default on/off (boolean)." }, config: { backgroundSlider: "Track colour.", colorRound: "Knob colour.", colorSlider: "Active track colour." }, events: "none", notes: "Toggle; style width/height." },
 
   // ── commerce ──
   "grid-product": {
@@ -282,16 +318,16 @@ export const ELEMENT_ATTRS: Record<string, ElementAttrs> = {
   "bonus-items": { specials: { typeBonus: "combo_product | other." }, events: "none" },
 
   // ── navigation ──
-  menu: { specials: { type: "horizontal | vertical | hamburger | collapse | grid | anchor.", sync: "Auto-sync items with site pages (boolean).", fullField: "Stretch items to fill the menu width (boolean)." }, config: { showArrow: "Show the dropdown caret on items with a submenu (boolean).", textColor: "Item text colour (often a theme var like var(--color_20)).", colorHover: "Item hover colour.", "--padX": "Horizontal padding inside each item (CSS var, e.g. 15px)." }, events: "none", notes: "Holds menu-item children. Real headers often have TWO menus (a horizontal desktop menu + a hamburger/collapse mobile menu). Colour items via theme vars (var(--color_20))." },
-  "menu-item": { specials: { name: "Link label.", isCustom: "Custom link (boolean).", linkType: "page | category | blog_category | brand | product_tag | custom.", linkPage: "Target page id (linkType=page).", pageId: "Target page id (mirror of linkPage, set both).", linkCategory: "Linked category id.", categoryId: "Category id.", syncSubmenu: "Auto-build submenu (boolean)." }, events: "navigation lives in SPECIALS here, NOT events — set linkType + the matching id.", notes: "For a page link set linkType='page' + linkPage + pageId + name. (Generic text/container/button elements navigate via events:[{action:'open_page',open_page_id}] instead.)" },
-  "menu-anchor-item": { specials: { name: "Label.", isCustom: "Custom.", linkType: "Link kind.", categoryId: "Category id." }, events: "click — scrolls to an anchor." },
-  submenu: { events: "none", notes: "Dropdown under a menu-item." },
-  "menu-droppable": { events: "none" },
-  "member-bar": { events: "none", notes: "Logged-in member bar (account links)." },
-  "member-dropdown": { events: "none" },
-  dropdown: { events: "click/hover — toggles dropdown-content." },
-  "dropdown-content": { events: "none" },
-  "language-menu": { events: "none", notes: "Language switcher." },
+  menu: { specials: { type: "horizontal | vertical | hamburger | collapse | grid | anchor.", sync: "Auto-sync items with site pages (boolean).", fullField: "Stretch items to fill the menu width (boolean).", shapeType: "'Icon' to render a hamburger/icon trigger instead of text.", url: "Icon image url (icon-style menu).", isPostList: "Build items from blog posts (boolean).", tabIndex: "Bind to a tab item." }, config: { showArrow: "Show the dropdown caret on items with a submenu (boolean).", textColor: "Item text colour (often a theme var like var(--color_20)).", colorHover: "Item hover colour.", activeColor: "Active item colour.", "--padX": "Horizontal padding inside each item (CSS var, e.g. 15px).", mask: "Icon SVG mask (icon-style menu).", arrowColor: "Caret colour.", arrowSize: "Caret size (px).", backgroundHover: "Item hover background.", borderColorHover: "Item hover border colour.", borderRadiusHover: "Item hover radius.", fontWeightHover: "Item hover font weight.", activeLink: "Active-item style object (e.g. {fontWeight:'bold'}).", maxHeight: "Max dropdown height (px)." }, events: "none", notes: "Holds menu-item children. Real headers carry TWO menus (a horizontal desktop menu + a hamburger/collapse mobile menu). Colour items via theme vars (var(--color_20))." },
+  "menu-item": { specials: { name: "Link label.", isCustom: "Custom link (boolean).", isSync: "Auto-synced from site pages (boolean).", linkType: "page | category | blog_category | brand | product_tag | custom.", linkPage: "Target page id (linkType=page).", pageId: "Target page id (mirror of linkPage, set both).", linkCategory: "Linked product category id.", linkCategoryTarget: "Open target for the category (_self/_blank).", linkBlogCategory: "Linked blog category id.", link: "Custom href (linkType=custom).", categoryId: "Category id.", syncSubmenu: "Auto-build submenu (boolean).", type: "vertical for a stacked submenu item." }, config: { strokeColor: "Text stroke colour." }, events: "navigation lives in SPECIALS here, NOT events — set linkType + the matching id.", notes: "For a page link set linkType='page' + linkPage + pageId + name. Category → linkType='category' + linkCategory. Custom url → linkType='custom' + link + isCustom. (Generic text/container/button navigate via events:[{action:'open_page',open_page_id}].)" },
+  "menu-anchor-item": { specials: { name: "Label.", isCustom: "Custom.", linkType: "Link kind.", anchor: "Target anchor id on the page.", categoryId: "Category id." }, events: "click — scrolls to an anchor." },
+  submenu: { specials: { syncSubmenu: "Auto-build from child pages/categories (boolean).", type: "vertical | horizontal.", effect: "Open animation (fade-in|…).", timeAnim: "Animation duration (s)." }, events: "none", notes: "Dropdown panel under a menu-item." },
+  "menu-droppable": { specials: { effect: "Open animation (light-speed|fade-in|…).", timeAnim: "Animation duration (s)." }, config: { isUseInitMaxHeight: "Animate from a max-height (boolean)." }, events: "none", notes: "Mega-menu panel under a menu-item (holds a nested menu + content)." },
+  "member-bar": { specials: { showView: "Which state to show: not_logged | logged.", layoutShow: "avatar | text | …", textLogin: "Login label.", textSignup: "Signup label.", textLogout: "Logout label.", textBeforeLogin: "Text shown before login.", login_icon: "Login icon SVG.", signup_icon: "Signup icon SVG.", login_popup: "Popup id opened for login.", register_popup: "Popup id opened for signup.", show_signup: "Show the signup option (boolean).", event_type: "What clicking does (open_page|open_popup).", open_when_logged: "Logged-in behaviour (collapse|…).", arrowShape: "Dropdown arrow shape." }, config: { avatarSize: "Avatar size (px).", colorIcon: "Icon colour.", memberColorHover: "Hover colour.", bgDropdown: "Dropdown background.", justifyBar: "Bar alignment." }, events: "click — login/logout/open account.", notes: "Account bar: shows login/signup when logged out, avatar+menu when logged in. member-dropdown is its dropdown panel." },
+  "member-dropdown": { specials: { dropdown_position: "left | right." }, events: "none", notes: "The account dropdown under a member-bar." },
+  dropdown: { specials: { placeholder: "Closed-state label (e.g. 'Thứ tự mặc định').", options: "Choices [{id,name}].", count: "How many options.", is_default_select: "Pre-select the first (boolean).", filter_elements: "Grid-product id(s) this sort/filter controls.", sync_tab: "What it syncs from (category|…).", redirect_type: "Navigate on select (none|page).", redirect_id: "Target id when redirecting.", arrowIcon: "Arrow SVG.", use_button_filter: "Apply only on a button (boolean)." }, config: { arrowColor: "Arrow colour.", arrowSize: "Arrow size (px).", strokeColor: "Text stroke.", textColor: "Text colour." }, events: "click/hover — toggles dropdown-content. Commonly a product SORT control on the category page (set filter_elements).", notes: "Product sort/filter dropdown, or a generic toggle for dropdown-content." },
+  "dropdown-content": { events: "none", notes: "The panel a dropdown toggles." },
+  "language-menu": { specials: { show_flag: "Show country flags (boolean).", type: "dropdown | inline." }, config: { display: "full | abbreviated.", flagSize: "Flag size (px).", color: "Text colour.", colorHover: "Hover colour.", backgroundDropdown: "Dropdown background.", colorSelected: "Selected language colour.", dropdown_icon_size: "Caret size (px)." }, events: "none", notes: "Language switcher (multilingual sites)." },
 
   // ── blog ──
   "post-list": { events: "none", notes: "Lists blog articles. Create blog category + articles first." },
@@ -300,6 +336,19 @@ export const ELEMENT_ATTRS: Record<string, ElementAttrs> = {
   "slider-blog": { specials: { showBlogs: "Categories to show." }, config: { columns: "Visible posts." }, events: "none" },
   "post-overlay": { specials: { type: "regular | custom." }, events: "none", notes: "Post card overlay (post page)." },
   "blog-overlay": { specials: { type: "regular | custom." }, events: "none" },
+
+  // ── filters / widgets / states (mined from 34 templates) ──
+  tags: { specials: { ...FILTER_SPECIALS, activeMode: "How active tags render.", selectionMode: "single | multiple.", tabIndex: "Bind to a tab." }, config: { tags_layout: "Tag layout style." }, events: "click — filters the linked grid-product.", notes: "Tag/attribute chips that FILTER a product grid (category page) — set filter_elements + sync_tab:'tag'." },
+  "auto-number": { specials: { startNumber: "Start value.", endNumber: "End value.", jumpNumber: "Increment step.", duration: "Count-up duration (s)." }, config: { strokeColor: "Text stroke.", textColor: "Number colour." }, events: "none", notes: "Animated count-up stat (e.g. '10,000+ customers')." },
+  agency: { specials: { datagrid_id: "Linked data grid id.", googleTarget: "Google-map target." }, config: { hoverColor: "Hover colour.", activeColor: "Active colour." }, events: "none", bindings: ["agency::name", "agency::phone_number", "agency::address", "agency::time"], notes: "Store-locator / branch list (repeater over agency::*)." },
+  "user-point-log": { specials: { itemGap: "Row gap.", noteColor: "Note colour.", datetimeColor: "Date colour." }, events: "none", notes: "Loyalty reward-point history (member page)." },
+  "empty-product-layout": { events: "none", notes: "Empty-state shown inside a grid-product when no products match." },
+  "cart-items-empty": { events: "none", notes: "Empty-state shown inside cart-items when the cart is empty." },
+  "cart-droppable": { events: "none", notes: "Mini-cart drawer/panel (header). Open via open_cart / open_popup." },
+  "lesson-sidebar": { specials: { submit_status: "Lesson completion state." }, config: { backgroundModule: "Module background.", iconSize: "Icon size (px)." }, events: "none", notes: "Course lesson navigation sidebar (course app)." },
+  "lesson-items": { events: "none", notes: "Lessons list inside a module (course app)." },
+  "next-lesson-droppable": { events: "none", notes: "Next-lesson panel (course app)." },
+  "list-lesson-droppable": { events: "none", notes: "Lessons droppable list (course app)." },
 };
 
 const describe = (type: string, key: string, where: "specials" | "config"): string | undefined => {

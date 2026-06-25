@@ -153,7 +153,12 @@ Repeaters fall into two kinds (surveyed across 34 templates):
   - \`layout-dataset\` / \`customer-address\` = a generic repeater: \`text-dataset[customer_address::full_name|phone_number|address|pdc|is_default]\` + a "Set default" button.
   - \`promotions\` = \`text-dataset[promotion_item::code|description|end_date]\` + a copy button (\`copy_promotion\`).
 The bare \`cart-items\`/\`order-items\` (no children) self-render a DEFAULT row — fine for a quick build; compose cells only when you want a custom layout.
-HEADER patterns: real headers carry TWO menus (a horizontal desktop \`menu\` + a hamburger/collapse mobile \`menu\`), the logo (image/text), \`cart-icon\`, often \`input-search\`/\`search-droppable\`, \`member-bar\`, and \`language-menu\`. BREADCRUMB is common — keep it on category/product pages (often its own slim section, or next to a \`text-dataset\` page title).
+HEADER patterns: real headers carry TWO menus (a horizontal desktop \`menu\` + a hamburger/collapse mobile \`menu\`), the logo (image/text), \`cart-icon\`, often \`input-search\`/\`search-droppable\`, \`member-bar\` (login/signup ↔ avatar+account), and \`language-menu\`. BREADCRUMB is common — keep it on category/product pages (often its own slim section, or next to a \`text-dataset\` page title).
+CATEGORY-PAGE FILTERS: a category page sidebar FILTERS the product grid. The filter widgets —
+\`checkbox-group\` / \`color-group\` / \`tags\` / \`two-point-range\` (price) / \`radio-group\` / a sort
+\`dropdown\` — each carry \`specials.filter_elements:["GRID-PRODUCT-id"]\` (the grid they drive) +
+\`specials.sync_tab\` ("attribute" | "brand" | "category" | "price" | "tag") so picking an option
+re-queries that grid-product. So a real category page = breadcrumb + [filter sidebar | grid-product].
 
 ## Events (clicks, navigation, cart, popups)
 Interactive nodes (button, text, image, container, rectangle, icons) carry an \`events\`
