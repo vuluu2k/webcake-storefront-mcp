@@ -5,6 +5,15 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.21.0] - 2026-06-25
+
+### Changed
+- The `grid-product` factory now ships cross-industry neutral defaults (`image_ratio:"1/1"`, `gap_column`/`gap_row` 24, `products_per_load` 12) instead of the previous fashion-specific values (`image_ratio:"4/5"`, gaps 30/15, `products_per_load` 36, hard-coded 18 px font sizes); callers of `build_page` and `new_section` should now explicitly set `image_ratio`, column count, and font sizes to match the target brand.
+- The `quantity-input` factory now defaults to `specials.spinner:"hide-spin"`, matching the universal pattern found across all five surveyed production templates; callers can override via `opts.specials`.
+- `list_elements` now returns richer documentation for `grid-product`, covering the full `specials` surface (`category_id`, `show_rating`, `load_rating`, `show_ribbon`, `load_brand`, `load_category`, `on_hover`, `randomDisplay`, `typeLinkCategory`, `plugins`) and additional `config` colour keys (`productNameColor`, `productNameHover`, `productPriceColor`, `productOriginalPriceColor`), with a note that `image_ratio`, column count, and gaps are industry-dependent.
+- `list_elements` now returns full documentation for `product-gallery` (`specials.showNavigation`, `specials.on_hover`, `config.sizeThumbnail`, `config.image_ratio`), `quantity-input` (`specials.spinner`, `specials.showRightBtn`, `config.textColor`), and `attr` (variation selector — `specials.attrName`, `specials.autoAttrName`, `specials.attrPrimary`, `specials.layout`, `specials.defaultSelected`, `config.borderColorHover`).
+- `get_build_guide` PRODUCT GRID note now states that `grid-product` config is industry-dependent (surveyed fashion/kids/cosmetics/food/electronics), documents configurable ranges for `image_ratio` (4/5 fashion, 2/3 kids, 3/4 food, 1/1 square), `columns` (1–6), and `gap` (8–40), and adds guidance on using `attr (attrName:"auto")` for variation selectors and `quantity-input` defaulting to `spinner:"hide-spin"`.
+
 ## [1.20.0] - 2026-06-25
 
 ### Changed

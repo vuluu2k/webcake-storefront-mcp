@@ -5,6 +5,15 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.21.0] - 2026-06-25
+
+### Changed
+- Factory `grid-product` nay sử dụng các giá trị mặc định trung lập đa ngành (`image_ratio:"1/1"`, `gap_column`/`gap_row` 24, `products_per_load` 12) thay vì các giá trị trước đây vốn dành riêng cho ngành thời trang (`image_ratio:"4/5"`, gap 30/15, `products_per_load` 36, font size cố định 18 px); các caller của `build_page` và `new_section` cần chủ động đặt `image_ratio`, số cột và kích thước font phù hợp với thương hiệu mục tiêu.
+- Factory `quantity-input` nay mặc định `specials.spinner:"hide-spin"`, khớp với pattern phổ quát được tìm thấy trong toàn bộ năm template production đã khảo sát; caller có thể ghi đè qua `opts.specials`.
+- `list_elements` nay trả về tài liệu phong phú hơn cho `grid-product`, bao gồm toàn bộ các trường `specials` (`category_id`, `show_rating`, `load_rating`, `show_ribbon`, `load_brand`, `load_category`, `on_hover`, `randomDisplay`, `typeLinkCategory`, `plugins`) và các key màu sắc `config` bổ sung (`productNameColor`, `productNameHover`, `productPriceColor`, `productOriginalPriceColor`), kèm ghi chú rằng `image_ratio`, số cột và khoảng cách phụ thuộc vào ngành hàng.
+- `list_elements` nay trả về tài liệu đầy đủ cho `product-gallery` (`specials.showNavigation`, `specials.on_hover`, `config.sizeThumbnail`, `config.image_ratio`), `quantity-input` (`specials.spinner`, `specials.showRightBtn`, `config.textColor`) và `attr` (bộ chọn biến thể — `specials.attrName`, `specials.autoAttrName`, `specials.attrPrimary`, `specials.layout`, `specials.defaultSelected`, `config.borderColorHover`).
+- Mục PRODUCT GRID trong `get_build_guide` nay nêu rõ rằng cấu hình `grid-product` phụ thuộc vào ngành hàng (đã khảo sát thời trang/trẻ em/mỹ phẩm/thực phẩm/điện tử), tài liệu hóa dải giá trị có thể chỉnh cho `image_ratio` (4/5 thời trang, 2/3 trẻ em, 3/4 thực phẩm, 1/1 dạng vuông), `columns` (1–6) và `gap` (8–40), đồng thời bổ sung hướng dẫn sử dụng `attr (attrName:"auto")` cho bộ chọn biến thể và ghi nhận rằng `quantity-input` mặc định `spinner:"hide-spin"`.
+
 ## [1.20.0] - 2026-06-25
 
 ### Changed
