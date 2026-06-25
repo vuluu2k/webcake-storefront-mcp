@@ -28,6 +28,33 @@ export function getConfirmMode() {
 
 export function registerContextTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
+    "get_intake_guide",
+    "Get the INTAKE questionnaire + build flow to run BEFORE creating a new site/store/page. Call this at the start of any fresh build: ask the user this one short batch (plain words, with defaults), restate the plan, get a yes, THEN build. Skip only for tiny edits, data questions, or when the user already gave the brief / says 'just do it'.",
+    {},
+    () =>
+      handle(async () => ({
+        how_to_use:
+          "Ask these as ONE friendly batch in the user's language (Vietnamese = full diacritics). Talk like a shop-website consultant to a non-designer: plain words and visual outcomes, no jargon. Offer the defaults so they can answer fast or just say 'theo gợi ý'. Then restate the plan (shop name + pages + colour/tone + main CTA) and WAIT for confirmation before building. Never invent or silently placeholder real data — ask for it; only placeholder what the user explicitly skips and tell them what to fill in.",
+        questions: [
+          { key: "business", ask: "Bạn bán gì? Kể 3–6 sản phẩm tiêu biểu kèm giá (và giá gốc nếu có khuyến mãi).", why: "Tạo danh mục + sản phẩm thật để lưới sản phẩm hiển thị đúng.", required: true },
+          { key: "brand", ask: "Tên shop/thương hiệu là gì? Có logo hay slogan không?", default: "Dùng tên bạn cung cấp; chưa có logo thì để chữ.", required: true },
+          { key: "look", ask: "Bạn thích tông màu / phong cách nào? (ví dụ: nâu ấm cà phê, pastel nhẹ nhàng, tối hiện đại)", default: "Gợi ý một tông hợp ngành hàng để bạn duyệt.", required: false },
+          { key: "pages", ask: "Cần những trang nào? Mặc định: Trang chủ + Cửa hàng (danh mục, chi tiết SP, giỏ hàng, thanh toán, cảm ơn). Thêm Giới thiệu / Blog / Liên hệ?", default: "Trang chủ + bộ trang cửa hàng chuẩn.", required: false },
+          { key: "contact", ask: "Thông tin liên hệ thật: hotline/Zalo, địa chỉ, email, giờ mở cửa — và nút hành động chính (Mua ngay / Gọi đặt / Nhắn Zalo)?", why: "Hiển thị ở header/footer/CTA — không bịa.", required: true },
+          { key: "promo", ask: "Có khuyến mãi hay điểm bán hàng nổi bật để làm CTA không? (ví dụ: giảm 10% đơn đầu, freeship từ 300k)", default: "Bỏ qua nếu chưa có.", required: false },
+        ],
+        recommended_flow: [
+          "create_site (tên + slug) → tự chuyển sang site mới",
+          "create_product_category + create_product cho từng sản phẩm (ảnh từ search_images/upload_images trước)",
+          "build_page trang chủ (type:'main', is_homepage:true) với hero, lưới sản phẩm, câu chuyện, CTA, …",
+          "scaffold_store_pages để tạo trang danh mục/chi tiết/giỏ/thanh toán/cảm ơn",
+          "Tách Header/Footer thành global section (create_global_section) để dùng chung mọi trang",
+          "publish_site (cũng rebuild CSS storefront)",
+        ],
+        notes: "Sau khi build xong, QA trên builder editor (app_base/editor/:site_id) hoặc storefront đã publish; publish_site sẽ rebuild CSS để hết tình trạng trang thiếu style.",
+      }))
+  );
+  server.tool(
     "get_current_context",
     "Show current connection context: which site_id, API URL, session, and account info. Call this first to confirm you're working on the right site",
     {},
