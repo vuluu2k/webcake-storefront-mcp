@@ -15,6 +15,7 @@
 // override any slot via a Palette object.
 
 import { buildSection, walk } from "./page.js";
+import { buildElement } from "./catalog.js";
 import { normalizeEvents } from "./events.js";
 
 export interface Palette {
@@ -346,19 +347,22 @@ export function headerSection(opts: { brand?: string; links?: NavLink[]; palette
     { label: "Giỏ hàng", navTo: "cart" },
   ];
   const logo = { type: "text", opts: { text: opts.brand || "Shop", specials: { tag: "h2" }, style: { fontSize: "24px", fontWeight: "800", color: p.text } } };
+  // Real designer templates use a `menu` of `menu-item`s, NOT text links — and a menu-item's
+  // navigation lives in its SPECIALS (linkType/linkPage/pageId), not events. We build the
+  // items directly (via buildElement, so buildFromSpec doesn't grid-stack the menu) and leave
+  // a _navTo sentinel that wireNavigation resolves into linkType:"page" + page ids.
+  const menuItems = links.map((l) =>
+    buildElement("menu-item", {
+      specials: { name: l.label, ...(l.navTo ? { _navTo: l.navTo } : {}), ...(l.url ? { _navUrl: l.url } : {}) },
+    }),
+  );
   const nav = {
-    type: "container",
-    layout: "row",
-    columnGap: 28,
-    collapse: { bp4: 3 },
-    children: links.map((l) => ({
-      type: "text",
-      opts: {
-        text: l.label,
-        ...(l.navTo || l.url ? { specials: { ...(l.navTo ? { _navTo: l.navTo } : {}), ...(l.url ? { _navUrl: l.url } : {}) } } : {}),
-        style: { fontSize: "15px", fontWeight: "600", color: p.text, cursor: "pointer" },
-      },
-    })),
+    type: "menu",
+    opts: {
+      specials: { type: "horizontal", sync: false, fullField: false },
+      config: { showArrow: true, textColor: p.text, colorHover: p.accent, "--padX": "15px", justifyContent: "center", fontSize: "15px", fontWeight: "600" },
+      children: menuItems,
+    },
   };
   const actions = {
     type: "container",
@@ -444,16 +448,24 @@ export function footerSection(opts: { brand?: string; tagline?: string; columns?
 export function wireNavigation(source: any, slugToId: Record<string, string>): number {
   let wired = 0;
   const resolve = (slug: string) => slugToId[slug] || slugToId[slug.replace(/^\//, "")];
+  const isMenuItem = (t: string) => t === "menu-item" || t === "menu-anchor-item";
   walk(source, (node: any) => {
-    // (a) text links carry the sentinel in specials (the text factory keeps it).
+    // (a) elements carry the sentinel in specials (text/menu-item factories keep specials).
     const sp = node && node.specials;
     if (sp && sp._navTo) {
       const id = resolve(sp._navTo);
-      if (id) { node.events = normalizeEvents([{ action: "open_page", open_page_id: id }], node.type); wired++; }
+      if (id) {
+        // A menu-item navigates via SPECIALS (linkType/linkPage/pageId), like real templates;
+        // every other element navigates via an events open_page entry.
+        if (isMenuItem(node.type)) { sp.linkType = "page"; sp.linkPage = id; sp.pageId = id; }
+        else node.events = normalizeEvents([{ action: "open_page", open_page_id: id }], node.type);
+        wired++;
+      }
       delete sp._navTo;
     }
     if (sp && sp._navUrl) {
-      node.events = normalizeEvents([{ action: "open_link", link_target: sp._navUrl, link_target_url: sp._navUrl }], node.type);
+      if (isMenuItem(node.type)) { sp.linkType = "custom"; sp.isCustom = true; sp.link = sp._navUrl; }
+      else node.events = normalizeEvents([{ action: "open_link", link_target: sp._navUrl, link_target_url: sp._navUrl }], node.type);
       delete sp._navUrl;
       wired++;
     }
