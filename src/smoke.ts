@@ -60,8 +60,12 @@ console.log("== page: grid composition + validation ==");
     { type: "button", opts: { text: "Buy" } },
   ]);
   // A section uses the builder's centred 3-column grid; children sit in the centre column.
-  check("section grid is 3xN", hero.runtime.config.grid === "3x2", hero.runtime.config.grid);
+  // padY (default 64) adds a top + bottom SPACER ROW, so a 2-child section is 3x4 and the
+  // children start at row 2 (past the top spacer) — template-native section padding.
+  check("section grid is 3x(N+2) with spacer rows", hero.runtime.config.grid === "3x4", hero.runtime.config.grid);
+  check("top row is a padY spacer", hero.runtime.config.rows[0].min.absValue === 64, hero.runtime.config.rows[0]);
   check("children placed in centre column", hero.children.every((c: any) => c.runtime.config.columnStart === 2));
+  check("children shifted past top spacer", hero.children[0].runtime.config.rowStart === 2, hero.children[0].runtime.config.rowStart);
 
   const src = newPageSkeleton();
   src.sections.push(hero);
@@ -74,7 +78,7 @@ console.log("== page: grid composition + validation ==");
   const sec0 = src.sections[0] as any;
   check("finalize removes runtime", !("runtime" in sec0), Object.keys(sec0));
   check("finalize adds bp1..bp4", ["bp1", "bp2", "bp3", "bp4"].every((bp) => sec0[bp]?.config), Object.keys(sec0));
-  check("section bp4 is mobile grid", sec0.bp4.config.grid === "3x2" && sec0.bp4.config.columns[0].absValue === 5, sec0.bp4.config.columns?.[0]);
+  check("section bp4 is mobile grid", sec0.bp4.config.grid === "3x4" && sec0.bp4.config.columns[0].absValue === 5, sec0.bp4.config.columns?.[0]);
   check("child bp1 keeps centre column", sec0.children[0].bp1.config.columnStart === 2, sec0.children[0].bp1?.config);
   check("finalize is idempotent", (finalizeForRender(src), !("runtime" in sec0)));
 
