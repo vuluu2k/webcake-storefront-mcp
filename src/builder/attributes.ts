@@ -319,7 +319,7 @@ export const ELEMENT_ATTRS: Record<string, ElementAttrs> = {
   "slider-category": { specials: { showCategories: "Categories to show [{id,...}].", on_hover: "Card hover effect (zoom-in|…)." }, config: { columns: "Visible categories.", minimum_card_width: "Min card width (px).", sizeThumbnail: "{width,height} of the image.", imageBorderRadius: "Image radius.", navSize: "Arrow size (px).", arrowColor: "Arrow colour." }, events: "none" },
   "customer-address": { events: "none", bindings: ["customer_address::full_name", "customer_address::address", "customer_address::phone_number", "customer_address::pdc", "customer_address::is_default"], notes: "Member saved addresses." },
   wishlist: { specials: { svg: "Icon SVG.", itemCount: "Badge count." }, config: { itemCountColor: "Badge text colour.", itemBackgroundColor: "Badge background.", itemCountFontSize: "Badge size.", itemCountFontWeight: "Badge weight.", itemCountBorderRadius: "Badge radius.", itemCountFontFamily: "Badge font." }, events: "click — opens the wishlist." },
-  "favorite-icon": { events: "click — toggle favourite." },
+  "favorite-icon": { config: { mask: "Heart icon SVG mask.", colorActive: "Colour when favourited." }, events: "click — toggle favourite (add_wishlist_product / wishlist_remove_item).", notes: "Heart toggle on a product card; pairs with the wishlist element in the header." },
   "bonus-items": { specials: { typeBonus: "combo_product | other." }, events: "none" },
 
   // ── navigation ──
@@ -354,6 +354,24 @@ export const ELEMENT_ATTRS: Record<string, ElementAttrs> = {
   "lesson-items": { events: "none", notes: "Lessons list inside a module (course app)." },
   "next-lesson-droppable": { events: "none", notes: "Next-lesson panel (course app)." },
   "list-lesson-droppable": { events: "none", notes: "Lessons droppable list (course app)." },
+
+  // ── marketing / popups / misc widgets (rarely in page sources; built via apps/global_sources) ──
+  popup: { specials: { effect: "Open animation (fade-in|slide|…).", timeAnim: "Animation duration (s).", trigger: "When it opens: load | delay | exit_intent | scroll.", delay: "Seconds before auto-open (trigger=delay).", onlyOnce: "Show once per visitor (boolean).", overlay: "Dim the page behind (boolean)." }, config: { popupHorizontalPosition: "left | center | right.", popupVerticalPosition: "top | center | bottom." }, events: "hide — fires when the popup closes.", notes: "Modal/overlay. NOT a page section — wrap a section in a popup node and save it as a global_source (component:'popup'). Open/close from any element via events open_popup/close_popup {popup_id}. See get_build_guide → Popups." },
+  notify: { specials: { type: "Toast/banner kind.", autoClose: "Auto-dismiss (boolean).", duration: "Visible time (s)." }, events: "none", notes: "Notification / toast banner (e.g. add-to-cart confirmation). Often referenced by add_to_cart's activeNotify." },
+  "random-number": { specials: { min: "Lowest value.", max: "Highest value." }, events: "none", notes: "Displays a random number (minigame / fake-stock urgency widget)." },
+  table: { specials: { datagrid_id: "Linked data-grid id (the table's data source).", tableItems: "Column definitions [{name,key}]." }, config: { titleBackground: "Header background.", titleColor: "Header text colour.", oddBackground: "Odd-row background.", evenBackground: "Even-row background." }, events: "none", notes: "Data table bound to a data grid (specs / comparison)." },
+  "rectangle-dataset": { events: "none", bindings: ["product::product_image", "category::category_image"], notes: "A box/background bound to a dataset field (like image-dataset but a styled rectangle) — set bindings[].target." },
+  "reward-point": { specials: { ...FIELD }, config: { ...FIELD_CONFIG }, events: "none", notes: "Field to redeem loyalty reward points at checkout (member). field_name 'reward_point'." },
+  "referral-code": { specials: { field_name: "referral / referral_code.", label: FIELD.label, placeholder: FIELD.placeholder, show_label: FIELD.show_label }, config: { ...FIELD_CONFIG }, events: "none", notes: "Shows/enters a member referral code (affiliate/loyalty)." },
+  "lucky-wheel": { specials: { segments: "Wheel prizes [{label,…}].", spin_limit: "Spins allowed per user." }, events: "click — spins the wheel.", notes: "Spin-to-win minigame (marketing app)." },
+  "tee-form": { specials: { product_id: "Designable product id." }, events: "none", notes: "Print-on-demand / product-design form (apparel app)." },
+  warehouse: { specials: { warehouses: "Store/branch list [{id,name,address,…}]." }, config: { activeColor: "Selected branch colour.", hoverColor: "Hover colour.", distanceWarehouse: "Gap between branches (px)." }, events: "click — picks a pickup branch.", notes: "Store/warehouse pickup selector (checkout)." },
+  "warehouse-dataset": { events: "none", bindings: ["warehouse::name", "warehouse::address"], notes: "Warehouse/branch field bound to a dataset." },
+  calendar: { specials: { mode: "Booking view (month|week|day).", min_date: "Earliest selectable date.", max_date: "Latest selectable date." }, events: "none", notes: "Booking calendar (appointment app). Holds calendar-content." },
+  "calendar-content": { events: "none", notes: "A day/slot cell inside a calendar (appointment app)." },
+  "collapse-content": { events: "none", notes: "The expandable content panel inside a collapse-item (accordion body)." },
+  "question-container": { specials: { question_type: "single | multiple | text.", required: "Answer required (boolean)." }, events: "none", notes: "One question wrapper in a quiz/survey form (question_form)." },
+  "input-product-note": { specials: { ...FIELD }, config: { ...FIELD_CONFIG }, events: "none", notes: "Per-product note field (passes a note with the product into the cart). field_name 'product_note'." },
 };
 
 const describe = (type: string, key: string, where: "specials" | "config"): string | undefined => {
