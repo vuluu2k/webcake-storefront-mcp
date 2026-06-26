@@ -61,13 +61,38 @@ export function registerCollectionTools(server: McpServer, api: WebcakeCmsApi, h
   );
 
   // ── Table-management tools (VERIFIED live: create table, edit columns, delete table). ──
-  // Field type ∈ string | text | integer | float | boolean | naive_datetime | binary_id | map | array.
+  // Custom-column types (matches the builderx_spa column editor; backend accepts these + more):
+  //   text | rich_text | url | integer | float | decimal | boolean | reference | color |
+  //   image | media_gallery | video | audio | document | date | naive_datetime | time |
+  //   address | object | array.
+  // (string/binary_id/map are backend aliases of text/reference/object; binary_id & naive_datetime
+  //  are reserved for SYSTEM columns like id/inserted_at — don't pick them for custom fields.)
   const COLUMN = z.object({
     name: z.string().describe("Column name (snake_case)."),
-    type: z.string().describe("string | text | integer | float | boolean | naive_datetime | binary_id | map | array"),
+    type: z
+      .string()
+      .describe(
+        "text | rich_text | url | integer | float | decimal | boolean | reference | color | image | media_gallery | video | audio | document | date | naive_datetime | time | address | object | array",
+      ),
     display_name: z.string().optional(),
     is_required: z.boolean().optional(),
     is_unique: z.boolean().optional(),
+    note: z.string().optional().describe("Help text / description for the column."),
+    default: z.any().optional().describe("Default value for the column."),
+    reference: z
+      .string()
+      .optional()
+      .describe(
+        "For type 'reference' only: the referenced table_name, or a system entity (customer | product | article | blog | variation).",
+      ),
+    reference_type: z
+      .enum(["system", "collection"])
+      .optional()
+      .describe("For type 'reference' only: 'system' (built-in entity) or 'collection' (another custom table)."),
+    date_default_type: z
+      .enum(["empty", "added", "specific"])
+      .optional()
+      .describe("For type 'date'/'naive_datetime' only: how the default date is set."),
   });
   server.tool(
     "create_collection",
@@ -75,7 +100,7 @@ export function registerCollectionTools(server: McpServer, api: WebcakeCmsApi, h
     {
       name: z.string().describe("Display name."),
       table_name: z.string().optional().describe("Table name (snake_case, unique). Defaults to name."),
-      columns: z.array(COLUMN).optional().describe("Custom columns to add, e.g. [{name:'email',type:'string'},{name:'amount',type:'integer'}]."),
+      columns: z.array(COLUMN).optional().describe("Custom columns to add, e.g. [{name:'email',type:'text'},{name:'amount',type:'integer'}]."),
     },
     ({ name, table_name, columns }) =>
       handle(async () => {
