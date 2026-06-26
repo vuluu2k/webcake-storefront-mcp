@@ -175,17 +175,17 @@ export class WebcakeCmsApi {
   /** Create a page. The backend creates the page AND its source in one call, so `source`
    *  is REQUIRED and must be a JSON string (stringified here if an object is passed).
    *  `slug`/`is_homepage` are NOT applied at create — set them afterwards via updatePage. */
-  createPage(params: any) {
+  createPage(params: any, opts?: { timeout?: number }) {
     const body: any = { ...params };
     if (body.source != null && typeof body.source !== "string") body.source = JSON.stringify(body.source);
     if (body.source == null) body.source = JSON.stringify({ sections: [] });
-    return this.request("POST", `/api/v1/site/${this.siteId}/page`, { body });
+    return this.request("POST", `/api/v1/site/${this.siteId}/page`, { body, timeout: opts?.timeout });
   }
   updatePage(pageId: string, params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/${pageId}/update_page`, { body: params });
   }
-  updatePageSource(pageId: string, params: any) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/${pageId}/update_page_source`, { body: params });
+  updatePageSource(pageId: string, params: any, opts?: { timeout?: number }) {
+    return this.request("POST", `/api/v1/site/${this.siteId}/${pageId}/update_page_source`, { body: params, timeout: opts?.timeout });
   }
   deletePage(params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/delete_page`, { body: params });

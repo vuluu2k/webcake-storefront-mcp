@@ -68,3 +68,103 @@ export function setCachedUpload(siteId: string, source: string, cdnUrl: string):
   imageCache[`${siteId}::${source}`] = cdnUrl;
   writeJson(IMAGE_CACHE_FILE, imageCache);
 }
+
+// ── Page-draft cache (durable, build-a-page-incrementally) ────────────────────
+// An AI builds a page section-by-section into this LOCAL cache first (safe against
+// timeouts / dropped turns), then commits it to the backend INCREMENTALLY. Every
+// mutation is written to disk so a draft survives a crash / process exit, and a
+// half-committed draft (page_id + committed_count set) can RESUME where it stopped.
+export interface PageDraftMeta {
+  name: string;
+  slug: string;
+  type?: string;
+  is_homepage?: boolean;
+  seo?: any;
+}
+export interface PageDraft {
+  draft_id: string;
+  site_id: string;
+  meta: PageDraftMeta;
+  sections: any[];
+  page_id?: string;
+  committed_count?: number;
+  created_at: number;
+  updated_at: number;
+}
+export interface PageDraftSummary {
+  draft_id: string;
+  name: string;
+  slug: string;
+  type?: string;
+  sections: number;
+  page_id?: string;
+  committed_count?: number;
+  updated_at: number;
+}
+
+const PAGE_DRAFTS_FILE = join(CONFIG_DIR, "page-drafts.json");
+const pageDrafts: Record<string, PageDraft> = readJson<Record<string, PageDraft>>(PAGE_DRAFTS_FILE, {});
+
+function persistDrafts(): void {
+  writeJson(PAGE_DRAFTS_FILE, pageDrafts);
+}
+
+function randomDraftId(): string {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let s = "";
+  for (let i = 0; i < 8; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
+  return `DRAFT-${s}`;
+}
+
+export function createDraft(siteId: string, meta: PageDraftMeta): PageDraft {
+  const now = Date.now();
+  const draft: PageDraft = {
+    draft_id: randomDraftId(),
+    site_id: siteId,
+    meta,
+    sections: [],
+    created_at: now,
+    updated_at: now,
+  };
+  pageDrafts[draft.draft_id] = draft;
+  persistDrafts();
+  return draft;
+}
+
+export function getDraft(draftId: string): PageDraft | null {
+  return draftId in pageDrafts ? pageDrafts[draftId] : null;
+}
+
+export function setDraft(draft: PageDraft): PageDraft {
+  draft.updated_at = Date.now();
+  pageDrafts[draft.draft_id] = draft;
+  persistDrafts();
+  return draft;
+}
+
+export function appendDraftSection(draftId: string, sectionNode: any): PageDraft | null {
+  const draft = getDraft(draftId);
+  if (!draft) return null;
+  draft.sections.push(sectionNode);
+  return setDraft(draft);
+}
+
+export function listDrafts(siteId: string): PageDraftSummary[] {
+  return Object.values(pageDrafts)
+    .filter((d) => d.site_id === siteId)
+    .map((d) => ({
+      draft_id: d.draft_id,
+      name: d.meta.name,
+      slug: d.meta.slug,
+      type: d.meta.type,
+      sections: d.sections.length,
+      page_id: d.page_id,
+      committed_count: d.committed_count,
+      updated_at: d.updated_at,
+    }));
+}
+
+export function delDraft(draftId: string): void {
+  delete pageDrafts[draftId];
+  persistDrafts();
+}

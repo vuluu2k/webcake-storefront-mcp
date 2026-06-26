@@ -35,6 +35,7 @@ import { registerResultCacheTools } from "./result-cache.js";
 import { registerImageTools } from "./images.js";
 import { registerBuilderTools } from "./builder.js";
 import { registerBuilderExtraTools } from "./builder-extras.js";
+import { registerPageDraftTools } from "./page-draft.js";
 
 type RegisterFn = (server: any, api: WebcakeCmsApi, handle: Handle, opts: any) => void;
 
@@ -90,6 +91,7 @@ const MODULES: [string, RegisterFn][] = [
   ["web", registerImageTools],
   ["web", registerBuilderTools],
   ["web", registerBuilderExtraTools],
+  ["web", registerPageDraftTools],
 ];
 
 interface ToolEntry {

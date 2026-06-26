@@ -335,4 +335,16 @@ List existing popups with list_global_sources({component:"popup"}); edit via upd
 4. validate_page — fix every error and review warnings.
 5. build_page with dry_run:true first → review → dry_run:false to persist.
 6. For existing pages, prefer surgical edits (update_page_element) over full rewrites.
+
+## LARGE PAGES — avoid timeout (use the DRAFT flow)
+A multi-section page sent in one build_page can be a huge request and hit the 15s timeout.
+For anything beyond a small/simple page, build it incrementally with the durable DRAFT flow:
+1. start_page_draft({ name, slug, type?, is_homepage?, seo? }) → draft_id (LOCAL, no network).
+2. add_draft_section({ draft_id, section }) ONCE per section — each is cached locally (safe,
+   can't time out) and quick-validated. Build the section with new_section first.
+3. commit_page_draft({ draft_id, dry_run:true }) to validate the whole page, then dry_run:false
+   to persist. It creates the page then appends sections ONE AT A TIME (small requests), saving
+   progress after each — and RESUMES from where it stopped if a request is interrupted (just call
+   commit_page_draft again). clear_page_draft discards a draft.
+Keep build_page for small/simple pages.
 Always keep Vietnamese text with full diacritics; reply in the user's language.`;

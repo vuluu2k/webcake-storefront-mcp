@@ -47,7 +47,7 @@ function newPageId(res: any): string | null {
 export const PAGE_TYPE_NUM: Record<string, number> = {
   main: 1, store: 2, member: 3, blog: 4, custom: 5, error: 6, maintain: 7,
 };
-const PAGE_TYPE_FLAG: Record<string, string> = {
+export const PAGE_TYPE_FLAG: Record<string, string> = {
   store: "use_store", member: "use_member", blog: "use_blog",
   error: "use_error", maintain: "use_maintain",
 };
