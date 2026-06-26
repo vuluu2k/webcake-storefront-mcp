@@ -5,6 +5,19 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.27.0] - 2026-06-26
+
+### Added
+- `build_page` nay nhận thêm đối tượng `seo` (`title`, `description`, `keyword`, `favicon`, `thumbnail`) và ghi vào `page.settings.seo` kèm mirroring Open Graph; hỗ trợ token như `{{name_product}} | {{name_site}}` giúp trang không còn được xuất bản với tiêu đề và mô tả trống.
+- `create_page` nay nhận cùng đối tượng `seo` và ghi vào `page.settings.seo` thông qua lệnh gọi `update_page` tiếp theo.
+
+### Changed
+- `scaffold_store_pages` nay đọc ma trận màu của theme đang kích hoạt và, với brand seed sáng màu (ví dụ: store màu be), tự động chuyển màu nhấn trang được tạo từ `var(--color_20)` sang `var(--color_24)` để nhãn nút màu trắng vẫn đọc được; các ghi đè `palette` tường minh vẫn được ưu tiên.
+
+### Fixed
+- `create_page` nay ánh xạ tham số `type` sang đúng giá trị số của backend (`main`→1, `store`→2, `member`→3, `blog`→4, `custom`→5, `error`→6, `maintain`→7); trước đây chuỗi thô được gửi thẳng lên backend và bị bỏ qua.
+- `create_page` nay áp dụng `slug` và `is_homepage` qua lệnh gọi `update_page` tiếp theo, giống với cách `build_page` xử lý; trước đây các trường này được gửi trong body tạo trang và bị backend bỏ qua.
+
 ## [1.26.1] - 2026-06-26
 
 ### Fixed

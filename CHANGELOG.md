@@ -5,6 +5,19 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.27.0] - 2026-06-26
+
+### Added
+- `build_page` now accepts an `seo` object (`title`, `description`, `keyword`, `favicon`, `thumbnail`) that is written to `page.settings.seo` with Open Graph mirroring; tokens such as `{{name_product}} | {{name_site}}` are supported so pages no longer publish with an empty title and description.
+- `create_page` now accepts the same `seo` object and writes it to `page.settings.seo` via a follow-up `update_page` call.
+
+### Changed
+- `scaffold_store_pages` now reads the active site theme's colour matrix and, for light brand seeds (e.g. beige stores), automatically switches the generated page accent from `var(--color_20)` to `var(--color_24)` so white button labels stay readable; explicit `palette` overrides still take precedence.
+
+### Fixed
+- `create_page` now maps its `type` parameter to the correct numeric backend value (`main`→1, `store`→2, `member`→3, `blog`→4, `custom`→5, `error`→6, `maintain`→7); previously the raw string was forwarded to the backend and silently ignored.
+- `create_page` now applies `slug` and `is_homepage` via a follow-up `update_page` call, matching the pattern used by `build_page`; previously these fields were passed in the create body and silently ignored by the backend.
+
 ## [1.26.1] - 2026-06-26
 
 ### Fixed
