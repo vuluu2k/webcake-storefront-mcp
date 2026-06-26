@@ -5,6 +5,11 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.30.0] - 2026-06-26
+
+### Added
+- New `list_customers` tool browses or searches the site's customer list; accepts `page`, `limit`, and `term` (name/phone/email keyword) and returns a compact projection of `name`, `phone_number`, `email`, `order_count`, `succeed_order_count`, `purchased_amount`, `reward_point`, `tags`, and `last_order_at` alongside a `total` count; complements the exact-match `find_customer` tool.
+
 ## [1.29.0] - 2026-06-26
 
 ### Added

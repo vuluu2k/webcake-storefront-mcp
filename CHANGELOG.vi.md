@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.30.0] - 2026-06-26
+
+### Added
+- Tool mới `list_customers` duyệt hoặc tìm kiếm danh sách khách hàng của site; nhận các tham số `page`, `limit` và `term` (từ khóa tên/điện thoại/email) và trả về thông tin gọn gàng gồm `name`, `phone_number`, `email`, `order_count`, `succeed_order_count`, `purchased_amount`, `reward_point`, `tags` và `last_order_at` cùng tổng số `total`; bổ sung cho tool `find_customer` vốn chỉ tra cứu chính xác theo id/điện thoại/email.
+
 ## [1.29.0] - 2026-06-26
 
 ### Added
