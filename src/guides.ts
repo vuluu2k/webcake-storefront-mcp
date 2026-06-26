@@ -22,38 +22,59 @@ ANY method → /api/v1/{site_id}/_functions/{FunctionName}
 The caller receives your return value as data.result. From the storefront, the
 webcake-fn client (api.method_FunctionName(params)) returns that result directly.
 
-## webcake-data — Database SDK (built-in)
+## webcake-data — Database SDK (built-in). This is the MAIN way to read/write a site's collections.
 import { DBConnection } from 'webcake-data';
 const db = new DBConnection();              // auto-uses the sandbox global site/token
-const Model = db.model('collection_name');
+const Model = db.model('collection_name');  // 'collection_name' = the table_name of a collection
 
-### Model CRUD (all async unless noted)
-- Model.create(doc)                         → created doc
-- Model.insertMany([doc, ...])              → array
-- Model.find(filter)                        → QueryBuilder (NOT a promise — chain then .exec()/await)
-- Model.findOne(filter, { select, sort, populate })
-- Model.findById(id, { select, populate })
-- Model.updateOne(filter, update)           → { acknowledged, matchedCount, modifiedCount }
-- Model.findByIdAndUpdate(id, update, { new: true })
-- Model.findOneAndUpdate(filter, update)
-- Model.updateMany(filter, update)
-- Model.deleteOne(filter)                   → { acknowledged, deletedCount }
-- Model.findByIdAndDelete(id) / Model.findOneAndDelete(filter)
-- Model.deleteMany(filter)
-- Model.countDocuments(filter)              → number
-- Model.exists(filter)                      → boolean
+The API is Mongoose-DOCUMENT style: filters are plain MongoDB-style OBJECTS, chains are
+DIRECTLY AWAITABLE (NO .exec()), and you select fields with an ARRAY. Every document has an
+\`id\` (UUID string) plus \`inserted_at\` / \`updated_at\`.
 
-### QueryBuilder (from Model.find())
-Chain then terminate with .exec() (or just await the chain):
-Model.find().where('age').gte(25).lte(40).in('role',['admin']).like('email','%@ex.com')
-  .sort({ age:-1 }).limit(20).skip(10).select('name email').exec()
-Operators: where, eq, ne, gt, gte, lt, lte, in, nin, between, like, sort, limit, skip, select, populate.
+### Read
+- await Model.findOne(filter)                          → one doc (or null)
+- await Model.findOne(filter, { populate:{ field, select:[...] } })
+- await Model.find(filter).select([...]).populate({...}).sort({...}).limit(n)   → array (await the CHAIN; no .exec())
+- await Model.countDocuments(filter)                   → number
 
-### Populate (join another collection)
-Model.find().populate({
-  field:'posts', table:'posts', referenceField:'user_id',
-  select:'title', where:{}, sort:{ created_at:-1 }, limit:5, skip:0, justOne:false
-}).exec()
+filter is a MongoDB-style object. Operators go INSIDE the field value:
+  { thanh_vien: userId }                                 // equals
+  { status: { $in: [0, 1, 2] } }                         // in a list
+  { trang_thai_tg: { $ne: 3 } }                          // not equal
+  // also $nin, $gt, $gte, $lt, $lte, $exists — the usual MongoDB query operators.
+
+Chain methods on a Model.find(filter):
+  .select(["id", "name", "diem_so"])                    // ARRAY of field names to return
+  .sort({ inserted_at: -1 })                            // 1 ascending, -1 descending (multi-key ok)
+  .limit(20)  .skip(0)
+  .populate({ field: "thanh_vien", select: ["id", "name", "avatar"] })
+
+### Populate (resolve a reference field)
+A reference field stores the related row's \`id\` (a string). \`.populate({ field, select:[...] })\`
+replaces it with the related OBJECT (only the selected fields). After populate, read it as an
+object; before/without populate it's the raw id string. Handle both:
+  const id = typeof row.thanh_vien === "object" ? row.thanh_vien.id : row.thanh_vien;
+populate also works as a 2nd-arg option on findOne: Model.findOne(filter, { populate:{ field, select:[...] } }).
+
+### Write
+- await Model.create(doc)                               → created doc (use doc.id afterwards)
+- await Model.findOneAndUpdate(filter, update, { new: true })   → the UPDATED doc ({ new:true } = return the new version)
+- await Model.updateOne(filter, update)                 → write result
+- await Model.updateMany(filter, update)                → bulk update matching rows
+- await Model.deleteMany(filter)                        → delete matching rows
+(update is a plain object of the fields to set, e.g. { status: 1, ty_le_thang: 75 }.)
+
+### Real example pattern (from a production function)
+const Members = db.model("thanh_vien_ps");
+const rows = await Members
+  .find({ playspace: psId, status: { $in: [0, 1, 2] } })
+  .select(["id", "thanh_vien", "tien_con_lai", "status"])
+  .populate({ field: "thanh_vien", select: ["id", "name", "avatar"] })
+  .sort({ status: 1, inserted_at: 1 })
+  .limit(50);
+const count = await Members.countDocuments({ playspace: psId, status: { $in: [0, 1, 2] } });
+const created = await Members.create({ thanh_vien: userId, playspace: psId, status: 0 });
+await Members.updateOne({ id: created.id }, { tien_con_lai: 100000 });
 
 ## Built-in @webcake/* modules (first arg is always request; they auth via global.token)
 Thin wrappers over the backend's /cms_function/{site_id}/... endpoints. Pass request so
@@ -136,18 +157,36 @@ Runs sandboxed: ~4 MB memory, ~30 s timeout. The return value MUST be JSON-seria
 ## Cron jobs (jobs_config JSON)
 { "jobs": [{ "functionLocation": "backend/http_function", "functionName": "myFunc", "executionConfig": { "cronExpression": "0 2 * * *" } }] }
 
-## Example
+## Example (real-world shape)
+Declare the models + db ONCE at module top, then one export per endpoint. Read the caller from
+request.customer?.id (auth) and the inputs from request.params. Return a plain JSON object —
+the convention is { mess: "OK", ...data } on success or { mess: "ERROR_CODE" } on failure.
 import { DBConnection } from 'webcake-data';
 import { findCustomerById } from '@webcake/customer';
-export const post_RecentOrders = async (request) => {
-  const { params, customer } = request;
-  const db = new DBConnection();
-  const orders = await db.model('orders')
-    .find().where('customer_id').eq(customer.id || params.customer_id)
-    .sort({ created_at:-1 }).limit(10)
-    .populate({ field:'items', table:'order_items', referenceField:'order_id', limit:50 })
-    .exec();
-  return { count: orders.length, orders };
+
+const db = new DBConnection();
+const Members = db.model('thanh_vien_ps');
+
+export const post_MyMembers = async (request) => {
+  const userId = request.customer?.id ?? "";        // the logged-in storefront customer
+  if (!userId) return { mess: "NO_ACCOUNT_CALL" };
+  const { playspace = "" } = request.params || {};  // POST body params
+  try {
+    const rows = await Members
+      .find({ playspace, status: { $in: [0, 1, 2] } })
+      .select(["id", "thanh_vien", "tien_con_lai", "status"])
+      .populate({ field: "thanh_vien", select: ["id", "name", "avatar"] })
+      .sort({ status: 1, inserted_at: 1 })
+      .limit(50);
+    const data = rows.map((row) => {
+      const m = row.thanh_vien || {};                // populated object
+      return { thanh_vien_ps: row.id, ten: m.name || "", tien: Number(row.tien_con_lai) || 0 };
+    });
+    return { mess: "OK", data };
+  } catch (err) {
+    console.error(err?.message || err);
+    return { mess: "SYSTEM_ERROR" };
+  }
 };
 `;
 
