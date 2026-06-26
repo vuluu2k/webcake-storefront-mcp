@@ -5,6 +5,16 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.29.0] - 2026-06-26
+
+### Added
+- `scaffold_global_sections` nay nhận thêm tham số `logo` (URL hình ảnh được host) để hiển thị phần tử `image` trong header thay vì node text tên thương hiệu.
+- `scaffold_global_sections` nay nhận thêm tham số `account` (mặc định `false`) để thêm `member-bar` (liên kết đăng nhập/đăng ký) vào khu vực action bên phải của header, dành cho các site có cổng thành viên.
+- `scaffold_global_sections` nay nhận thêm tham số `language` (mặc định `false`) để thêm `language-menu` vào khu vực action bên phải của header, dành cho các site đa ngôn ngữ.
+
+### Changed
+- Header được tạo bởi `scaffold_global_sections` nay mặc định bao gồm ô `input-search` tìm kiếm của storefront (điều chỉnh qua tham số `search` mới, mặc định `true`), khớp với bố cục thấy trong các template production thực tế; khu vực action bên phải được xây dựng động để độ rộng cột grid tự điều chỉnh theo bất kỳ tổ hợp nào trong số search, account, language, cart và CTA được bật.
+
 ## [1.28.0] - 2026-06-26
 
 ### Added
