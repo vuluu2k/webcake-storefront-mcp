@@ -76,7 +76,33 @@ const count = await Members.countDocuments({ playspace: psId, status: { $in: [0,
 const created = await Members.create({ thanh_vien: userId, playspace: psId, status: 0 });
 await Members.updateOne({ id: created.id }, { tien_con_lai: 100000 });
 
-## Built-in @webcake/* modules (first arg is always request; they auth via global.token)
+### Common patterns (battle-tested in production functions)
+- FIND-OR-CREATE (ensure a row exists):
+    let row = await M.findOne({ key: v });
+    if (!row) row = await M.create({ key: v, ...defaults });
+    return row;
+- UPSERT + read back the new version:
+    const updated = await M.findOneAndUpdate({ key: v }, { field: x }, { new: true });
+- COUNT then DENORMALIZE onto a parent (cheap reads later):
+    const n = await Members.countDocuments({ playspace: psId, status: { $in: [0,1,2] } });
+    await PlaySpace.updateOne({ id: psId }, { so_thanh_vien: n });
+- MULTI-TABLE write (no transactions — do the steps in order, validate first):
+    for (const it of items) await Members.updateOne({ id: it.id }, { tien_con_lai: it.bal });
+    await PlaySpace.updateOne({ id: psId }, { tien_con_lai: total });
+    await History.create({ playspace: psId, items });           // append an audit/history row
+- SOFT DELETE (keep history) — set a status instead of deleteMany:
+    await M.updateOne({ id }, { status: INACTIVE });            // and filter it out with { status: { $ne: INACTIVE } }
+- REFERENCE id helpers (a ref field is an id string, or an object after populate):
+    const toId = (v) => (v && typeof v === "object" ? String(v.id || "") : String(v || ""));
+    const toNumber = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
+- STATUS as numeric enums (define constants up top): const STATUS = { OWNER:0, ACTIVE:1, GUEST:2, INACTIVE:3 };
+  then query with { status: { $in: [STATUS.OWNER, STATUS.ACTIVE] } }.
+- ALWAYS guard auth + wrap in try/catch returning a coded mess:
+    const userId = request.customer?.id ?? ""; if (!userId) return { mess: "NO_ACCOUNT_CALL" };
+    try { /* … */ return { mess: "OK", ...data }; } catch (err) { console.error(err?.message || err); return { mess: "SYSTEM_ERROR" }; }
+
+## Built-in @webcake/* modules (first arg is always request; they auth via global.token — these run
+## INSIDE the function sandbox, so they reach the /cms_function endpoints the dashboard JWT can't)
 Thin wrappers over the backend's /cms_function/{site_id}/... endpoints. Pass request so
 they pick up site_id. Below is EXACTLY what each call sends to the backend + what it returns.
 
@@ -96,15 +122,20 @@ they pick up site_id. Below is EXACTLY what each call sends to the backend + wha
     updateArticleById(request, id, data)    PATCH .../blog/article/{id}   (same fields) → response
     deleteArticleById(request, id)          DELETE .../blog/article/{id}  → response
 
-- '@webcake/customer'  (backend: /cms_function/{site}/customer/…)  → customer object ({} if none)
-    findCustomerById(request, id)     GET .../customer/identity/{id}
+- '@webcake/customer'  (backend: /cms_function/{site}/customer/…)  → customer object ({} if none).
+    The object has at least { id, name, avatar, email, phone_number }. ALWAYS check \`customer?.id\`
+    before using it (returns {} when not found). Confirmed against a real production function.
+    findCustomerById(request, id)       GET .../customer/identity/{id}
     findCustomerByPhone(request, phone) GET .../customer/phone/{phone}
     findCustomerByEmail(request, email) GET .../customer/email/{email}
+    Typical lookup-by-anything helper: try a code/sku table first, else normalize the phone and
+    call findCustomerByPhone, else (has "@") findCustomerByEmail, else findCustomerById.
 
-- '@webcake/promotion'  (backend: /cms_function/{site}/promotion/add_bonus)
+- '@webcake/promotion'  (backend: /cms_function/{site}/promotion/add_bonus)  — confirmed in real code
     addBonus(request, data)   POST add_bonus → response.
         It ADDS REWARD POINTS to a customer. data: { customer_id (required),
         point (number, required), message? (defaults "Bạn được cộng điểm") }.
+        e.g. await addBonus(request, { customer_id: "abc", point: 10, message: "Cộng 10 điểm" }).
 
 - '@webcake/token'  (backend: /external/oauth/token)
     getAccessToken(request)   → access_token string (throws if none).
