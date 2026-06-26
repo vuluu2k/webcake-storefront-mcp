@@ -5,6 +5,14 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.28.0] - 2026-06-26
+
+### Added
+- Tool mới `scaffold_popup` xây dựng và lưu một popup newsletter/promo được thiết kế sẵn (tiêu đề + phụ đề + form đăng ký email + nút đóng, dạng modal căn giữa) dưới dạng global source `popup` chỉ trong một lần gọi; hỗ trợ các tham số `headline`, `subtext`, `cta_label`, `delay_seconds` và ghi đè `palette`, tự động lấy màu nhấn từ theme đang kích hoạt của site, và hỗ trợ `dry_run=true` (mặc định) để xem trước node trước khi lưu.
+
+### Changed
+- Phần hướng dẫn popup trong `get_build_guide` được viết lại để tài liệu hóa đúng mô hình thực tế: kích thước và vị trí popup nằm trong `runtime.style` và `runtime.config` (`popupHorizontalPosition`, `popupVerticalPosition`), không phải trong `specials`; trigger tự động mở (`openPopupAction`, `timeOpenPopup`, `page_ids`, `effect`, `timeAnim`) nằm trong `specials`; và flag overlay (`popup_overlay:true`) thuộc về event `open_popup`, không phải trên node popup; phần này nay quảng bá `scaffold_popup` là con đường nhanh được khuyến nghị.
+
 ## [1.27.0] - 2026-06-26
 
 ### Added

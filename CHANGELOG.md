@@ -5,6 +5,14 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.28.0] - 2026-06-26
+
+### Added
+- New `scaffold_popup` tool builds and saves a designed newsletter/promo popup (heading + subtext + email subscribe form + close button, centred modal) as a `popup` global source in one call; accepts `headline`, `subtext`, `cta_label`, `delay_seconds`, and `palette` overrides, auto-derives the accent colour from the active site theme, and supports `dry_run=true` (default) to preview the node before saving.
+
+### Changed
+- `get_build_guide` popup workflow section is rewritten to document the correct model: popup size and position live in `runtime.style` and `runtime.config` (`popupHorizontalPosition`, `popupVerticalPosition`), not in `specials`; the auto-open trigger (`openPopupAction`, `timeOpenPopup`, `page_ids`, `effect`, `timeAnim`) lives in `specials`; and the overlay flag (`popup_overlay:true`) belongs on the `open_popup` event, not on the popup node itself; the section now promotes `scaffold_popup` as the recommended fast path.
+
 ## [1.27.0] - 2026-06-26
 
 ### Added
