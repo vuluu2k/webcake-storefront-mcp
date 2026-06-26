@@ -11,6 +11,7 @@ interface RequestOpts {
   body?: unknown;
   query?: Record<string, unknown>;
   timeout?: number;
+  headers?: Record<string, string>;
 }
 
 export class WebcakeCmsApi {
@@ -48,7 +49,7 @@ export class WebcakeCmsApi {
     return { token: this._adminToken, x_cms_api_key: this._cmsApiKey };
   }
 
-  async request(method: string, path: string, { body, query, timeout }: RequestOpts = {}): Promise<any> {
+  async request(method: string, path: string, { body, query, timeout, headers: extraHeaders }: RequestOpts = {}): Promise<any> {
     const url = new URL(`${this.baseUrl}${path}`);
     if (query) {
       for (const [k, v] of Object.entries(query)) {
@@ -60,6 +61,7 @@ export class WebcakeCmsApi {
       "Content-Type": "application/json",
       Authorization: `Bearer ${this.token}`,
       ...(this.sessionId && { "x-session-id": this.sessionId }),
+      ...(extraHeaders || {}),
     };
 
     const controller = new AbortController();
@@ -336,8 +338,37 @@ export class WebcakeCmsApi {
   getCollection(id: string) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/db_collections/${id}`);
   }
-  queryCollectionRecords(tableName: string, query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/db_collections/collections/${tableName}/records`, { query });
+  /** Header carrying the CMS api key — collection-data endpoints (records) need it on top of
+   *  the dashboard JWT (without it they 401). Fetches the key once and caches it. */
+  private async cmsApiHeader(): Promise<Record<string, string>> {
+    await this.fetchCmsTokens();
+    return this._cmsApiKey ? { "x-cms-api-key": this._cmsApiKey } : {};
+  }
+  /** Query a collection's records. Needs the CMS api-key header (else 401). The records
+   *  endpoint accepts page/limit plus `where` (a filter object/JSON) and `order_by`. */
+  async queryCollectionRecords(tableName: string, query?: any) {
+    const headers = await this.cmsApiHeader();
+    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/db_collections/collections/${tableName}/records`, { query, headers });
+  }
+  /** Insert a record into a collection. Body = the record fields. CMS-api-key authed. */
+  async insertCollectionRecord(tableName: string, record: any) {
+    const headers = await this.cmsApiHeader();
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/db_collections/collections/${tableName}/records`, { body: record, headers });
+  }
+  /** Update a record by id. Body = the changed fields. CMS-api-key authed. */
+  async updateCollectionRecord(tableName: string, recordId: string, record: any) {
+    const headers = await this.cmsApiHeader();
+    return this.request("PATCH", `/api/v1/dashboard/site/${this.siteId}/db_collections/collections/${tableName}/records/${recordId}`, { body: record, headers });
+  }
+  /** Delete a record by id. CMS-api-key authed. */
+  async deleteCollectionRecord(tableName: string, recordId: string) {
+    const headers = await this.cmsApiHeader();
+    return this.request("DELETE", `/api/v1/dashboard/site/${this.siteId}/db_collections/collections/${tableName}/records/${recordId}`, { headers });
+  }
+  /** Create a collection (table). Body: { name, schema:[{name,type,...}], ... }. */
+  async createCollection(params: any) {
+    const headers = await this.cmsApiHeader();
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/db_collections`, { body: params, headers, timeout: 60000 });
   }
 
   // ── Blog Articles ──
