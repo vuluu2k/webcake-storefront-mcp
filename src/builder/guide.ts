@@ -71,10 +71,14 @@ already in this shape — see the \`responsive\` field on get_page_element/updat
   fontSize ("16px"), fontWeight, textAlign, border*, boxShadow, etc.
 - \`runtime.config.heightUnit\`: "auto" lets content set height (default for text/image).
 - Colours: use the site THEME matrix vars \`var(--color_RC)\` (R=row 0-4, C=col 0-4). Row 0 is
-  greyscale: \`var(--color_00)\`=WHITE … \`var(--color_04)\`=BLACK. Row 2 is the BRAND row:
-  \`var(--color_20)\` is the brand primary. So TEXT = \`var(--color_04)\` (NOT color_00, that's white →
-  invisible), ACCENT/buttons/prices = \`var(--color_20)\` (darker shade \`var(--color_24)\` if you need
-  white-on-accent contrast), page background = \`var(--color_00)\`. Plain hex/rgba() also work.
+  greyscale: \`var(--color_00)\`=WHITE … \`var(--color_04)\`=BLACK. Row 2 is the BRAND row, getting
+  DARKER left→right: \`var(--color_20)\` (lightest brand tint) … \`var(--color_24)\` (darkest brand).
+  So TEXT = \`var(--color_04)\` (NOT color_00 = white → invisible). PAGE BACKGROUND = \`var(--color_00)\`.
+  BUTTON / CTA BACKGROUND = \`var(--color_24)\` (the darkest brand shade) WITH a white label
+  (\`color:var(--color_00)\`) — this is readable on EVERY theme. ⚠️ Do NOT put a white label on
+  \`var(--color_20)\`: on many themes color_20 is a pale tint (e.g. #f2decc) and white text vanishes.
+  Use \`var(--color_20)\`/\`var(--color_21)\` only as a LIGHT section tint / soft background, never as a
+  button background under white text. PRICES / accents = \`var(--color_24)\` too. Plain hex/rgba() also work.
 
 ## Make it look DESIGNED (not plain) — do this, every page
 A bare stack of default elements looks unfinished. Apply real styling:
@@ -86,11 +90,14 @@ A bare stack of default elements looks unfinished. Apply real styling:
 - TYPOGRAPHY hierarchy: h1 40–56px / fontWeight 700, h2 28–34px / 600, body 16–18px with
   lineHeight "1.6", muted color for sub-text. Center hero text (textAlign:"center").
 - BUTTONS HAVE NO DEFAULT COLOUR — you MUST style them or they look like plain text:
-  \`{ type:"button", opts:{ text:"Mua ngay", style:{ background:"var(--color_20)", color:"var(--color_00)",
-  borderRadius:"8px", fontWeight:"600", height:48 } } }\` (brand background, white label).
-- HERO: prefer a section with a background image + an overlay heading/sub/button on top
-  (set section_opts.style.background or a full-width image, then text centered), rather than a
-  small image stacked above text.
+  \`{ type:"button", opts:{ text:"Mua ngay", style:{ background:"var(--color_24)", color:"var(--color_00)",
+  borderRadius:"8px", fontWeight:"600", height:48 } } }\` (DARK brand background, white label — always readable).
+- HERO: build it as a section whose FIRST child is a full-width \`image\` element (the background photo,
+  width:"100%", height ~480), then overlay the heading/sub/button on top. ⚠️ Do NOT rely on a CSS
+  \`background:"linear-gradient(...), url(...)"\` SHORTHAND on the section — the storefront renderer
+  ignores the shorthand and the photo won't show (you get a blank/flat band). A real \`image\` element
+  (src = a WebCake-CDN url) always renders; for a text overlay put a semi-transparent \`rectangle\`
+  over it and the text above that.
 - PRODUCT GRID: grid-product SELF-RENDERS the image+name+price card. Its look is
   INDUSTRY-DEPENDENT (surveyed fashion/kids/cosmetics/food/electronics) — only \`bold price\`,
   \`responsive\` collapse and \`show_original_price/show_discount_on_price\` are near-universal;
@@ -100,10 +107,13 @@ A bare stack of default elements looks unfinished. Apply real styling:
   and \`opts.specials\`: { products_per_load:8-36, on_hover:"zoom"|"swap", show_rating, show_ribbon }.
   (There are NO cardBorderRadius/cardBoxShadow keys.) For variations use \`attr\` elements
   (attrName:"auto"); steppers are \`quantity-input\` (defaults spinner:"hide-spin").
-- BRAND COLOURS: text = var(--color_04) (black), accent = var(--color_20) (brand) for buttons,
-  prices, highlights — consistent accent = looks intentional. (var(--color_00) is WHITE — only
-  for backgrounds / labels on the accent, never for text on a white surface.)
+- BRAND COLOURS: text = var(--color_04) (black); accent = var(--color_24) (DARK brand) for button
+  backgrounds, prices, highlights — consistent accent = looks intentional. (var(--color_00) is WHITE
+  — only for page backgrounds / labels ON the dark accent, never for text on a white surface; and a
+  white label on the pale var(--color_20) tint is the #1 invisible-text bug.)
 - IMAGES: must be WebCake-CDN urls (search_images cdn_url / upload_images), else they won't show.
+  A product card (grid-product) shows the PRODUCT-LEVEL thumbnail — if a product only has variation
+  images and no product image, its card is blank, so set product images when you create products.
 
 ## Responsive breakpoints
 The four breakpoints (largest → smallest), keyed bp1..bp4, are:

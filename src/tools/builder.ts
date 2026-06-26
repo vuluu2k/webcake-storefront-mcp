@@ -358,20 +358,22 @@ Pass style:"minimal" for the old bare stubs (heading + binding element only).`,
           name,
           target: `${name}::${field}`,
         });
-        const h1 = (text: string) => ({ type: "text", opts: { text, specials: { tag: "h1" }, style: { fontSize: "32px", fontWeight: "700" } } });
-        const accentBtn = (text: string, type = "button") => ({ type, opts: { text, style: { background: "var(--color_20)", color: "var(--color_00)", borderRadius: "8px", height: 48, fontWeight: "600" } } });
-
         // Rich (default) store pages come from the designed, palette-aware templates;
         // 'minimal' falls back to the original bare stubs. Derive a contrast-safe accent from
-        // the site's active theme (explicit palette overrides win).
+        // the site's active theme (explicit palette overrides win) — compute it BEFORE the
+        // element helpers so even the minimal stubs use a readable accent (a light brand seed
+        // like var(--color_20)=#f2decc + a white label is unreadable; contrastSafePalette
+        // switches to the darkest brand shade).
         const themePal = await contrastSafePalette(api);
         const pal = resolvePalette({ ...themePal, ...(palette || {}) });
+        const h1 = (text: string) => ({ type: "text", opts: { text, specials: { tag: "h1" }, style: { fontSize: "32px", fontWeight: "700", color: pal.text } } });
+        const accentBtn = (text: string, type = "button") => ({ type, opts: { text, style: { background: pal.accent, color: pal.onAccent, borderRadius: "8px", height: 48, fontWeight: "600" } } });
         const minimalStore: Record<string, () => any> = {
           collections: () => ({ sections: [buildSection([h1("Danh mục sản phẩm"), { type: "grid-product", opts: { config: { columns: 3, image_ratio: "1/1", gap_column: 24, gap_row: 32 } } }])] }),
           products: () => ({ sections: [buildSection([
             { type: "product-gallery", opts: {} },
             { type: "text-dataset", opts: { bindings: [bind("product", "product_name")], style: { fontSize: "28px", fontWeight: "700" } } },
-            { type: "text-dataset", opts: { bindings: [bind("product", "product_price")], style: { fontSize: "22px", fontWeight: "700", color: "var(--color_20)" } } },
+            { type: "text-dataset", opts: { bindings: [bind("product", "product_price")], style: { fontSize: "22px", fontWeight: "700", color: pal.accent } } },
             { type: "quantity-input", opts: {} },
             accentBtn("Thêm vào giỏ"),
           ])] }),
