@@ -5,6 +5,25 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.6] - 2026-06-26
+
+### Removed
+- Các tool `scaffold_store_pages`, `scaffold_global_sections` và `scaffold_popup` đã bị xóa; các trang nay được tổ hợp tự do từ các phần tử bằng `new_section`, `new_element`, `new_row` và `build_page`.
+
+### Added
+- Tool mới `get_page_schema` trả về JSON Schema (Draft 2020-12) chính thức cho nguồn trang CSS-grid, ghi lại hợp đồng cấu trúc cho mọi node trong trang.
+- Sáu tool page-draft mới (`start_page_draft`, `add_draft_section`, `get_page_draft`, `list_page_drafts`, `commit_page_draft`, `clear_page_draft`) cho phép xây dựng trang lớn từng phần vào bộ đệm cục bộ (Redis khi `REDIS_URL` hoặc `WEBCAKE_REDIS_URL` được thiết lập, ngược lại dùng bộ nhớ) rồi commit lên backend theo từng bước có thể tiếp tục, tránh timeout 15 giây.
+
+### Changed
+- `create_site` nay tự động xóa các sản phẩm mẫu, danh mục không mặc định và bài viết được tạo sẵn khi tạo site mới để site bắt đầu trống và đúng theme; tắt tính năng này bằng `keep_seed:true`, và kết quả trả về báo cáo `seed_cleared` kèm số lượng đã xóa.
+- `get_build_guide` được viết lại với phần "DESIGN SYSTEM" bao gồm palette, thang kiểu chữ, lưới khoảng cách 8px, quy tắc tương phản (nút CTA phải dùng `var(--color_24)` với nhãn trắng; `var(--color_20)` quá nhạt để hiển thị chữ trắng trên mọi theme), quy tắc ảnh hero (dùng phần tử hình ảnh full-width thực sự, không dùng thuộc tính CSS `background` viết tắt), và yêu cầu ảnh sản phẩm (ảnh cấp sản phẩm, không phải ảnh chỉ ở cấp biến thể).
+- `new_element`, `new_section`, `new_row` và `build_page` nay nhận thêm tùy chọn `responsive` với các ghi đè `style`/`config` thưa thớt theo từng breakpoint, cascade theo dạng thác nước (bp1→bp4) sao cho mỗi breakpoint nhỏ hơn kế thừa từ breakpoint lớn hơn đã được tính và chỉ áp dụng thêm phần khác biệt của mình.
+
+### Fixed
+- `publish_site` nay gửi toàn bộ các trang đã lưu (gồm `source`, `id`, `type`, `slug`, `is_homepage` và `settings`) cùng map `changes` đến endpoint publish, để storefront thực sự được công khai thay vì ở lại trạng thái lỗi "chưa có giao diện".
+- `publish_site` nay đính kèm `domain` trực tiếp của site vào body của yêu cầu publish, ngăn các site được công khai bị hết hạn tại URL xem trước thay vì phân giải sang domain chính thức.
+- Page schema dùng bởi `validate_page` và `get_page_schema` nay chấp nhận `runtime.specials` và nới lỏng kiểm tra `heightUnit` để khớp với hình dạng node thực tế từ factory.
+
 ## [1.31.5] - 2026-06-26
 
 ### Added

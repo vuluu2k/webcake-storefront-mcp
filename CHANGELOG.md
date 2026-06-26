@@ -5,6 +5,25 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.6] - 2026-06-26
+
+### Removed
+- `scaffold_store_pages`, `scaffold_global_sections`, and `scaffold_popup` tools are removed; pages are now composed free-form from elements using `new_section`, `new_element`, `new_row`, and `build_page`.
+
+### Added
+- New `get_page_schema` tool returns the authoritative JSON Schema (Draft 2020-12) for the CSS-grid page source, documenting the structural contract for every page node.
+- Six new page-draft tools (`start_page_draft`, `add_draft_section`, `get_page_draft`, `list_page_drafts`, `commit_page_draft`, `clear_page_draft`) enable building large pages section-by-section into a local cache (Redis when `REDIS_URL` or `WEBCAKE_REDIS_URL` is set, otherwise in-memory) and committing them to the backend incrementally and resumably, avoiding 15-second request timeouts.
+
+### Changed
+- `create_site` now auto-clears seeded sample products, non-default categories, and articles on site creation so the new site starts empty and on-theme; opt out with `keep_seed:true`, and the result reports `seed_cleared` counts.
+- `get_build_guide` is rewritten with a "DESIGN SYSTEM" section covering palette, type-scale, 8px spacing grid, contrast rules (CTA buttons must use `var(--color_24)` with a white label; `var(--color_20)` is too pale for white text on any theme), hero image rules (build a real full-width image element, not a CSS `background` shorthand), and product-image requirements (product-level images, not variation-only).
+- `new_element`, `new_section`, `new_row`, and `build_page` now accept a `responsive` option with sparse per-breakpoint `style`/`config` overrides that cascade waterfall (bp1→bp4) so each smaller breakpoint inherits the resolved larger one and applies only its own diff.
+
+### Fixed
+- `publish_site` now sends all saved pages (with `source`, `id`, `type`, `slug`, `is_homepage`, and `settings`) and a `changes` map to the publish endpoint, so the storefront actually goes live instead of remaining on the "no interface" error page.
+- `publish_site` now includes the site's live `domain` in the publish request body, preventing published sites from expiring on the preview URL instead of resolving to the live domain.
+- The page schema used by `validate_page` and `get_page_schema` now accepts `runtime.specials` and relaxes `heightUnit` validation to match the actual factory node shape.
+
 ## [1.31.5] - 2026-06-26
 
 ### Added
