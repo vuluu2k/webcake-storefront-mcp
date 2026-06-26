@@ -350,25 +350,29 @@ export class WebcakeCmsApi {
     const headers = await this.cmsApiHeader();
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/db_collections/collections/${tableName}/records`, { query, headers });
   }
-  /** Insert a record into a collection. Body = the record fields. CMS-api-key authed. */
-  async insertCollectionRecord(tableName: string, record: any) {
-    const headers = await this.cmsApiHeader();
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/db_collections/collections/${tableName}/records`, { body: record, headers });
-  }
-  /** Update a record by id. Body = the changed fields. CMS-api-key authed. */
-  async updateCollectionRecord(tableName: string, recordId: string, record: any) {
-    const headers = await this.cmsApiHeader();
-    return this.request("PATCH", `/api/v1/dashboard/site/${this.siteId}/db_collections/collections/${tableName}/records/${recordId}`, { body: record, headers });
-  }
-  /** Delete a record by id. CMS-api-key authed. */
-  async deleteCollectionRecord(tableName: string, recordId: string) {
-    const headers = await this.cmsApiHeader();
-    return this.request("DELETE", `/api/v1/dashboard/site/${this.siteId}/db_collections/collections/${tableName}/records/${recordId}`, { headers });
-  }
-  /** Create a collection (table). Body: { name, schema:[{name,type,...}], ... }. */
-  async createCollection(params: any) {
+  /** Create a collection (TABLE). VERIFIED body: { name, table_name } — the table starts with
+   *  only the system columns (id/inserted_at/updated_at/creator_id). Add custom columns after
+   *  with updateCollectionSchema(). (Sending a schema in the create body 500s.) */
+  async createCollection(params: { name: string; table_name: string }) {
     const headers = await this.cmsApiHeader();
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/db_collections`, { body: params, headers, timeout: 60000 });
+  }
+  /** Get one collection by id (includes its full `schema`). */
+  async getCollectionById(id: string) {
+    const headers = await this.cmsApiHeader();
+    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/db_collections/${id}`, { headers });
+  }
+  /** Add/edit columns: PATCH the collection's FULL schema array. NOTE: this REPLACES the schema,
+   *  so it MUST include the existing system columns + your custom ones. Each custom column =
+   *  { name, type, display_name?, create_type:"custom", is_required?, is_unique? }. */
+  async updateCollectionSchema(id: string, schema: any[]) {
+    const headers = await this.cmsApiHeader();
+    return this.request("PATCH", `/api/v1/dashboard/site/${this.siteId}/db_collections/${id}`, { body: { schema }, headers, timeout: 60000 });
+  }
+  /** Delete a collection (table) by id. */
+  async deleteCollection(id: string) {
+    const headers = await this.cmsApiHeader();
+    return this.request("DELETE", `/api/v1/dashboard/site/${this.siteId}/db_collections/${id}`, { headers });
   }
 
   // ── Blog Articles ──

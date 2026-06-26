@@ -60,46 +60,68 @@ export function registerCollectionTools(server: McpServer, api: WebcakeCmsApi, h
       })
   );
 
-  // ── Write tools (custom data CRUD). Endpoints follow the same /db_collections/collections/
-  //    {table}/records[/{id}] REST pattern as the verified read endpoint, with the CMS api-key
-  //    header. They mutate live data — run a small test first to confirm your field shape. ──
+  // ── Table-management tools (VERIFIED live: create table, edit columns, delete table). ──
+  // Field type ∈ string | text | integer | float | boolean | naive_datetime | binary_id | map | array.
+  const COLUMN = z.object({
+    name: z.string().describe("Column name (snake_case)."),
+    type: z.string().describe("string | text | integer | float | boolean | naive_datetime | binary_id | map | array"),
+    display_name: z.string().optional(),
+    is_required: z.boolean().optional(),
+    is_unique: z.boolean().optional(),
+  });
   server.tool(
     "create_collection",
-    "Create a new collection (custom data TABLE) so you can store/query arbitrary data. Pass a name + the field schema. The backend adds id/inserted_at/updated_at automatically.",
+    "Create a new collection (custom data TABLE). It starts with the system columns (id/inserted_at/updated_at/creator_id); pass `columns` to add custom fields. NOTE: to WRITE records into it, use an HTTP function (webcake-data: db.model(table).create({...})) — the dashboard has no direct record-insert API. See get_http_function for the SDK guide.",
     {
-      name: z.string().describe("Collection / table name (e.g. 'subscribers')."),
-      schema: z
-        .array(z.object({ name: z.string(), type: z.string().describe("Field type: string | text | integer | float | boolean | naive_datetime | binary_id | map | array"), required: z.boolean().optional() }))
-        .describe("Field definitions, e.g. [{name:'email',type:'string',required:true},{name:'joined_at',type:'naive_datetime'}]."),
+      name: z.string().describe("Display name."),
+      table_name: z.string().optional().describe("Table name (snake_case, unique). Defaults to name."),
+      columns: z.array(COLUMN).optional().describe("Custom columns to add, e.g. [{name:'email',type:'string'},{name:'amount',type:'integer'}]."),
     },
-    ({ name, schema }) => handle(() => api.createCollection({ name, schema })),
+    ({ name, table_name, columns }) =>
+      handle(async () => {
+        const tn = (table_name || name).trim();
+        const created: any = await api.createCollection({ name, table_name: tn });
+        const col = (created && (created.data || created)) || {};
+        const id = col.id;
+        if (!id) return { error: "Collection created but no id returned.", raw: created };
+        let schema = col.schema || [];
+        if (columns && columns.length) {
+          // PATCH the FULL schema = existing system columns + the new custom ones.
+          const custom = columns.map((c) => ({ ...c, display_name: c.display_name || c.name, create_type: "custom" }));
+          const res: any = await api.updateCollectionSchema(id, [...schema, ...custom]);
+          schema = (res && (res.data || res) || {}).schema || [...schema, ...custom];
+        }
+        return {
+          success: true,
+          collection_id: id,
+          table_name: col.table_name || tn,
+          columns: schema.map((f: any) => ({ name: f.name, type: f.type, kind: f.create_type || "system" })),
+          note: "Write rows via an HTTP function (db.model('" + (col.table_name || tn) + "').create({...})); query them with query_collection_records.",
+        };
+      }),
   );
   server.tool(
-    "insert_collection_record",
-    "Insert a record into a collection (custom data table). `record` is a field→value object matching the table schema.",
+    "update_collection_columns",
+    "Add or change a collection's custom columns. Reads the current schema, then PATCHes it with the system columns + your custom columns (the PATCH replaces the whole schema, so omitting a column drops it).",
     {
-      table_name: z.string().describe("Collection table name."),
-      record: z.record(z.any()).describe("Record fields, e.g. { email:'a@b.com', joined_at:'2026-06-26T10:00:00' }."),
+      collection_id: z.string().describe("Collection id (from list_collections / get_collection)."),
+      columns: z.array(COLUMN).describe("The FULL set of custom columns the table should have."),
     },
-    ({ table_name, record }) => handle(() => api.insertCollectionRecord(table_name, record)),
+    ({ collection_id, columns }) =>
+      handle(async () => {
+        const cur: any = await api.getCollectionById(collection_id);
+        const schema = ((cur && (cur.data || cur)) || {}).schema || [];
+        const system = schema.filter((f: any) => (f.create_type || "system") === "system");
+        const custom = columns.map((c) => ({ ...c, display_name: c.display_name || c.name, create_type: "custom" }));
+        const res: any = await api.updateCollectionSchema(collection_id, [...system, ...custom]);
+        const newSchema = ((res && (res.data || res)) || {}).schema || [...system, ...custom];
+        return { success: true, collection_id, columns: newSchema.map((f: any) => ({ name: f.name, type: f.type, kind: f.create_type || "system" })) };
+      }),
   );
   server.tool(
-    "update_collection_record",
-    "Update a record in a collection by id. `record` carries only the changed fields.",
-    {
-      table_name: z.string().describe("Collection table name."),
-      record_id: z.string().describe("Record id to update."),
-      record: z.record(z.any()).describe("Changed fields."),
-    },
-    ({ table_name, record_id, record }) => handle(() => api.updateCollectionRecord(table_name, record_id, record)),
-  );
-  server.tool(
-    "delete_collection_record",
-    "Delete a record from a collection by id.",
-    {
-      table_name: z.string().describe("Collection table name."),
-      record_id: z.string().describe("Record id to delete."),
-    },
-    ({ table_name, record_id }) => handle(() => api.deleteCollectionRecord(table_name, record_id)),
+    "delete_collection",
+    "Delete a collection (table) and all its records by id. Irreversible.",
+    { collection_id: z.string().describe("Collection id.") },
+    ({ collection_id }) => handle(() => api.deleteCollection(collection_id)),
   );
 }
