@@ -1,4 +1,8 @@
-# 🏪 WebCake Storefront MCP
+<p align="center">
+  <img src="./assets/logo.svg" alt="WebCake Storefront MCP" width="96" height="96">
+</p>
+
+<h1 align="center">WebCake Storefront MCP</h1>
 
 **English** · [Tiếng Việt](./README.vi.md)
 
@@ -78,7 +82,7 @@ An MCP (Model Context Protocol) server that teaches AI agents the **WebCake/Stor
 page source; `build_page` creates the page and saves it, and `publish_site` makes the whole site live.
 
 Beyond page authoring, it exposes your real store: pages & custom code, products, orders, collections,
-blog articles, promotions, combos, themes, customers, and automation — **~101 tools** in total.
+blog articles, promotions, combos, themes, customers, and automation — **~280 tools** in total.
 
 | Method | Best for | Auth |
 |--------|----------|------|
@@ -166,7 +170,7 @@ in chat via `update_auth` and `switch_site` — saved to a local config file at 
 
 ## 🧰 The tools at a glance
 
-~101 tools. The headline group **builds pages**; the rest read and edit your live store.
+~280 tools. The headline group **builds pages**; the rest read and edit your live store.
 
 | Group | Tools | Needs |
 |-------|-------|-------|

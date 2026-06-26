@@ -1,6 +1,17 @@
+import { readFileSync } from "node:fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "./api.js";
 import { installTools, buildToolGroupIndex } from "./tools/registry.js";
+
+/** Server version, read from package.json so it always tracks the published release. */
+export const SERVER_VERSION: string = (() => {
+  try {
+    const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+    return typeof pkg.version === "string" ? pkg.version : "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+})();
 
 export type McpResult = { content: { type: "text"; text: string }[]; isError?: boolean };
 export type Handle = (fn: () => Promise<unknown>) => Promise<McpResult>;
@@ -43,7 +54,7 @@ export interface ServerOptions {
 export function createServer(api: WebcakeCmsApi, opts: ServerOptions = {}): McpServer {
   const toolsSpec = opts.tools ?? process.env.WEBCAKE_TOOLS;
   const server = new McpServer(
-    { name: "webcake-storefront", version: "1.0.0" },
+    { name: "webcake-storefront", version: SERVER_VERSION },
     { instructions: `${INSTRUCTIONS}\n\n${buildToolGroupIndex(toolsSpec)}` }
   );
 

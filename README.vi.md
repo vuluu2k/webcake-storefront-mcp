@@ -1,4 +1,8 @@
-# 🏪 WebCake Storefront MCP
+<p align="center">
+  <img src="./assets/logo.svg" alt="WebCake Storefront MCP" width="96" height="96">
+</p>
+
+<h1 align="center">WebCake Storefront MCP</h1>
 
 [English](./README.md) · **Tiếng Việt**
 
@@ -78,7 +82,7 @@ WebCake/StoreCake (BuilderX)** và kết nối tới backend. AI tạo nguồn t
 `build_page` tạo + lưu trang, `publish_site` đưa cả site lên live.
 
 Ngoài dựng trang, nó mở ra cả store thật: trang & custom code, sản phẩm, đơn hàng, collection,
-bài blog, khuyến mãi, combo, theme, khách hàng, automation — **~101 tool** tổng cộng.
+bài blog, khuyến mãi, combo, theme, khách hàng, automation — **~280 tool** tổng cộng.
 
 | Cách | Hợp cho | Auth |
 |--------|----------|------|
@@ -165,7 +169,7 @@ trong chat bằng `update_auth` và `switch_site` — lưu vào file cấu hình
 
 ## 🧰 Bộ công cụ tổng quan
 
-~101 tool. Nhóm chủ lực **dựng trang**; phần còn lại đọc và sửa store thật của bạn.
+~280 tool. Nhóm chủ lực **dựng trang**; phần còn lại đọc và sửa store thật của bạn.
 
 | Nhóm | Tool | Cần |
 |-------|-------|-------|

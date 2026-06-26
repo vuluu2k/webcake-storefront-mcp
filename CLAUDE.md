@@ -65,7 +65,7 @@ src/                — TypeScript source (strict); compiles to dist/
     catalog.ts      — Auto-built type→factory registry + curated category/summary metadata
     page.ts         — Page skeleton, grid-layout composition (stackChildren/buildSection), re-id, validatePage
     guide.ts        — BUILD_GUIDE: the grid model, breakpoints, forms/data, build workflow
-  tools/            — one register*Tools(server, api, handle) per file (~271 tools total):
+  tools/            — one register*Tools(server, api, handle) per file (~280 tools total):
     cms-files, pages, collections, articles, customers, automation, products, orders,
     site-style, apps, promotions, combos, global-sources, images, context,
     builder (get_build_guide, list_elements, new_section, build_page…), builder-extras
@@ -77,7 +77,7 @@ src/                — TypeScript source (strict); compiles to dist/
     registry.ts     — tool-group manifest + search gateway. Captures every register*Tools
                       via a collector, registers only CORE groups natively, exposes the rest
                       through list_tool_groups / search_tools / invoke_tool (progressive
-                      disclosure so clients don't load all ~271 schemas at once).
+                      disclosure so clients don't load all ~280 schemas at once).
 scripts/copy-assets.mjs — post-tsc: chmod +x dist/index.js
 ```
 
