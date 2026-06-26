@@ -5,6 +5,14 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.7] - 2026-06-26
+
+### Fixed
+- `build_page`, `create_page`, `update_page`, and `commit_page_draft` now strip a leading `/` from `slug` before saving; a slug like `/cart` would previously 404 on the storefront because it matches the bare path segment only.
+- Sections built by `new_section` and `build_page` now apply vertical padding via top and bottom spacer grid rows in `runtime.config` instead of CSS `paddingTop`/`paddingBottom`, which the storefront renderer ignores on sections.
+- Child elements placed by `new_section` and `new_row` now default to `widthUnit:"%"` and `relWidth:100` in their `runtime.config`, eliminating the invalid `width: %;` that caused elements to render with zero width.
+- `create_product` now expands attribute axes into a cartesian product of variations, each carrying the correct `fields` entries with unique `id`s, so the storefront variation selector has values to display; `product_attributes` now also includes an `id` and a `keyword` list (with `keyValue` and `value` per entry) as required by the selector.
+
 ## [1.31.6] - 2026-06-26
 
 ### Removed

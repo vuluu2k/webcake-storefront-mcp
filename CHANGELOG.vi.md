@@ -5,6 +5,14 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.7] - 2026-06-26
+
+### Fixed
+- `build_page`, `create_page`, `update_page` và `commit_page_draft` nay tự động loại bỏ dấu `/` đầu dòng khỏi `slug` trước khi lưu; các slug kiểu `/cart` trước đây sẽ bị 404 trên storefront vì storefront chỉ khớp với đoạn path thuần túy không có dấu gạch chéo.
+- Các section được tạo bởi `new_section` và `build_page` nay áp dụng padding dọc thông qua các hàng spacer grid trên/dưới trong `runtime.config` thay vì dùng `paddingTop`/`paddingBottom` CSS vốn bị storefront renderer bỏ qua trên section.
+- Các phần tử con được xếp bởi `new_section` và `new_row` nay mặc định `widthUnit:"%"` và `relWidth:100` trong `runtime.config`, loại bỏ lỗi `width: %;` không hợp lệ khiến các phần tử bị render với chiều rộng bằng 0.
+- `create_product` nay mở rộng các trục thuộc tính thành tích đề-các của các biến thể, mỗi biến thể mang đúng các mục `fields` với `id` riêng, để bộ chọn biến thể trên storefront có giá trị hiển thị; `product_attributes` nay cũng bao gồm `id` và danh sách `keyword` (gồm `keyValue` và `value` cho mỗi mục) theo yêu cầu của bộ chọn.
+
 ## [1.31.6] - 2026-06-26
 
 ### Removed
