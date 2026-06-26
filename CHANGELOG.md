@@ -5,6 +5,11 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.4] - 2026-06-26
+
+### Added
+- The guide returned by `get_http_function` and `get_site_custom_code` now includes a verified end-to-end "Custom data TABLES (collections)" section documenting the complete workflow: create a table and its columns with `create_collection` and `update_collection_columns`, read rows directly with `query_collection_records`, and write rows from an HTTP function via the webcake-data SDK (`db.model(table).create`, `updateOne`, `deleteMany`, `find`); the section notes that record writes have no direct dashboard API and must be deployed with `update_http_function` then invoked with `run_function`, and that `debug_function` requires the function to be deployed first.
+
 ## [1.31.3] - 2026-06-26
 
 ### Added

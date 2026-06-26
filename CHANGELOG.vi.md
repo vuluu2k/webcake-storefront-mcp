@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.4] - 2026-06-26
+
+### Added
+- Hướng dẫn trả về bởi `get_http_function` và `get_site_custom_code` nay bổ sung phần "Custom data TABLES (collections)" đã được xác minh thực tế, ghi lại toàn bộ quy trình: tạo bảng và các cột với `create_collection` và `update_collection_columns`, đọc trực tiếp với `query_collection_records`, và ghi từ HTTP function qua webcake-data SDK (`db.model(table).create`, `updateOne`, `deleteMany`, `find`); phần này ghi rõ rằng việc ghi bản ghi không có API dashboard trực tiếp và phải triển khai qua `update_http_function` rồi gọi qua `run_function`, đồng thời lưu ý rằng `debug_function` yêu cầu function phải được deploy trước.
+
 ## [1.31.3] - 2026-06-26
 
 ### Added
