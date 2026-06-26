@@ -251,7 +251,10 @@ Two-step safety: dry_run=true (default) describes what will happen; dry_run=fals
             note: "This will publish ALL saved pages of the site live. Call again with dry_run=false to publish.",
           };
         }
-        const res = await api.publishSite({ is_publish: true });
+        // builderx_spa's Publish button sends `domain: this.link` (the site's live URL) in the
+        // /publish body — without it the backend publishes to an expiring preview. preview_url
+        // is exactly that link (resolvePreviewUrl == link(): primary_domain wins, else subdomain).
+        const res = await api.publishSite(preview_url ? { domain: preview_url } : {});
         const data = (res && res.data) || res;
         return { success: true, published_at: data && data.published_at, site: data && data.name, preview_url };
       })

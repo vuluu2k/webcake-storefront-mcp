@@ -273,7 +273,11 @@ export class WebcakeCmsApi {
    *  flags (use_store/use_blog/…), and (b) rebuild each page's compiled CSS first (rebuildSiteCss),
    *  because /publish alone does not regenerate the storefront's dynamic CSS.
    *  Global header/footer are already embedded inside each page's source, so they publish with
-   *  the page; the global_* arrays stay empty (empty = leave server-side globals untouched). */
+   *  the page; the global_* arrays stay empty (empty = leave server-side globals untouched).
+   *  Pass `domain` (the site's live URL, e.g. https://<slug>.webcake.me) — builderx_spa sends
+   *  `domain: this.link` and without it the backend publishes to an EXPIRING preview. The
+   *  publish_site tool fills it from resolvePreviewUrl. Final body mirrors PagePublish.vue:
+   *  { pages, settings, changes, domain, global_sources:[], global_sections:[], page_contents:[] }. */
   async publishSite(params: any = {}) {
     let settings = params.settings;
     if (settings === undefined) {
