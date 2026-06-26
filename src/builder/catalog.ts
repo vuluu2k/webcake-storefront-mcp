@@ -164,6 +164,13 @@ export function buildElement(type: string, opts: any = {}) {
   // them to gets them — then normalize so each binding/event has a valid id (+ name/eventName).
   if (opts.bindings && !node.bindings) node.bindings = opts.bindings;
   if (opts.events && !node.events) node.events = opts.events;
+  // Responsive CASCADE overrides: sparse per-breakpoint diffs ({ bp2|bp3|bp4: { style?, config? } }).
+  // Stashed on runtime.responsive; finalizeForRender cascades them bp1→bp4 (each smaller
+  // breakpoint inherits the resolved larger one, then applies its own diff).
+  if (opts.responsive && typeof opts.responsive === "object") {
+    node.runtime = node.runtime || {};
+    node.runtime.responsive = opts.responsive;
+  }
   if (Array.isArray(node.bindings) && node.bindings.length) node.bindings = normalizeBindings(node.bindings);
   if (Array.isArray(node.events) && node.events.length) node.events = normalizeEvents(node.events, node.type);
   return node;

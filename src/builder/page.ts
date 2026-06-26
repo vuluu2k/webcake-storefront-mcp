@@ -333,19 +333,32 @@ export function validatePage(source: any) {
  */
 function expandNodeToBreakpoints(node: any): any {
   const rt = node && node.runtime;
-  if (rt && (rt.style || rt.config)) {
-    const baseStyle = rt.style || {};
+  if (rt && (rt.style || rt.config || rt.responsive)) {
     const baseConfig = { ...(rt.config || {}), loaded: true };
     const isSection = node.type === "section";
     const rowMeta = baseConfig.__row; // this node is a multi-column row container
     const cellMeta = baseConfig.__cell; // this node is a cell inside a row
+    // Per-breakpoint sparse overrides the AI supplied (opts.responsive → runtime.responsive):
+    // { bp2?:{style?,config?}, bp3?:{...}, bp4?:{...} }. bp1 is the base (runtime.style/config).
+    const overrides = rt.responsive && typeof rt.responsive === "object" ? rt.responsive : {};
 
+    // CASCADE (waterfall) bp1→bp4: each breakpoint starts from the RESOLVED larger one, then
+    // applies its own diff. So the AI only writes what CHANGES at each breakpoint and the rest
+    // inherits downward — proper AI-reasoned responsive instead of a flat copy.
+    let accStyle: any = rt.style || {};
+    let accConfig: any = baseConfig;
     for (const [bp, [minW]] of Object.entries(BREAKPOINTS)) {
-      const style = clone(baseStyle);
-      const config = clone(baseConfig);
+      const ov = (overrides as any)[bp];
+      if (ov && typeof ov === "object") {
+        if (ov.style) accStyle = { ...accStyle, ...ov.style };
+        if (ov.config) accConfig = { ...accConfig, ...ov.config };
+      }
+      const style = clone(accStyle);
+      const config = clone(accConfig);
       // Internal build-time markers never get persisted.
       delete config.__row;
       delete config.__cell;
+      delete config.responsive;
       if (isSection) {
         const g = genGridByBp(minW);
         const sectionRows =

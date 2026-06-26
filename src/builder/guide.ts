@@ -174,11 +174,20 @@ A bare stack of default elements looks unfinished. Apply real styling:
 ## Responsive breakpoints
 The four breakpoints (largest → smallest), keyed bp1..bp4, are:
 - \`bp1\` ≥1320px (desktop, the base) · \`bp2\` 993–1319 (laptop) · \`bp3\` 641–992 (tablet) · \`bp4\` 320–640 (mobile).
-For NEW pages you author once in \`runtime\` (desktop) and build_page copies it to all four
-breakpoints automatically — the page renders identically across devices. To make a node
-look DIFFERENT on a smaller screen, set that breakpoint's key explicitly, e.g.
-\`node.bp4 = { style: { fontSize: "20px" }, config: {...} }\`. (There is no \`tablet\`/\`laptop\`
-key — only bp1..bp4.)
+For NEW pages you author once in \`runtime\` (the bp1/desktop base); on save the build expands
+it into bp1..bp4. By default all four are the same (renders identically across devices), PLUS
+sections re-centre their grid per breakpoint and multi-column rows auto-collapse (4→2→1 cols).
+
+RESPONSIVE CASCADE (reason about each breakpoint, don't hand-copy): to make a node look
+different on smaller screens, pass \`opts.responsive\` = SPARSE per-breakpoint diffs and the
+build cascades them bp1→bp4 (each smaller breakpoint inherits the resolved larger one, then
+applies only the keys you give). You only write what CHANGES:
+\`new_element("text", { text:"...", style:{ fontSize:"52px" },
+   responsive:{ bp3:{ style:{ fontSize:"38px" } }, bp4:{ style:{ fontSize:"28px", textAlign:"center" } } } })\`
+→ bp1/bp2 = 52px; bp3 = 38px; bp4 = 28px centred. Works on new_element/new_section/new_row and
+build_page children (in each child's \`opts.responsive\`). Use it for hero headline sizes, padding,
+columnGap, hiding/realigning per device. (There is no \`tablet\`/\`laptop\` key — only bp1..bp4.)
+You can still hand-set a final \`node.bpN\` when editing an already-saved page.
 
 ## Content & data
 - Text: \`specials.text\` (HTML allowed), \`specials.tag\` ("h1".."p").

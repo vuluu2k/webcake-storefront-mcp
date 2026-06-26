@@ -50,6 +50,7 @@ export const PAGE_SCHEMA = {
             style: { $ref: "#/$defs/style" },
             config: { $ref: "#/$defs/config" },
             specials: { type: "object", description: "Optional per-breakpoint specials override; merged into top-level specials on expand.", additionalProperties: true },
+            responsive: { $ref: "#/$defs/responsive" },
           },
         },
         children: {
@@ -63,6 +64,25 @@ export const PAGE_SCHEMA = {
         bp2: { $ref: "#/$defs/breakpoint" },
         bp3: { $ref: "#/$defs/breakpoint" },
         bp4: { $ref: "#/$defs/breakpoint" },
+      },
+    },
+    responsive: {
+      type: "object",
+      description: "CASCADE overrides — sparse per-breakpoint diffs you (the AI) supply to make the page responsive by reasoning, not a flat copy. bp1 is the base (runtime.style/config). Each smaller breakpoint INHERITS the resolved larger one, then applies only the keys here. Example: { bp4: { style: { fontSize: '28px', textAlign: 'center' } }, bp3: { style: { fontSize: '36px' } } } → bp1/bp2 keep the base h1; bp3 shrinks it; bp4 shrinks + centres. Pass via opts.responsive on new_element/new_section/new_row/build_page children.",
+      additionalProperties: false,
+      properties: {
+        bp2: { $ref: "#/$defs/bpOverride" },
+        bp3: { $ref: "#/$defs/bpOverride" },
+        bp4: { $ref: "#/$defs/bpOverride" },
+      },
+    },
+    bpOverride: {
+      type: "object",
+      description: "Only the style/config keys that CHANGE at this breakpoint (everything else cascades from the larger breakpoint).",
+      additionalProperties: false,
+      properties: {
+        style: { $ref: "#/$defs/style" },
+        config: { $ref: "#/$defs/config" },
       },
     },
     breakpoint: {
