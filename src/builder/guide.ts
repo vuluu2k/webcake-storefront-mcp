@@ -346,5 +346,8 @@ For anything beyond a small/simple page, build it incrementally with the durable
    to persist. It creates the page then appends sections ONE AT A TIME (small requests), saving
    progress after each — and RESUMES from where it stopped if a request is interrupted (just call
    commit_page_draft again). clear_page_draft discards a draft.
+The draft cache is DISPOSABLE — Redis on the remote server when REDIS_URL is set, in-memory
+otherwise, with a sliding ~2h TTL. A lost draft (expiry / cache restart) just means re-sending
+the sections via start_page_draft + add_draft_section (or build_page directly) — never a failure.
 Keep build_page for small/simple pages.
 Always keep Vietnamese text with full diacritics; reply in the user's language.`;

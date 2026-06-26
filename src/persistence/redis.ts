@@ -20,12 +20,16 @@ import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 
-/** The minimal slice of the ioredis surface the OAuth cache uses. */
+/** The minimal slice of the ioredis surface the OAuth cache + page-draft cache use. */
 export type RedisLike = {
   get(key: string): Promise<string | null>;
   set(key: string, val: string, mode?: string, ttl?: number): Promise<unknown>;
   del(key: string): Promise<unknown>;
   pexpire(key: string, ms: number): Promise<unknown>;
+  // Set ops — power the per-site page-draft index (draft-cache.ts).
+  sadd(key: string, ...members: string[]): Promise<unknown>;
+  srem(key: string, ...members: string[]): Promise<unknown>;
+  smembers(key: string): Promise<string[]>;
   on(ev: string, cb: (...a: unknown[]) => void): unknown;
 };
 

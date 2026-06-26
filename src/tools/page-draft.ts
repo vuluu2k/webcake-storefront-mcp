@@ -11,7 +11,13 @@ import {
   appendDraftSection,
   listDrafts,
   delDraft,
-} from "../db.js";
+} from "../persistence/draft-cache.js";
+
+// Friendly result when a draft is gone (disposable cache: expired ~2h or restart).
+const DRAFT_EXPIRED = {
+  error: "draft_expired",
+  hint: "The draft is gone (expired ~2h or cache restart). Re-send the sections via start_page_draft + add_draft_section, or build_page directly.",
+} as const;
 
 // Accept a node as an object or a JSON string.
 function parseSource(src: any): any {
@@ -34,7 +40,7 @@ function newPageId(res: any): string | null {
 export function registerPageDraftTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "start_page_draft",
-    `Start a durable LOCAL page draft (no network). Build a multi-section page safely: cache each section with add_draft_section, then commit_page_draft persists it to the backend INCREMENTALLY (resumable on timeout). Use this instead of build_page for large/multi-section pages.`,
+    `Start a page draft (no network). Build a multi-section page safely: cache each section with add_draft_section, then commit_page_draft persists it to the backend INCREMENTALLY (resumable on timeout). Use this instead of build_page for large/multi-section pages. The draft cache is DISPOSABLE (Redis on the remote server when REDIS_URL is set, in-memory otherwise; sliding ~2h TTL) — if a draft is ever lost, just re-send the sections, never a failure.`,
     {
       name: z.string().describe("Page name"),
       slug: z.string().describe("URL slug, e.g. '/landing' or '/about'"),
@@ -58,7 +64,7 @@ export function registerPageDraftTools(server: McpServer, api: WebcakeCmsApi, ha
     },
     ({ name, slug, type, is_homepage, seo }) =>
       handle(async () => {
-        const draft = createDraft(api.siteId, { name, slug, type, is_homepage, seo });
+        const draft = await createDraft(api.siteId, { name, slug, type, is_homepage, seo });
         return {
           draft_id: draft.draft_id,
           meta: draft.meta,
@@ -77,8 +83,8 @@ export function registerPageDraftTools(server: McpServer, api: WebcakeCmsApi, ha
     },
     ({ draft_id, section }) =>
       handle(async () => {
-        const draft = getDraft(draft_id);
-        if (!draft) return { error: `Draft "${draft_id}" not found.` };
+        const draft = await getDraft(draft_id);
+        if (!draft) return DRAFT_EXPIRED;
 
         const sectionNode = reassignIds(parseSource(section));
         if (!sectionNode || sectionNode.type !== "section") {
@@ -86,7 +92,7 @@ export function registerPageDraftTools(server: McpServer, api: WebcakeCmsApi, ha
         }
 
         const validation: any = validatePage({ sections: [sectionNode] });
-        const updated = appendDraftSection(draft_id, sectionNode);
+        const updated = await appendDraftSection(draft_id, sectionNode);
         return {
           draft_id,
           section_id: sectionNode.id,
@@ -104,8 +110,8 @@ export function registerPageDraftTools(server: McpServer, api: WebcakeCmsApi, ha
     },
     ({ draft_id }) =>
       handle(async () => {
-        const draft = getDraft(draft_id);
-        if (!draft) return { error: `Draft "${draft_id}" not found.` };
+        const draft = await getDraft(draft_id);
+        if (!draft) return DRAFT_EXPIRED;
         return {
           draft_id: draft.draft_id,
           meta: draft.meta,
@@ -113,8 +119,7 @@ export function registerPageDraftTools(server: McpServer, api: WebcakeCmsApi, ha
           total_sections: draft.sections.length,
           page_id: draft.page_id ?? null,
           committed_count: draft.committed_count ?? 0,
-          created_at: draft.created_at,
-          updated_at: draft.updated_at,
+          updated_at: draft.created,
         };
       }),
   );
@@ -123,7 +128,7 @@ export function registerPageDraftTools(server: McpServer, api: WebcakeCmsApi, ha
     "list_page_drafts",
     "List local page drafts for the current site (summaries only: id, name, slug, type, section count, commit progress, updated_at).",
     {},
-    () => handle(async () => ({ drafts: listDrafts(api.siteId) })),
+    () => handle(async () => ({ drafts: await listDrafts(api.siteId) })),
   );
 
   server.tool(
@@ -137,8 +142,8 @@ RESUMABLE: if a request fails mid-commit, the draft keeps its page_id + committe
     },
     ({ draft_id, dry_run }) =>
       handle(async () => {
-        const draft = getDraft(draft_id);
-        if (!draft) return { error: `Draft "${draft_id}" not found.` };
+        const draft = await getDraft(draft_id);
+        if (!draft) return DRAFT_EXPIRED;
 
         const full = { sections: draft.sections };
         const validation: any = validatePage(full);
@@ -179,7 +184,7 @@ RESUMABLE: if a request fails mid-commit, the draft keeps its page_id + committe
             if (!pageId) return { error: "Page created but no id was returned.", created };
             draft.page_id = pageId;
             draft.committed_count = 1;
-            setDraft(draft);
+            await setDraft(draft);
           }
 
           // Append the remaining sections one at a time, saving progress after each.
@@ -190,7 +195,7 @@ RESUMABLE: if a request fails mid-commit, the draft keeps its page_id + committe
               { timeout: 120000 },
             );
             draft.committed_count = i + 1;
-            setDraft(draft);
+            await setDraft(draft);
           }
 
           // All sections committed → apply slug / homepage / SEO, then drop the draft.
@@ -206,7 +211,7 @@ RESUMABLE: if a request fails mid-commit, the draft keeps its page_id + committe
           }
 
           const pageId = draft.page_id!;
-          delDraft(draft_id);
+          await delDraft(draft_id);
           return { success: true, page_id: pageId, total_sections: total, stats: validation.stats };
         } catch (e) {
           const committed = draft.committed_count ?? 0;
@@ -229,7 +234,7 @@ RESUMABLE: if a request fails mid-commit, the draft keeps its page_id + committe
     },
     ({ draft_id }) =>
       handle(async () => {
-        delDraft(draft_id);
+        await delDraft(draft_id);
         return { success: true };
       }),
   );
