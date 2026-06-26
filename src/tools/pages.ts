@@ -3,6 +3,7 @@ import { CUSTOM_CODE_GUIDE } from "../guides.js";
 import { getConfirmMode } from "./context.js";
 import { normalizeEvents } from "../builder/events.js";
 import { normalizeBindings } from "../builder/bindings.js";
+import { PAGE_TYPE_NUM, PAGE_KINDS, buildPageSeo } from "./builder.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -312,18 +313,35 @@ Examples:
 
   server.tool(
     "create_page",
-    "Create a new page",
+    "Create a new (empty) page. For a page with content use build_page instead. type is a KIND (main/store/member/blog/custom/error/maintain) mapped to the numeric backend type; pass seo so it doesn't publish with an empty title.",
     {
       name: z.string().describe("Page name"),
       slug: z.string().describe("URL slug (e.g. '/about')"),
-      type: z.string().optional().describe("Page type"),
+      type: z.enum(PAGE_KINDS).optional().describe("Page kind (main/store/member/blog/custom/error/maintain). store/member/blog need their data-source flag enabled — prefer build_page which auto-enables it."),
       is_homepage: z.boolean().default(false).describe("Set as homepage"),
+      seo: z
+        .object({ title: z.string().optional(), description: z.string().optional(), keyword: z.string().optional(), favicon: z.string().optional(), thumbnail: z.string().optional() })
+        .optional()
+        .describe("SEO → settings.seo (title/description/keyword/favicon/thumbnail). Tokens {{name_page}}/{{name_site}} allowed."),
     },
-    ({ name, slug, type, is_homepage }) =>
+    ({ name, slug, type, is_homepage, seo }) =>
       handle(async () => {
-        const res = await api.createPage({ name, slug, type, is_homepage });
+        const typeNum = type ? PAGE_TYPE_NUM[type] : undefined;
+        const created: any = await api.createPage({ name, ...(typeNum != null ? { type: typeNum } : {}) });
         invalidatePageCache();
-        return res;
+        const pageId = (created && (created.id || created.data?.id || created.page?.id)) || null;
+        const seoBlock = seo ? buildPageSeo(seo) : null;
+        if (pageId && (slug || is_homepage || (seoBlock && Object.keys(seoBlock).length))) {
+          await api
+            .updatePage(pageId, {
+              ...(slug ? { slug } : {}),
+              ...(is_homepage ? { is_homepage: true } : {}),
+              ...(seoBlock && Object.keys(seoBlock).length ? { settings: { seo: seoBlock } } : {}),
+            })
+            .catch(() => {});
+          invalidatePageCache();
+        }
+        return { success: true, page_id: pageId, name, slug, type: type ?? null, raw: pageId ? undefined : created };
       })
   );
 

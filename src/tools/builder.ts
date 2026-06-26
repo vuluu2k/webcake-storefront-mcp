@@ -15,7 +15,7 @@ import {
   walk,
   reassignIds,
 } from "../builder/page.js";
-import { STORE_PAGE_TEMPLATES, resolvePalette, wireNavigation } from "../builder/templates.js";
+import { STORE_PAGE_TEMPLATES, resolvePalette, contrastSafePalette, wireNavigation } from "../builder/templates.js";
 
 // Recursive spec for new_section / build_page children.
 const elementSpec = z.object({
@@ -42,14 +42,32 @@ function newPageId(res: any): string | null {
 // builderx_spa); SPECIAL kinds also require a site-level data-source flag enabled on
 // site.settings, otherwise components that bind to store/customer/blog data render
 // with null bindings. build_page sets both for you.
-const PAGE_TYPE_NUM: Record<string, number> = {
+// Page kind → numeric backend type. Exported so create_page maps the same way (the backend
+// type is numeric 1–7, NOT a string).
+export const PAGE_TYPE_NUM: Record<string, number> = {
   main: 1, store: 2, member: 3, blog: 4, custom: 5, error: 6, maintain: 7,
 };
 const PAGE_TYPE_FLAG: Record<string, string> = {
   store: "use_store", member: "use_member", blog: "use_blog",
   error: "use_error", maintain: "use_maintain",
 };
-const PAGE_KINDS = ["main", "store", "member", "blog", "custom", "error", "maintain"] as const;
+export const PAGE_KINDS = ["main", "store", "member", "blog", "custom", "error", "maintain"] as const;
+
+/** Build the page.settings.seo block from simple inputs (the real shape; tokens like
+ *  {{name_page}} / {{name_site}} are resolved by the storefront). */
+export function buildPageSeo(seo: any = {}): any {
+  const out: any = {};
+  if (seo.title) out.title = seo.title;
+  if (seo.description) out.description = seo.description;
+  if (seo.keyword) out.keyword = seo.keyword;
+  if (seo.favicon) out.favicon = seo.favicon;
+  if (seo.thumbnail) out.thumbnail = seo.thumbnail;
+  // Open Graph mirrors title/description/thumbnail when not given explicitly.
+  if (seo.title || seo.og_title) out.og_title = seo.og_title || seo.title;
+  if (seo.description || seo.og_description) out.og_description = seo.og_description || seo.description;
+  if (seo.thumbnail) out.og_image = seo.thumbnail;
+  return out;
+}
 
 export function registerBuilderTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
@@ -174,9 +192,19 @@ The source must be { sections: [...] } — build sections with new_section. Vali
           "Page kind. SPECIAL pages need a site data-source enabled — build_page does this automatically: store→use_store (product/cart bindings), member→use_member (customer/order bindings), blog→use_blog, error→use_error, maintain→use_maintain. 'main'/'custom' need nothing. Omit for a normal content page (defaults to 'main' for the homepage).",
         ),
       is_homepage: z.boolean().default(false).describe("Set as the site homepage"),
+      seo: z
+        .object({
+          title: z.string().optional().describe("SEO/browser title. Tokens allowed: {{name_page}}, {{name_site}}, {{name_product}}, {{name_category}}."),
+          description: z.string().optional().describe("Meta description (~155 chars)."),
+          keyword: z.string().optional().describe("Comma-separated keywords."),
+          favicon: z.string().optional().describe("Favicon URL (hosted)."),
+          thumbnail: z.string().optional().describe("Social/OG share image URL (hosted)."),
+        })
+        .optional()
+        .describe("SEO for this page → settings.seo. Without it the page publishes with an EMPTY title/description. For a store page a good default title is '{{name_product}} | {{name_site}}' (product) or '{{name_category}} | {{name_site}}' (category)."),
       dry_run: z.boolean().default(true).describe("Preview+validate only (true) or create+save (false)"),
     },
-    ({ name, slug, source, type, is_homepage, dry_run }) =>
+    ({ name, slug, source, type, is_homepage, seo, dry_run }) =>
       handle(async () => {
         const parsed = parseSource(source);
         const validation: any = validatePage(parsed);
@@ -223,10 +251,15 @@ The source must be { sections: [...] } — build sections with new_section. Vali
         if (!pageId) {
           return { error: "Page created but no id was returned.", created };
         }
-        // slug / homepage are not applied at create — set them via update_page.
-        if (slug || is_homepage) {
+        // slug / homepage / SEO are not applied at create — set them via update_page.
+        const seoBlock = seo ? buildPageSeo(seo) : null;
+        if (slug || is_homepage || (seoBlock && Object.keys(seoBlock).length)) {
           await api
-            .updatePage(pageId, { ...(slug ? { slug } : {}), ...(is_homepage ? { is_homepage: true } : {}) })
+            .updatePage(pageId, {
+              ...(slug ? { slug } : {}),
+              ...(is_homepage ? { is_homepage: true } : {}),
+              ...(seoBlock && Object.keys(seoBlock).length ? { settings: { seo: seoBlock } } : {}),
+            })
             .catch(() => {});
         }
         return {
@@ -329,8 +362,10 @@ Pass style:"minimal" for the old bare stubs (heading + binding element only).`,
         const accentBtn = (text: string, type = "button") => ({ type, opts: { text, style: { background: "var(--color_20)", color: "var(--color_00)", borderRadius: "8px", height: 48, fontWeight: "600" } } });
 
         // Rich (default) store pages come from the designed, palette-aware templates;
-        // 'minimal' falls back to the original bare stubs.
-        const pal = resolvePalette(palette || {});
+        // 'minimal' falls back to the original bare stubs. Derive a contrast-safe accent from
+        // the site's active theme (explicit palette overrides win).
+        const themePal = await contrastSafePalette(api);
+        const pal = resolvePalette({ ...themePal, ...(palette || {}) });
         const minimalStore: Record<string, () => any> = {
           collections: () => ({ sections: [buildSection([h1("Danh mục sản phẩm"), { type: "grid-product", opts: { config: { columns: 3, image_ratio: "1/1", gap_column: 24, gap_row: 32 } } }])] }),
           products: () => ({ sections: [buildSection([

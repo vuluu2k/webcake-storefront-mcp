@@ -52,6 +52,39 @@ export function resolvePalette(p: Palette = {}): Required<Palette> {
   return { ...DEFAULT_PALETTE, ...Object.fromEntries(Object.entries(p).filter(([, v]) => v != null)) };
 }
 
+/** Relative luminance of a #hex colour (0 dark … 1 light). */
+function luminance(hex: string): number {
+  const h = String(hex || "").replace("#", "").slice(0, 6);
+  if (h.length < 6) return 0;
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/**
+ * Read the site's active theme colour matrix and return a Palette override so generated pages
+ * stay BRAND-CONSISTENT and CONTRAST-SAFE. The default palette uses var(--color_20) (the brand
+ * seed) as the accent — but for a LIGHT brand seed (e.g. a beige store) a white button label on
+ * it is unreadable, so we switch the accent to var(--color_24) (the darkest brand shade). Best
+ * effort: returns {} on any error (the var(--color_NN) defaults still resolve per-site).
+ */
+export async function contrastSafePalette(api: any): Promise<Palette> {
+  try {
+    const res = await api.listThemes();
+    const themes = (res && res.data) || res || [];
+    const arr = Array.isArray(themes) ? themes : (themes.themes || []);
+    const th = arr.find((t: any) => t.is_selected) || arr[0];
+    const m = th && th.colors;
+    if (Array.isArray(m) && Array.isArray(m[2]) && m[2][0]) {
+      if (luminance(m[2][0]) > 0.62) return { accent: "var(--color_24)" };
+    }
+  } catch {
+    /* keep the var()-based defaults */
+  }
+  return {};
+}
+
 // ---------------------------------------------------------------------------
 // small spec helpers (return element specs for buildSection/buildRow children)
 // ---------------------------------------------------------------------------
