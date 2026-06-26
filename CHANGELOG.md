@@ -5,6 +5,11 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.1] - 2026-06-26
+
+### Fixed
+- The `webcake-data` SDK reference embedded in `get_http_function` and `get_site_custom_code` now documents the correct Mongoose-document API: filters are plain MongoDB-style objects (e.g. `{ status: { $in: [0, 1, 2] } }`) instead of the `.where().gte()` QueryBuilder pattern; chains are directly awaitable with no `.exec()`; `.select()` takes an array of field names; `.populate({ field, select:[...] })` resolves a reference field to its related object; the write API documents `findOneAndUpdate(filter, update, { new: true })`, `updateOne`, `updateMany`, and `deleteMany`; and the example is rewritten to a real production pattern with `db` and models declared at module top, `request.customer?.id` for auth, `request.params` for inputs, and `{ mess: "OK", ...data }` as the return convention.
+
 ## [1.31.0] - 2026-06-26
 
 ### Added

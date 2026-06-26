@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.1] - 2026-06-26
+
+### Fixed
+- Tài liệu tham chiếu SDK `webcake-data` được nhúng trong `get_http_function` và `get_site_custom_code` nay ghi lại đúng API kiểu Mongoose-document: bộ lọc là đối tượng MongoDB-style thuần túy (ví dụ `{ status: { $in: [0, 1, 2] } }`) thay vì pattern QueryBuilder `.where().gte()`; chuỗi chain có thể `await` trực tiếp mà không cần `.exec()`; `.select()` nhận mảng tên trường; `.populate({ field, select:[...] })` giải phân giải trường tham chiếu thành đối tượng liên kết; API ghi nhận `findOneAndUpdate(filter, update, { new: true })`, `updateOne`, `updateMany` và `deleteMany`; và ví dụ được viết lại theo pattern production thực tế với `db` và các model khai báo ở đầu module, `request.customer?.id` để xác thực, `request.params` cho tham số đầu vào, và `{ mess: "OK", ...data }` là quy ước trả về.
+
 ## [1.31.0] - 2026-06-26
 
 ### Added
