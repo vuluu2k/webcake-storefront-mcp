@@ -44,11 +44,12 @@ export const PAGE_SCHEMA = {
         },
         runtime: {
           type: "object",
-          description: "STAGING shape emitted by new_section/new_element. The storefront does NOT read `runtime` — build_page/add_section expand it into bp1..bp4 on save. Author here; don't hand-write bp1..bp4 for new pages.",
-          additionalProperties: false,
+          description: "STAGING shape emitted by new_section/new_element. The storefront does NOT read `runtime` — build_page/add_section (the SPA's buildElementWithBreakpoint) expand it into bp1..bp4 {style,config} on save and DELETE runtime; runtime.specials, if present, is merged into the top-level specials. Author here; don't hand-write bp1..bp4 for new pages.",
+          additionalProperties: true,
           properties: {
             style: { $ref: "#/$defs/style" },
             config: { $ref: "#/$defs/config" },
+            specials: { type: "object", description: "Optional per-breakpoint specials override; merged into top-level specials on expand.", additionalProperties: true },
           },
         },
         children: {
@@ -88,7 +89,8 @@ export const PAGE_SCHEMA = {
         rows: { type: "array", description: "Row unit objects — one per child.", items: { type: "object" } },
         rowGap: { type: "number", description: "Vertical gap (px) between stacked children." },
         columnGap: { type: "number", description: "Horizontal gap (px) between columns." },
-        heightUnit: { type: "string", enum: ["auto", "fixed"], description: "'auto' lets content set height." },
+        heightUnit: { type: "string", description: "'auto' lets content set height (the common value); a fixed px height is used otherwise." },
+        loaded: { type: "boolean", description: "Internal flag set on expand (bp config). You don't set it." },
         columnStart: { type: "number" },
         columnEnd: { type: "number" },
         rowStart: { type: "number" },
