@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
-import { PAGE_TYPE_NUM, PAGE_TYPE_FLAG, PAGE_KINDS, buildPageSeo } from "./builder.js";
+import { PAGE_TYPE_NUM, PAGE_TYPE_FLAG, PAGE_KINDS, buildPageSeo, normalizeSlug } from "./builder.js";
 import { validatePage, finalizeForRender, reassignIds } from "../builder/page.js";
 import {
   createDraft,
@@ -43,7 +43,7 @@ export function registerPageDraftTools(server: McpServer, api: WebcakeCmsApi, ha
     `Start a page draft (no network). Build a multi-section page safely: cache each section with add_draft_section, then commit_page_draft persists it to the backend INCREMENTALLY (resumable on timeout). Use this instead of build_page for large/multi-section pages. The draft cache is DISPOSABLE (Redis on the remote server when REDIS_URL is set, in-memory otherwise; sliding ~2h TTL) — if a draft is ever lost, just re-send the sections, never a failure.`,
     {
       name: z.string().describe("Page name"),
-      slug: z.string().describe("URL slug, e.g. '/landing' or '/about'"),
+      slug: z.string().describe("URL slug WITHOUT a leading slash, e.g. 'about', 'collections', 'cart'. A leading '/' is stripped automatically (the storefront matches the bare path segment, so '/cart' would 404). Store pages MUST use: category='collections', product='products', cart='cart', checkout='checkout', thank-you='complete'. Homepage needs no slug (is_homepage:true)."),
       type: z
         .enum(PAGE_KINDS)
         .optional()
@@ -199,11 +199,13 @@ RESUMABLE: if a request fails mid-commit, the draft keeps its page_id + committe
           }
 
           // All sections committed → apply slug / homepage / SEO, then drop the draft.
+          // Strip a leading "/" so the storefront's bare-segment match resolves (else 404).
+          const cleanSlug = normalizeSlug(draft.meta.slug);
           const seoBlock = draft.meta.seo ? buildPageSeo(draft.meta.seo) : null;
-          if (draft.meta.slug || draft.meta.is_homepage || (seoBlock && Object.keys(seoBlock).length)) {
+          if (cleanSlug || draft.meta.is_homepage || (seoBlock && Object.keys(seoBlock).length)) {
             await api
               .updatePage(draft.page_id!, {
-                ...(draft.meta.slug ? { slug: draft.meta.slug } : {}),
+                ...(cleanSlug ? { slug: cleanSlug } : {}),
                 ...(draft.meta.is_homepage ? { is_homepage: true } : {}),
                 ...(seoBlock && Object.keys(seoBlock).length ? { settings: { seo: seoBlock } } : {}),
               })

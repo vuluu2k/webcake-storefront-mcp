@@ -3,7 +3,7 @@ import { CUSTOM_CODE_GUIDE } from "../guides.js";
 import { getConfirmMode } from "./context.js";
 import { normalizeEvents } from "../builder/events.js";
 import { normalizeBindings } from "../builder/bindings.js";
-import { PAGE_TYPE_NUM, PAGE_KINDS, buildPageSeo } from "./builder.js";
+import { PAGE_TYPE_NUM, PAGE_KINDS, buildPageSeo, normalizeSlug } from "./builder.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -316,7 +316,7 @@ Examples:
     "Create a new (empty) page. For a page with content use build_page instead. type is a KIND (main/store/member/blog/custom/error/maintain) mapped to the numeric backend type; pass seo so it doesn't publish with an empty title.",
     {
       name: z.string().describe("Page name"),
-      slug: z.string().describe("URL slug (e.g. '/about')"),
+      slug: z.string().describe("URL slug WITHOUT a leading slash, e.g. 'about', 'collections', 'cart'. A leading '/' is stripped automatically (the storefront matches the bare path segment, so '/cart' would 404). Homepage needs no slug (pass is_homepage:true)."),
       type: z.enum(PAGE_KINDS).optional().describe("Page kind (main/store/member/blog/custom/error/maintain). store/member/blog need their data-source flag enabled — prefer build_page which auto-enables it."),
       is_homepage: z.boolean().default(false).describe("Set as homepage"),
       seo: z
@@ -326,22 +326,23 @@ Examples:
     },
     ({ name, slug, type, is_homepage, seo }) =>
       handle(async () => {
+        const cleanSlug = normalizeSlug(slug);
         const typeNum = type ? PAGE_TYPE_NUM[type] : undefined;
         const created: any = await api.createPage({ name, ...(typeNum != null ? { type: typeNum } : {}) });
         invalidatePageCache();
         const pageId = (created && (created.id || created.data?.id || created.page?.id)) || null;
         const seoBlock = seo ? buildPageSeo(seo) : null;
-        if (pageId && (slug || is_homepage || (seoBlock && Object.keys(seoBlock).length))) {
+        if (pageId && (cleanSlug || is_homepage || (seoBlock && Object.keys(seoBlock).length))) {
           await api
             .updatePage(pageId, {
-              ...(slug ? { slug } : {}),
+              ...(cleanSlug ? { slug: cleanSlug } : {}),
               ...(is_homepage ? { is_homepage: true } : {}),
               ...(seoBlock && Object.keys(seoBlock).length ? { settings: { seo: seoBlock } } : {}),
             })
             .catch(() => {});
           invalidatePageCache();
         }
-        return { success: true, page_id: pageId, name, slug, type: type ?? null, raw: pageId ? undefined : created };
+        return { success: true, page_id: pageId, name, slug: cleanSlug ?? null, type: type ?? null, raw: pageId ? undefined : created };
       })
   );
 
@@ -351,11 +352,16 @@ Examples:
     {
       page_id: z.string().describe("Page ID"),
       name: z.string().optional().describe("New name"),
-      slug: z.string().optional().describe("New slug"),
+      slug: z.string().optional().describe("New slug WITHOUT a leading slash (e.g. 'about', 'cart'). A leading '/' is stripped automatically — '/cart' would 404 on the storefront."),
       is_homepage: z.boolean().optional().describe("Set as homepage"),
       settings: z.record(z.any()).optional().describe("Page settings"),
     },
     ({ page_id, ...params }) => handle(async () => {
+      // Normalize slug (strip leading "/") so the storefront's bare-segment match resolves.
+      if (params.slug !== undefined) {
+        const clean = normalizeSlug(params.slug);
+        if (clean) params.slug = clean; else delete params.slug;
+      }
       const res = await api.updatePage(page_id, params);
       invalidatePageCache();
       return res;

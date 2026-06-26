@@ -115,20 +115,36 @@ export function stackChildren(container: any, children: any[], opts: StackOpts =
 
   children.forEach((child: any, i: number) => {
     child.runtime = child.runtime || {};
+    const cc = child.runtime.config || {};
     child.runtime.config = {
-      ...(child.runtime.config || {}),
+      ...cc,
       columnStart: colStart,
       columnEnd: colEnd,
       rowStart: i + 1,
       rowEnd: i + 2,
       constraintX: defaultConstraintX(child),
-      constraintY: (child.runtime.config && child.runtime.config.constraintY) || ["top"],
+      constraintY: cc.constraintY || ["top"],
+      // Width the template-native way: every element declares a width % of its cell
+      // (config.widthUnit + relWidth). Without these the renderer emits an invalid
+      // `width: %;` (the "width is 0" bug). Default to filling the cell; respect an
+      // element that opted into "auto" (content-sized, e.g. buttons) or "px".
+      ...sizeDefaults(cc),
       loaded: true,
     };
   });
 
   container.children = children;
   return container;
+}
+
+/** Template-native width defaults: fill the grid cell (widthUnit "%", relWidth 100) unless
+ *  the element already chose a unit. The storefront's build_position reads these (NOT
+ *  style.width, except when widthUnit==="px"). */
+function sizeDefaults(cfg: any): any {
+  const widthUnit = cfg.widthUnit || "%";
+  const out: any = { widthUnit };
+  if (widthUnit !== "auto") out.relWidth = cfg.relWidth != null ? cfg.relWidth : 100;
+  return out;
 }
 
 const ROW_PLACEHOLDER_ROW = () => ({ unit: "min/max", min: { unit: "px", absValue: 50 }, max: { unit: "max-c" } });
@@ -181,14 +197,16 @@ export function rowChildren(container: any, children: any[], opts: RowOpts = {})
 
   children.forEach((child: any, i: number) => {
     child.runtime = child.runtime || {};
+    const cc = child.runtime.config || {};
     child.runtime.config = {
-      ...(child.runtime.config || {}),
+      ...cc,
       columnStart: i + 1,
       columnEnd: i + 2,
       rowStart: 1,
       rowEnd: 2,
       constraintX: defaultConstraintX(child),
-      constraintY: (child.runtime.config && child.runtime.config.constraintY) || ["top"],
+      constraintY: cc.constraintY || ["top"],
+      ...sizeDefaults(cc),
       loaded: true,
       __cell: { index: i, ...meta },
     };
@@ -230,14 +248,24 @@ export function buildSection(childSpecs: any[] = [], sectionOpts: any = {}) {
     contentColEnd: SECTION_CONTENT_COL_END,
     rowGap: sectionOpts.rowGap,
   });
-  // Give sections vertical breathing room by default (a plain edge-to-edge stack looks
-  // unfinished). Caller can override via sectionOpts.style.
+  // Section vertical padding the TEMPLATE-NATIVE way: a fixed-height spacer GRID ROW at the
+  // top and bottom, content rows in between (real templates do exactly this — the storefront
+  // ignores CSS `padding` on a section, build_section only emits the grid). Default 64px;
+  // pass sectionOpts.padY (0 disables, e.g. a full-bleed hero).
+  const padY = sectionOpts.padY != null ? sectionOpts.padY : 64;
   section.runtime = section.runtime || {};
-  section.runtime.style = {
-    paddingTop: 56,
-    paddingBottom: 56,
-    ...(sectionOpts.style || {}),
-  };
+  const cfg = section.runtime.config || (section.runtime.config = {});
+  if (padY > 0 && Array.isArray(cfg.rows)) {
+    const spacer = () => ({ unit: "min/max", min: { unit: "px", absValue: padY }, max: { unit: "max-c" } });
+    cfg.rows = [spacer(), ...cfg.rows, spacer()];
+    cfg.grid = `3x${cfg.rows.length}`;
+    for (const c of children) {
+      const cc = c.runtime && c.runtime.config;
+      if (cc) { cc.rowStart = (cc.rowStart || 1) + 1; cc.rowEnd = (cc.rowEnd || 2) + 1; }
+    }
+  }
+  // Section style carries background only (padding is done via the spacer rows above).
+  section.runtime.style = { ...(sectionOpts.style || {}) };
   return section;
 }
 

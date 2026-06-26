@@ -69,6 +69,17 @@ export function buildPageSeo(seo: any = {}): any {
   return out;
 }
 
+/** Normalize a page slug to what the storefront matches on. The storefront routes by the
+ *  RAW path segment (e.g. "/cart" → path ["cart"]) and looks up `page.slug == "cart"`, so a
+ *  stored slug WITH a leading "/" (e.g. "/cart") never matches and the page 404s. The homepage
+ *  is matched by `is_nil(slug)`, so an empty/"/" slug must become "no slug" (undefined) — never
+ *  stored as "". Strips leading/trailing slashes; returns undefined for the homepage/blank case. */
+export function normalizeSlug(slug?: string | null): string | undefined {
+  if (!slug) return undefined;
+  const s = String(slug).trim().replace(/^\/+/, "").replace(/\/+$/, "");
+  return s.length ? s : undefined;
+}
+
 export function registerBuilderTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "get_build_guide",
@@ -190,7 +201,7 @@ Two-step safety: call with dry_run=true (default) to validate and preview, then 
 The source must be { sections: [...] } — build sections with new_section. Validation errors block the real save.`,
     {
       name: z.string().describe("Page name"),
-      slug: z.string().describe("URL slug, e.g. '/landing' or '/about'"),
+      slug: z.string().describe("URL slug WITHOUT a leading slash, e.g. 'about', 'collections', 'cart'. A leading '/' is stripped automatically (the storefront matches the bare path segment, so '/cart' would 404). Store pages MUST use the conventional slugs: category='collections', product detail='products', cart='cart', checkout='checkout', thank-you='complete'. The homepage needs no slug (pass is_homepage:true)."),
       source: z.any().describe("Full page source { sections: [...] } (object or JSON string)"),
       type: z
         .enum(PAGE_KINDS)
@@ -220,12 +231,15 @@ The source must be { sections: [...] } — build sections with new_section. Vali
         const kind = type || (is_homepage ? "main" : undefined);
         const typeNum = kind ? PAGE_TYPE_NUM[kind] : undefined;
         const requiredFlag = kind ? PAGE_TYPE_FLAG[kind] : undefined;
+        // Strip a leading "/" — the storefront matches `page.slug == "<segment>"` (no slash),
+        // so "/cart" would 404. Homepage (blank/"/") → undefined (matched by is_nil(slug)).
+        const cleanSlug = normalizeSlug(slug);
 
         if (dry_run) {
           return {
             dry_run: true,
             validation,
-            request: { name, slug, type: kind ?? null, page_type_num: typeNum ?? null, is_homepage, sections: (parsed && parsed.sections || []).length },
+            request: { name, slug: cleanSlug ?? null, type: kind ?? null, page_type_num: typeNum ?? null, is_homepage, sections: (parsed && parsed.sections || []).length },
             will_enable_feature: requiredFlag ?? null,
             renders_at_breakpoints: ["bp1", "bp2", "bp3", "bp4"],
             hint: validation.valid
@@ -260,10 +274,10 @@ The source must be { sections: [...] } — build sections with new_section. Vali
         }
         // slug / homepage / SEO are not applied at create — set them via update_page.
         const seoBlock = seo ? buildPageSeo(seo) : null;
-        if (slug || is_homepage || (seoBlock && Object.keys(seoBlock).length)) {
+        if (cleanSlug || is_homepage || (seoBlock && Object.keys(seoBlock).length)) {
           await api
             .updatePage(pageId, {
-              ...(slug ? { slug } : {}),
+              ...(cleanSlug ? { slug: cleanSlug } : {}),
               ...(is_homepage ? { is_homepage: true } : {}),
               ...(seoBlock && Object.keys(seoBlock).length ? { settings: { seo: seoBlock } } : {}),
             })
@@ -273,7 +287,7 @@ The source must be { sections: [...] } — build sections with new_section. Vali
           success: true,
           page_id: pageId,
           name,
-          slug,
+          slug: cleanSlug ?? null,
           page_type: kind ?? null,
           ...(feature ? { data_source: { flag: feature.flag, newly_enabled: feature.changed } } : {}),
           stats: validation.stats,
