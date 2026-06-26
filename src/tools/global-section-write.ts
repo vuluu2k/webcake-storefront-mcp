@@ -153,12 +153,16 @@ force=true. Two-step safety: dry_run=true (default) previews; dry_run=false perf
       links: z.array(z.object({ label: z.string(), navTo: z.string().optional(), url: z.string().optional() })).optional().describe("Header nav links. navTo = a page slug ('home','collections','cart') auto-wired to open_page; url = external link. Defaults to Home/Products/Cart."),
       contact: z.object({ phone: z.string().optional(), email: z.string().optional(), address: z.string().optional() }).optional().describe("Real contact info for the footer (don't invent — omit what you don't have)."),
       cta: z.string().optional().describe("Header call-to-action button label (default 'Đặt mua ngay')."),
+      logo: z.string().optional().describe("Logo image URL (hosted) — renders an image instead of the brand text."),
+      search: z.boolean().default(true).describe("Add a storefront search box to the header (most real templates have one)."),
+      account: z.boolean().default(false).describe("Add a login/account bar (member sites)."),
+      language: z.boolean().default(false).describe("Add a language switcher (multilingual sites)."),
       palette: z.record(z.any()).optional().describe("Optional colour overrides { accent, onAccent, text, muted, surface, surfaceAlt, border }."),
       include: z.enum(["both", "header", "footer"]).default("both").describe("Which chrome to generate."),
       force: z.boolean().default(false).describe("Create even if a header/footer global already exists (otherwise that slot is skipped)."),
       dry_run: z.boolean().default(true).describe("Preview (true) or perform the atomic save (false)."),
     },
-    ({ brand, links, contact, cta, palette, include, force, dry_run }) =>
+    ({ brand, links, contact, cta, logo, search, account, language, palette, include, force, dry_run }) =>
       handle(async () => {
         // Which slots already have a global section? (dedupe by type unless force)
         const existingRes: any = await api.listGlobalSections().catch(() => null);
@@ -193,7 +197,7 @@ force=true. Two-step safety: dry_run=true (default) previews; dry_run=false perf
         };
         if (wantHeader) {
           if (!force && slotTaken("header")) skipped.push("header");
-          else toCreate.push({ type: "header", name: "Header", node: buildNode("header", headerSection({ brand, links: links as NavLink[] | undefined, cta, palette })) });
+          else toCreate.push({ type: "header", name: "Header", node: buildNode("header", headerSection({ brand, links: links as NavLink[] | undefined, cta, logo, search, account, language, palette })) });
         }
         if (wantFooter) {
           if (!force && slotTaken("footer")) skipped.push("footer");

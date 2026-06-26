@@ -378,14 +378,31 @@ export interface NavLink {
   url?: string;
 }
 
-export function headerSection(opts: { brand?: string; links?: NavLink[]; palette?: Palette; cta?: string } = {}) {
+export function headerSection(
+  opts: {
+    brand?: string;
+    /** Logo image URL — renders an image instead of the brand text. */
+    logo?: string;
+    links?: NavLink[];
+    palette?: Palette;
+    cta?: string;
+    /** Add a storefront search box (default true — most real templates have one). */
+    search?: boolean;
+    /** Add a login/account bar (member sites). */
+    account?: boolean;
+    /** Add a language switcher (multilingual sites). */
+    language?: boolean;
+  } = {},
+) {
   const p = resolvePalette(opts.palette);
   const links = opts.links && opts.links.length ? opts.links : [
     { label: "Trang chủ", navTo: "home" },
     { label: "Sản phẩm", navTo: "collections" },
     { label: "Giỏ hàng", navTo: "cart" },
   ];
-  const logo = { type: "text", opts: { text: opts.brand || "Shop", specials: { tag: "h2" }, style: { fontSize: "24px", fontWeight: "800", color: p.text } } };
+  const logo = opts.logo
+    ? { type: "image", opts: { config: { src: opts.logo }, style: { height: 40, width: 140 } } }
+    : { type: "text", opts: { text: opts.brand || "Shop", specials: { tag: "h2" }, style: { fontSize: "24px", fontWeight: "800", color: p.text } } };
   // Real designer templates use a `menu` of `menu-item`s, NOT text links — and a menu-item's
   // navigation lives in its SPECIALS (linkType/linkPage/pageId), not events. We build the
   // items directly (via buildElement, so buildFromSpec doesn't grid-stack the menu) and leave
@@ -403,16 +420,32 @@ export function headerSection(opts: { brand?: string; links?: NavLink[]; palette
       children: menuItems,
     },
   };
+  // Right-hand actions: optional search / account / language, then cart + CTA — like real headers.
+  const actionChildren: any[] = [];
+  const actionWidths: any[] = [];
+  if (opts.search !== false) {
+    actionChildren.push({ type: "input-search", opts: { specials: { field_name: "search", placeholder: "Tìm kiếm sản phẩm...", showIcon: true }, config: { inputBackground: p.surfaceAlt, inputBorderColor: p.border, inputBorderRadius: "8px", iconColor: p.muted, placeholderColor: p.muted, iconAlign: "left" }, style: { height: 40 } } });
+    actionWidths.push({ unit: "px", absValue: 200 });
+  }
+  if (opts.account) {
+    actionChildren.push({ type: "member-bar", opts: { specials: { showView: "not_logged", layoutShow: "text", textLogin: "Đăng nhập", textSignup: "Đăng ký" }, config: { colorIcon: p.text }, style: { color: p.text } } });
+    actionWidths.push({ unit: "max-c" });
+  }
+  if (opts.language) {
+    actionChildren.push({ type: "language-menu", opts: { specials: { show_flag: true, type: "dropdown" }, config: { color: p.text, display: "abbreviated" } } });
+    actionWidths.push({ unit: "max-c" });
+  }
+  actionChildren.push({ type: "cart-icon", opts: { style: { width: 26, height: 26, color: p.text } } });
+  actionWidths.push({ unit: "px", absValue: 32 });
+  actionChildren.push(cta(opts.cta || "Đặt mua ngay", p, { navTo: "collections", height: 44 }));
+  actionWidths.push({ unit: "max-c" });
   const actions = {
     type: "container",
     layout: "row",
     columnGap: 16,
-    colWidths: [{ unit: "px", absValue: 32 }, { unit: "max-c" } as any],
-    collapse: { bp4: 2 },
-    children: [
-      { type: "cart-icon", opts: { style: { width: 26, height: 26, color: p.text } } },
-      cta(opts.cta || "Đặt mua ngay", p, { navTo: "collections", height: 44 }),
-    ],
+    colWidths: actionWidths,
+    collapse: { bp4: Math.min(2, actionChildren.length) },
+    children: actionChildren,
   };
   return buildSection(
     [
