@@ -5,6 +5,12 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.26.0] - 2026-06-26
+
+### Fixed
+- `create_product` nay nhận thêm tham số `short_description` và gửi lên backend dưới dạng `[{description}]` — đúng kiểu mảng mà schema sản phẩm thực tế yêu cầu — giúp thẻ sản phẩm và trang chi tiết gắn kết với `product::short_description` không còn hiển thị trống.
+- Tham số `description` của `create_product` nay ghi rõ rằng nó gắn kết với `product::description` trên trang chi tiết, phân biệt với trường `short_description` mới dùng cho binding trên thẻ sản phẩm.
+
 ## [1.25.0] - 2026-06-26
 
 ### Changed

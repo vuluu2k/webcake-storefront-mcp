@@ -5,6 +5,12 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.26.0] - 2026-06-26
+
+### Fixed
+- `create_product` now accepts a `short_description` parameter and sends it to the backend as `[{description}]` — the array shape the real product schema requires — so product cards and detail pages bound to `product::short_description` are no longer blank.
+- The `description` parameter of `create_product` now documents that it binds to `product::description` on the detail page, distinguishing it from the new `short_description` card-binding field.
+
 ## [1.25.0] - 2026-06-26
 
 ### Changed
