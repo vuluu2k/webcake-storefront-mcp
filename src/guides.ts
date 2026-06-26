@@ -101,6 +101,21 @@ await Members.updateOne({ id: created.id }, { tien_con_lai: 100000 });
     const userId = request.customer?.id ?? ""; if (!userId) return { mess: "NO_ACCOUNT_CALL" };
     try { /* … */ return { mess: "OK", ...data }; } catch (err) { console.error(err?.message || err); return { mess: "SYSTEM_ERROR" }; }
 
+## Custom data TABLES (collections) — end-to-end (VERIFIED flow)
+A "collection" is a custom DB table. To stand one up and use it from a function:
+1. Create the table + columns with the MCP tools: create_collection({ name, columns:[{name,type},…] })
+   then update_collection_columns to change them. (Types: string|text|integer|float|boolean|
+   naive_datetime|binary_id|map|array.) The table always has id/inserted_at/updated_at/creator_id.
+2. READ rows directly with the MCP tool query_collection_records({ table_name, where, order_by }).
+3. WRITE rows from an HTTP function via webcake-data — db.model(table) gives full CRUD on it:
+   const T = db.model("my_table");
+   const row = await T.create({ email: "a@b.com" });          // insert
+   await T.updateOne({ id: row.id }, { email: "c@d.com" });    // update
+   await T.deleteMany({ email: "a@b.com" });                   // delete
+   const rows = await T.find({ … }).select([…]).limit(50);     // query
+   (There is NO direct dashboard record-INSERT API — record writes MUST go through a function.
+    Deploy the function with the update_http_function MCP tool, then call it with run_function.)
+
 ## Built-in @webcake/* modules (first arg is always request; they auth via global.token — these run
 ## INSIDE the function sandbox, so they reach the /cms_function endpoints the dashboard JWT can't)
 Thin wrappers over the backend's /cms_function/{site_id}/... endpoints. Pass request so
