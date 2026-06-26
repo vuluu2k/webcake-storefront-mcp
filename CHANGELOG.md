@@ -5,6 +5,12 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.25.0] - 2026-06-26
+
+### Changed
+- `list_elements` now documents 16 previously-uncovered element types, completing curated attribute coverage across all 132 factory types: `popup` (modal/overlay with `trigger`, `effect`, `overlay`, and position config; built as a `global_source` and opened via `open_popup`/`close_popup`), `notify` (toast banner, often wired to `add_to_cart`'s `activeNotify`), `random-number` (fake-stock urgency widget), `table` (datagrid-bound data table with row-colour config), `rectangle-dataset` (dataset-bound styled box), `reward-point`, `referral-code`, and `input-product-note` (checkout/cart form fields), `lucky-wheel` (spin-to-win marketing minigame), `tee-form` (product-design/print-on-demand form), `warehouse` and `warehouse-dataset` (pickup-branch selector and its dataset bindings), `calendar` and `calendar-content` (appointment-booking calendar), `collapse-content` (accordion body panel), and `question-container` (quiz/survey question wrapper).
+- `list_elements` now documents `favorite-icon` with `config.mask` and `config.colorActive` keys, event names `add_wishlist_product` / `wishlist_remove_item`, and a note that it pairs with the `wishlist` header element.
+
 ## [1.24.0] - 2026-06-26
 
 ### Changed

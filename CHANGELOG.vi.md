@@ -5,6 +5,12 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.25.0] - 2026-06-26
+
+### Changed
+- `list_elements` nay tài liệu hóa 16 kiểu phần tử trước đây chưa được ghi lại, hoàn thiện độ phủ thuộc tính curated cho toàn bộ 132 kiểu factory: `popup` (modal/overlay với config `trigger`, `effect`, `overlay` và vị trí; được build dưới dạng `global_source` và mở/đóng qua `open_popup`/`close_popup`), `notify` (toast banner, thường được nối với `activeNotify` của `add_to_cart`), `random-number` (widget số ngẫu nhiên tạo hiệu ứng khan hiếm giả), `table` (bảng dữ liệu gắn datagrid với config màu hàng), `rectangle-dataset` (hộp có style gắn dataset), `reward-point`, `referral-code` và `input-product-note` (các trường form tại checkout/giỏ hàng), `lucky-wheel` (minigame quay số marketing), `tee-form` (form thiết kế sản phẩm/in theo yêu cầu), `warehouse` và `warehouse-dataset` (bộ chọn chi nhánh nhận hàng và binding dataset của nó), `calendar` và `calendar-content` (lịch đặt lịch hẹn), `collapse-content` (panel nội dung mở rộng trong accordion), và `question-container` (khung câu hỏi trong form quiz/khảo sát).
+- `list_elements` nay tài liệu hóa `favorite-icon` với các key `config.mask` và `config.colorActive`, tên event `add_wishlist_product` / `wishlist_remove_item`, và ghi chú rằng phần tử này dùng cặp với phần tử `wishlist` trên header.
+
 ## [1.24.0] - 2026-06-26
 
 ### Changed
