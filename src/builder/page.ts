@@ -241,7 +241,7 @@ export function buildSection(childSpecs: any[] = [], sectionOpts: any = {}) {
   return section;
 }
 
-function buildFromSpec(spec: any) {
+export function buildFromSpec(spec: any) {
   if (!spec || !spec.type) {
     throw new Error("Each element spec must have a 'type'.");
   }

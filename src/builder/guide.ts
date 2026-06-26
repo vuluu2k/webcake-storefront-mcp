@@ -238,10 +238,13 @@ create the globals — they embed into each page's source. If you later overwrit
 later with update_global_section_element(s) and it updates on every page at once.
 
 ## Popups (newsletter / promo / age-gate)
-A popup is a GLOBAL SOURCE, not a page section. Build it, store it, then trigger it:
-1. Build the popup body (new_section: heading + text + form/input + a close button), then wrap it:
-   new_element("popup", { children:[<that section>], specials:{ /* trigger + overlay */ } }).
-   Trigger/behaviour (auto-open after a delay, exit-intent, only-once, overlay) lives in specials.
+A popup is a GLOBAL SOURCE, not a page section. FAST PATH: \`scaffold_popup({ brand, headline, offer })\`
+builds + saves a designed newsletter popup (heading + text + email form + close button, centred)
+and returns its id. To build one by hand:
+1. Build the popup node: new_element("popup", { children:[…heading,text,form,close button…], style:{ width:480, background:"#fff", borderRadius:"12px" }, config:{ popupHorizontalPosition:"center", popupVerticalPosition:"center" }, specials:{ effect:"fade-in", timeAnim:0.5 } }).
+   - SIZE + POSITION live in the popup's runtime style/config (width/height/background + popupHorizontalPosition/popupVerticalPosition), NOT in specials. createPopup seeds a centred-modal default.
+   - TRIGGER (auto-open) lives in SPECIALS: \`openPopupAction:"openPopupWithTime"\` + \`timeOpenPopup:<seconds>\` for a delay; \`page_ids:[…]\` to limit which pages it shows on; \`effect\`/\`timeAnim\` for the animation. (There is no exit-intent/only-once flag in the node — those are app settings.)
+   - OVERLAY is NOT on the popup node — it's a field on the open_popup EVENT (popup_overlay:true).
 2. Save it: create_global_source({ component:"popup", source:{ sections:[<popupNode>] } }) -> returns its id.
 3. Open/close from any element via events: a button { action:"open_popup", popup_id:"<id>", popup_overlay:true };
    a close button inside { action:"close_popup", popup_id:"<id>" }; a form can auto-close on its

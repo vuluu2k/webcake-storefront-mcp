@@ -14,9 +14,12 @@
 // text) so a generated site matches whatever palette the theme already defines; callers can
 // override any slot via a Palette object.
 
-import { buildSection, walk } from "./page.js";
+import { buildSection, buildFromSpec, stackChildren, walk } from "./page.js";
 import { buildElement } from "./catalog.js";
 import { normalizeEvents } from "./events.js";
+
+const X_ICON_SVG =
+  "<svg xmlns='http://www.w3.org/2000/svg' fill='currentColor' width='100%' height='100%' viewBox='0 0 24 24'><path d='M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z'></path></svg>";
 
 export interface Palette {
   /** Primary brand / accent — buttons, prices, active links. */
@@ -468,6 +471,55 @@ export function footerSection(opts: { brand?: string; tagline?: string; columns?
     style: { background: "#1c1917", paddingTop: 56, paddingBottom: 32, paddingLeft: 20, paddingRight: 20 },
     rowGap: 32,
   });
+}
+
+// ---------------------------------------------------------------------------
+// POPUP (newsletter / promo) — a global SOURCE, not a page section
+// ---------------------------------------------------------------------------
+
+/**
+ * A designed newsletter/promo popup, returned as a ready-to-save global-source source
+ * `{ sections: [ <popup node> ] }`. The popup carries an auto-open-after-delay trigger in
+ * specials and a centred-modal geometry (seeded by createPopup); the close button references
+ * the popup's own id. Save with create_global_source({ component:"popup", source }).
+ * Run finalizeForRender(source) BEFORE saving (the tool does this).
+ */
+export function newsletterPopupSource(
+  opts: { headline?: string; subtext?: string; ctaLabel?: string; palette?: Palette; delaySeconds?: number } = {},
+) {
+  const p = resolvePalette(opts.palette);
+  const heading = {
+    type: "text",
+    opts: { text: opts.headline || "Nhận ưu đãi 10%", specials: { tag: "h2" }, style: { fontSize: "26px", fontWeight: "800", color: p.text, textAlign: "center", lineHeight: "1.3" } },
+  };
+  const sub = {
+    type: "text",
+    opts: { text: opts.subtext || "Đăng ký nhận tin để không bỏ lỡ khuyến mãi mới nhất.", style: { fontSize: "15px", color: p.muted, textAlign: "center", lineHeight: "1.6" } },
+  };
+  const form = {
+    type: "form",
+    opts: { specials: { type: "subscribe" }, config: { backgroundInput: p.surface, placeholderColor: p.muted, labelColor: p.text, textPadding: 14, rowGap: 12 } },
+    children: [
+      { type: "email", opts: { specials: { field_name: "email", placeholder: "Email của bạn", show_label: false }, config: { backgroundInput: p.surface, textPadding: 14 }, style: { borderColor: p.border, borderRadius: "8px", height: 46 } } },
+      { type: "submit-button", opts: { text: opts.ctaLabel || "Đăng ký ngay", style: { background: p.accent, color: p.onAccent, borderRadius: "8px", height: 46, fontWeight: "600", width: "100%", textAlign: "center" } } },
+    ],
+  };
+  // Close button: a small X in the top-right that closes this popup (wired to the popup id below).
+  const close = { type: "rectangle", opts: { config: { mask: X_ICON_SVG }, style: { width: 22, height: 22, background: p.muted } } };
+
+  const content = [heading, sub, form, close].map((s) => buildFromSpec(s));
+  const popup = buildElement("popup", {
+    specials: { effect: "fade-in", timeAnim: 0.5, openPopupAction: "openPopupWithTime", timeOpenPopup: opts.delaySeconds ?? 6 },
+    style: { width: 460, background: p.surface, borderRadius: "14px", paddingTop: 40, paddingBottom: 40, paddingLeft: 32, paddingRight: 32 },
+    config: { popupHorizontalPosition: "center", popupVerticalPosition: "center" },
+  });
+  stackChildren(popup, content, { rowGap: 18 });
+
+  // Wire the close button to dismiss THIS popup now that we know its id.
+  const closeNode = content[content.length - 1];
+  closeNode.events = normalizeEvents([{ action: "close_popup", popup_id: popup.id }], "rectangle");
+
+  return { sections: [popup] };
 }
 
 // ---------------------------------------------------------------------------
