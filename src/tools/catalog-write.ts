@@ -37,7 +37,8 @@ Images must be HOSTED URLs — get them from search_images or upload_images firs
       stock: z.number().default(100).describe("Stock quantity for the simple single-variation case"),
       sku: z.string().optional().describe("SKU / custom_id for the simple case (auto-generated if omitted)"),
       images: z.array(z.string()).optional().describe("Hosted image URLs (search_images/upload_images). First image becomes the product thumbnail."),
-      description: z.string().optional().describe("Product description (HTML allowed)"),
+      description: z.string().optional().describe("Full product description (HTML allowed) — binds to product::description on the detail page."),
+      short_description: z.string().optional().describe("Short description / tagline (HTML allowed) — binds to product::short_description on cards + the detail page. Set this so cards aren't blank."),
       category_ids: z.array(z.string()).optional().describe("Product category IDs to file the product under (from create_product_category / list_categories)"),
       attributes: z
         .array(z.object({ name: z.string(), values: z.array(z.string()) }))
@@ -45,7 +46,7 @@ Images must be HOSTED URLs — get them from search_images or upload_images firs
         .describe("Variant axes, e.g. [{name:'Color',values:['Đen','Trắng']},{name:'Size',values:['S','M','L']}]"),
       variations: z.array(variationSpec).optional().describe("Explicit per-SKU variations. Omit to auto-build one from price/stock/sku."),
     },
-    ({ name, price, original_price, stock, sku, images, description, category_ids, attributes, variations }) =>
+    ({ name, price, original_price, stock, sku, images, description, short_description, category_ids, attributes, variations }) =>
       handle(async () => {
         let vars = variations;
         if (!vars || !vars.length) {
@@ -85,6 +86,8 @@ Images must be HOSTED URLs — get them from search_images or upload_images firs
           ribbons: [],
           product_attributes: attributes || [],
           ...(description ? { description } : {}),
+          // short_description is an ARRAY of {description} blocks on the real product shape.
+          ...(short_description ? { short_description: [{ description: short_description }] } : {}),
           ...(images && images.length ? { image: images[0] } : {}),
         };
 
