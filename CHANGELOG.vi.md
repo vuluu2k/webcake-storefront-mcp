@@ -5,6 +5,22 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.3] - 2026-06-26
+
+### Added
+- Tool mới `update_collection_columns` đọc schema hiện tại của collection rồi PATCH lại với các cột hệ thống cộng các cột tùy chỉnh được cung cấp, cho phép quản lý cột an toàn mà không vô tình xóa các trường đã có.
+- Tool mới `delete_collection` xóa vĩnh viễn một collection (bảng) cùng toàn bộ dữ liệu của nó theo `collection_id`.
+
+### Changed
+- `create_collection` nay nhận thêm tham số `table_name` tùy chọn (dạng snake_case, phân biệt với `name` hiển thị) và mảng `columns` chứa định nghĩa các trường tùy chỉnh; tool tạo bảng trắng trước, sau đó áp dụng các cột trong lệnh PATCH riêng biệt, khớp với flow backend đã được xác minh thực tế.
+- Mô tả của `create_collection` nay ghi rõ rằng việc ghi bản ghi phải thực hiện qua HTTP function dùng webcake-data SDK (`db.model(table).create({...})`), vì không có API chèn bản ghi trực tiếp từ dashboard; `get_http_function` được nêu làm tài liệu tham khảo.
+
+### Fixed
+- `create_collection` trước đây gửi mảng `schema` trong body tạo bảng, dẫn đến lỗi 500 từ backend; các cột tùy chỉnh nay được thêm qua lệnh PATCH riêng sau khi bảng đã được tạo.
+
+### Removed
+- `insert_collection_record`, `update_collection_record` và `delete_collection_record` bị xóa vì endpoint ghi bản ghi của dashboard luôn trả về 422 cho mọi payload; việc ghi bản ghi phải thực hiện qua HTTP function dùng webcake-data SDK.
+
 ## [1.31.2] - 2026-06-26
 
 ### Changed

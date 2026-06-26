@@ -5,6 +5,22 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.3] - 2026-06-26
+
+### Added
+- New `update_collection_columns` tool reads the current collection schema and PATCHes it with the system columns plus the provided custom columns, enabling safe column management without accidentally dropping existing fields.
+- New `delete_collection` tool permanently removes a collection (table) and all its records by `collection_id`.
+
+### Changed
+- `create_collection` now accepts an optional `table_name` (snake_case, distinct from the display `name`) and a `columns` array of custom field definitions; it creates the bare table first, then applies columns in a second PATCH call, matching the verified backend flow.
+- `create_collection` description now explicitly documents that record writes must go through an HTTP function using the webcake-data SDK (`db.model(table).create({...})`), since no direct dashboard record-insert API exists; `get_http_function` is surfaced as the guide reference.
+
+### Fixed
+- `create_collection` previously sent the `schema` array in the create body, which caused a 500 error from the backend; custom columns are now added via a follow-up `PATCH` after the table is created.
+
+### Removed
+- `insert_collection_record`, `update_collection_record`, and `delete_collection_record` are removed because the dashboard record-write endpoint returns 422 unconditionally on every call regardless of payload; record writes must be performed via an HTTP function using the webcake-data SDK.
+
 ## [1.31.2] - 2026-06-26
 
 ### Changed
