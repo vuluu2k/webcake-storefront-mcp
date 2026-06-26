@@ -2,8 +2,6 @@ import { z } from "zod";
 import { getConfirmMode } from "./context.js";
 import { normalizeEvents } from "../builder/events.js";
 import { normalizeBindings } from "../builder/bindings.js";
-import { newsletterPopupSource, contrastSafePalette } from "../builder/templates.js";
-import { finalizeForRender, validatePage } from "../builder/page.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -635,41 +633,6 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
           : await api.createGlobalSource(params);
         invalidateGsCache();
         return res;
-      })
-  );
-
-  server.tool(
-    "scaffold_popup",
-    `Build AND save a designed newsletter/promo popup in one call (a 'popup' global source).
-Returns the popup id — open it from any element with an open_popup event { popup_id, popup_overlay:true },
-or set it to auto-open after a delay (built in). Centred modal: heading + subtext + email subscribe
-form + close button, palette-aware (accent derived from the site theme). Use dry_run to preview.`,
-    {
-      headline: z.string().optional().describe("Popup heading (default: 'Nhận ưu đãi 10%')"),
-      subtext: z.string().optional().describe("Supporting line under the heading"),
-      cta_label: z.string().optional().describe("Submit button label (default: 'Đăng ký ngay')"),
-      delay_seconds: z.number().optional().describe("Auto-open after N seconds (default 6)"),
-      palette: z.record(z.any()).optional().describe("Colour overrides { accent, text, surface, ... }; defaults to the site theme."),
-      dry_run: z.boolean().default(true).describe("Preview the popup source (true) or create+save it (false)"),
-    },
-    ({ headline, subtext, cta_label, delay_seconds, palette, dry_run }) =>
-      handle(async () => {
-        const themePal = await contrastSafePalette(api);
-        const source = newsletterPopupSource({
-          headline, subtext, ctaLabel: cta_label, delaySeconds: delay_seconds,
-          palette: { ...themePal, ...(palette || {}) },
-        });
-        const validation: any = validatePage(source);
-        finalizeForRender(source);
-        const popupId = source.sections[0]?.id || null;
-        if (dry_run) {
-          return { dry_run: true, valid: validation.valid, popup_id: popupId, ...(validation.errors ? { errors: validation.errors } : {}), hint: "Centred newsletter popup. Call again with dry_run=false to save it, then open it via an open_popup event (popup_id above)." };
-        }
-        if (!validation.valid) return { error: "Popup failed validation — not saving.", validation };
-        const res: any = await api.createGlobalSource({ component: "popup", source, type: "default", site_id: api.siteId });
-        invalidateGsCache();
-        const id = res?.data?.id || res?.id || popupId;
-        return { success: true, global_source_id: id, popup_id: popupId, next_step: "Open it from a button/header with events:[{ action:'open_popup', popup_id, popup_overlay:true }] (or it auto-opens after the delay). publish_site to take it live." };
       })
   );
 

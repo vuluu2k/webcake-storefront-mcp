@@ -24,6 +24,57 @@ export function getConfirmMode() {
   return getConfig("confirm_mode") || "always_confirm";
 }
 
+/**
+ * Best-effort deletion of the backend's auto-seeded sample data on a freshly created site so
+ * the AI starts from an EMPTY, on-theme store. The api client MUST already target the new site.
+ * Never throws — a failed cleanup must not fail site creation; each step is wrapped in try/catch
+ * and reports how many records it removed. Keeps the non-deletable default "All" category.
+ */
+async function clearSeedData(api: WebcakeCmsApi): Promise<{ products: number; categories: number; articles: number }> {
+  const result = { products: 0, categories: 0, articles: 0 };
+
+  // Products — list then bulk-remove (same methods list_products / delete_product use).
+  try {
+    const res: any = await api.listProducts({ page: 1, limit: 200 });
+    const products = (res && (res.products || res.data)) || res || [];
+    const ids = (Array.isArray(products) ? products : []).map((p: any) => p.id).filter(Boolean);
+    if (ids.length) {
+      await api.removeProducts(ids);
+      result.products = ids.length;
+    }
+  } catch { /* best-effort */ }
+
+  // Product categories — delete every NON-default one (the default "All" has is_default:true
+  // and cannot be deleted). Same command shape delete_product_category uses.
+  try {
+    const res: any = await api.listCategories();
+    const cats = (res && (res.data || res.categories || res.list)) || res || [];
+    const ids = (Array.isArray(cats) ? cats : [])
+      .filter((c: any) => !c.is_default)
+      .map((c: any) => c.id)
+      .filter(Boolean);
+    if (ids.length) {
+      await api.deleteProductCategory([{ name: "bulk_delete_category", data: { ids } }]);
+      result.categories = ids.length;
+    }
+  } catch { /* best-effort */ }
+
+  // Blog articles — list then delete one by one (best-effort; blog cleanup must never fail site creation).
+  try {
+    const res: any = await api.listArticles({ page: 1, limit: 200 });
+    const articles = (res && res.data) || res || [];
+    const ids = (Array.isArray(articles) ? articles : []).map((a: any) => a.id).filter(Boolean);
+    for (const id of ids) {
+      try {
+        await api.deleteArticle(id);
+        result.articles++;
+      } catch { /* skip the ones that fail */ }
+    }
+  } catch { /* best-effort */ }
+
+  return result;
+}
+
 // ── Tools ──
 
 export function registerContextTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
@@ -44,11 +95,12 @@ export function registerContextTools(server: McpServer, api: WebcakeCmsApi, hand
           { key: "promo", ask: "Có khuyến mãi hay điểm bán hàng nổi bật để làm CTA không? (ví dụ: giảm 10% đơn đầu, freeship từ 300k)", default: "Bỏ qua nếu chưa có.", required: false },
         ],
         recommended_flow: [
-          "create_site (tên + slug) → tự chuyển sang site mới",
+          "create_site (tên + slug) → tự chuyển sang site mới VÀ tự dọn sạch dữ liệu mẫu (không còn sản phẩm/danh mục mẫu) → site trống, sạch theo đúng chủ đề",
           "create_product_category + create_product cho từng sản phẩm (ảnh từ search_images/upload_images trước)",
-          "build_page trang chủ (type:'main', is_homepage:true) với hero, lưới sản phẩm, câu chuyện, CTA, …",
-          "scaffold_store_pages (style:'rich' mặc định) → trang danh mục/chi tiết/giỏ/thanh toán/cảm ơn ĐÃ thiết kế sẵn, tự nối điều hướng",
-          "scaffold_global_sections({ brand, contact }) → Header + Footer thiết kế sẵn, dùng chung mọi trang (tự bỏ qua slot đã có)",
+          "get_build_guide → KHOÁ design system (bảng màu theme, type scale, spacing 8px, 1 nút, 1 card) trước khi dựng",
+          "build_page trang chủ (type:'main', is_homepage:true): tự soạn từ elements (new_section/new_row/new_element) — hero ảnh thật, lưới sản phẩm, câu chuyện/USP, social proof, CTA",
+          "Soạn TỪNG trang cửa hàng từ elements (KHÔNG có khung mẫu): danh mục (banner+breadcrumb+grid-product), chi tiết SP (2 cột gallery|thông tin + mô tả + liên quan), giỏ hàng, thanh toán, cảm ơn — cùng bảng màu/header/footer",
+          "create_global_section type:'header' / type:'footer' (tự soạn từ elements) → dùng chung mọi trang",
           "publish_site (cũng rebuild CSS storefront)",
         ],
         notes: "Sau khi build xong, QA trên builder editor (app_base/editor/:site_id) hoặc storefront đã publish; publish_site sẽ rebuild CSS để hết tình trạng trang thiếu style.",
@@ -114,9 +166,13 @@ export function registerContextTools(server: McpServer, api: WebcakeCmsApi, hand
 
   server.tool(
     "create_site",
-    `Create a brand-new storefront site for the current account, then (by default) switch to it.
-The backend seeds sample categories, products and a blog, but creates NO pages — so after this,
-build a homepage: get_build_guide → new_section → build_page (type:'main', is_homepage:true).
+    `Create a brand-new storefront site for the current account, then (by default) switch to it
+and return an EMPTY, CLEAN site (no sample products/categories) ready for element composition.
+The backend auto-seeds off-theme sample products + categories (and a sample blog); by default
+this tool DELETES that seed right after creating the site (keep the non-deletable default "All"
+category) so you start from a blank, on-theme store. Pass keep_seed:true to keep the sample data.
+The site has NO pages — after this, compose a homepage from elements: get_build_guide →
+new_section/new_element → build_page (type:'main', is_homepage:true).
 Note: free accounts are limited to 4 sites (creation fails with a quota error past that).`,
     {
       name: z.string().describe("Display name of the new site, e.g. 'My Coffee Shop'"),
@@ -127,8 +183,12 @@ Note: free accounts are limited to 4 sites (creation fails with a quota error pa
         .boolean()
         .default(true)
         .describe("Switch the session to the new site after creating it (saved for next session). Default true."),
+      keep_seed: z
+        .boolean()
+        .default(false)
+        .describe("Keep the backend's sample products/categories/blog instead of auto-deleting them. Default false = start from a clean, empty site."),
     },
-    ({ name, slug, switch_to }) =>
+    ({ name, slug, switch_to, keep_seed }) =>
       handle(async () => {
         let res: any;
         try {
@@ -150,16 +210,29 @@ Note: free accounts are limited to 4 sites (creation fails with a quota error pa
         }
         const createdSlug = site?.site_slug?.slug || slug;
 
+        const previousSiteId = api.siteId;
+
+        // Cleaning the backend's auto-seed (sample products/categories/blog) requires the api
+        // client to target the NEW site, so switch first. We restore the previous site at the
+        // end if the caller asked NOT to switch.
+        api.switchSite(newId);
+
+        let seed_cleared: { products: number; categories: number; articles: number } | null = null;
+        if (!keep_seed) {
+          seed_cleared = await clearSeedData(api);
+        }
+
         let switched = false;
         let previewUrl: string | null = null;
-        const previousSiteId = api.siteId;
         if (switch_to) {
-          api.switchSite(newId);
           setConfig("site_id", newId);
           setConfig("site_name", site?.name || name);
           setConfig("site_domain", createdSlug || "");
           switched = true;
           previewUrl = await resolvePreviewUrl(api).catch(() => null);
+        } else {
+          // Caller wants to stay on their current site — undo the temporary switch.
+          api.switchSite(previousSiteId);
         }
 
         return {
@@ -169,9 +242,13 @@ Note: free accounts are limited to 4 sites (creation fails with a quota error pa
           slug: createdSlug,
           switched,
           ...(switched ? { current_site_id: api.siteId, previous_site_id: previousSiteId } : {}),
+          ...(seed_cleared ? { seed_cleared } : { seed_kept: true }),
           preview_url: previewUrl,
           next_step:
-            "New site has sample products/categories/blog but NO pages. Create a homepage with build_page (type:'main', is_homepage:true), then add store/member/blog pages as needed. Publish site-level with publish_site.",
+            (keep_seed
+              ? "New site KEPT its sample products/categories/blog and has NO pages. "
+              : "New site is EMPTY and clean (sample products/categories removed) and has NO pages. ") +
+            "Compose a homepage from elements with build_page (type:'main', is_homepage:true), then add store/member/blog pages as needed. Publish site-level with publish_site.",
         };
       })
   );

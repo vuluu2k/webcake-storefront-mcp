@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
 import { BUILD_GUIDE } from "../builder/guide.js";
+import { PAGE_SCHEMA } from "../builder/page-schema.js";
 import { listElements, getElement, buildElement } from "../builder/catalog.js";
 import { describeEventsCatalog } from "../builder/events.js";
 import { describeBindingsCatalog } from "../builder/bindings.js";
@@ -15,7 +16,6 @@ import {
   walk,
   reassignIds,
 } from "../builder/page.js";
-import { STORE_PAGE_TEMPLATES, resolvePalette, contrastSafePalette, wireNavigation } from "../builder/templates.js";
 
 // Recursive spec for new_section / build_page children.
 const elementSpec = z.object({
@@ -75,6 +75,13 @@ export function registerBuilderTools(server: McpServer, api: WebcakeCmsApi, hand
     "Get the BuilderX page authoring guide: page shape, the grid layout model, styling, breakpoints, forms/data, and the build workflow. Read this before building or heavily editing a page.",
     {},
     () => handle(async () => ({ guide: BUILD_GUIDE }))
+  );
+
+  server.tool(
+    "get_page_schema",
+    "Get the authoritative JSON Schema (Draft 2020-12) for a page source `{ sections: [...] }` — the structural contract for every node (id/type/specials/runtime{style,config}/children/events/bindings) in the CSS-grid model. Use it as the shape to emit; validate_page enforces the semantic rules.",
+    {},
+    () => handle(async () => PAGE_SCHEMA)
   );
 
   server.tool(
@@ -325,181 +332,6 @@ Two-step safety: dry_run=true (default) previews; dry_run=false saves.`,
           section_id: sectionNode.id,
           total_sections: source.sections.length,
           page_source_id: saved && saved.data && saved.data.id,
-        };
-      })
-  );
-
-  server.tool(
-    "scaffold_store_pages",
-    `Create the standard STOREFRONT pages a shop needs so navigation works — clicking a
-product/category/cart from any page lands on a real page instead of a 404.
-Creates only the ones MISSING (matched by slug): Category (collections), Product (products),
-Cart (cart), Checkout (checkout), Thank-you (complete) — all type 'store' (enables use_store),
-plus optional member (login/register/profile) and blog (blog/post) pages.
-Run this right after you create products/categories. dry_run=true (default) previews.
-By default (style:"rich") each store page is a FULLY-DESIGNED, palette-aware page — banner +
-breadcrumb + styled product-grid cards (Category), 2-column gallery|info with price/quantity/
-add-to-cart + trust badges + related products (Product), 2-col cart|summary, 2-col checkout
-form|summary, and a centred thank-you — and navigation between them (cart→checkout, add-to-cart
-→cart, thank-you→home) is auto-wired. Colours follow the site theme vars unless you pass a palette.
-Still add a GLOBAL header/footer with scaffold_global_sections (or create_global_section).
-Pass style:"minimal" for the old bare stubs (heading + binding element only).`,
-    {
-      style: z.enum(["rich", "minimal"]).default("rich").describe("'rich' = fully-designed, palette-aware store pages (default). 'minimal' = bare starter stubs you must enrich yourself."),
-      palette: z.record(z.any()).optional().describe("Optional colour overrides for rich pages: { accent, onAccent, text, muted, surface, surfaceAlt, border }. Defaults to the site theme matrix vars (var(--color_20) brand accent, var(--color_04) black text, var(--color_00) white surface)."),
-      include_member: z.boolean().default(false).describe("Also create login/register/profile (type member, use_member)"),
-      include_blog: z.boolean().default(false).describe("Also create blog list + post pages (type blog, use_blog)"),
-      dry_run: z.boolean().default(true).describe("Preview (true) or actually create the missing pages (false)"),
-    },
-    ({ style, palette, include_member, include_blog, dry_run }) =>
-      handle(async () => {
-        const bind = (name: string, field: string) => ({
-          id: "BINDING" + Math.random().toString(36).slice(2, 8),
-          name,
-          target: `${name}::${field}`,
-        });
-        // Rich (default) store pages come from the designed, palette-aware templates;
-        // 'minimal' falls back to the original bare stubs. Derive a contrast-safe accent from
-        // the site's active theme (explicit palette overrides win) — compute it BEFORE the
-        // element helpers so even the minimal stubs use a readable accent (a light brand seed
-        // like var(--color_20)=#f2decc + a white label is unreadable; contrastSafePalette
-        // switches to the darkest brand shade).
-        const themePal = await contrastSafePalette(api);
-        const pal = resolvePalette({ ...themePal, ...(palette || {}) });
-        const h1 = (text: string) => ({ type: "text", opts: { text, specials: { tag: "h1" }, style: { fontSize: "32px", fontWeight: "700", color: pal.text } } });
-        const accentBtn = (text: string, type = "button") => ({ type, opts: { text, style: { background: pal.accent, color: pal.onAccent, borderRadius: "8px", height: 48, fontWeight: "600" } } });
-        const minimalStore: Record<string, () => any> = {
-          collections: () => ({ sections: [buildSection([h1("Danh mục sản phẩm"), { type: "grid-product", opts: { config: { columns: 3, image_ratio: "1/1", gap_column: 24, gap_row: 32 } } }])] }),
-          products: () => ({ sections: [buildSection([
-            { type: "product-gallery", opts: {} },
-            { type: "text-dataset", opts: { bindings: [bind("product", "product_name")], style: { fontSize: "28px", fontWeight: "700" } } },
-            { type: "text-dataset", opts: { bindings: [bind("product", "product_price")], style: { fontSize: "22px", fontWeight: "700", color: pal.accent } } },
-            { type: "quantity-input", opts: {} },
-            accentBtn("Thêm vào giỏ"),
-          ])] }),
-          cart: () => ({ sections: [buildSection([h1("Giỏ hàng"), { type: "cart-items", opts: {} }, accentBtn("Tiến hành thanh toán")])] }),
-          checkout: () => ({ sections: [buildSection([
-            h1("Thanh toán"),
-            { type: "form", opts: { specials: { type: "form_order" } }, children: [
-              { type: "input", opts: { specials: { field_name: "full_name", label: "Họ tên", placeholder: "Họ tên", required: true, show_label: true } } },
-              { type: "phone-number", opts: { specials: { field_name: "phone_number", label: "Số điện thoại", required: true, show_label: true } } },
-              { type: "address", opts: { specials: { field_name: "address", label: "Địa chỉ", show_label: true } } },
-              accentBtn("Đặt hàng", "submit-button"),
-            ] },
-          ])] }),
-          complete: () => ({ sections: [buildSection([h1("Cảm ơn bạn đã đặt hàng!"), { type: "order-items", opts: {} }])] }),
-        };
-
-        // Each spec: { name, slug, kind, build() -> { sections } }
-        const SPECS: Array<{ name: string; slug: string; kind: "store" | "member" | "blog"; flag: string; build: () => any }> =
-          STORE_PAGE_TEMPLATES.map((t) => ({
-            name: t.name,
-            slug: t.slug,
-            kind: "store" as const,
-            flag: "use_store",
-            build: () => (style === "minimal" ? minimalStore[t.slug]() : t.build(pal)),
-          }));
-        if (include_member) {
-          SPECS.push(
-            { name: "Login Page", slug: "login", kind: "member", flag: "use_member", build: () => ({ sections: [
-              buildSection([h1("Đăng nhập"), { type: "form", opts: { specials: { type: "form_login" } }, children: [
-                { type: "identity", opts: { specials: { field_name: "identity", label: "Email / SĐT", required: true, show_label: true } } },
-                { type: "password", opts: { specials: { field_name: "password", label: "Mật khẩu", required: true, show_label: true } } },
-                accentBtn("Đăng nhập", "submit-button"),
-              ] }]),
-            ] }) },
-            { name: "Register Page", slug: "register", kind: "member", flag: "use_member", build: () => ({ sections: [
-              buildSection([h1("Đăng ký"), { type: "form", opts: { specials: { type: "form_signup" } }, children: [
-                { type: "input", opts: { specials: { field_name: "full_name", label: "Họ tên", required: true, show_label: true } } },
-                { type: "email", opts: { specials: { field_name: "email", label: "Email", required: true, show_label: true } } },
-                { type: "password", opts: { specials: { field_name: "password", label: "Mật khẩu", required: true, show_label: true } } },
-                accentBtn("Tạo tài khoản", "submit-button"),
-              ] }]),
-            ] }) },
-            { name: "Profile Page", slug: "profile", kind: "member", flag: "use_member", build: () => ({ sections: [
-              buildSection([h1("Tài khoản"), { type: "order-history", opts: {} }, { type: "customer-address", opts: {} }]),
-            ] }) },
-          );
-        }
-        if (include_blog) {
-          SPECS.push(
-            { name: "Blog", slug: "blog", kind: "blog", flag: "use_blog", build: () => ({ sections: [buildSection([h1("Bài viết"), { type: "post-list", opts: {} }])] }) },
-            { name: "Post", slug: "post", kind: "blog", flag: "use_blog", build: () => ({ sections: [buildSection([{ type: "post-overlay", opts: {} }])] }) },
-          );
-        }
-
-        // What already exists?
-        const pagesRes = await api.listPages();
-        const pages = (pagesRes && (pagesRes as any).data) || pagesRes || [];
-        const existingSlugs = new Set((Array.isArray(pages) ? pages : []).map((p: any) => (p.slug || "").replace(/^\//, "")));
-        const missing = SPECS.filter((s) => !existingSlugs.has(s.slug));
-        const skipped = SPECS.filter((s) => existingSlugs.has(s.slug)).map((s) => s.slug);
-
-        if (dry_run) {
-          return {
-            dry_run: true,
-            will_create: missing.map((s) => ({ name: s.name, slug: s.slug, type: s.kind })),
-            already_exist: skipped,
-            hint: "Call again with dry_run=false to create the missing pages so product/category/cart links resolve.",
-          };
-        }
-
-        const created: any[] = [];
-        const errors: any[] = [];
-        const flagsEnabled = new Set<string>();
-        // slug -> page id, seeded with the pages that already exist (so cross-page nav
-        // resolves even when only some store pages are newly created).
-        const slugToId: Record<string, string> = {};
-        for (const pg of Array.isArray(pages) ? pages : []) {
-          const sl = (pg.slug || "").replace(/^\//, "");
-          if (sl) slugToId[sl] = pg.id;
-          if (pg.is_homepage) slugToId["home"] = pg.id;
-        }
-        // Keep each newly-built source so we can wire navigation once every id is known.
-        const built: Array<{ spec: any; pid: string; source: any }> = [];
-        for (const spec of missing) {
-          try {
-            if (!flagsEnabled.has(spec.flag)) {
-              await api.enableSiteFeature(spec.flag).catch(() => {});
-              flagsEnabled.add(spec.flag);
-            }
-            const source = spec.build();
-            const validation: any = validatePage(source);
-            if (!validation.valid) { errors.push({ slug: spec.slug, validation }); continue; }
-            finalizeForRender(source);
-            const res = await api.createPage({ name: spec.name, source, type: PAGE_TYPE_NUM[spec.kind] });
-            const pid = newPageId(res);
-            if (pid) {
-              await api.updatePage(pid, { slug: spec.slug }).catch(() => {});
-              slugToId[spec.slug] = pid;
-              built.push({ spec, pid, source });
-            }
-            created.push({ name: spec.name, slug: spec.slug, type: spec.kind, page_id: pid });
-          } catch (e: any) {
-            errors.push({ slug: spec.slug, error: e?.message ?? String(e) });
-          }
-        }
-
-        // Second pass: resolve the _navTo sentinels the templates left on buttons/links into
-        // real open_page events (cart→checkout, thank-you→home, …), now that every page id is
-        // known. Only re-save the pages that actually changed.
-        let nav_wired = 0;
-        for (const { pid, source } of built) {
-          try {
-            const n = wireNavigation(source, slugToId);
-            if (n > 0) { nav_wired += n; await api.updatePageSource(pid, { source }).catch(() => {}); }
-          } catch { /* nav wiring is best-effort */ }
-        }
-
-        return {
-          success: true,
-          style,
-          created,
-          already_exist: skipped,
-          ...(errors.length ? { errors } : {}),
-          data_sources_enabled: [...flagsEnabled],
-          nav_links_wired: nav_wired,
-          note: "Add a header/footer with scaffold_global_sections, then publish_site to take the new pages live.",
         };
       })
   );

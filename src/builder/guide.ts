@@ -3,6 +3,62 @@
 
 export const BUILD_GUIDE = `# BuilderX page authoring guide
 
+## DESIGN SYSTEM — lock this FIRST, every build (this is what makes free composition look DESIGNED)
+There are NO page templates here and NO seeded data — you COMPOSE every page from elements
+based on the user's actual goal. To make that composition look intentional (not a random pile
+of default elements), LOCK a small design system before you place anything, and reuse it on
+EVERY section and EVERY page:
+- PALETTE — from the site THEME matrix vars \`var(--color_RC)\` (see Colours below). Pick: page
+  background, body text, one accent (for CTAs/prices/highlights), one or two soft section tints.
+- TYPE SCALE — h1 40–56px / fontWeight 700, h2 28–34px / 600, body 16–18px with lineHeight "1.6",
+  small/muted 13–14px. Use the SAME sizes everywhere; don't invent a new size per section.
+- SPACING — everything on an 8px grid: 8 / 16 / 24 / 32 / 48 / 64. Section padding 64–96px,
+  rowGap 16–24 inside sections. Generous whitespace = premium; cramped = cheap.
+- ONE BUTTON SPEC — decide it once and reuse: e.g. \`{ background:"var(--color_24)",
+  color:"var(--color_00)", borderRadius:"8px", fontWeight:"600", height:48 }\`. Same button on
+  every page.
+- ONE CARD SPEC + ONE CONTENT WIDTH + ONE RADIUS — reuse the same card padding/radius/shadow and
+  the same centred content width across sections. Consistency = looks professionally designed.
+
+⚠️ CONTRAST is the #1 ugliness/bug — get it right:
+- The BRAND row \`var(--color_2C)\` goes LIGHT → DARK: \`var(--color_20)\` (lightest tint) …
+  \`var(--color_24)\` (darkest brand).
+- Button / CTA / price BACKGROUNDS must use \`var(--color_24)\` (dark brand) WITH a white label
+  \`var(--color_00)\`. This is readable on every theme.
+- NEVER put a white label on \`var(--color_20)\` — on many themes that's a pale tint (e.g. #f2decc)
+  and white text becomes INVISIBLE. Use \`var(--color_20)\`/\`var(--color_21)\` ONLY as soft section
+  tints / backgrounds, never as a button background under white text.
+- Body text = \`var(--color_04)\` (near-black). Page background = \`var(--color_00)\` (white).
+
+IMAGES (or the page looks broken/empty):
+- Every image needs a WebCake-CDN url (search_images → cdn_url, or upload_images), or it won't
+  render — the storefront whitelists image domains.
+- HERO must be a REAL full-width \`image\` element (width:"100%"), NOT a CSS \`background:url(...)\`
+  shorthand — the renderer ignores the shorthand and you get a blank band.
+- grid-product cards show the PRODUCT-LEVEL image, so create products WITH a product image or the
+  cards are blank.
+
+COLOR & SPACING DISCIPLINE:
+- ONE accent, used sparingly (CTAs, prices, a few highlights) — not on everything.
+- Alternate plain (\`var(--color_00)\`) and softly-tinted (\`var(--color_01)\`/\`var(--color_20)\`)
+  section backgrounds to give the page rhythm.
+- Reuse the SAME content width + radius + button across sections.
+
+COMPOSE, DON'T TEMPLATE — there are no templates and no seeded data, so for each page:
+1. Pick a SECTION ARCHETYPE for the page type (propose it, then confirm with the user via
+   get_intake_guide before building):
+   - home: hero · category tiles · featured products (grid-product) · story/USP · social proof · CTA
+   - category (type store): banner + breadcrumb + grid-product (+ optional filter sidebar)
+   - product detail (type store): 2-col [gallery | info: name/price/qty/add-to-cart/buy-now/trust]
+     + description band + related grid-product
+   - cart (type store): 2-col [cart-items | order summary card]
+   - checkout (type store): 2-col [form{form_order} | order summary]
+   - thank-you (type store): centred confirmation + order-items + continue-shopping
+2. Build each section from elements (new_section / new_row / new_element) using the locked
+   design system above.
+3. CREATE real product data + product images (create_product_category / create_product, images
+   from search_images/upload_images) so the dataset bindings (grid-product, product detail) resolve.
+
 ## Page shape
 A page's content is a single JSON object: \`{ "sections": [ <section>, ... ] }\`.
 - Save it via build_page (new page) or update_page_source (existing page).
@@ -214,13 +270,15 @@ set \`type\` accordingly so the binding source is turned on. A binding target li
 ## Build the WHOLE storefront — every page to the SAME standard (NOT just the home page)
 A shop is multi-page. Build EACH page to a real e-commerce standard with the same palette,
 spacing and header/footer — never leave the home page rich and the rest as bare stubs.
-\`scaffold_store_pages\` now builds FULLY-DESIGNED, palette-aware store pages by DEFAULT
-(style:"rich") — banner+breadcrumb+styled grid (Category), 2-col gallery|info with price/
-quantity/add-to-cart+trust badges+related (Product), 2-col cart|summary, 2-col checkout
-form|summary, centred thank-you — and auto-wires navigation between them. Then add chrome with
-\`scaffold_global_sections({ brand, contact })\` for a designed Header+Footer in one call. Pass
-style:"minimal" only if you want bare stubs to hand-build. The per-page recipe each rich page
-follows (so you can match it when editing or building extra pages):
+There are NO page templates and NO scaffold shortcuts: you COMPOSE each store page from elements
+(new_section / new_row / new_element → build_page) using the locked design system, then add a
+GLOBAL header/footer via create_global_section. Create the store pages whose slugs the storefront
+expects so navigation resolves (clicking a product/category/cart lands on a real page, not a 404):
+Category (slug "collections"), Product (slug "products"), Cart (slug "cart"), Checkout (slug
+"checkout"), Thank-you (slug "complete") — all build_page type:'store' (auto-enables use_store);
+plus optional member (login/register/profile, type 'member') and blog (blog/post, type 'blog')
+pages. Wire navigation between them yourself with open_page events (add-to-cart → cart, cart →
+checkout, order success → thank-you, thank-you → home). The per-page archetype to compose:
 - Category (collections, type store): banner + heading + grid-product (+ optional intro/CTA).
 - Product detail (products, type store): 2-col [product-gallery | info: text-dataset
   product::product_name + product_price/original_price + short_description, quantity-input,
@@ -248,9 +306,8 @@ create the globals — they embed into each page's source. If you later overwrit
 later with update_global_section_element(s) and it updates on every page at once.
 
 ## Popups (newsletter / promo / age-gate)
-A popup is a GLOBAL SOURCE, not a page section. FAST PATH: \`scaffold_popup({ brand, headline, offer })\`
-builds + saves a designed newsletter popup (heading + text + email form + close button, centred)
-and returns its id. To build one by hand:
+A popup is a GLOBAL SOURCE, not a page section. Compose it from elements (there is no scaffold
+shortcut), then save it as a "popup" global source:
 1. Build the popup node: new_element("popup", { children:[…heading,text,form,close button…], style:{ width:480, background:"#fff", borderRadius:"12px" }, config:{ popupHorizontalPosition:"center", popupVerticalPosition:"center" }, specials:{ effect:"fade-in", timeAnim:0.5 } }).
    - SIZE + POSITION live in the popup's runtime style/config (width/height/background + popupHorizontalPosition/popupVerticalPosition), NOT in specials. createPopup seeds a centred-modal default.
    - TRIGGER (auto-open) lives in SPECIALS: \`openPopupAction:"openPopupWithTime"\` + \`timeOpenPopup:<seconds>\` for a delay; \`page_ids:[…]\` to limit which pages it shows on; \`effect\`/\`timeAnim\` for the animation. (There is no exit-intent/only-once flag in the node — those are app settings.)
@@ -263,7 +320,8 @@ List existing popups with list_global_sources({component:"popup"}); edit via upd
 
 ## Workflow (do this every time)
 1. Intake: confirm goal, brand, colours, sections wanted (ask 3-5 questions if unclear).
-2. list_elements / get_element to pick the right component types.
+2. list_elements / get_element to pick the right component types; get_page_schema for the exact
+   node contract ({ sections:[ { id,type,specials,runtime:{style,config},children,events,bindings } ] }).
 3. Build sections with new_section (or new_element for one node), fill content.
 4. validate_page — fix every error and review warnings.
 5. build_page with dry_run:true first → review → dry_run:false to persist.
