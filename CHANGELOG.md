@@ -5,6 +5,12 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.2] - 2026-06-26
+
+### Changed
+- The `HTTP_FUNCTION_GUIDE` embedded in `get_http_function` and `get_site_custom_code` now includes a "Common patterns" section with battle-tested production recipes: find-or-create, upsert with `{ new: true }` read-back, count-then-denormalize, multi-table ordered writes with an audit/history row, soft delete via status field, reference-id helpers (`toId`/`toNumber`), numeric status enums, and the auth-guard + `try/catch { mess }` return convention.
+- The `@webcake/*` module section in the same guide now explicitly notes that these modules run inside the function sandbox (authenticated via `global.token`) and can therefore reach `/cms_function` endpoints that the dashboard JWT cannot; `@webcake/customer` documentation now lists the returned object's fields (`id`, `name`, `avatar`, `email`, `phone_number`), the always-check-`customer?.id` rule, and a typical lookup-by-anything helper (code → phone → email → id); the `@webcake/promotion` `addBonus` entry now includes a concrete example call.
+
 ## [1.31.1] - 2026-06-26
 
 ### Fixed

@@ -5,6 +5,12 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.2] - 2026-06-26
+
+### Changed
+- `HTTP_FUNCTION_GUIDE` được nhúng trong `get_http_function` và `get_site_custom_code` nay bổ sung phần "Common patterns" với các recipe đã được kiểm chứng trong production: find-or-create, upsert kèm đọc lại kết quả với `{ new: true }`, count-then-denormalize, ghi đa bảng theo thứ tự kèm dòng audit/history, soft delete qua trường status, các helper id tham chiếu (`toId`/`toNumber`), enum trạng thái dạng số nguyên, và quy ước auth-guard + `try/catch { mess }`.
+- Phần module `@webcake/*` trong cùng guide nay ghi rõ rằng các module này chạy bên trong sandbox hàm (xác thực qua `global.token`) và do đó có thể truy cập các endpoint `/cms_function` mà dashboard JWT không thể; tài liệu `@webcake/customer` nay liệt kê các trường của đối tượng trả về (`id`, `name`, `avatar`, `email`, `phone_number`), quy tắc luôn kiểm tra `customer?.id`, và helper tra cứu theo mọi định danh (code → điện thoại → email → id); mục `addBonus` của `@webcake/promotion` nay bổ sung ví dụ gọi hàm cụ thể.
+
 ## [1.31.1] - 2026-06-26
 
 ### Fixed
