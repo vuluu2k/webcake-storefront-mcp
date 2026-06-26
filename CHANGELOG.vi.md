@@ -5,6 +5,15 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.5] - 2026-06-26
+
+### Added
+- Định nghĩa cột được chấp nhận bởi `create_collection` và `update_collection_columns` nay hỗ trợ thêm năm trường tùy chọn mới: `note` (ghi chú/mô tả cho cột), `default` (giá trị mặc định), `reference` (tên bảng hoặc thực thể hệ thống được tham chiếu, dành cho cột kiểu `reference`), `reference_type` (`"system"` hoặc `"collection"`), và `date_default_type` (`"empty"`, `"added"`, hoặc `"specific"` cho cột kiểu `date`/`naive_datetime`).
+
+### Fixed
+- Trường `type` trong định nghĩa cột của `create_collection` và `update_collection_columns` nay liệt kê đầy đủ 20 kiểu được hỗ trợ bởi trình chỉnh sửa (`text`, `rich_text`, `url`, `integer`, `float`, `decimal`, `boolean`, `reference`, `color`, `image`, `media_gallery`, `video`, `audio`, `document`, `date`, `naive_datetime`, `time`, `address`, `object`, `array`) thay vì tập hợp 9 kiểu cũ vốn bao gồm các alias nội bộ của backend (`string`, `binary_id`, `map`).
+- MCP server nay báo cáo version từ `package.json` tại thời điểm chạy thay vì chuỗi cứng lỗi thời `"1.0.0"`.
+
 ## [1.31.4] - 2026-06-26
 
 ### Added

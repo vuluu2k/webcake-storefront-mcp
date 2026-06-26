@@ -5,6 +5,15 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.5] - 2026-06-26
+
+### Added
+- Column definitions accepted by `create_collection` and `update_collection_columns` now support five new optional fields: `note` (help text for the column), `default` (default value), `reference` (referenced `table_name` or system entity for `reference`-type columns), `reference_type` (`"system"` or `"collection"`), and `date_default_type` (`"empty"`, `"added"`, or `"specific"` for `date`/`naive_datetime` columns).
+
+### Fixed
+- The `type` field in column definitions for `create_collection` and `update_collection_columns` now enumerates all 20 editor-supported types (`text`, `rich_text`, `url`, `integer`, `float`, `decimal`, `boolean`, `reference`, `color`, `image`, `media_gallery`, `video`, `audio`, `document`, `date`, `naive_datetime`, `time`, `address`, `object`, `array`) instead of the outdated 9-type subset that included backend-internal aliases (`string`, `binary_id`, `map`).
+- The MCP server now reports its version from `package.json` at runtime instead of the stale hardcoded `"1.0.0"`.
+
 ## [1.31.4] - 2026-06-26
 
 ### Added
