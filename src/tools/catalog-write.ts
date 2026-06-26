@@ -23,6 +23,20 @@ const variationSpec = z.object({
     .describe("Attribute values for this variation, e.g. [{name:'Color',value:'Đen'},{name:'Size',value:'M'}]"),
 });
 
+/** Normalize an attribute value to its keyword key (DEN for "Đen", TRANG for "Trắng", S for "S") —
+ *  the form the storefront variation selector uses. Strips Vietnamese diacritics + uppercases. */
+function attrKeyValue(v: string): string {
+  return String(v)
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d").replace(/Đ/g, "D")
+    .toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+/** Cartesian product of N lists — used to expand attribute axes into one variation per combo. */
+function cartesian<T>(lists: T[][]): T[][] {
+  return lists.reduce<T[][]>((acc, cur) => acc.flatMap((a) => cur.map((b) => [...a, b])), [[]]);
+}
+
 export function registerCatalogWriteTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "create_product",
@@ -49,21 +63,49 @@ Images must be HOSTED URLs — get them from search_images or upload_images firs
     ({ name, price, original_price, stock, sku, images, description, short_description, category_ids, attributes, variations }) =>
       handle(async () => {
         let vars = variations;
+        // Enrich attribute axes with the id + keyword shape the storefront variation selector
+        // needs (a raw {name,values} declares the axis but attaches it to no variation).
+        const attrDefs = (attributes || []).map((a: any) => ({
+          id: randomUUID(),
+          name: a.name,
+          values: a.values,
+          keyword: (a.values || []).map((v: string) => ({ keyValue: attrKeyValue(v), value: v })),
+        }));
+
         if (!vars || !vars.length) {
           if (price == null) throw new Error("Provide `price` (or explicit `variations`) to create a product.");
-          vars = [
-            {
-              custom_id: sku || `SKU-${randomUUID().slice(0, 8)}`,
+          if (attrDefs.length) {
+            // Expand the attribute axes into ONE variation per value-combination, each carrying
+            // `fields` — otherwise the axis is declared but bound to nothing (not selectable).
+            const axisLists: { name: string; value: string }[][] = attrDefs.map((a) =>
+              (a.values as string[]).map((v: string) => ({ name: a.name as string, value: v })),
+            );
+            const combos = cartesian(axisLists);
+            vars = combos.map((combo) => ({
+              custom_id: `SKU-${randomUUID().slice(0, 8)}`,
               retail_price: price,
               original_price: original_price ?? price,
               remain_quantity: stock ?? 100,
               images: images || [],
               weight: 0,
-              fields: [],
-            },
-          ];
+              fields: combo.map((c) => ({ id: randomUUID(), name: c.name, value: c.value })),
+              is_hidden: false,
+            }));
+          } else {
+            vars = [
+              {
+                custom_id: sku || `SKU-${randomUUID().slice(0, 8)}`,
+                retail_price: price,
+                original_price: original_price ?? price,
+                remain_quantity: stock ?? 100,
+                images: images || [],
+                weight: 0,
+                fields: [],
+              },
+            ];
+          }
         } else {
-          // Normalise: fill SKU / original_price / stock defaults per variation.
+          // Normalise: fill SKU / original_price / stock defaults per variation; mint field ids.
           vars = vars.map((v) => ({
             custom_id: v.custom_id || `SKU-${randomUUID().slice(0, 8)}`,
             retail_price: v.retail_price,
@@ -71,7 +113,7 @@ Images must be HOSTED URLs — get them from search_images or upload_images firs
             remain_quantity: v.remain_quantity ?? 100,
             images: v.images || [],
             weight: v.weight ?? 0,
-            fields: v.fields || [],
+            fields: (v.fields || []).map((f: any) => ({ id: f.id || randomUUID(), name: f.name, value: f.value })),
             is_hidden: false,
           }));
         }
@@ -84,7 +126,7 @@ Images must be HOSTED URLs — get them from search_images or upload_images firs
           //  endpoint, so it must be [] — never omitted — even for a no-variation product.)
           categories: category_ids || [],
           ribbons: [],
-          product_attributes: attributes || [],
+          product_attributes: attrDefs,
           ...(description ? { description } : {}),
           // short_description is an ARRAY of {description} blocks on the real product shape.
           ...(short_description ? { short_description: [{ description: short_description }] } : {}),
