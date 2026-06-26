@@ -509,6 +509,11 @@ export class WebcakeCmsApi {
   }
 
   // ── Customers ──
+  /** List/search customers. Real shape: { customers: { data:[…], total_entries } }. Accepts
+   *  page/limit and a `term` keyword (name/phone/email). Endpoint is /customer/all (singular). */
+  listCustomers(query?: any) {
+    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/customer/all`, { query });
+  }
   findCustomerById(id: string) {
     return this.request("GET", `/api/v1/cms_function/${this.siteId}/customer/identity/${id}`);
   }
