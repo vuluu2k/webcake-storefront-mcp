@@ -15,7 +15,9 @@ export function registerCollectionTools(server: McpServer, api: WebcakeCmsApi, h
     ({ page, limit, term }) =>
       handle(async () => {
         const res = await api.listCollections({ page, limit, term });
-        const collections = (res && (res as any).data) || res || [];
+        // Real shape: { data: { data:[…], total_entries } }. Accept a flat data[] too.
+        const d = (res as any) && (res as any).data;
+        const collections = (d && (Array.isArray(d) ? d : d.data)) || res || [];
         if (!Array.isArray(collections)) return res;
         return {
           data: collections.map((c: any) => ({
@@ -25,7 +27,7 @@ export function registerCollectionTools(server: McpServer, api: WebcakeCmsApi, h
             fields_count: (c.schema || []).length,
             records_count: c.records_count || undefined,
           })),
-          total: (res as any).total || collections.length,
+          total: (d && !Array.isArray(d) && d.total_entries) ?? (res as any).total ?? collections.length,
         };
       })
   );

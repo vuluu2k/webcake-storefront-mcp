@@ -19,7 +19,8 @@ export function registerProductTools(server: McpServer, api: WebcakeCmsApi, hand
         const query: any = { page: page ?? 1, limit: limit ?? 50 };
         if (term && term.trim()) query.term = term.trim();
         const res = await api.listProducts(query);
-        const products = (res && res.data) || res || [];
+        // Real shape: { products:[…], total_product }. Fall back to data/array for safety.
+        const products = (res && ((res as any).products || res.data)) || res || [];
         if (!Array.isArray(products)) return res;
         return {
           data: products.map((p: any) => ({
@@ -35,7 +36,7 @@ export function registerProductTools(server: McpServer, api: WebcakeCmsApi, hand
             categories: p.categories || undefined,
             updated_at: p.updated_at,
           })),
-          total: res.total || products.length,
+          total: (res as any).total_product ?? res.total ?? products.length,
         };
       })
   );

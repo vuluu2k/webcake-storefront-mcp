@@ -1417,6 +1417,11 @@ export const createCoupon = (opts: any = {}) => {
   return coupon
 }
 
+// Real popups (mined from templates) keep TRIGGER/animation in specials (effect, timeAnim,
+// openPopupAction, timeOpenPopup, page_ids) and GEOMETRY in the per-breakpoint keys: config
+// holds popupHorizontalPosition/popupVerticalPosition, style holds width/height/background.
+// Seed sensible runtime defaults (a centred modal) so finalizeForRender expands them into bpN —
+// otherwise the popup renders with no size/position/background.
 export const createPopup = (opts: any = {}) => {
   const popup = cloneDeep(SKELETON)
 
@@ -1424,6 +1429,19 @@ export const createPopup = (opts: any = {}) => {
   popup.type = 'popup'
 
   popup.specials = opts.specials || {}
+
+  popup.runtime.config = {
+    popupHorizontalPosition: 'center',
+    popupVerticalPosition: 'center',
+    heightUnit: 'auto',
+    ...(opts.config || {})
+  }
+  popup.runtime.style = {
+    width: 480,
+    background: '#ffffff',
+    borderRadius: '12px',
+    ...(opts.style || {})
+  }
 
   popup.children = opts.children || []
 

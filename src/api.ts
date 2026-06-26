@@ -493,8 +493,11 @@ export class WebcakeCmsApi {
   getActivePromotions() {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/promotion_advance/get_promotions_actived`);
   }
+  /** Search/list promotions. The dedicated get_promotions_advance endpoint 404s on prod, so
+   *  this uses the same /all list endpoint (which accepts a query); the tool filters the
+   *  returned page client-side for type/status/keyword. */
   searchPromotions(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/promotion_advance/get_promotions_advance`, { query });
+    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/promotion_advance/all`, { query });
   }
 
   // ── Combos ──

@@ -313,7 +313,7 @@ Still add a GLOBAL header/footer with scaffold_global_sections (or create_global
 Pass style:"minimal" for the old bare stubs (heading + binding element only).`,
     {
       style: z.enum(["rich", "minimal"]).default("rich").describe("'rich' = fully-designed, palette-aware store pages (default). 'minimal' = bare starter stubs you must enrich yourself."),
-      palette: z.record(z.any()).optional().describe("Optional colour overrides for rich pages: { accent, onAccent, text, muted, surface, surfaceAlt, border }. Defaults to the site theme CSS vars (var(--color_02) accent, var(--color_00) text)."),
+      palette: z.record(z.any()).optional().describe("Optional colour overrides for rich pages: { accent, onAccent, text, muted, surface, surfaceAlt, border }. Defaults to the site theme matrix vars (var(--color_20) brand accent, var(--color_04) black text, var(--color_00) white surface)."),
       include_member: z.boolean().default(false).describe("Also create login/register/profile (type member, use_member)"),
       include_blog: z.boolean().default(false).describe("Also create blog list + post pages (type blog, use_blog)"),
       dry_run: z.boolean().default(true).describe("Preview (true) or actually create the missing pages (false)"),
@@ -326,7 +326,7 @@ Pass style:"minimal" for the old bare stubs (heading + binding element only).`,
           target: `${name}::${field}`,
         });
         const h1 = (text: string) => ({ type: "text", opts: { text, specials: { tag: "h1" }, style: { fontSize: "32px", fontWeight: "700" } } });
-        const accentBtn = (text: string, type = "button") => ({ type, opts: { text, style: { background: "var(--color_02)", color: "#fff", borderRadius: "8px", height: 48, fontWeight: "600" } } });
+        const accentBtn = (text: string, type = "button") => ({ type, opts: { text, style: { background: "var(--color_20)", color: "var(--color_00)", borderRadius: "8px", height: 48, fontWeight: "600" } } });
 
         // Rich (default) store pages come from the designed, palette-aware templates;
         // 'minimal' falls back to the original bare stubs.
@@ -336,7 +336,7 @@ Pass style:"minimal" for the old bare stubs (heading + binding element only).`,
           products: () => ({ sections: [buildSection([
             { type: "product-gallery", opts: {} },
             { type: "text-dataset", opts: { bindings: [bind("product", "product_name")], style: { fontSize: "28px", fontWeight: "700" } } },
-            { type: "text-dataset", opts: { bindings: [bind("product", "product_price")], style: { fontSize: "22px", fontWeight: "700", color: "var(--color_02)" } } },
+            { type: "text-dataset", opts: { bindings: [bind("product", "product_price")], style: { fontSize: "22px", fontWeight: "700", color: "var(--color_20)" } } },
             { type: "quantity-input", opts: {} },
             accentBtn("Thêm vào giỏ"),
           ])] }),

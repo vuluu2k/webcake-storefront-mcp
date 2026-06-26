@@ -15,7 +15,8 @@ export function registerOrderTools(server: McpServer, api: WebcakeCmsApi, handle
     ({ page, limit, status }) =>
       handle(async () => {
         const res = await api.listOrders({ page, limit, status });
-        const orders = (res && res.data) || res || [];
+        // Real shape: { orders: { data:[…], total_entries, count_status } }.
+        const orders = (res && ((res as any).orders?.data || res.data)) || res || [];
         if (!Array.isArray(orders)) return res;
         return {
           data: orders.map((o: any) => ({
@@ -30,7 +31,8 @@ export function registerOrderTools(server: McpServer, api: WebcakeCmsApi, handle
             created_at: o.created_at,
             updated_at: o.updated_at,
           })),
-          total: res.total || orders.length,
+          total: (res as any).orders?.total_entries ?? res.total ?? orders.length,
+          ...(( res as any).orders?.count_status ? { count_status: (res as any).orders.count_status } : {}),
         };
       })
   );

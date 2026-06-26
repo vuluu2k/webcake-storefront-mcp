@@ -35,14 +35,17 @@ export interface Palette {
   border?: string;
 }
 
+// Slots map onto the site theme's 5×5 colour matrix, surfaced as CSS vars var(--color_RC)
+// (R=row, C=col). Row 0 is greyscale (00=white … 04=black); row 2 is the BRAND row. Using
+// var(--color_00) for text was a bug — that's WHITE (invisible on the white surface).
 const DEFAULT_PALETTE: Required<Palette> = {
-  accent: "var(--color_02)",
-  onAccent: "#ffffff",
-  text: "var(--color_00)",
-  muted: "#6b7280",
-  surface: "#ffffff",
-  surfaceAlt: "#f7f5f2",
-  border: "#e8e3dc",
+  accent: "var(--color_20)", // brand primary (row 2)
+  onAccent: "var(--color_00)", // white — label on the accent button
+  text: "var(--color_04)", // black — headings + body
+  muted: "var(--color_03)", // dark grey — secondary text
+  surface: "var(--color_00)", // white — page/card background
+  surfaceAlt: "var(--color_01)", // light grey — alternating band
+  border: "var(--color_01)", // hairline borders
 };
 
 export function resolvePalette(p: Palette = {}): Required<Palette> {

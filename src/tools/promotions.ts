@@ -111,7 +111,8 @@ export function registerPromotionTools(server: McpServer, api: WebcakeCmsApi, ha
     () =>
       handle(async () => {
         const res = await api.getActivePromotions();
-        const promotions = (res && res.data && res.data.promotions) || (res && res.data) || [];
+        // Real shape: { promotions:[…] } at the top level (not under data).
+        const promotions = (res && ((res as any).promotions || (res.data && res.data.promotions) || res.data)) || [];
         return {
           data: Array.isArray(promotions)
             ? promotions.map((p: any) => ({
@@ -155,9 +156,15 @@ export function registerPromotionTools(server: McpServer, api: WebcakeCmsApi, ha
         if (is_activated != null) query.is_activated = is_activated;
         if (page) query.page = page;
         if (limit) query.limit = limit;
-        const res = await api.searchPromotions(query);
-        const data = (res && res.data && res.data.result) || (res && res.data) || res;
-        return data;
+        const res = await api.searchPromotions({ page: page ?? 1, limit: limit ?? 50 });
+        let list: any[] = (res && (res.data?.result || res.data)) || [];
+        if (!Array.isArray(list)) return res;
+        // The /all endpoint doesn't filter, so apply the requested filters client-side.
+        if (term) list = list.filter((p) => (p.name || "").toLowerCase().includes(term.toLowerCase()));
+        if (type) list = list.filter((p) => p.type === type);
+        if (status != null) list = list.filter((p) => p.time_status === status || p.status === status);
+        if (is_activated != null) list = list.filter((p) => Boolean(p.is_activated) === is_activated);
+        return { data: list, total: list.length, total_unfiltered: (res as any).total_entries };
       })
   );
 }

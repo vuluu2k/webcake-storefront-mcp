@@ -70,8 +70,11 @@ already in this shape — see the \`responsive\` field on get_page_element/updat
 - \`runtime.style\` holds CSS-ish props: width/height (numbers = px), color, background,
   fontSize ("16px"), fontWeight, textAlign, border*, boxShadow, etc.
 - \`runtime.config.heightUnit\`: "auto" lets content set height (default for text/image).
-- Colours: prefer the site THEME variables \`var(--color_00)\`, \`var(--color_01)\`, …
-  (the published site themes them); plain hex or rgba() also work.
+- Colours: use the site THEME matrix vars \`var(--color_RC)\` (R=row 0-4, C=col 0-4). Row 0 is
+  greyscale: \`var(--color_00)\`=WHITE … \`var(--color_04)\`=BLACK. Row 2 is the BRAND row:
+  \`var(--color_20)\` is the brand primary. So TEXT = \`var(--color_04)\` (NOT color_00, that's white →
+  invisible), ACCENT/buttons/prices = \`var(--color_20)\` (darker shade \`var(--color_24)\` if you need
+  white-on-accent contrast), page background = \`var(--color_00)\`. Plain hex/rgba() also work.
 
 ## Make it look DESIGNED (not plain) — do this, every page
 A bare stack of default elements looks unfinished. Apply real styling:
@@ -83,8 +86,8 @@ A bare stack of default elements looks unfinished. Apply real styling:
 - TYPOGRAPHY hierarchy: h1 40–56px / fontWeight 700, h2 28–34px / 600, body 16–18px with
   lineHeight "1.6", muted color for sub-text. Center hero text (textAlign:"center").
 - BUTTONS HAVE NO DEFAULT COLOUR — you MUST style them or they look like plain text:
-  \`{ type:"button", opts:{ text:"Mua ngay", style:{ background:"var(--color_02)", color:"#fff",
-  borderRadius:"8px", fontWeight:"600", height:48 } } }\`.
+  \`{ type:"button", opts:{ text:"Mua ngay", style:{ background:"var(--color_20)", color:"var(--color_00)",
+  borderRadius:"8px", fontWeight:"600", height:48 } } }\` (brand background, white label).
 - HERO: prefer a section with a background image + an overlay heading/sub/button on top
   (set section_opts.style.background or a full-width image, then text centered), rather than a
   small image stacked above text.
@@ -97,8 +100,9 @@ A bare stack of default elements looks unfinished. Apply real styling:
   and \`opts.specials\`: { products_per_load:8-36, on_hover:"zoom"|"swap", show_rating, show_ribbon }.
   (There are NO cardBorderRadius/cardBoxShadow keys.) For variations use \`attr\` elements
   (attrName:"auto"); steppers are \`quantity-input\` (defaults spinner:"hide-spin").
-- BRAND COLOURS: reuse var(--color_00) (text), and an accent (var(--color_02)/var(--color_03))
-  for buttons, prices, highlights — consistent accent = looks intentional.
+- BRAND COLOURS: text = var(--color_04) (black), accent = var(--color_20) (brand) for buttons,
+  prices, highlights — consistent accent = looks intentional. (var(--color_00) is WHITE — only
+  for backgrounds / labels on the accent, never for text on a white surface.)
 - IMAGES: must be WebCake-CDN urls (search_images cdn_url / upload_images), else they won't show.
 
 ## Responsive breakpoints
