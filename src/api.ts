@@ -264,11 +264,16 @@ export class WebcakeCmsApi {
     });
     return { rebuilt: pages.length };
   }
-  /** Publish the site live. /publish runs the full "save" pipeline, which OVERWRITES
-   *  site.settings with the body's `settings` — so we send the CURRENT settings (else
-   *  they'd be nulled, disabling use_store/use_blog/etc.). Other collections default to [].
-   *  We ALSO rebuild every page's CSS first (rebuildSiteCss) because /publish alone does
-   *  not regenerate the storefront's dynamic CSS — without it the live site looks unstyled. */
+  /** Publish the site live. /publish snapshots the pages in the body into the LIVE version —
+   *  exactly like the builder's "Xuất bản" button (PagePublish.vue): it POSTs every page as
+   *  `{ source, id, type, slug, is_homepage, settings }` plus a `changes` map. Sending NO
+   *  pages (the old behaviour) made the backend publish nothing, so the storefront stayed on
+   *  "Trang chưa có giao diện hoặc chưa xuất bản" and every page kept is_build=false.
+   *  We also (a) keep the CURRENT site.settings so /publish doesn't null the theme + data-source
+   *  flags (use_store/use_blog/…), and (b) rebuild each page's compiled CSS first (rebuildSiteCss),
+   *  because /publish alone does not regenerate the storefront's dynamic CSS.
+   *  Global header/footer are already embedded inside each page's source, so they publish with
+   *  the page; the global_* arrays stay empty (empty = leave server-side globals untouched). */
   async publishSite(params: any = {}) {
     let settings = params.settings;
     if (settings === undefined) {
@@ -277,11 +282,46 @@ export class WebcakeCmsApi {
     // The save pipeline stores site.settings as a JSON STRING — an object body is
     // rejected (422). Stringify unless the caller already passed a string.
     const settingsStr = typeof settings === "string" ? settings : JSON.stringify(settings || {});
+
+    // Collect every page WITH its saved source so the backend has something to publish.
+    let pages = params.pages;
+    let changes = params.changes;
+    if (!Array.isArray(pages)) {
+      const res: any = await this.listPages();
+      const list = (res && res.data) || res || [];
+      pages = (Array.isArray(list) ? list : [])
+        .map((p: any) => {
+          const src = p && p.source && p.source.source;
+          if (src == null || src === "") return null;
+          return {
+            id: p.id,
+            source: typeof src === "string" ? src : JSON.stringify(src),
+            type: p.type,
+            slug: p.slug,
+            is_homepage: p.is_homepage === true,
+            settings: JSON.stringify(p.settings || {}),
+          };
+        })
+        .filter(Boolean);
+    }
+    if (changes === undefined) {
+      changes = {} as Record<string, number>;
+      for (const p of pages as any[]) changes[p.id] = 1;
+    }
+
     // Regenerate compiled CSS for every page before publishing (no-op-safe on failure).
     await this.rebuildSiteCss(settingsStr).catch(() => {});
     return this.request("POST", `/api/v1/site/${this.siteId}/publish`, {
-      body: { global_sources: [], global_sections: [], page_contents: [], ...params, settings: settingsStr },
-      timeout: 60000,
+      body: {
+        pages,
+        changes,
+        global_sources: [],
+        global_sections: [],
+        page_contents: [],
+        ...params,
+        settings: settingsStr,
+      },
+      timeout: 120000,
     });
   }
   uploadImageBase64({ base64, content_type }: { base64?: string; content_type?: string } = {}) {
