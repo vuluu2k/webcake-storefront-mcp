@@ -5,6 +5,20 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.0] - 2026-06-26
+
+### Added
+- New `create_collection` tool creates a custom data table by accepting a `name` and a `schema` array of field definitions (with types such as `string`, `integer`, `naive_datetime`, `map`, etc.); the backend automatically adds `id`, `inserted_at`, and `updated_at`.
+- New `insert_collection_record` tool inserts a record into a collection by accepting a `table_name` and a `record` field-value object matching the table schema.
+- New `update_collection_record` tool updates a collection record by `record_id`, accepting only the changed fields in `record`.
+- New `delete_collection_record` tool deletes a collection record by `record_id`.
+
+### Changed
+- `query_collection_records` now accepts an optional `where` filter object (e.g. `{ status: "active" }`) and an `order_by` field name, enabling server-side filtering and sorting of collection data.
+
+### Fixed
+- `query_collection_records` previously returned 401 on every call because the collection records endpoint requires an `x-cms-api-key` header in addition to the standard dashboard JWT; the API client now fetches and caches that key automatically and sends it with all collection-data requests.
+
 ## [1.30.0] - 2026-06-26
 
 ### Added

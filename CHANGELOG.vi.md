@@ -5,6 +5,20 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.0] - 2026-06-26
+
+### Added
+- Tool mới `create_collection` tạo bảng dữ liệu tùy chỉnh bằng cách nhận tham số `name` và mảng `schema` chứa định nghĩa các trường (với các kiểu dữ liệu như `string`, `integer`, `naive_datetime`, `map`, v.v.); backend tự động thêm các trường `id`, `inserted_at` và `updated_at`.
+- Tool mới `insert_collection_record` chèn một bản ghi vào collection bằng cách nhận `table_name` và đối tượng `record` chứa các cặp field-value khớp với schema của bảng.
+- Tool mới `update_collection_record` cập nhật bản ghi trong collection theo `record_id`, chỉ cần truyền các trường đã thay đổi trong `record`.
+- Tool mới `delete_collection_record` xóa bản ghi khỏi collection theo `record_id`.
+
+### Changed
+- `query_collection_records` nay nhận thêm tham số `where` tùy chọn là đối tượng bộ lọc (ví dụ: `{ status: "active" }`) và tên trường `order_by`, cho phép lọc và sắp xếp dữ liệu collection phía server.
+
+### Fixed
+- `query_collection_records` trước đây luôn trả về lỗi 401 vì endpoint records của collection yêu cầu header `x-cms-api-key` bổ sung ngoài dashboard JWT thông thường; API client nay tự động lấy và cache key đó rồi gửi kèm trong mọi request liên quan đến dữ liệu collection.
+
 ## [1.30.0] - 2026-06-26
 
 ### Added
