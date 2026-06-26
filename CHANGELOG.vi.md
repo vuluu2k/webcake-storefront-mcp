@@ -5,6 +5,20 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.26.1] - 2026-06-26
+
+### Fixed
+- `list_products` nay giải nén đúng kiểu phản hồi `{ products, total_product }` từ API, trả về mảng sản phẩm và tổng chính xác thay vì trả thẳng đối tượng thô.
+- `list_orders` nay giải nén đúng kiểu phản hồi `{ orders: { data, total_entries, count_status } }` và hiển thị `count_status` trong kết quả.
+- `list_collections` nay giải nén đúng kiểu phản hồi `{ data: { data, total_entries } }` và báo cáo `total_entries` là tổng số collection.
+- `get_active_promotions` nay đọc mảng `promotions` từ cấp cao nhất của phản hồi thay vì đường dẫn lồng `res.data.promotions`, khắc phục lỗi luôn trả về danh sách trống.
+- `search_promotions` nay định tuyến đến endpoint hoạt động (`/promotion_advance/all`) với bộ lọc phía client cho `type`, `status`, `keyword` và `is_activated`, thay thế endpoint trả 404 trên production.
+- Bảng màu trang mặc định không còn dùng `var(--color_00)` (màu trắng) cho văn bản; nay ánh xạ đúng theo ma trận theme site với `var(--color_04)` (đen) cho văn bản và `var(--color_20)` (màu thương hiệu chính) cho màu nhấn, giúp các tiêu đề được tạo bởi `build_page` và `scaffold_store_pages` hiển thị đúng trên nền trắng.
+- `createPopup` nay khởi tạo sẵn `runtime.config` (căn giữa theo cả chiều ngang lẫn dọc) và `runtime.style` (rộng 480 px, nền trắng, bo góc 12 px) theo mặc định, giúp các phần tử popup được tạo qua `new_section` hoặc `build_page` hiển thị đúng hình học thay vì thu nhỏ về kích thước bằng 0.
+
+### Changed
+- `get_build_guide` nay tài liệu hóa ma trận biến màu 5×5 của theme (`var(--color_RC)`), xác định rõ `var(--color_00)` là màu trắng (chỉ dùng cho nền và nhãn trên nút nhấn, tuyệt đối không dùng cho văn bản thông thường), và khuyến nghị `var(--color_04)` cho văn bản, `var(--color_20)` cho nút, giá và điểm nhấn thương hiệu.
+
 ## [1.26.0] - 2026-06-26
 
 ### Fixed
