@@ -130,7 +130,7 @@ export function registerBuilderTools(server: McpServer, api: WebcakeCmsApi, hand
     "Build a single structurally-valid element node from the real builder factory. Returns the node — edit its specials/style, then place it in a section's children.",
     {
       type: z.string().describe("Element type (see list_elements)"),
-      opts: z.record(z.any()).optional().describe("Factory opts: { text, src, width, height, style, config, specials, events }"),
+      opts: z.record(z.any()).optional().describe("Factory opts: { text, src, width, height, style, config, specials, events, bindings, responsive, align }. align = horizontal placement in the grid cell: 'left'|'center'|'right'|'fill' (works on any element; buttons are content-width+centred by default — use align:'fill' to span the column)."),
     },
     ({ type, opts }) => handle(async () => buildElement(type, opts || {}))
   );

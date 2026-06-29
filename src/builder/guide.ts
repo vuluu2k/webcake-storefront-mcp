@@ -95,6 +95,20 @@ children with a grid:
 new_section does ALL of this for you: pass children and they are stacked one row each in
 the centre column.
 
+### ALIGNMENT inside a cell — how children line up (avoid the "snapped to a corner" look)
+\`constraintX\`/\`constraintY\` decide where a child sits in its grid cell. The renderer maps:
+- \`["left","right"]\` → justify-self: STRETCH — the element FILLS the cell width (this is what makes
+  columns, cards, and images line up edge-to-edge). This is the DEFAULT new_section/new_row give to
+  every width-filling element (text, image, container, repeaters), so siblings stay in straight rows.
+- \`["centerLeft"]\` → justify-self: CENTER (shrinks a content-width element to its content and centres it),
+  \`["left"]\` → left, \`["right"]\` → right. \`constraintY\`: \`["top"]\` (default) / \`["bottom"]\` / \`["centerTop"]\` (middle).
+DON'T hand-set \`["centerLeft"]\` on a full-width element (text/container/card) — that snaps it to its
+content width and floats it, so it no longer lines up with its neighbours (the classic "cắn/lệch" bug).
+Instead: leave the default stretch and control the LOOK with \`textAlign\` (for text) or, for a
+content-width element like a button, with \`opts.align\` ('left'|'center'|'right'|'fill'). A button is
+content-width + centred by DEFAULT; pass \`align:"left"\` so it lines up with left-aligned text above it,
+or \`align:"fill"\` to span the column.
+
 ## Multi-column rows (cards side by side) — USE THIS, real pages are full of them
 A plain vertical stack looks like a blog post, not a designed page. Feature cards,
 category tiles, footer columns, a text+image hero — all are HORIZONTAL rows. Two ways:
@@ -148,6 +162,13 @@ A bare stack of default elements looks unfinished. Apply real styling:
 - BUTTONS HAVE NO DEFAULT COLOUR — you MUST style them or they look like plain text:
   \`{ type:"button", opts:{ text:"Mua ngay", style:{ background:"var(--color_24)", color:"var(--color_00)",
   borderRadius:"8px", fontWeight:"600", height:48 } } }\` (DARK brand background, white label — always readable).
+- BUTTON WIDTH & ALIGNMENT (don't fight it): a \`button\` is CONTENT-SIZED by default (label + built-in
+  28px side padding) and CENTRED in its cell — so a standalone CTA looks like a real button, never a
+  full-width bar with cramped text or one slammed flush-left. To place/size it, pass \`opts.align\`:
+  \`"left"\` | \`"center"\` (default) | \`"right"\` | \`"fill"\` (span the whole column, e.g. two side-by-side
+  Add-to-cart / Buy-now buttons, or a button inside a narrow summary card). \`align\` works on ANY element
+  (text/image/container too). A form \`submit-button\` stays full-width by design. Do NOT try to force a
+  button's width via \`style.width\` — the renderer ignores it (use \`align:"fill"\` instead).
 - HERO: build it as a section whose FIRST child is a full-width \`image\` element (the background photo,
   width:"100%", height ~480), then overlay the heading/sub/button on top. ⚠️ Do NOT rely on a CSS
   \`background:"linear-gradient(...), url(...)"\` SHORTHAND on the section — the storefront renderer
@@ -177,6 +198,11 @@ The four breakpoints (largest → smallest), keyed bp1..bp4, are:
 For NEW pages you author once in \`runtime\` (the bp1/desktop base); on save the build expands
 it into bp1..bp4. By default all four are the same (renders identically across devices), PLUS
 sections re-centre their grid per breakpoint and multi-column rows auto-collapse (4→2→1 cols).
+AUTO-RESPONSIVE DEFAULTS (you get these for free, no diffs needed): on tablet/mobile the build
+also shrinks oversized TYPOGRAPHY (any fontSize ≥22px scales ~0.86× on tablet / ~0.72× on mobile,
+floored at 15px) and TALL images (height >320px shrinks on mobile) so hero headlines and big media
+don't blow out small screens. Body text (<22px) is left alone. Pass \`opts.responsive\` only to
+OVERRIDE this default for a specific node/breakpoint (your explicit diff always wins).
 
 RESPONSIVE CASCADE (reason about each breakpoint, don't hand-copy): to make a node look
 different on smaller screens, pass \`opts.responsive\` = SPARSE per-breakpoint diffs and the
@@ -313,6 +339,27 @@ create the globals — they embed into each page's source. If you later overwrit
 (update_page_source/build_page) you WIPE its embedded header/footer, so re-create the globals
 (delete_global_section by the section NODE id, then create once) to re-embed cleanly. Edit a global
 later with update_global_section_element(s) and it updates on every page at once.
+
+### HEADER must be RESPONSIVE — add a MOBILE MENUBAR, don't just let nav stack
+A header built as one horizontal row of nav links looks fine on desktop but on a phone the links
+squash or collapse into an ugly vertical pile. Build a header that carries TWO navs and swap them
+per breakpoint with the \`isHidden\` config (it cascades bp1→bp4 like any config key):
+- DESKTOP nav — the inline row of links in the top bar. Keep it on desktop+laptop, hide from tablet
+  down: \`responsive:{ bp3:{ config:{ isHidden:true } } }\` (base visible).
+- MOBILE MENUBAR — a SEPARATE container, a centred horizontal row of the same links placed as a
+  second row of the header section (below the logo/cart bar). Hide it on desktop+laptop, show from
+  tablet down: base \`config:{ isHidden:true }\` + \`responsive:{ bp3:{ config:{ isHidden:false } } }\`.
+RELIABILITY NOTE (storefront-verified): this two-nav \`isHidden\`-SWAP is the dependable mobile
+menubar. AVOID these — they do NOT render dependably from raw MCP data: the native \`menu\`
+\`type:"hamburger"\` (its ☰ trigger paints as a 0-width empty box; an inline-SVG \`mask\` is ignored);
+a \`toggle\`-revealed panel (the storefront only makes a toggle target's hidden state reactive when
+it's wired in the builder UI, so a click can't show an \`isHidden\` element); and \`open_popup\` drawers
+(popups are global_sources and the publish pipeline doesn't always emit them, so the popup isn't on
+the page). A plain visible mobile nav row, shown via \`isHidden\` swap, always works.
+Lay the bar as a 2-column row [logo | (desktop-nav + cart, aligned right)] and add the mobile nav row
+as the section's 2nd child. Keep the logo + cart-icon visible on every breakpoint.
+(If you do want a real collapsible hamburger, finish it in the WebCake builder UI, which wires the
+toggle/menu reactively — the MCP can't reproduce that wiring from data alone.)
 
 ## Popups (newsletter / promo / age-gate)
 A popup is a GLOBAL SOURCE, not a page section. Compose it from elements (there is no scaffold
