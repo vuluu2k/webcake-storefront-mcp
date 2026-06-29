@@ -5,6 +5,19 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.8] - 2026-06-29
+
+### Fixed
+- Các phần tử được đặt bởi `new_section`, `new_row` và `build_page` mà lấp đầy ô lưới (text, image, container, columns, repeaters) nay nhận `constraintX: ["left","right"]` (stretch) thay vì `["centerLeft"]` (center), sao cho các phần tử cùng hàng thẳng hàng sát lề thay vì co lại theo nội dung và bị lệch (lỗi căn chỉnh "cắn left-top / không thẳng hàng").
+- `buildElement` nay tự điền `opts.config` và `opts.style` vào `runtime` cho các factory vốn bỏ qua chúng (ví dụ `createContainer`, `createMenu`), khắc phục trường hợp `config.isHidden` bị mất khiến thanh điều hướng chỉ dành cho mobile vẫn hiển thị trên desktop.
+
+### Changed
+- Factory `button` nay mặc định có chiều rộng theo nội dung (`widthUnit: "auto"`) với padding ngang 28 px và nhãn căn giữa, thay vì thanh rộng cố định 142 px, để các nút CTA độc lập co lại vừa với chữ thay vì kéo dài hết ô.
+- Factory `submit-button` nay mặc định cao 48 px với padding ngang 24 px và nhãn căn giữa, để nút submit trong form không còn hiển thị như một dải mỏng không có kiểu.
+- `build_page`, `new_section` và `new_row` nay tự thu nhỏ font lớn (fontSize ≥ 22 px, khoảng 0,86× trên tablet và 0,72× trên mobile) và ảnh cao (height > 320 px) ở các breakpoint nhỏ hơn theo mặc định; diff `responsive` tường minh trên một node vẫn được ưu tiên.
+- `new_element` (và `buildElement` nội bộ) nay nhận `opts.align` (`"left"` | `"center"` | `"right"` | `"fill"`) cho bất kỳ loại phần tử nào; `"fill"` đặt `constraintX: ["left","right"]` kèm `widthUnit: "%"` / `relWidth: 100` để phần tử trải rộng hết cột.
+- `get_build_guide` được cập nhật với: quy tắc căn chỉnh ô lưới (stretch vs. center, khi nào dùng cái nào), hướng dẫn kích thước nút và cách dùng `opts.align`, mặc định tự động responsive, và mẫu hai-nav dùng `isHidden`-swap đã được xác minh để tạo mobile menubar đáng tin cậy.
+
 ## [1.31.7] - 2026-06-26
 
 ### Fixed

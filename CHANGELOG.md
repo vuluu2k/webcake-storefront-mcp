@@ -5,6 +5,19 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.8] - 2026-06-29
+
+### Fixed
+- Elements placed by `new_section`, `new_row`, and `build_page` that fill their grid cell (text, image, container, columns, repeaters) now receive `constraintX: ["left","right"]` (stretch) instead of `["centerLeft"]` (center), so sibling elements line up edge-to-edge rather than snapping to content width and floating (the "cắn left-top / không thẳng hàng" alignment bug).
+- `buildElement` now backfills `opts.config` and `opts.style` into `runtime` for factories that silently ignored them (e.g. `createContainer`, `createMenu`), fixing cases where `config.isHidden` was dropped and a mobile-only nav bar would remain visible on desktop.
+
+### Changed
+- The `button` factory now defaults to content-width (`widthUnit: "auto"`) with 28 px horizontal padding and a centred label instead of a fixed 142 px wide bar, so standalone CTAs size to their text rather than stretching edge-to-edge.
+- The `submit-button` factory now defaults to 48 px height with 24 px horizontal padding and a centred label so form submit buttons no longer render as unstyled slivers.
+- `build_page`, `new_section`, and `new_row` now auto-scale large fonts (fontSize ≥ 22 px, approximately 0.86× on tablet and 0.72× on mobile) and tall images (height > 320 px) on smaller breakpoints by default; an explicit `responsive` diff on a node still wins.
+- `new_element` (and `buildElement` internally) now accepts `opts.align` (`"left"` | `"center"` | `"right"` | `"fill"`) on any element type; `"fill"` sets `constraintX: ["left","right"]` plus `widthUnit: "%"` / `relWidth: 100` so the element spans its column.
+- `get_build_guide` is updated with: the grid-cell alignment rule (stretch vs. center, when each applies), button sizing and `opts.align` usage, auto-responsive scaling defaults, and a verified two-nav `isHidden`-swap pattern for building a reliable mobile menubar.
+
 ## [1.31.7] - 2026-06-26
 
 ### Fixed
