@@ -160,6 +160,40 @@ export function buildElement(type: string, opts: any = {}) {
   }
   // Guarantee children-using factories never throw on a missing children array.
   const node = fn({ children: [], ...opts });
+  // Some factories (container, menu, menu-droppable, …) IGNORE opts.config / opts.style — they
+  // only wire children/specials. That silently dropped base layout keys like config.isHidden
+  // (e.g. a "hidden on desktop" mobile bar stayed visible). Backfill them into runtime so EVERY
+  // element honours opts.config/opts.style. Existing values from factories that DO handle them are
+  // kept (opts wins only where the factory left it unset) — idempotent for those.
+  if (opts.config && typeof opts.config === "object") {
+    node.runtime = node.runtime || {};
+    node.runtime.config = { ...opts.config, ...(node.runtime.config || {}) };
+  }
+  if (opts.style && typeof opts.style === "object") {
+    node.runtime = node.runtime || {};
+    node.runtime.style = { ...opts.style, ...(node.runtime.style || {}) };
+  }
+  // Generic horizontal ALIGNMENT control: opts.align maps to the renderer's constraintX so
+  // ANY element (button, text, image, container…) can be placed left / centre / right, or
+  // told to FILL its grid cell. Without this a content-sized element (e.g. a button) lands
+  // wherever the default constraint puts it; authors had no clean knob to centre or pin it.
+  // 'fill' also forces a 100%-width cell so the element truly spans the column.
+  if (opts.align) {
+    const ALIGN: Record<string, string[]> = {
+      left: ["left"], center: ["centerLeft"], centre: ["centerLeft"],
+      right: ["right"], fill: ["left", "right"], stretch: ["left", "right"],
+    };
+    const cx = ALIGN[String(opts.align).toLowerCase()];
+    if (cx) {
+      node.runtime = node.runtime || {};
+      const rc = (node.runtime.config = node.runtime.config || {});
+      rc.constraintX = cx;
+      if (cx.length === 2) {
+        rc.widthUnit = "%";
+        if (rc.relWidth == null) rc.relWidth = 100;
+      }
+    }
+  }
   // Some factories ignore opts.bindings/events — attach them so any element the AI passes
   // them to gets them — then normalize so each binding/event has a valid id (+ name/eventName).
   if (opts.bindings && !node.bindings) node.bindings = opts.bindings;

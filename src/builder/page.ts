@@ -18,6 +18,44 @@ import {
 
 const clone = (o: any) => structuredClone(o);
 
+/** Parse a CSS px length ("52px") or a bare number (52) → number, else null. */
+function pxToNum(v: any): number | null {
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  const m = /^(-?\d+(?:\.\d+)?)px$/.exec(String(v ?? "").trim());
+  return m ? parseFloat(m[1]) : null;
+}
+
+/** AUTO-RESPONSIVE down-scaling per breakpoint. Headings/large text and very tall media
+ *  keep their desktop size on phones unless the author hand-writes a responsive diff —
+ *  which makes generated pages look broken on mobile. These factors shrink oversized
+ *  typography (and tall images) on tablet/mobile by DEFAULT. Applied only when the author
+ *  did NOT already override the property at this breakpoint (resolved value === base). */
+const AUTO_FONT_FACTOR: Record<string, number> = { bp1: 1, bp2: 1, bp3: 0.86, bp4: 0.72 };
+const AUTO_IMG_HEIGHT_FACTOR: Record<string, number> = { bp1: 1, bp2: 1, bp3: 0.82, bp4: 0.58 };
+
+/** Mutate a resolved per-breakpoint `style` in place: shrink big fonts (≥22px) and tall
+ *  images (>320px) for smaller breakpoints. `baseStyle` is the bp1/authored style — we only
+ *  auto-scale a property the author left untouched at this bp (resolved === base). */
+function applyAutoResponsive(node: any, bp: string, baseStyle: any, style: any) {
+  const ff = AUTO_FONT_FACTOR[bp];
+  if (ff != null && ff < 1) {
+    const baseF = pxToNum(baseStyle.fontSize);
+    const curF = pxToNum(style.fontSize);
+    if (baseF != null && curF != null && curF === baseF && baseF >= 22) {
+      style.fontSize = Math.max(15, Math.round(baseF * ff)) + "px";
+    }
+  }
+  const hf = AUTO_IMG_HEIGHT_FACTOR[bp];
+  if (hf != null && hf < 1 && (node.type === "image" || node.type === "image-dataset")) {
+    const baseH = pxToNum(baseStyle.height);
+    const curH = pxToNum(style.height);
+    if (baseH != null && curH != null && curH === baseH && baseH > 320) {
+      const nh = Math.round(baseH * hf);
+      style.height = typeof baseStyle.height === "number" ? nh : nh + "px";
+    }
+  }
+}
+
 /** Walk every node in a source tree (depth-first). Return false from fn to stop. */
 export function walk(source: any, fn: (node: any) => any) {
   const sections = source && Array.isArray(source.sections) ? source.sections : [];
@@ -84,13 +122,25 @@ const FILL_WIDTH_TYPES = new Set([
   "custom-layout", "layout-dataset", "form",
 ]);
 
-/** Default horizontal constraint for a child: stretch for fill-width components,
- *  else the builder's usual centred placement. Respects an explicit constraintX. */
+/**
+ * Default horizontal constraint for a child in its grid cell. THE ALIGNMENT RULE:
+ * an element that FILLS its cell width (widthUnit "%", relWidth 100 — the default for
+ * text/image/container/repeaters) must STRETCH (`["left","right"]` → justify-self:stretch),
+ * NOT centre. The old default `["centerLeft"]` (justify-self:center) snapped such elements
+ * to their content width and floated them — so sibling columns/cards/images did NOT line up
+ * (the "cắn left-top / không thẳng hàng" bug). Stretch makes every full-width child span its
+ * cell edge-to-edge, so its OWN textAlign / inner stacking controls layout and rows align.
+ * Only a genuinely CONTENT-WIDTH element (widthUnit "auto", e.g. a button) gets a point
+ * constraint, defaulting to centre. An explicit constraintX (e.g. set by opts.align) always wins.
+ */
 function defaultConstraintX(child: any): string[] {
-  return (
-    (child.runtime && child.runtime.config && child.runtime.config.constraintX) ||
-    (FILL_WIDTH_TYPES.has(child.type) ? ["left", "right"] : ["centerLeft"])
-  );
+  const cfg = (child.runtime && child.runtime.config) || {};
+  if (cfg.constraintX) return cfg.constraintX; // explicit / from opts.align
+  if (FILL_WIDTH_TYPES.has(child.type)) return ["left", "right"];
+  // Content-sized elements (a button opts into widthUnit:"auto") centre by default; everything
+  // else fills its cell, so it must stretch to line up with its neighbours.
+  if (cfg.widthUnit === "auto") return ["centerLeft"];
+  return ["left", "right"];
 }
 
 export function stackChildren(container: any, children: any[], opts: StackOpts = {}) {
@@ -387,6 +437,8 @@ function expandNodeToBreakpoints(node: any): any {
       delete config.__row;
       delete config.__cell;
       delete config.responsive;
+      // Shrink oversized fonts / tall images on tablet & mobile by default (author diffs win).
+      applyAutoResponsive(node, bp, rt.style || {}, style);
       if (isSection) {
         const g = genGridByBp(minW);
         const sectionRows =

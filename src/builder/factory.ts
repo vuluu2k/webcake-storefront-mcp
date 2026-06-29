@@ -167,13 +167,27 @@ export const createButton = (opts: any = {}) => {
   button.type = 'button'
 
   button.runtime.style = {
-    width: 142,
-    height: 46,
+    height: 48,
     fontSize: '16px',
+    // Generous horizontal padding so the label never sits edge-to-edge — the #1 "ugly
+    // button" complaint when a button stretched full width. Centred text keeps it tidy
+    // whatever the width. Override any of these via opts.style.
+    paddingTop: '0px',
+    paddingBottom: '0px',
+    paddingLeft: '28px',
+    paddingRight: '28px',
+    textAlign: 'center',
     ...(opts.style || {}),
   }
 
   button.runtime.config = {
+    // A button sizes to its CONTENT (label + padding), NOT the full grid cell. Without
+    // this, stackChildren's sizeDefaults stretches it to widthUnit:'%'/relWidth:100 — i.e.
+    // an edge-to-edge bar with cramped text. Content-width + the default centred
+    // constraintX means a standalone CTA sits centred with breathing room instead of being
+    // slammed flush-left. To make a button FILL its container, pass opts.align:'fill' (or
+    // opts.config.widthUnit:'%').
+    widthUnit: 'auto',
     ...(opts.config || {})
   }
 
@@ -927,10 +941,20 @@ export const createSubmitButton = (opts: any = {}) => {
   button.id = 'SUBMIT-BUTTON-' + randomString(8)
   button.type = 'submit-button'
 
-  button.runtime.style = opts.style || {}
-  button.runtime.config = opts.config || {}
+  // A form submit button stays full-width (the norm inside a form column) but gets a real
+  // height + side padding + centred label so it never renders as a cramped sliver.
+  button.runtime.style = {
+    height: 48,
+    fontSize: '16px',
+    paddingLeft: '24px',
+    paddingRight: '24px',
+    textAlign: 'center',
+    ...(opts.style || {}),
+  }
+  button.runtime.config = { ...(opts.config || {}) }
 
   button.specials = {
+    ...(opts.specials || {}),
     text: opts.specials?.text || 'Submit'
   }
 
