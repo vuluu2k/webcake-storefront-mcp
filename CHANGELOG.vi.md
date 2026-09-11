@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.11] - 2026-09-11
+
+### Changed
+- `create_site` và `create_site_from_template` nay đánh dấu site mới với `by_ai: "mcp"` (lưu vào cột `sites.by_ai` ở backend), mở rộng dấu hiệu AI-tạo vốn chỉ áp dụng cho trang sang cả site.
+
 ## [1.31.10] - 2026-09-08
 
 ### Added
