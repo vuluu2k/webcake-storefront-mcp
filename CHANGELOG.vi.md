@@ -5,6 +5,21 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.10] - 2026-09-08
+
+### Added
+- `list_articles` nay nhận thêm tham số `term` để tìm bài viết theo tiêu đề hoặc slug, và kết quả trả về nay có thêm `page` và `limit` bên cạnh `total`.
+- `update_article` nhận thêm các trường mới: `images` (ảnh bìa/thư viện ảnh), `remove_category_ids` (bỏ bài khỏi danh mục), `tags` (ID tag của bài viết), và `published_at` (đặt ngày xuất bản/hiển thị).
+- `delete_article` nhận thêm `ids` để xóa nhiều bài viết trong một lần gọi, bên cạnh `id` đơn lẻ đã có.
+
+### Changed
+- `list_articles` khi lọc theo `category_id` nay dùng một endpoint riêng cho từng danh mục, đây là view công khai nên sẽ loại bỏ các bài viết đang ẩn hoặc hẹn giờ đăng trong tương lai.
+- `update_article` nay áp dụng thay đổi theo một chuỗi lệnh có thứ tự (đổi tên trước khi áp dụng slug tùy chỉnh), nhờ đó có thể vừa đổi tiêu đề vừa đặt slug tùy chỉnh trong cùng một lần gọi mà không bị slug tự sinh ghi đè.
+
+### Fixed
+- `list_articles`, `get_article`, `update_article` và `delete_article` không còn bị lỗi 401 Unauthorized: các tool này nay gọi dashboard blog API (xác thực bằng cùng token phiên mà builder dùng) và route công khai cho chi tiết bài viết, thay vì các route chỉ dành cho CMS admin mà token phiên của storefront không bao giờ xác thực được.
+- Bước dọn bài viết mẫu trong `create_site` nay xóa hàng loạt trong một yêu cầu duy nhất thay vì xóa từng bài một, nên một lần xóa thất bại sẽ không còn khiến các bài viết mẫu còn lại bị bỏ sót.
+
 ## [1.31.9] - 2026-09-07
 
 ### Added

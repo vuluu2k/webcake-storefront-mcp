@@ -5,6 +5,21 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.10] - 2026-09-08
+
+### Added
+- `list_articles` accepts a `term` parameter to search articles by title or slug, and its response now includes `page` and `limit` alongside `total`.
+- `update_article` accepts new fields: `images` (cover/gallery URLs), `remove_category_ids` (unfile from categories), `tags` (article tag IDs), and `published_at` (sets the publish/render date).
+- `delete_article` accepts `ids` to delete several articles in one call, in addition to the existing single `id`.
+
+### Changed
+- `list_articles` filtered by `category_id` now uses a dedicated per-category endpoint, which is a public view and therefore excludes hidden and future-scheduled posts.
+- `update_article` applies changes as an ordered sequence of commands (renaming before applying a custom slug) so a title change and a custom slug can be sent in the same call without the slug being overwritten.
+
+### Fixed
+- `list_articles`, `get_article`, `update_article`, and `delete_article` no longer fail with 401 Unauthorized: they now call the dashboard blog API (authenticated with the same session token as the builder) and the public article-detail route, instead of the CMS-admin-only routes that a storefront session token could never authenticate against.
+- `create_site`'s seeded-article cleanup now bulk-deletes in a single request instead of deleting one at a time, so a single failed delete no longer leaves the rest of the seeded articles behind.
+
 ## [1.31.9] - 2026-09-07
 
 ### Added
