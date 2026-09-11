@@ -1,6 +1,6 @@
 const DEFAULT_TIMEOUT = 15000;
-/** Stamped on every page this MCP server creates (backend column `pages.by_ai`),
- *  so the builder can flag AI-authored pages. Mirrors the landing-page convention. */
+/** Stamped on every site and page this MCP server creates (backend columns `sites.by_ai`
+ *  and `pages.by_ai`), so the builder can flag AI-authored work. Mirrors the landing-page convention. */
 export const BY_AI_MARKER = "mcp";
 
 interface ApiInit {
@@ -101,14 +101,20 @@ export class WebcakeCmsApi {
    *  but NO pages. Returns { data: { site: { id, site_slug:{slug}, ... } } }.
    *  Fails with 403 when the account's site quota is reached (free plan: 4 sites). */
   createSite(params: { name: string; slug: string }) {
-    return this.request("POST", `/api/v1/dashboard/site/create`, { body: params, timeout: 60000 });
+    return this.request("POST", `/api/v1/dashboard/site/create`, {
+      body: { ...params, by_ai: BY_AI_MARKER },
+      timeout: 60000,
+    });
   }
   /** Create a NEW site from a marketplace TEMPLATE by its theme id — the dedicated
    *  "use this template" API. Clones the template's pages, global sections, cart, popups,
    *  styles and fonts into a fresh account-owned site. Body: { id: <theme_id>, name, slug }.
    *  Returns { data: { site: { id, ... } } }. (403 if the free 4-site quota is reached, prod.) */
   importStoreToTheme(params: { id: string; name: string; slug?: string }) {
-    return this.request("POST", `/api/v1/dashboard/site/import_store_to_theme`, { body: params, timeout: 120000 });
+    return this.request("POST", `/api/v1/dashboard/site/import_store_to_theme`, {
+      body: { ...params, by_ai: BY_AI_MARKER },
+      timeout: 120000,
+    });
   }
   getSiteInfo() {
     return this.request("GET", `/api/v1/site/${this.siteId}/`);
