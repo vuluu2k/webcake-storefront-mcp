@@ -45,6 +45,20 @@ async function applyProductSeo(api: WebcakeCmsApi, id: string, seo: Record<strin
   await api.setProductSeo(id, mergeSeoTags(seo, p?.meta_tags || []), p?.slug ?? null);
 }
 
+/** Find a category's current meta_tags in a list response (flat or tree-shaped). */
+function findMetaTags(res: any, id: string): any[] {
+  const stack: any[] = [res];
+  while (stack.length) {
+    const x = stack.pop();
+    if (Array.isArray(x)) stack.push(...x);
+    else if (x && typeof x === "object") {
+      if (x.id === id && "meta_tags" in x) return x.meta_tags || [];
+      stack.push(...Object.values(x).filter((v) => v && typeof v === "object"));
+    }
+  }
+  return [];
+}
+
 export function registerCatalogWriteTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "create_product",
@@ -172,8 +186,9 @@ Returns the new category id — pass it to create_product's category_ids. Image 
       image: z.string().optional().describe("Hosted image URL for the category card"),
       description: z.string().optional().describe("Category description"),
       parent_id: z.string().optional().describe("Parent category id for a sub-category"),
+      seo: seoSchema,
     },
-    ({ name, image, description, parent_id }) =>
+    ({ name, image, description, parent_id, seo }) =>
       handle(async () => {
         const id = randomUUID();
         const commands: any[] = [
@@ -187,6 +202,8 @@ Returns the new category id — pass it to create_product's category_ids. Image 
           });
         }
 
+        if (seo) commands.push({ name: "set_category_seo", data: { id, meta_tags: mergeSeoTags(seo) } });
+
         await api.createProductCategory(commands);
         return { success: true, category_id: id, name, ...(parent_id ? { parent_id } : {}) };
       })
@@ -199,16 +216,44 @@ Returns the new category id — pass it to create_product's category_ids. Image 
       name: z.string().describe("Blog category name"),
       image: z.string().optional().describe("Hosted image URL"),
       description: z.string().optional().describe("Category description"),
+      seo: seoSchema,
     },
-    ({ name, image, description }) =>
+    ({ name, image, description, seo }) =>
       handle(async () => {
         const id = randomUUID();
         const commands: any[] = [{ name: "create_category", data: { id, name } }];
         if (description) commands.push({ name: "description_category", data: { id, description } });
         if (image) commands.push({ name: "image_category", data: { id, image } });
+        if (seo) commands.push({ name: "set_category_seo", data: { id, meta_tags: mergeSeoTags(seo) } });
 
         await api.createBlogCategory(commands);
         return { success: true, category_id: id, name };
+      })
+  );
+
+  server.tool(
+    "update_blog_category",
+    "Update a blog/article category (name, description, image, slug, SEO). Pass id + fields to change.",
+    {
+      id: z.string().describe("Blog category id"),
+      name: z.string().optional().describe("New name"),
+      description: z.string().optional().describe("New description"),
+      image: z.string().optional().describe("New hosted image URL"),
+      slug: z.string().optional().describe("New custom slug"),
+      seo: seoSchema.describe("SEO settings to change; other existing SEO tags are kept. Pass \"\" to clear a field."),
+    },
+    ({ id, name, description, image, slug, seo }) =>
+      handle(async () => {
+        const commands: any[] = [];
+        // name_category may rewrite the slug, so the custom slug goes after it.
+        if (name != null) commands.push({ name: "name_category", data: { id, name } });
+        if (slug != null) commands.push({ name: "set_category_custom_slug", data: { id, custom_slug: slug } });
+        if (description != null) commands.push({ name: "description_category", data: { id, description } });
+        if (image != null) commands.push({ name: "image_category", data: { id, image } });
+        if (seo) commands.push({ name: "set_category_seo", data: { id, meta_tags: mergeSeoTags(seo, findMetaTags(await api.listBlogCategories(), id)) } });
+        if (!commands.length) throw new Error("Nothing to update — pass at least one field besides id.");
+        await api.updateBlogCategory(commands);
+        return { success: true, category_id: id, updated: commands.map((c) => c.name) };
       })
   );
 
@@ -285,22 +330,24 @@ Images must be hosted CDN urls (search_images cdn_url / upload_images).`,
 
   server.tool(
     "update_product_category",
-    "Update a product category (name, image, description, or visibility). Pass id + fields to change.",
+    "Update a product category (name, image, description, visibility, SEO). Pass id + fields to change.",
     {
       id: z.string().describe("Category id"),
       name: z.string().optional().describe("New name"),
       image: z.string().optional().describe("New hosted image URL"),
       description: z.string().optional().describe("New description"),
       hidden: z.boolean().optional().describe("Hide (true) or show (false) the category"),
+      seo: seoSchema.describe("SEO settings to change; other existing SEO tags are kept. Pass \"\" to clear a field."),
     },
-    ({ id, name, image, description, hidden }) =>
+    ({ id, name, image, description, hidden, seo }) =>
       handle(async () => {
         const commands: any[] = [];
         if (name != null) commands.push({ name: "name_category", data: { id, name } });
         if (image != null) commands.push({ name: "image_category", data: { id, image } });
         if (description != null) commands.push({ name: "multi_description", data: { id, multi_description: [{ id: randomUUID(), title: name || "", description }] } });
         if (hidden != null) commands.push({ name: "set_category_visible", data: { id, is_hidden: hidden } });
-        if (!commands.length) throw new Error("Nothing to update — pass at least one of name/image/description/hidden.");
+        if (seo) commands.push({ name: "set_category_seo", data: { id, meta_tags: mergeSeoTags(seo, findMetaTags(await api.listCategories(), id)) } });
+        if (!commands.length) throw new Error("Nothing to update — pass at least one of name/image/description/hidden/seo.");
         await api.updateProductCategory(commands);
         return { success: true, category_id: id, updated: commands.map((c) => c.name) };
       })

@@ -25,3 +25,9 @@ test("advanced: canonical is a link, robots a name-meta, structured_data replace
     { type: "script", props: { type: "application/ld+json" }, meta: { displayName: "FAQ" }, children: '{"@type":"FAQPage"}' },
   ]);
 });
+
+test("custom_tags add/replace by name/property/rel; remove_tags drops any tag by key", () => {
+  const existing = [{ type: "meta", props: { name: "author", content: "Old" } }, tag("og:url", "u"), tag("page_title", "T")];
+  const out = mergeSeoTags({ remove_tags: ["og:url"], custom_tags: [{ type: "meta", props: { name: "author", content: "New" } }] }, existing);
+  assert.deepEqual(out, [tag("page_title", "T"), { type: "meta", props: { name: "author", content: "New" } }]);
+});

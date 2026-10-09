@@ -483,6 +483,18 @@ export class WebcakeCmsApi {
       timeout: 60000,
     });
   }
+  /** All blog categories (dashboard; includes meta_tags). */
+  listBlogCategories() {
+    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/blog/categories/all`);
+  }
+  /** Update blog categories — same command pipeline as create (name_category / description_category /
+   *  image_category / set_category_custom_slug / set_category_seo …), each with data.id. */
+  updateBlogCategory(commands: any[]) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/blog/categories/update`, {
+      body: { site_id: this.siteId, commands },
+      timeout: 60000,
+    });
+  }
   /** Create a blog article via the dashboard command pipeline (supports category linkage,
    *  images, summary, content). Caller generates the article id in each command's data.id. */
   createBlogArticle(commands: any[]) {

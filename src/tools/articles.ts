@@ -84,6 +84,11 @@ export const seoSchema = z
       .array(z.object({ name: z.string().describe("Display name"), json: z.string().describe("JSON-LD object as a string, without <script>") }))
       .optional()
       .describe("Structured data markup (JSON-LD). REPLACES all existing markups; [] removes them."),
+    custom_tags: z
+      .array(z.object({ type: z.enum(["meta", "link"]).default("meta"), props: z.record(z.string()) }))
+      .optional()
+      .describe('Extra tags ("Thẻ bổ sung"), e.g. { "type": "meta", "props": { "name": "author", "content": "Togi" } }. Replaces a tag with the same name/property/rel.'),
+    remove_tags: z.array(z.string()).optional().describe('Remove tags by name/property/rel, e.g. ["author", "og:url"]'),
   })
   .optional()
   .describe("SEO settings (\"Cài đặt SEO\": basic, social share, advanced). Without a meta description the site falls back to the whole body text.");
@@ -91,8 +96,11 @@ export const seoSchema = z
 /** The SEO save replaces the whole meta_tags array, so merge into the existing tags: passed
  *  fields overwrite their tag, "" removes it, structured_data replaces all JSON-LD scripts,
  *  everything else (custom tags) is kept. */
+const tagKey = (t: any) => t?.props?.name || t?.props?.property || t?.props?.rel || t?.props?.["http-equiv"];
+
 export function mergeSeoTags(seo: Record<string, any>, existing: any[] = []): any[] {
   let tags = [...existing];
+  if (seo.remove_tags) tags = tags.filter((t) => !seo.remove_tags.includes(tagKey(t)));
   for (const [key, def] of Object.entries(SEO_TAGS)) {
     const value = seo[key];
     if (value === undefined) continue;
@@ -103,6 +111,10 @@ export function mergeSeoTags(seo: Record<string, any>, existing: any[] = []): an
     tags = tags.filter((t) => t?.type !== "script");
     for (const m of seo.structured_data)
       tags.push({ type: "script", props: { type: "application/ld+json" }, meta: { displayName: m.name }, children: m.json });
+  }
+  for (const t of seo.custom_tags || []) {
+    tags = tags.filter((x) => tagKey(x) !== tagKey(t));
+    tags.push({ type: t.type || "meta", props: t.props });
   }
   return tags;
 }

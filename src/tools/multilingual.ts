@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
+import { seoSchema, mergeSeoTags } from "./articles.js";
 
 // Multilingual app (Enum.Application multilingual = 5). Install first via
 // install_app({ app: "multilingual" }), then enable languages. Each resource type
@@ -89,6 +90,45 @@ For most resources \`items\` is an array of translation rows. For 'site' pass th
         else if (def.special === "notification") body = { languages: items };
         else body = { [def.field || `${resource}_translations`]: items, language_code };
         return api.mlSaveTranslations(def.action, body);
+      })
+  );
+
+  server.tool(
+    "set_translation_seo",
+    `Set the SEO ("Cài đặt SEO") of ONE item's translation in a target language — product, article,
+product category or blog category. Same fields as the item's own seo param; merged into that
+translation's existing SEO tags (fields you don't pass are kept). Only meta_tags is written, so the
+translated name/slug/content are untouched; the translation row is created if missing.`,
+    {
+      resource: z.enum(["product", "article", "category", "article_category"]).describe("category = product category, article_category = blog category"),
+      id: z.string().describe("Item id (product / article / category id)"),
+      language_code: z.string().describe("Target language code, e.g. 'en'"),
+      seo: seoSchema.unwrap(),
+    },
+    ({ resource, id, language_code, seo }) =>
+      handle(async () => {
+        const path = `${resource}_translations`;
+        // The list API only filters by name (term), so scan pages to find the row by id.
+        // ponytail: up to 50 pages × 100 items; add an id filter on the backend if sites outgrow it.
+        let row: any;
+        for (let page = 1; page <= 50 && !row; page++) {
+          const box = unwrap(await api.mlGetTranslations(path, { language_code, page, limit: 100 }), path);
+          const rows: any[] = box?.data || [];
+          row = rows.find((r) => r.id === id);
+          if (rows.length < 100) break;
+        }
+        const tr = row?.[`${resource}_translation`];
+        const idKey = resource === "article_category" ? "category_id" : `${resource}_id`;
+        const meta_tags = mergeSeoTags(seo, tr?.meta_tags || []);
+        const item: any = { [idKey]: id, site_id: api.siteId, meta_tags };
+        // Article / category / blog-category saves read `name` unconditionally (and re-derive the
+        // translated slug from it), so resend the current translated name, else the original one.
+        if (resource !== "product") {
+          item.name = tr?.name || row?.name;
+          if (!item.name) throw new Error(`${resource} ${id} not found in the ${language_code} translation list.`);
+        }
+        await api.mlSaveTranslations(SAVE[resource].action, { [path]: [item], language_code });
+        return { success: true, resource, id, language_code, meta_tags };
       })
   );
 
