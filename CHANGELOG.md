@@ -5,6 +5,26 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.13] - 2026-10-09
+
+### Added
+- `create_product`, `update_product`, `create_product_category`, `update_product_category`, and `create_blog_category` accept a new `seo` object to write `meta_tags`, mirroring the article SEO schema (`page_title`, `meta_description`, `page_keywords`, `og_title`, `og_description`, `og_image`).
+- The shared article/product `seo` object gains advanced fields: `canonical`, `og_site_name`, `og_type`, `og_url`, `robots`, `structured_data` (JSON-LD), `custom_tags`, and `remove_tags`.
+- `create_page`, `update_page`, `build_page`, and `commit_page_draft`'s page `seo` object gains advanced fields: `thumbnail_alt`, `author`, `canonical`, `og_site_name`, `og_type`, `og_url`, `robots`, `markups` (structured data), `site_name_markup`, and `hidden_meta_tags`.
+- New `update_blog_category` tool updates a blog category's name, description, image, slug, and `seo`.
+- New `set_translation_seo` tool sets the `meta_tags` of a product, article, product category, or blog category translation in a target language, without touching the translated name, slug, or content.
+
+### Changed
+- `update_product` now applies a passed `seo` object even when no other product field changes (previously required at least one non-`seo` field).
+- `update_page` now takes explicit `seo` (merged into `settings.seo`) and `settings` (merged into the page's existing settings) parameters instead of forwarding a flat params object straight to the backend.
+- `create_appointment_calendar` now requires `assignee_id` and `appointment_address_id` (previously optional), since a calendar is always one employee's schedule at one address; its description now points to `duplicate_appointment_calendars` for copying hours across staff.
+- `create_appointment_calendar` and `update_appointment_calendar` validate `config_weekdays` (weekday key, `is_active`, up to 3 `{start_time,end_time}` ranges) and `config_days` (date, up to 3 ranges) against a strict schema, normalize weekday ordering to monday through sunday, and assign ids to date overrides, instead of accepting arbitrary records.
+- `create_appointment_calendar` now defaults `config_weekdays` to every day 08:00-23:00 (split into three ranges) when omitted, matching the dashboard's default hours, instead of leaving weekly hours unset.
+
+### Fixed
+- `update_page`, `create_page`, `build_page`, and `commit_page_draft` no longer wipe a page's existing `settings` (e.g. `page_mask`, `seo`) when changing only the slug, name, or homepage flag: they now read the page's current settings and resend them merged with the requested changes, instead of letting the backend replace `settings` with `null`.
+- `create_page`, `build_page`, and `commit_page_draft` now report a `warning` in the response when applying the slug, homepage flag, or `seo` after page creation fails, instead of silently discarding the error.
+
 ## [1.31.12] - 2026-10-09
 
 ### Added

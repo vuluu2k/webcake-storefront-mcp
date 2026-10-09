@@ -5,6 +5,26 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.13] - 2026-10-09
+
+### Added
+- `create_product`, `update_product`, `create_product_category`, `update_product_category` và `create_blog_category` nay nhận thêm đối tượng `seo` để ghi `meta_tags`, cùng kiểu schema SEO mà `create_article`/`update_article` đang dùng (`page_title`, `meta_description`, `page_keywords`, `og_title`, `og_description`, `og_image`).
+- Đối tượng `seo` dùng chung cho bài viết/sản phẩm nay có thêm các trường nâng cao: `canonical`, `og_site_name`, `og_type`, `og_url`, `robots`, `structured_data` (JSON-LD), `custom_tags` và `remove_tags`.
+- Đối tượng `seo` của trang trong `create_page`, `update_page`, `build_page` và `commit_page_draft` nay có thêm các trường nâng cao: `thumbnail_alt`, `author`, `canonical`, `og_site_name`, `og_type`, `og_url`, `robots`, `markups` (dữ liệu có cấu trúc), `site_name_markup` và `hidden_meta_tags`.
+- Tool mới `update_blog_category` để cập nhật tên, mô tả, ảnh, slug và `seo` của một danh mục blog.
+- Tool mới `set_translation_seo` để đặt `meta_tags` cho bản dịch của một sản phẩm, bài viết, danh mục sản phẩm hoặc danh mục blog theo ngôn ngữ chỉ định, mà không ảnh hưởng tới tên, slug hay nội dung đã dịch.
+
+### Changed
+- `update_product` nay vẫn áp dụng đối tượng `seo` được truyền vào dù không có trường nào khác của sản phẩm thay đổi (trước đây yêu cầu phải có ít nhất một trường khác ngoài `seo`).
+- `update_page` nay nhận riêng tham số `seo` (gộp vào `settings.seo`) và `settings` (gộp vào settings hiện có của trang) thay vì chuyển thẳng một object params dạng phẳng xuống backend.
+- `create_appointment_calendar` nay yêu cầu bắt buộc `assignee_id` và `appointment_address_id` (trước đây là tùy chọn), vì một calendar luôn là lịch làm việc của một nhân viên tại một địa chỉ; mô tả tool nay cũng hướng dẫn dùng `duplicate_appointment_calendars` để sao chép giờ làm cho nhiều nhân viên.
+- `create_appointment_calendar` và `update_appointment_calendar` nay kiểm tra `config_weekdays` (key của thứ trong tuần, `is_active`, tối đa 3 khoảng `{start_time,end_time}`) và `config_days` (ngày cụ thể, tối đa 3 khoảng) theo schema chặt chẽ, tự sắp xếp lại thứ tự các ngày trong tuần từ thứ Hai đến Chủ Nhật, và tự gắn id cho các ngày điều chỉnh riêng, thay vì nhận record tùy ý.
+- `create_appointment_calendar` nay mặc định `config_weekdays` là mỗi ngày làm việc từ 08:00-23:00 (chia thành ba khoảng) khi không được truyền vào, khớp với giờ mặc định của dashboard, thay vì để trống giờ làm việc trong tuần.
+
+### Fixed
+- `update_page`, `create_page`, `build_page` và `commit_page_draft` không còn xóa mất `settings` hiện có của trang (ví dụ `page_mask`, `seo`) khi chỉ đổi slug, tên hoặc cờ trang chủ: các tool này nay đọc settings hiện tại của trang rồi gộp cùng thay đổi được yêu cầu trước khi gửi lại, thay vì để backend thay `settings` bằng `null`.
+- `create_page`, `build_page` và `commit_page_draft` nay trả về trường `warning` trong kết quả khi việc áp dụng slug, cờ trang chủ hoặc `seo` sau khi tạo trang bị lỗi, thay vì âm thầm bỏ qua lỗi đó.
+
 ## [1.31.12] - 2026-10-09
 
 ### Added
