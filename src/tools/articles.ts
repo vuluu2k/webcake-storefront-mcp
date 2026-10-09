@@ -40,6 +40,43 @@ function summarizeArticle(a: any) {
   };
 }
 
+/** "Cài đặt SEO" fields → the `meta_tags` property each one is stored under (same shape the
+ *  dashboard's SEOBasic / SEOSocialShare panels write). */
+const SEO_PROPS = {
+  page_title: "page_title",
+  meta_description: "meta_description",
+  page_keywords: "page_keywords",
+  og_title: "og:title",
+  og_description: "og:description",
+  og_image: "og:image",
+} as const;
+
+const seoSchema = z
+  .object({
+    page_title: z.string().optional().describe("Title tag (~60 chars)"),
+    meta_description: z.string().optional().describe("Meta description (~155 chars)"),
+    page_keywords: z.string().optional().describe("Comma-separated keywords"),
+    og_title: z.string().optional().describe("Social share title (og:title)"),
+    og_description: z.string().optional().describe("Social share description (og:description)"),
+    og_image: z.string().optional().describe("Social share image URL (og:image), must be hosted"),
+  })
+  .optional()
+  .describe("SEO settings (\"Cài đặt SEO\"). Without these the site falls back to the whole post body as the meta description.");
+
+/** set_article_seo replaces the whole meta_tags array, so merge into the existing tags:
+ *  passed fields overwrite by property, "" removes one, everything else is kept. */
+export function mergeSeoTags(seo: Record<string, string | undefined>, existing: any[] = []): any[] {
+  const tags = [...existing];
+  for (const [key, property] of Object.entries(SEO_PROPS)) {
+    const content = seo[key];
+    if (content === undefined) continue;
+    const i = tags.findIndex((t) => (t?.props?.property || t?.props?.name) === property);
+    if (i > -1) tags.splice(i, 1);
+    if (content !== "") tags.push({ type: "meta", props: { property, content } });
+  }
+  return tags;
+}
+
 export function registerArticleTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "list_articles",
@@ -93,8 +130,9 @@ must be hosted (search_images / upload_images). The backend generates the id and
       summary: z.string().optional().describe("Short summary / excerpt"),
       images: z.array(z.string()).optional().describe("Hosted image URLs; the first is the cover image"),
       category_ids: z.array(z.string()).optional().describe("Blog category IDs to file the post under (from create_blog_category)"),
+      seo: seoSchema,
     },
-    ({ name, content, summary, images, category_ids }) =>
+    ({ name, content, summary, images, category_ids, seo }) =>
       handle(async () => {
         const id = randomUUID();
         const commands: any[] = [{ name: "create_article", data: { id, name } }];
@@ -103,6 +141,7 @@ must be hosted (search_images / upload_images). The backend generates the id and
         if (content) commands.push({ name: "content_article", data: { id, content } });
         if (category_ids && category_ids.length)
           commands.push({ name: "bulk_add_category_to_article", data: { id, ids: category_ids } });
+        if (seo) commands.push({ name: "set_article_seo", data: { id, meta_tags: mergeSeoTags(seo) } });
 
         await api.createBlogArticle(commands);
         return {
@@ -132,8 +171,9 @@ the SAME call if you want a custom one (it is applied after the rename).`,
       tags: z.array(z.string()).optional().describe("Article TAG IDs (uuids from the blog tag list) — not free text"),
       is_hidden: z.boolean().optional().describe("Hide from public"),
       published_at: z.string().optional().describe("Publish date, ISO/naive datetime (render_inserted_at)"),
+      seo: seoSchema.describe("SEO settings to change; other existing SEO tags are kept. Pass \"\" to clear a field."),
     },
-    ({ id, name, slug, content, summary, images, category_ids, remove_category_ids, tags, is_hidden, published_at }) =>
+    ({ id, name, slug, content, summary, images, category_ids, remove_category_ids, tags, is_hidden, published_at, seo }) =>
       handle(async () => {
         const commands: any[] = [];
         // Order matters: name_article rewrites the slug, so the custom slug must come after it.
@@ -150,6 +190,11 @@ the SAME call if you want a custom one (it is applied after the rename).`,
           commands.push({ name: "bulk_add_category_to_article", data: { id, ids: category_ids } });
         if (remove_category_ids && remove_category_ids.length)
           commands.push({ name: "bulk_remove_category_to_article", data: { id, ids: remove_category_ids } });
+        if (seo) {
+          const current: any = await api.getArticle(id);
+          const existing = (current?.data || current)?.meta_tags || [];
+          commands.push({ name: "set_article_seo", data: { id, meta_tags: mergeSeoTags(seo, existing) } });
+        }
 
         if (!commands.length) throw new Error("Nothing to update — pass at least one field besides id.");
 
