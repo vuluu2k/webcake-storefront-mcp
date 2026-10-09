@@ -40,16 +40,31 @@ function summarizeArticle(a: any) {
   };
 }
 
-/** "Cài đặt SEO" fields → the `meta_tags` property each one is stored under (same shape the
- *  dashboard's SEOBasic / SEOSocialShare panels write). */
-const SEO_PROPS = {
-  page_title: "page_title",
-  meta_description: "meta_description",
-  page_keywords: "page_keywords",
-  og_title: "og:title",
-  og_description: "og:description",
-  og_image: "og:image",
-} as const;
+/** "Cài đặt SEO" fields → the meta_tags entry each one is stored as (same shapes the dashboard's
+ *  SEOBasic / SEOSocialShare / SEOAdvanced panels write; shared by articles and products). */
+const meta = (property: string) => ({
+  match: (t: any) => t?.type !== "link" && t?.props?.property === property,
+  build: (content: string) => ({ type: "meta", props: { property, content } }),
+});
+const SEO_TAGS: Record<string, { match: (t: any) => boolean; build: (v: string) => any }> = {
+  page_title: meta("page_title"),
+  meta_description: meta("meta_description"),
+  page_keywords: meta("page_keywords"),
+  og_title: meta("og:title"),
+  og_description: meta("og:description"),
+  og_image: meta("og:image"),
+  og_site_name: meta("og:site_name"),
+  og_type: meta("og:type"),
+  og_url: meta("og:url"),
+  canonical: {
+    match: (t) => t?.props?.rel === "canonical",
+    build: (href) => ({ type: "link", props: { rel: "canonical", href } }),
+  },
+  robots: {
+    match: (t) => t?.props?.name === "robots",
+    build: (content) => ({ type: "meta", props: { name: "robots", content } }),
+  },
+};
 
 export const seoSchema = z
   .object({
@@ -59,20 +74,35 @@ export const seoSchema = z
     og_title: z.string().optional().describe("Social share title (og:title)"),
     og_description: z.string().optional().describe("Social share description (og:description)"),
     og_image: z.string().optional().describe("Social share image URL (og:image), must be hosted"),
+    // ── Advanced ("SEO nâng cao") ──
+    canonical: z.string().optional().describe("Canonical URL (<link rel=canonical>)"),
+    og_site_name: z.string().optional().describe("og:site_name"),
+    og_type: z.string().optional().describe("og:type, e.g. article / product"),
+    og_url: z.string().optional().describe("og:url"),
+    robots: z.string().optional().describe('Robots meta, comma+space separated, e.g. "noindex, nofollow" or "max-snippet:-1, max-image-preview:large"'),
+    structured_data: z
+      .array(z.object({ name: z.string().describe("Display name"), json: z.string().describe("JSON-LD object as a string, without <script>") }))
+      .optional()
+      .describe("Structured data markup (JSON-LD). REPLACES all existing markups; [] removes them."),
   })
   .optional()
-  .describe("SEO settings (\"Cài đặt SEO\"). Without these the site falls back to the whole post body as the meta description.");
+  .describe("SEO settings (\"Cài đặt SEO\": basic, social share, advanced). Without a meta description the site falls back to the whole body text.");
 
-/** set_article_seo replaces the whole meta_tags array, so merge into the existing tags:
- *  passed fields overwrite by property, "" removes one, everything else is kept. */
-export function mergeSeoTags(seo: Record<string, string | undefined>, existing: any[] = []): any[] {
-  const tags = [...existing];
-  for (const [key, property] of Object.entries(SEO_PROPS)) {
-    const content = seo[key];
-    if (content === undefined) continue;
-    const i = tags.findIndex((t) => (t?.props?.property || t?.props?.name) === property);
-    if (i > -1) tags.splice(i, 1);
-    if (content !== "") tags.push({ type: "meta", props: { property, content } });
+/** The SEO save replaces the whole meta_tags array, so merge into the existing tags: passed
+ *  fields overwrite their tag, "" removes it, structured_data replaces all JSON-LD scripts,
+ *  everything else (custom tags) is kept. */
+export function mergeSeoTags(seo: Record<string, any>, existing: any[] = []): any[] {
+  let tags = [...existing];
+  for (const [key, def] of Object.entries(SEO_TAGS)) {
+    const value = seo[key];
+    if (value === undefined) continue;
+    tags = tags.filter((t) => !def.match(t));
+    if (value !== "") tags.push(def.build(value));
+  }
+  if (seo.structured_data) {
+    tags = tags.filter((t) => t?.type !== "script");
+    for (const m of seo.structured_data)
+      tags.push({ type: "script", props: { type: "application/ld+json" }, meta: { displayName: m.name }, children: m.json });
   }
   return tags;
 }

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
@@ -133,6 +134,10 @@ export function buildPageSeo(seo: any = {}): any {
   if (seo.title || seo.og_title) out.og_title = seo.og_title || seo.title;
   if (seo.description || seo.og_description) out.og_description = seo.og_description || seo.description;
   if (seo.thumbnail) out.og_image = seo.thumbnail;
+  // Advanced ("SEO nâng cao") — same keys the editor's SeoDrawer writes; passed through as-is.
+  for (const k of ["thumbnail_alt", "author", "canonical", "og_site_name", "og_type", "og_url", "robots", "site_markup", "site_name_markup", "hidden_meta_tags"])
+    if (seo[k] !== undefined) out[k] = seo[k];
+  if (seo.markups) out.markups = seo.markups.map((m: any) => ({ id: m.id || randomUUID(), name: m.name, code: m.code }));
   return out;
 }
 

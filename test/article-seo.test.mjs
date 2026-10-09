@@ -14,3 +14,14 @@ test("seo fields overwrite by property, '' clears, untouched tags are kept", () 
 test("og fields map to og:* properties", () => {
   assert.deepEqual(mergeSeoTags({ og_title: "T" }), [tag("og:title", "T")]);
 });
+
+test("advanced: canonical is a link, robots a name-meta, structured_data replaces all JSON-LD", () => {
+  const existing = [{ type: "script", props: { type: "application/ld+json" }, children: "{}" }, tag("og:type", "website")];
+  const out = mergeSeoTags({ canonical: "https://x/a", robots: "noindex, nofollow", og_type: "article", structured_data: [{ name: "FAQ", json: '{"@type":"FAQPage"}' }] }, existing);
+  assert.deepEqual(out, [
+    tag("og:type", "article"),
+    { type: "link", props: { rel: "canonical", href: "https://x/a" } },
+    { type: "meta", props: { name: "robots", content: "noindex, nofollow" } },
+    { type: "script", props: { type: "application/ld+json" }, meta: { displayName: "FAQ" }, children: '{"@type":"FAQPage"}' },
+  ]);
+});

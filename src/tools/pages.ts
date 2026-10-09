@@ -13,6 +13,20 @@ const pageSeoSchema = z.object({
   thumbnail: z.string().optional().describe("Share image; also og:image"),
   og_title: z.string().optional().describe("Defaults to title"),
   og_description: z.string().optional().describe("Defaults to description"),
+  // ── Advanced ("SEO nâng cao") ──
+  thumbnail_alt: z.string().optional(),
+  author: z.string().optional(),
+  canonical: z.string().optional().describe("Canonical URL"),
+  og_site_name: z.string().optional(),
+  og_type: z.string().optional(),
+  og_url: z.string().optional(),
+  robots: z.string().optional().describe('Robots meta, e.g. "noindex, nofollow" or "max-snippet:-1, max-image-preview:large"'),
+  markups: z
+    .array(z.object({ name: z.string(), code: z.string().describe("JSON-LD as a string, without <script>") }))
+    .optional()
+    .describe("Structured data markups (JSON-LD). REPLACES the page's list; [] removes them."),
+  site_name_markup: z.boolean().optional().describe("Emit the site-name markup (default on)"),
+  hidden_meta_tags: z.array(z.string()).optional().describe("Meta tag keys to hide, e.g. ['og:url']"),
 });
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";

@@ -39,7 +39,7 @@ function cartesian<T>(lists: T[][]): T[][] {
 }
 
 /** Merge SEO fields into the product's meta_tags, resending its current slug (see setProductSeo). */
-async function applyProductSeo(api: WebcakeCmsApi, id: string, seo: Record<string, string | undefined>) {
+async function applyProductSeo(api: WebcakeCmsApi, id: string, seo: Record<string, any>) {
   const res: any = await api.getProduct(id);
   const p = res?.data || res?.product || res;
   await api.setProductSeo(id, mergeSeoTags(seo, p?.meta_tags || []), p?.slug ?? null);
