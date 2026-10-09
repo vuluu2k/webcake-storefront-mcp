@@ -9,6 +9,7 @@ import { randomUUID } from "node:crypto";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
+import { seoSchema, mergeSeoTags } from "./articles.js";
 
 const variationSpec = z.object({
   retail_price: z.number().describe("Selling price (what the customer pays)"),
@@ -37,6 +38,13 @@ function cartesian<T>(lists: T[][]): T[][] {
   return lists.reduce<T[][]>((acc, cur) => acc.flatMap((a) => cur.map((b) => [...a, b])), [[]]);
 }
 
+/** Merge SEO fields into the product's meta_tags, resending its current slug (see setProductSeo). */
+async function applyProductSeo(api: WebcakeCmsApi, id: string, seo: Record<string, string | undefined>) {
+  const res: any = await api.getProduct(id);
+  const p = res?.data || res?.product || res;
+  await api.setProductSeo(id, mergeSeoTags(seo, p?.meta_tags || []), p?.slug ?? null);
+}
+
 export function registerCatalogWriteTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "create_product",
@@ -59,8 +67,9 @@ Images must be HOSTED URLs — get them from search_images or upload_images firs
         .optional()
         .describe("Variant axes, e.g. [{name:'Color',values:['Đen','Trắng']},{name:'Size',values:['S','M','L']}]"),
       variations: z.array(variationSpec).optional().describe("Explicit per-SKU variations. Omit to auto-build one from price/stock/sku."),
+      seo: seoSchema,
     },
-    ({ name, price, original_price, stock, sku, images, description, short_description, category_ids, attributes, variations }) =>
+    ({ name, price, original_price, stock, sku, images, description, short_description, category_ids, attributes, variations, seo }) =>
       handle(async () => {
         let vars = variations;
         // Enrich attribute axes with the id + keyword shape the storefront variation selector
@@ -137,7 +146,12 @@ Images must be HOSTED URLs — get them from search_images or upload_images firs
         // Success response is { product: {...} } at the top level (not under data).
         const prod = res?.product || res?.data?.product || res?.data?.attributes || res?.data || {};
         const productId = prod?.id || null;
+        const warning =
+          seo && productId
+            ? await applyProductSeo(api, productId, seo).then(() => undefined, (e) => `Product created, but SEO failed: ${e?.message ?? e}`)
+            : undefined;
         return {
+          ...(warning ? { warning } : {}),
           success: true,
           product_id: productId,
           name,
@@ -212,8 +226,9 @@ Images must be hosted CDN urls (search_images cdn_url / upload_images).`,
       category_ids: z.array(z.string()).optional().describe("Replace the product's categories"),
       is_published: z.boolean().optional().describe("Publish/unpublish the product"),
       variations: z.array(variationSpec).optional().describe("Replace variations (price/stock/SKU per variant). Reuse existing custom_ids from get_product to edit in place."),
+      seo: seoSchema.describe("SEO settings to change; other existing SEO tags and the slug are kept. Pass \"\" to clear a field."),
     },
-    ({ product_id, name, description, images, category_ids, is_published, variations }) =>
+    ({ product_id, name, description, images, category_ids, is_published, variations, seo }) =>
       handle(async () => {
         const productParams: any = { product_id };
         if (name != null) productParams.name = name;
@@ -233,8 +248,11 @@ Images must be hosted CDN urls (search_images cdn_url / upload_images).`,
             is_hidden: false,
           }));
         }
-        await api.updateProduct(productParams);
-        return { success: true, product_id, updated: Object.keys(productParams).filter((k) => k !== "product_id") };
+        const updated = Object.keys(productParams).filter((k) => k !== "product_id");
+        if (!updated.length && !seo) throw new Error("Nothing to update — pass at least one field besides product_id.");
+        if (updated.length) await api.updateProduct(productParams);
+        if (seo) { await applyProductSeo(api, product_id, seo); updated.push("seo"); }
+        return { success: true, product_id, updated };
       })
   );
 

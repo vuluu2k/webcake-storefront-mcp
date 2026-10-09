@@ -3,7 +3,17 @@ import { CUSTOM_CODE_GUIDE } from "../guides.js";
 import { getConfirmMode } from "./context.js";
 import { normalizeEvents } from "../builder/events.js";
 import { normalizeBindings } from "../builder/bindings.js";
-import { PAGE_TYPE_NUM, PAGE_KINDS, buildPageSeo, normalizeSlug, checkPageCreateConflict } from "./builder.js";
+import { PAGE_TYPE_NUM, PAGE_KINDS, applyPageMeta, normalizeSlug, checkPageCreateConflict } from "./builder.js";
+
+const pageSeoSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  keyword: z.string().optional(),
+  favicon: z.string().optional(),
+  thumbnail: z.string().optional().describe("Share image; also og:image"),
+  og_title: z.string().optional().describe("Defaults to title"),
+  og_description: z.string().optional().describe("Defaults to description"),
+});
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -319,8 +329,7 @@ Examples:
       slug: z.string().describe("URL slug WITHOUT a leading slash, e.g. 'about', 'collections', 'cart'. A leading '/' is stripped automatically (the storefront matches the bare path segment, so '/cart' would 404). Homepage needs no slug (pass is_homepage:true)."),
       type: z.enum(PAGE_KINDS).optional().describe("Page kind (main/store/member/blog/custom/error/maintain). store/member/blog need their data-source flag enabled — prefer build_page which auto-enables it. main/error/maintain are one-per-site; use 'custom' for extra pages."),
       is_homepage: z.boolean().default(false).describe("Set as homepage"),
-      seo: z
-        .object({ title: z.string().optional(), description: z.string().optional(), keyword: z.string().optional(), favicon: z.string().optional(), thumbnail: z.string().optional() })
+      seo: pageSeoSchema
         .optional()
         .describe("SEO → settings.seo (title/description/keyword/favicon/thumbnail). Tokens {{name_page}}/{{name_site}} allowed."),
     },
@@ -337,40 +346,35 @@ Examples:
         const created: any = await api.createPage({ name, ...(typeNum != null ? { type: typeNum } : {}) });
         invalidatePageCache();
         const pageId = (created && (created.id || created.data?.id || created.page?.id)) || null;
-        const seoBlock = seo ? buildPageSeo(seo) : null;
-        if (pageId && (cleanSlug || is_homepage || (seoBlock && Object.keys(seoBlock).length))) {
-          await api
-            .updatePage(pageId, {
-              ...(cleanSlug ? { slug: cleanSlug } : {}),
-              ...(is_homepage ? { is_homepage: true } : {}),
-              ...(seoBlock && Object.keys(seoBlock).length ? { settings: { seo: seoBlock } } : {}),
-            })
-            .catch(() => {});
-          invalidatePageCache();
-        }
-        return { success: true, page_id: pageId, name, slug: cleanSlug ?? null, type: type ?? null, raw: pageId ? undefined : created };
+        const warning = pageId
+          ? await applyPageMeta(api, pageId, { slug: cleanSlug, is_homepage, seo }).then(
+              () => undefined,
+              (e) => `Page created, but slug/homepage/SEO failed: ${e?.message ?? e}`,
+            )
+          : undefined;
+        invalidatePageCache();
+        return { success: true, page_id: pageId, name, slug: cleanSlug ?? null, type: type ?? null, raw: pageId ? undefined : created, ...(warning ? { warning } : {}) };
       })
   );
 
   server.tool(
     "update_page",
-    "Update page properties (name, slug, settings, custom code)",
+    `Update page properties: name, slug, homepage, SEO ("Cài đặt SEO") and settings.
+seo / settings are MERGED into the page's current settings — fields you don't pass are kept.`,
     {
       page_id: z.string().describe("Page ID"),
       name: z.string().optional().describe("New name"),
       slug: z.string().optional().describe("New slug WITHOUT a leading slash (e.g. 'about', 'cart'). A leading '/' is stripped automatically — '/cart' would 404 on the storefront."),
       is_homepage: z.boolean().optional().describe("Set as homepage"),
-      settings: z.record(z.any()).optional().describe("Page settings"),
+      seo: pageSeoSchema.optional().describe("SEO → settings.seo (title/description/keyword/favicon/thumbnail/og_*). Merged; other SEO fields kept. Tokens {{name_page}}/{{name_site}} allowed."),
+      settings: z.record(z.any()).optional().describe("Other page settings keys to merge (top-level keys replace)"),
     },
-    ({ page_id, ...params }) => handle(async () => {
+    ({ page_id, name, slug, is_homepage, seo, settings }) => handle(async () => {
       // Normalize slug (strip leading "/") so the storefront's bare-segment match resolves.
-      if (params.slug !== undefined) {
-        const clean = normalizeSlug(params.slug);
-        if (clean) params.slug = clean; else delete params.slug;
-      }
-      const res = await api.updatePage(page_id, params);
+      const cleanSlug = slug !== undefined ? normalizeSlug(slug) : undefined;
+      await applyPageMeta(api, page_id, { name, slug: cleanSlug, is_homepage, seo, settings });
       invalidatePageCache();
-      return res;
+      return { success: true, page_id };
     })
   );
 

@@ -524,6 +524,13 @@ export class WebcakeCmsApi {
       timeout: 60000,
     });
   }
+  /** Product "Cài đặt SEO" (spec set_product_seo). The backend ALWAYS writes custom_slug into
+   *  slug, so pass the product's current slug or it is wiped. */
+  setProductSeo(id: string, meta_tags: any[], custom_slug: string | null) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/products/update_product`, {
+      body: { site_id: this.siteId, id, meta_tags, custom_slug, spec: "set_product_seo" },
+    });
+  }
   /** Delete products by id. Body: { site_id, ids }. */
   removeProducts(ids: string[]) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/products/remove`, {

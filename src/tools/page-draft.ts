@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
-import { PAGE_TYPE_NUM, PAGE_TYPE_FLAG, PAGE_KINDS, buildPageSeo, normalizeSlug, checkPageCreateConflict } from "./builder.js";
+import { PAGE_TYPE_NUM, PAGE_TYPE_FLAG, PAGE_KINDS, applyPageMeta, normalizeSlug, checkPageCreateConflict } from "./builder.js";
 import { validatePage, finalizeForRender, reassignIds } from "../builder/page.js";
 import {
   createDraft,
@@ -217,20 +217,14 @@ RESUMABLE: if a request fails mid-commit, the draft keeps its page_id + committe
           // All sections committed → apply slug / homepage / SEO, then drop the draft.
           // Strip a leading "/" so the storefront's bare-segment match resolves (else 404).
           const cleanSlug = normalizeSlug(draft.meta.slug);
-          const seoBlock = draft.meta.seo ? buildPageSeo(draft.meta.seo) : null;
-          if (cleanSlug || draft.meta.is_homepage || (seoBlock && Object.keys(seoBlock).length)) {
-            await api
-              .updatePage(draft.page_id!, {
-                ...(cleanSlug ? { slug: cleanSlug } : {}),
-                ...(draft.meta.is_homepage ? { is_homepage: true } : {}),
-                ...(seoBlock && Object.keys(seoBlock).length ? { settings: { seo: seoBlock } } : {}),
-              })
-              .catch(() => {});
-          }
+          const metaWarning = await applyPageMeta(api, draft.page_id!, { slug: cleanSlug, is_homepage: draft.meta.is_homepage, seo: draft.meta.seo }).then(
+            () => undefined,
+            (e) => `Page saved, but slug/homepage/SEO failed: ${e?.message ?? e}`,
+          );
 
           const pageId = draft.page_id!;
           await delDraft(draft_id);
-          return { success: true, page_id: pageId, total_sections: total, stats: validation.stats };
+          return { success: true, page_id: pageId, total_sections: total, stats: validation.stats, ...(metaWarning ? { warning: metaWarning } : {}) };
         } catch (e) {
           const committed = draft.committed_count ?? 0;
           return {

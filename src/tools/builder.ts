@@ -136,6 +136,30 @@ export function buildPageSeo(seo: any = {}): any {
   return out;
 }
 
+/** Apply name / homepage / slug / settings / SEO to a page. The backend's update_page is a cond:
+ *  is_homepage → only that; name → only the name; otherwise slug + settings, where settings is
+ *  REPLACED (omitted → stored as "null", wiping page_mask/seo). So: one call per branch, and the
+ *  last call always resends the page's current settings with the changes merged in. */
+export async function applyPageMeta(
+  api: WebcakeCmsApi,
+  pageId: string,
+  { name, slug, is_homepage, settings, seo }: { name?: string; slug?: string | null; is_homepage?: boolean; settings?: any; seo?: any },
+) {
+  if (name != null) await api.updatePage(pageId, { name });
+  if (is_homepage) await api.updatePage(pageId, { is_homepage: true });
+  const seoBlock = seo ? buildPageSeo(seo) : {};
+  if (!slug && !settings && !Object.keys(seoBlock).length) return;
+  // ponytail: no get-page-by-id route, so this pulls the full page list (with sources) once.
+  const res: any = await api.listPages();
+  const list = res?.data || res?.pages || res;
+  let cur = (Array.isArray(list) ? list : []).find((p: any) => p.id === pageId)?.settings;
+  if (typeof cur === "string") try { cur = JSON.parse(cur); } catch { cur = null; }
+  if (!cur || typeof cur !== "object") cur = {};
+  const next = { ...cur, ...(settings || {}) };
+  if (Object.keys(seoBlock).length) next.seo = { ...(next.seo || {}), ...seoBlock };
+  await api.updatePage(pageId, { ...(slug ? { slug } : {}), settings: next });
+}
+
 /** Normalize a page slug to what the storefront matches on. The storefront routes by the
  *  RAW path segment (e.g. "/cart" → path ["cart"]) and looks up `page.slug == "cart"`, so a
  *  stored slug WITH a leading "/" (e.g. "/cart") never matches and the page 404s. The homepage
@@ -352,16 +376,10 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
           return { error: "Page created but no id was returned.", created };
         }
         // slug / homepage / SEO are not applied at create — set them via update_page.
-        const seoBlock = seo ? buildPageSeo(seo) : null;
-        if (cleanSlug || is_homepage || (seoBlock && Object.keys(seoBlock).length)) {
-          await api
-            .updatePage(pageId, {
-              ...(cleanSlug ? { slug: cleanSlug } : {}),
-              ...(is_homepage ? { is_homepage: true } : {}),
-              ...(seoBlock && Object.keys(seoBlock).length ? { settings: { seo: seoBlock } } : {}),
-            })
-            .catch(() => {});
-        }
+        const metaWarning = await applyPageMeta(api, pageId, { slug: cleanSlug, is_homepage, seo }).then(
+          () => undefined,
+          (e) => `Page saved, but slug/homepage/SEO failed: ${e?.message ?? e}`,
+        );
         return {
           success: true,
           page_id: pageId,
@@ -370,6 +388,7 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
           page_type: kind ?? null,
           ...(feature ? { data_source: { flag: feature.flag, newly_enabled: feature.changed } } : {}),
           stats: validation.stats,
+          ...(metaWarning ? { warning: metaWarning } : {}),
         };
       })
   );

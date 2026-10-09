@@ -51,7 +51,7 @@ const SEO_PROPS = {
   og_image: "og:image",
 } as const;
 
-const seoSchema = z
+export const seoSchema = z
   .object({
     page_title: z.string().optional().describe("Title tag (~60 chars)"),
     meta_description: z.string().optional().describe("Meta description (~155 chars)"),
