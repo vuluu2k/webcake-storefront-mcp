@@ -5,6 +5,11 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.12] - 2026-10-09
+
+### Added
+- `create_article` and `update_article` accept a new `seo` object (`page_title`, `meta_description`, `page_keywords`, `og_title`, `og_description`, `og_image`) that writes the same `meta_tags` fields as the dashboard's SEO panels; on `update_article`, passing `""` for a field clears it while other existing SEO tags are kept.
+
 ## [1.31.11] - 2026-09-11
 
 ### Changed

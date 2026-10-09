@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.31.12] - 2026-10-09
+
+### Added
+- `create_article` và `update_article` nay nhận thêm đối tượng `seo` (`page_title`, `meta_description`, `page_keywords`, `og_title`, `og_description`, `og_image`) để ghi vào đúng các trường `meta_tags` mà các panel SEO của dashboard sử dụng; với `update_article`, truyền `""` cho một trường sẽ xóa trường đó còn các tag SEO khác đang có vẫn được giữ lại.
+
 ## [1.31.11] - 2026-09-11
 
 ### Changed
