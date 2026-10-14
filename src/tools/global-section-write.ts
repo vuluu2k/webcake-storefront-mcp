@@ -86,7 +86,7 @@ Two-step safety: dry_run=true (default) previews which pages change; dry_run=fal
         const wrap = { sections: [node] };
         const validation: any = validatePage(wrap);
         if (!validation.valid) return { error: "Section failed validation.", validation };
-        finalizeForRender(wrap);
+        finalizeForRender(wrap, await api.getSiteBreakpoints());
         const finalNode = wrap.sections[0];
 
         // Resolve target pages + inject the node into each one's source.

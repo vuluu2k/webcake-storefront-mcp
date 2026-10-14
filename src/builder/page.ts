@@ -5,12 +5,13 @@
 // child's runtime.config (columnStart/End, rowStart/End, constraintX/Y). The helpers here
 // produce that structure the same way the builder does, so generated pages render.
 
-import { buildElement, isKnownType, ELEMENT_TYPES } from "./catalog.js";
+import { buildElement, isKnownType, ELEMENT_TYPES, CONTAINER_TYPE_SET } from "./catalog.js";
 import { randomString } from "./factory.js";
 import { validateEvents } from "./events.js";
 import { validateBindings } from "./bindings.js";
 import {
   BREAKPOINTS,
+  BREAKPOINT_KEYS,
   genGridByBp,
   SECTION_CONTENT_COL_START,
   SECTION_CONTENT_COL_END,
@@ -393,6 +394,23 @@ export function validatePage(source: any) {
     }
   });
 
+  // Third pass (needs ancestry): structures the renderer silently mishandles. Warnings only.
+  const checkTree = (node: any, ancestors: string[]) => {
+    if (!node || typeof node !== "object") return;
+    const type = node.type;
+    const kids: any[] = Array.isArray(node.children) ? node.children : [];
+    if (!ancestors.length && type && type !== "section" && type !== "popup")
+      warnings.push(`Top-level node "${node.id}" is a ${type}: pages render only sections at the top level — wrap it in a section.`);
+    if (kids.length && type && isKnownType(type) && !CONTAINER_TYPE_SET.has(type))
+      warnings.push(`"${node.id}" (${type}) has ${kids.length} child node(s), but ${type} is not a container — they won't render.`);
+    if (type === "submit-button" && !ancestors.some((t) => /form/.test(t)))
+      warnings.push(`Submit button "${node.id}" is not inside a form — it has nothing to submit.`);
+    if ((node.bindings || []).some((b: any) => b?.name === "wishlist_item") && !ancestors.includes("wishlist-item"))
+      warnings.push(`"${node.id}" binds wishlist_item::… outside a wishlist-item — those fields only resolve per saved product.`);
+    for (const c of kids) checkTree(c, [...ancestors, type]);
+  };
+  for (const s of source.sections) checkTree(s, []);
+
   return {
     valid: errors.length === 0,
     ...(errors.length ? { errors } : {}),
@@ -409,7 +427,39 @@ export function validatePage(source: any) {
  * widths shrink on smaller screens). Nodes already in breakpoint shape are left as-is,
  * so this is safe to run over a mixed source (e.g. add_section onto an existing page).
  */
-function expandNodeToBreakpoints(node: any): any {
+/** A site's own breakpoints ({ bpN: [minW, maxW] }) when they differ from the standard four. */
+export type SiteBreakpoints = Record<string, [number, number]> | null | undefined;
+
+/** The site's breakpoints if they're a usable map that differs from the standard four, else null. */
+function customBreakpoints(site: SiteBreakpoints): Record<string, [number, number]> | null {
+  if (!site || typeof site !== "object") return null;
+  const entries = Object.entries(site);
+  if (!entries.length || !entries.every(([, r]) => Array.isArray(r) && typeof r[0] === "number" && typeof r[1] === "number")) return null;
+  const standard = entries.length === BREAKPOINT_KEYS.length &&
+    entries.every(([k, [lo, hi]]) => BREAKPOINTS[k] && BREAKPOINTS[k][0] === lo && BREAKPOINTS[k][1] === hi);
+  return standard ? null : site;
+}
+
+/** Re-key a freshly expanded node from bp1..bp4 onto the site's breakpoints. The renderer emits
+ *  CSS only for the site's keys, and users can split/delete breakpoints in the editor (a split
+ *  of bp1 at 1600 gives bp1:[1320,1600] + bp5:[1601,1e9]; a deleted name can be reused for a
+ *  different range) — so match by WIDTH, never by name: each site breakpoint takes the standard
+ *  breakpoint containing its min width; sections regenerate their grid for that width. */
+function remapToSiteBreakpoints(node: any, site: Record<string, [number, number]>) {
+  const std = Object.entries(BREAKPOINTS);
+  const pick = (minW: number) => (std.find(([, [lo, hi]]) => minW >= lo && minW <= hi) || std[std.length - 1])[0];
+  const out: Record<string, any> = {};
+  for (const [key, [minW]] of Object.entries(site)) {
+    const from = node[pick(minW)];
+    if (!from) continue;
+    out[key] = clone(from);
+    if (node.type === "section") out[key].config.columns = clone(genGridByBp(minW).columns);
+  }
+  for (const k of BREAKPOINT_KEYS) delete node[k];
+  Object.assign(node, out);
+}
+
+function expandNodeToBreakpoints(node: any, site: Record<string, [number, number]> | null): any {
   const rt = node && node.runtime;
   if (rt && (rt.style || rt.config || rt.responsive)) {
     const baseConfig = { ...(rt.config || {}), loaded: true };
@@ -474,9 +524,10 @@ function expandNodeToBreakpoints(node: any): any {
       node[bp] = { style, config };
     }
     delete node.runtime;
+    if (site) remapToSiteBreakpoints(node, site);
   }
 
-  for (const child of node.children || []) expandNodeToBreakpoints(child);
+  for (const child of node.children || []) expandNodeToBreakpoints(child, site);
   return node;
 }
 
@@ -486,9 +537,10 @@ function expandNodeToBreakpoints(node: any): any {
  * is removed. MUST be called before saving a page built with new_section/new_element —
  * otherwise the page renders with no styling or grid placement.
  */
-export function finalizeForRender(source: any): any {
+export function finalizeForRender(source: any, siteBreakpoints?: SiteBreakpoints): any {
   const sections = source && Array.isArray(source.sections) ? source.sections : [];
-  for (const s of sections) expandNodeToBreakpoints(s);
+  const custom = customBreakpoints(siteBreakpoints);
+  for (const s of sections) expandNodeToBreakpoints(s, custom);
   return source;
 }
 

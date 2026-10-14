@@ -186,7 +186,7 @@ RESUMABLE: if a request fails mid-commit, the draft keeps its page_id + committe
         }
 
         // Expand runtime -> bp1..bp4 so the saved nodes actually render.
-        finalizeForRender(full);
+        finalizeForRender(full, await api.getSiteBreakpoints());
         const finalizedSections: any[] = full.sections;
 
         try {

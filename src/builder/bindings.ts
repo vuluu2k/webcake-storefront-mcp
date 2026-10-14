@@ -51,6 +51,16 @@ export const BINDING_DATASETS: Record<string, BindingDataset> = {
     summary: "Sale/discount badge overlaid on a product card.",
     fields: ["product-overlay::product_sale", "product-overlay::product_discount", "product-overlay::product_total_sold", "product-overlay::product_url"],
   },
+  wishlist_item: {
+    name: "wishlist_item",
+    page_type: "store",
+    repeater_parents: ["wishlist-item"],
+    summary: "A product the shopper saved to their wishlist (children of wishlist-item).",
+    fields: [
+      "wishlist_item::product_name", "wishlist_item::product_price", "wishlist_item::product_original_price",
+      "wishlist_item::product_image", "wishlist_item::product_short_description",
+    ],
+  },
   cart_item: {
     name: "cart_item",
     page_type: "store",
@@ -297,7 +307,7 @@ export function describeBindingsCatalog() {
   return {
     note: "Dataset elements (text-dataset/image-dataset/…) and children of a repeater (grid-product, cart-items, post-list…) carry bindings:[{ id, name, target, ...meta }]. Build via new_element opts.bindings (ids auto-minted) — e.g. new_element('text-dataset',{ bindings:[{ target:'product::product_price', show_tax:true }] }). A target only resolves on a page whose type enables its dataset (store→use_store, member→use_member, blog→use_blog) — build_page handles the flag. The optional meta keys (name_style, prefix_content, value, attr_id, …) control HOW the value renders/combines — see meta_keys.",
     meta_keys: BINDING_META_KEYS,
-    page_type_required: { store: ["product", "product-overlay", "cart_item", "order", "order_item", "category", "bonus_item", "promotion_item", "attr", "search_result"], member: ["customer", "customer_address"], blog: ["post", "blog"], any: ["form", "general_info", "agency"] },
+    page_type_required: { store: ["product", "product-overlay", "cart_item", "wishlist_item", "order", "order_item", "category", "bonus_item", "promotion_item", "attr", "search_result"], member: ["customer", "customer_address"], blog: ["post", "blog"], any: ["form", "general_info", "agency"] },
     repeater_context: REPEATER_CONTEXT,
     datasets: Object.values(BINDING_DATASETS).map((ds) => ({
       name: ds.name,

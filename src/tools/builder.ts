@@ -372,7 +372,7 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
         }
 
         // Expand runtime -> bp1..bp4 so the saved source actually renders on the storefront.
-        finalizeForRender(parsed);
+        finalizeForRender(parsed, await api.getSiteBreakpoints());
 
         // createPage saves the page AND its source in one call (source is required there).
         const created = await api.createPage({ name, source: parsed, ...(typeNum != null ? { type: typeNum } : {}) });
@@ -398,18 +398,73 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
       })
   );
 
+  const templateRoot = (t: any) => {
+    try {
+      return JSON.parse(t.source || "null");
+    } catch {
+      return null;
+    }
+  };
+
+  server.tool(
+    "list_section_templates",
+    `Browse the designer-made section library (the editor's template picker): ready, styled blocks (hero, product showcase, testimonials, footer…) to start from instead of composing from scratch.
+No args → categories. With category_id and/or term → templates { id, name, thumbnail, kind }. Look at a thumbnail with invoke_tool('read_image', { url }), then insert a kind:"section" template with add_section({ page_id, template:{ category_id, id } }) and restyle it to the brand.`,
+    {
+      category_id: z.string().optional().describe("Category id (from the no-arg call)"),
+      term: z.string().optional().describe("Search template names"),
+      page: z.number().optional().describe("Page (default 1)"),
+      limit: z.number().optional().describe("Per page (default 12)"),
+    },
+    ({ category_id, term, page, limit }) =>
+      handle(async () => {
+        if (!category_id && !term) {
+          const res: any = await api.listTemplateCategories();
+          const cats = res?.templates ?? res?.data?.templates ?? res?.data ?? [];
+          return { categories: (Array.isArray(cats) ? cats : []).map((c: any) => ({ id: c.id, name: c.name })) };
+        }
+        const res: any = await api.listTemplates({ id: category_id, term, page: page || 1, limit: limit || 12 });
+        const data = res?.data ?? res;
+        return {
+          templates: (data?.templates || []).map((t: any) => {
+            const root = templateRoot(t);
+            return { id: t.id, name: t.name, thumbnail: t.thumbnail, kind: root?.type === "section" ? "section" : root?.type || "unknown" };
+          }),
+          page: data?.page,
+          total: data?.total_entries,
+        };
+      })
+  );
+
   server.tool(
     "add_section",
     `Append a section to an EXISTING page's source. Reads the current source, appends your section, validates, and (when dry_run=false) saves.
-The section is re-id'd to avoid collisions. Build it with new_section.
+The section is re-id'd to avoid collisions. Pass a section built with new_section, OR template:{ category_id, id } to insert a library section (list_section_templates).
 Two-step safety: dry_run=true (default) previews; dry_run=false saves.`,
     {
       page_id: z.string().describe("Target page id"),
-      section: z.any().describe("A section node (from new_section) — object or JSON string"),
+      section: z.any().optional().describe("A section node (from new_section) — object or JSON string"),
+      template: z
+        .object({ category_id: z.string().optional(), id: z.string() })
+        .optional()
+        .describe("Insert a library section instead (ids from list_section_templates)"),
       dry_run: z.boolean().default(true).describe("Preview only (true) or save (false)"),
     },
-    ({ page_id, section, dry_run }) =>
+    ({ page_id, section, template, dry_run }) =>
       handle(async () => {
+        if (template) {
+          // No get-by-id route: page through the category until the template turns up.
+          let found: any = null;
+          for (let p = 1; p <= 10 && !found; p++) {
+            const res: any = await api.listTemplates({ id: template.category_id, page: p, limit: 50 });
+            const list = (res?.data ?? res)?.templates || [];
+            found = list.find((t: any) => t.id === template.id);
+            if (list.length < 50) break;
+          }
+          if (!found) return { error: `Template "${template.id}" not found${template.category_id ? " in that category" : ""}.` };
+          section = templateRoot(found);
+        }
+        if (!section) return { error: "Pass a section (from new_section) or a template { category_id, id }." };
         const pagesRes = await api.listPages();
         const pages = (pagesRes && pagesRes.data) || pagesRes || [];
         const page = Array.isArray(pages) ? pages.find((p: any) => p.id === page_id) : null;
@@ -441,7 +496,7 @@ Two-step safety: dry_run=true (default) previews; dry_run=false saves.`,
 
         // Expand the newly-added section's runtime -> bp1..bp4 (existing sections are
         // already in breakpoint shape and are left untouched).
-        finalizeForRender(source);
+        finalizeForRender(source, await api.getSiteBreakpoints());
         const saved = await api.updatePageSource(page_id, { source });
         return {
           success: true,

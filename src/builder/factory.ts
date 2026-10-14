@@ -668,6 +668,24 @@ export const createWishlist = ({ svg, itemCount, config, children, style }: any 
   return wistlist
 }
 
+// Wishlist page blocks. The editor has no factory for these (it seeds them from
+// common/wishlist-container.json); the renderer clones the wishlist-item <template> once per
+// saved product (assets/render/wishlist-container.js) and shows wishlist-empty when there are none.
+const plainContainer = (prefix: string, type: string) => (opts: any = {}) => {
+  const el = cloneDeep(SKELETON)
+  el.id = prefix + randomString(8)
+  el.type = type
+  el.runtime.style = { ...opts.style }
+  el.runtime.config = { ...opts.config }
+  el.children = opts.children || []
+  el.specials = { ...opts.specials }
+
+  return el
+}
+export const createWishlistContainer = plainContainer('WISHLIST-CONTAINER-', 'wishlist-container')
+export const createWishlistItem = plainContainer('WISHLIST-ITEM-', 'wishlist-item')
+export const createWishlistEmpty = plainContainer('WISHLIST-EMPTY-', 'wishlist-empty')
+
 export const createFavoriteIcon = (opts: any = {}) => {
   const favorite = cloneDeep(SKELETON)
 
@@ -2314,4 +2332,29 @@ export const createLessonItems = (opts: any = {}) => {
   nextlesson.specials = { ...opts.specials }
 
   return nextlesson
+}
+
+// Ported from builderx_spa factory.js (4ea6dd53e, e107a53e5).
+export const createOtpMethod = (opts: any = {}) => {
+  const otpMethod = cloneDeep(SKELETON)
+  otpMethod.id = 'OTP-METHOD-' + randomString(8)
+  otpMethod.type = 'otp-method'
+  otpMethod.children = opts.children || []
+  otpMethod.runtime.style = { ...opts.style }
+  otpMethod.runtime.config = { ...opts.config }
+  otpMethod.specials = { ...opts.specials }
+
+  return otpMethod
+}
+
+export const createListCourses = (opts: any = {}) => {
+  const el = cloneDeep(SKELETON)
+  el.id = 'LIST-COURSES-' + randomString(8)
+  el.type = 'list-courses'
+  el.runtime.style = { ...opts.style }
+  el.runtime.config = { ...opts.config }
+  el.children = opts.children || []
+  el.specials = { ...opts.specials }
+
+  return el
 }

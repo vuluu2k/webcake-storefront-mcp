@@ -43,7 +43,7 @@ export const SHARED_SPECIALS: Record<string, string> = {
   element_async: "Mark the element async/lazy (advanced — usually leave unset).",
   event_name_custom: "Custom analytics event name fired on interaction.",
   tabIndex: "Bind this element to a tab item (TAB-ITEM-…) so a tabs element shows/hides it.",
-  text_animation_type: "Entrance animation for the element's text (none|…).",
+  text_animation_type: "Animated words in text/button: set to the type used by the <span class=\"animationText\" data-type …> inside specials.text (typed|typed2|clip|rotate3|animate.css name). See get_build_guide → Motion.",
 };
 
 // Generic layout keys every node's runtime.config may carry (documented in the build
@@ -70,7 +70,7 @@ export const SHARED_KEY_DICT: Record<string, string> = {
   src: "Media URL (hosted).",
   image_alt: "Alt text (SEO / accessibility).",
   typographyTheme: "Apply a site typography preset.",
-  text_animation_type: "Text entrance animation.",
+  text_animation_type: "Animated-words type (typed|typed2|clip|rotate3|…), paired with an animationText span in the text.",
   marker: "List marker style (none/dotList/numberList/imageList).",
   tabIndex: "Tab/focus order.",
   shapeType: "Shape kind (rectangle/etc.).",
@@ -183,7 +183,7 @@ export const ELEMENT_ATTRS: Record<string, ElementAttrs> = {
   "video-dataset": { specials: { autoRotateInMobile: "Rotate to landscape on mobile (boolean).", show_list_video_lesson: "Show the lesson playlist (boolean).", show_next_video_lesson: "Show the next-lesson button (boolean)." }, events: "none", bindings: ["lesson::lesson_video"], notes: "Video bound to a dataset field (course lesson video)." },
   rectangle: {
     specials: { shapeType: "Shape kind.", custom_css: "Raw CSS for the shape." },
-    config: { mask: "Mask SVG/shape (clips the box into an icon).", maskId: "Mask reference.", custom_mask: "Custom mask SVG markup.", fixedPosition: "Pin/float the shape (bottom_right|…) — e.g. a floating badge.", animation: "Entrance animation." },
+    config: { mask: "Mask SVG/shape (clips the box into an icon).", maskId: "Mask reference.", custom_mask: "Custom mask SVG markup.", fixedPosition: "With position:'pinned' (+ style.position:'fixed'): where it floats — bottom_right|bottom_left|top_right|… — e.g. a floating badge. See get_build_guide → Sticky & pinned.", animation: "Entrance/attention animation { type, delay, duration, repeat }: type = animate.css name (fadeInUp, zoomIn, bounceIn, pulse…), delay/duration in s, repeat 1|2|3|'infinite'. See get_build_guide → Motion." },
     events: "click, hover — often used as a clickable card/background.",
     notes: "Coloured box / divider / background. Style via runtime.style (background, border*, boxShadow).",
   },
@@ -205,7 +205,7 @@ export const ELEMENT_ATTRS: Record<string, ElementAttrs> = {
     events: "none",
     notes: "Top-level band; centred 3-column grid. Children go in the centre column (new_section handles this). Make a header section sticky with config.stickyPosition; add a video/pattern background via config.",
   },
-  container: { specials: { tabIndex: "Tab order.", custom_class: "CSS class.", custom_css: "Raw CSS." }, config: { maxWidth: "Max width.", maxWidthUnit: "Max-width unit.", fixedPosition: "Float/pin the box (e.g. bottom_right) — for back-to-top / chat bubbles.", fixedRight: "Pinned offset from right (px).", fixedBottom: "Pinned offset from bottom (px).", fixedLeft: "Pinned offset from left (px).", stickyPosition: "Sticky mode.", stickyTop: "Sticky offset from top (px).", stickyBottom: "Sticky offset from bottom (px).", pinnedPoint: "Section id where pinning starts.", unpinnedPoint: "Section id where pinning ends.", useAutoScroll: "Auto-scroll the box (boolean).", initMaxHeight: "Collapsed max-height (px).", isUseInitMaxHeight: "Animate from initMaxHeight (boolean).", maxHeight: "Expanded max-height (px).", animation: "Entrance animation." }, events: "click, hover — clickable groups are common.", notes: "Generic grid box; nest children with their own grid. Pin a floating button/sidebar via config.fixedPosition; sticky filters via stickyTop + pinnedPoint/unpinnedPoint." },
+  container: { specials: { tabIndex: "Tab order.", custom_class: "CSS class.", custom_css: "Raw CSS." }, config: { maxWidth: "Max width.", maxWidthUnit: "Max-width unit.", fixedPosition: "Float/pin the box (e.g. bottom_right) — for back-to-top / chat bubbles.", fixedRight: "Pinned offset from right (px).", fixedBottom: "Pinned offset from bottom (px).", fixedLeft: "Pinned offset from left (px).", stickyPosition: "Sticky mode.", stickyTop: "Sticky offset from top (px).", stickyBottom: "Sticky offset from bottom (px).", pinnedPoint: "Section id where pinning starts.", unpinnedPoint: "Section id where pinning ends.", useAutoScroll: "Auto-scroll the box (boolean).", initMaxHeight: "Collapsed max-height (px).", isUseInitMaxHeight: "Animate from initMaxHeight (boolean).", maxHeight: "Expanded max-height (px).", animation: "Entrance/attention animation { type, delay, duration, repeat }: type = animate.css name (fadeInUp, zoomIn, bounceIn, pulse…), delay/duration in s, repeat 1|2|3|'infinite'. See get_build_guide → Motion." }, events: "click, hover — clickable groups are common.", notes: "Generic grid box; nest children with their own grid. Pin a floating button/sidebar via config.fixedPosition; sticky filters via stickyTop + pinnedPoint/unpinnedPoint." },
   row: { events: "none", notes: "Simple horizontal wrapper." },
   tabs: { specials: { activeTab: "Default active tab index.", tabs: "Tab definitions [{id,name}].", navMode: "How tabs switch: toggle | …", showNav: "Show the tab nav (boolean).", showBullet: "Show bullets (boolean).", showDivider: "Show a divider (boolean)." }, config: { navPosition: "top|left|right|bottom.", alignNav: "Nav alignment.", nav_display_style: "Nav style." }, events: "tab — fires when the active tab changes.", notes: "Tabbed container; each tab maps to a tab item the content reacts to (e.g. account panels, product detail/description/reviews)." },
   collapse: { events: "none", notes: "Accordion container (collapse-item children)." },
@@ -318,7 +318,10 @@ export const ELEMENT_ATTRS: Record<string, ElementAttrs> = {
   "grid-category": { specials: { showCategories: "Categories to show [{id,...}] (else all).", isAutoCatchMenuLevelFirst: "Auto-pick top-level categories (boolean)." }, config: { columns: "Categories per row.", minimum_card_width: "Min card width (autofit, px).", sizeThumbnail: "{width,height} of the category image.", responsive: "fixed | autofit.", imageBorderRadius: "Image radius (px).", cardBackground: "Card background.", cardBorderRadius: "Card radius.", name_padding_y: "Padding around the name." }, events: "none", notes: "Lists product categories. Create categories first (create_product_category)." },
   "slider-category": { specials: { showCategories: "Categories to show [{id,...}].", on_hover: "Card hover effect (zoom-in|…)." }, config: { columns: "Visible categories.", minimum_card_width: "Min card width (px).", sizeThumbnail: "{width,height} of the image.", imageBorderRadius: "Image radius.", navSize: "Arrow size (px).", arrowColor: "Arrow colour." }, events: "none" },
   "customer-address": { events: "none", bindings: ["customer_address::full_name", "customer_address::address", "customer_address::phone_number", "customer_address::pdc", "customer_address::is_default"], notes: "Member saved addresses." },
-  wishlist: { specials: { svg: "Icon SVG.", itemCount: "Badge count." }, config: { itemCountColor: "Badge text colour.", itemBackgroundColor: "Badge background.", itemCountFontSize: "Badge size.", itemCountFontWeight: "Badge weight.", itemCountBorderRadius: "Badge radius.", itemCountFontFamily: "Badge font." }, events: "click — opens the wishlist." },
+  wishlist: { specials: { svg: "Icon SVG.", itemCount: "Badge count." }, config: { itemCountColor: "Badge text colour.", itemBackgroundColor: "Badge background.", itemCountFontSize: "Badge size.", itemCountFontWeight: "Badge weight.", itemCountBorderRadius: "Badge radius.", itemCountFontFamily: "Badge font." }, events: "No built-in click: add an open_page event to your wishlist page (one holding a wishlist-container)." },
+  "wishlist-container": { notes: "Wishlist page block (store page). Children: ONE wishlist-item (template, repeated per saved product) + ONE wishlist-empty (shown when none). Editor default item = row of image-dataset (wishlist_item::product_image) | text-dataset name + price | button with event wishlist_remove_item; empty = text + button open_page back to the shop." },
+  "wishlist-item": { notes: "Per-product template inside wishlist-container — bind children to wishlist_item::product_name / product_price / product_original_price / product_image / product_short_description; a button with action wishlist_remove_item removes the product." },
+  "wishlist-empty": { notes: "Empty state inside wishlist-container (e.g. 'Chưa có sản phẩm yêu thích' + a button open_page to the shop)." },
   "favorite-icon": { config: { mask: "Heart icon SVG mask.", colorActive: "Colour when favourited." }, events: "click — toggle favourite (add_wishlist_product / wishlist_remove_item).", notes: "Heart toggle on a product card; pairs with the wishlist element in the header." },
   "bonus-items": { specials: { typeBonus: "combo_product | other." }, events: "none" },
 

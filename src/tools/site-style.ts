@@ -96,7 +96,7 @@ function parseThemeDescription(d: unknown): { description_vi: string; descriptio
 export function registerSiteStyleTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "get_site_info",
-    "Get full site information: name, domain, settings (colors, typography, layout, language, payment methods, etc.)",
+    "Get full site information: name, domain, settings (colors, typography, layout, language, payment methods, etc.) and preview_img — the latest homepage screenshots (1920_1080 desktop / 430_932 mobile), refreshed after publish_site.",
     {},
     () =>
       handle(async () => {
@@ -111,6 +111,7 @@ export function registerSiteStyleTools(server: McpServer, api: WebcakeCmsApi, ha
           logo: (site as any).logo || undefined,
           favicon: (site as any).favicon || undefined,
           settings: (site as any).settings || {},
+          preview_img: (site as any).preview_img || undefined,
           created_at: (site as any).created_at,
         };
       })

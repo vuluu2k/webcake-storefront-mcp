@@ -59,7 +59,7 @@ const CATEGORY_MEMBERS = {
     "detect-address", "postal-code", "country", "input-file", "input-number",
     "input-date", "input-search", "input-product-note", "otp-input", "rating-input",
     "two-point-range", "identity", "search-form", "search-droppable", "color-group",
-    "switch",
+    "switch", "otp-method",
   ],
   commerce: [
     "grid-product", "slider-product", "product-gallery", "product-image-carousel",
@@ -69,7 +69,7 @@ const CATEGORY_MEMBERS = {
     "bonus-items", "flash-sale", "promotions", "promotions-short", "grid-category",
     "slider-category", "number-step", "warehouse", "warehouse-dataset",
     "customer-address", "reward-point", "referral-code", "lucky-wheel", "tee-form",
-    "wishlist", "favorite-icon",
+    "wishlist", "favorite-icon", "wishlist-container", "wishlist-item", "wishlist-empty",
   ],
   navigation: [
     "menu", "menu-item", "menu-anchor-item", "submenu", "menu-droppable", "member-bar",
@@ -84,6 +84,7 @@ const CATEGORY_MEMBERS = {
   ],
   course: [
     "lesson-sidebar", "lesson-items", "next-lesson-droppable", "list-lesson-droppable",
+    "list-courses",
   ],
 };
 
@@ -123,6 +124,9 @@ const SUMMARY: Record<string, string> = {
   "grid-product": "Product grid (lists products from the store).",
   "slider-product": "Product slider/carousel.",
   "cart-items": "Shopping cart line items.",
+  "wishlist-container": "Wishlist page list: holds a wishlist-item template + a wishlist-empty state.",
+  "wishlist-item": "Template repeated per saved product (bind children to wishlist_item::…).",
+  "wishlist-empty": "Shown instead of the items when the wishlist is empty.",
   "cart-icon": "Cart icon with item count.",
   "quantity-input": "Quantity stepper for products.",
   payment: "Payment methods block.",

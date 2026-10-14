@@ -5,7 +5,9 @@ export const BUILD_GUIDE = `# BuilderX page authoring guide
 
 ## DESIGN SYSTEM — lock this FIRST, every build (this is what makes free composition look DESIGNED)
 There are NO page templates here and NO seeded data — you COMPOSE every page from elements
-based on the user's actual goal. To make that composition look intentional (not a random pile
+based on the user's actual goal. (One optional shortcut: a single section may start from the
+designer section library — list_section_templates → add_section({ template }) — then restyle it
+to the locked system below.) To make that composition look intentional (not a random pile
 of default elements), LOCK a small design system before you place anything, and reuse it on
 EVERY section and EVERY page:
 - PALETTE — from the site THEME matrix vars \`var(--color_RC)\` (see Colours below). Pick: page
@@ -348,7 +350,7 @@ create the globals — they embed into each page's source. If you later overwrit
 (delete_global_section by the section NODE id, then create once) to re-embed cleanly. Edit a global
 later with update_global_section_element(s) and it updates on every page at once.
 
-STICKY & PINNED (runtime.config, on a section or any element):
+STICKY & PINNED (runtime.config, on a section or a text/image/button/shape/container element):
   position:"sticky"  sticks while scrolling — the usual sticky header: the header section gets
                      { position:"sticky", stickyPosition:"autotop", stickyTop:0 }. stickyPosition:
                      autotop (default) | autobottom | default (both); offsets stickyTop / stickyBottom (px).
@@ -357,6 +359,23 @@ STICKY & PINNED (runtime.config, on a section or any element):
                      bottom_left | bottom_center | bottom_right | center_left | center_right; offsets
                      fixedTop / fixedLeft / fixedRight / fixedBottom (px, default 20).
   Anything else (or unset) = normal flow. stickyPosition alone does nothing without position:"sticky".
+
+MOTION (text, image, button, shape, container) — tasteful: one entrance per block, short delays:
+  runtime.config.animation = { type:"fadeInUp", delay:0.2, duration:1, repeat:1 }   // seconds; repeat 1|2|3|"infinite"
+  type = an animate.css name: fadeIn / fadeInUp / fadeInLeft / zoomIn / bounceIn / backInUp / slideInUp /
+  flipInX … (attention seekers pulse / heartBeat / tada / shakeX — "infinite" only on one small CTA).
+  Stagger a row of cards with delay 0, 0.15, 0.3 … so they cascade in.
+  ANIMATED WORDS (typing / rotating headline, text or button): wrap the words in specials.text with
+    <span class="animationText" data-type="typed" data-word="Cà phê\\nBánh ngọt\\nTrà sữa"
+          data-delay="0" data-duration="1" data-repeat="infinite">Cà phê</span>
+  and set specials.text_animation_type to the same type. data-type: typed | typed2 | clip | rotate3 (or an
+  animate.css name); data-word = the words to cycle, one per line.
+  HOVER feedback is an event: { eventName:"hover", action:"scale" | "transform_y" | "change_background" |
+  "change_text_color" | "bold" …, duration:0.2 } (duration = transition seconds, default 0.1).
+
+TYPOGRAPHY PRESETS: the theme defines 9 text styles — use them so text follows the site theme:
+  style:{ font:"var(--font_N)", color:"var(--font_color_N)" }  N: 0-5 = H1-H6, 6-8 = paragraph large/normal/small.
+  Don't also set fontSize/fontWeight/fontFamily on that node (they'd override the preset).
 
 ### HEADER must be RESPONSIVE — add a MOBILE MENUBAR, don't just let nav stack
 A header built as one horizontal row of nav links looks fine on desktop but on a phone the links

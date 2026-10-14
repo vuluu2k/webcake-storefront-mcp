@@ -24,6 +24,7 @@ export class WebcakeCmsApi {
   sessionId: string;
   private _adminToken: string | null;
   private _cmsApiKey: string | null;
+  private _siteBps: Promise<Record<string, [number, number]> | null> | null = null;
 
   constructor({ baseUrl, token, siteId, sessionId }: ApiInit) {
     this.baseUrl = (baseUrl || "").replace(/\/$/, "");
@@ -124,6 +125,28 @@ export class WebcakeCmsApi {
     this.siteId = siteId;
     this._adminToken = null;
     this._cmsApiKey = null;
+    this._siteBps = null;
+  }
+  // ── Section template library (designer-made blocks behind the editor's template picker) ──
+  listTemplateCategories() {
+    return this.request("GET", `/api/v1/templates/categories`);
+  }
+  /** Templates (each { id, name, thumbnail, source: JSON string of ONE node, usually a SECTION }).
+   *  Query: id = category id (omit for all), term, page, limit. */
+  listTemplates(query: { id?: string; term?: string; page?: number; limit?: number } = {}) {
+    return this.request("GET", `/api/v1/templates`, { query });
+  }
+  /** The site's breakpoints ({ bpN: [minW, maxW] } from settings, which may be a JSON string),
+   *  or null when unset/unreadable — callers then use the standard four. Cached per site. */
+  getSiteBreakpoints(): Promise<Record<string, [number, number]> | null> {
+    this._siteBps ??= this.getSite()
+      .then((res: any) => {
+        const site = res?.data ?? res;
+        const settings = typeof site?.settings === "string" ? JSON.parse(site.settings || "{}") : site?.settings;
+        return settings?.breakpoints || null;
+      })
+      .catch(() => null);
+    return this._siteBps;
   }
   /** Update auth token (in-memory) */
   switchToken(token: string) {

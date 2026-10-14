@@ -119,6 +119,22 @@ export const EVENT_ACTIONS: EventAction[] = [
   { action: "lightbox", trigger: "click", category: "media", summary: "Open an image in a lightbox.", optional: ["lightboxLink"] },
   { action: "set_address_default", trigger: "click", category: "account", summary: "Mark a saved address as the default." },
   { action: "change_avatar", trigger: "click", category: "account", summary: "Change the member avatar." },
+
+  // From builderx_spa EventSetting.vue actions(); handled in the renderer (events.js, or
+  // common.ex / swiper.js / form.js / lesson-sidebar.js where noted).
+  { action: "filter", trigger: "click", category: "ui", summary: "Apply the product filters listed in `filters` (filter element ids; their selections become URL params) — e.g. an 'Apply' button on a filter panel. and_filters must all be chosen, or_filters at least one. redirect_type page|category (+ page_id / category_id) sends the shopper to that listing.", required: ["filters"], optional: ["and_filters", "or_filters", "or_filter_is_select_only_one", "product_id_auto_redirect", "redirect_type", "page_id", "category_id"], target_in_page: ["filters", "and_filters", "or_filters"] },
+  { action: "change_language", trigger: "click", category: "navigation", summary: "Language switcher: reopen the current page/product/category in another language. change_language = target language code (e.g. 'en').", required: ["change_language"] },
+  { action: "change_text_style", trigger: "click", category: "content", summary: "Restyle another text element (e.g. highlight the active option). text_style = style object.", required: ["target_id", "text_style"], target_in_page: ["target_id"] },
+  { action: "open_product_link", trigger: "click", category: "navigation", summary: "Open one of the product's custom links (target_custom_links = 1-based index), else default_url. target_href _self|_blank.", optional: ["target_custom_links", "default_url", "target_href"] },
+  { action: "add_bonus_product_to_cart", trigger: "click", category: "cart", summary: "Add a promotion's bonus/gift product to the cart (button inside a promotion bonus item).", optional: ["open_page", "productNoteElId"] },
+  { action: "send_botcake_mess", trigger: "click", category: "contact", summary: "Open a Botcake chatbot conversation.", required: ["botcake_ref_url"] },
+  { action: "delete_customer_address", trigger: "click", category: "account", summary: "Delete this saved address (inside a customer-address list on the member profile page)." },
+  { action: "course_submit", trigger: "click", category: "form", summary: "Submit a course assignment (uploads files). The customer must be logged in and have bought the course." },
+  { action: "auto_next_track", trigger: "click", category: "media", summary: "Course lesson sidebar switch: when on, auto-play the next lesson after a video ends (lesson-sidebar.js)." },
+  { action: "play_video", trigger: "tab", category: "media", summary: "When a slider reaches slide target_slide (1-based), play video element target_video (swiper.js).", required: ["target_slide", "target_video"], target_in_page: ["target_video"] },
+  { action: "close_search_droppable", trigger: "onenter", category: "ui", summary: "Close the search suggestions dropdown when Enter is pressed in the search box." },
+  { action: "bold", trigger: "hover", category: "hover", summary: "Make the text bold on hover (common.ex)." },
+  { action: "create_article", trigger: "submit", category: "form", summary: "Form submit creates a blog article from the form fields — user-submitted posts (form.js)." },
 ];
 
 const ACTION_BY_NAME: Record<string, EventAction> = {};
@@ -199,8 +215,8 @@ export function validateEvents(node: any, allIds: Set<string>): { errors: string
       if (ev[f] == null || ev[f] === "") warnings.push(`Event "${ev.action}" on "${where}" is missing required field "${f}".`);
     }
     for (const f of def.target_in_page || []) {
-      const v = ev[f];
-      if (v && !allIds.has(v)) warnings.push(`Event "${ev.action}" on "${where}" targets missing element "${v}" (field ${f}).`);
+      for (const v of [].concat(ev[f] ?? [])) // a field may hold one id or a list (filter's filters)
+        if (v && !allIds.has(v)) warnings.push(`Event "${ev.action}" on "${where}" targets missing element "${v}" (field ${f}).`);
     }
   }
   return { errors, warnings };

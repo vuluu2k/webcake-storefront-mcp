@@ -256,7 +256,13 @@ Two-step safety: dry_run=true (default) describes what will happen; dry_run=fals
         // is exactly that link (resolvePreviewUrl == link(): primary_domain wins, else subdomain).
         const res = await api.publishSite(preview_url ? { domain: preview_url } : {});
         const data = (res && res.data) || res;
-        return { success: true, published_at: data && data.published_at, site: data && data.name, preview_url };
+        return {
+          success: true,
+          published_at: data && data.published_at,
+          site: data && data.name,
+          preview_url,
+          screenshots: "Homepage screenshots (desktop 1920_1080 + mobile 430_932) are captured in the background after a publish (at most once an hour). About a minute later get_site_info returns them in preview_img — open one with invoke_tool('read_image', { url }) to check the live result visually.",
+        };
       })
   );
 
