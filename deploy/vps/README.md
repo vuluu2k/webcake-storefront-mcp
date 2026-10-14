@@ -55,7 +55,7 @@ The runner only makes **outbound** connections to GitHub, so the VPS needs no pu
 | Secret | `PG_PASSWORD` | `openssl rand -hex 16`. **Set it once and never change it**: Postgres only applies the password when the volume is first initialized. |
 | Secret | `PEXELS_API_KEY` | (optional) |
 
-The workflow uses the `prod` environment (the same one Auto Release uses); you can enable *Required reviewers* to approve each deploy by hand.
+The workflow uses the `production` environment. GitHub creates it on the first run; you can enable *Required reviewers* to approve each deploy by hand.
 
 **Run it**: a `src/**` change on `main` deploys automatically **after Auto Release succeeds** (so the VPS runs the bumped version, and a failed release never ships). A push touching only `deploy/vps/**`, `scripts/**`, or deps deploys straight away. You can also use *Actions → Deploy VPS → Run workflow*.
 

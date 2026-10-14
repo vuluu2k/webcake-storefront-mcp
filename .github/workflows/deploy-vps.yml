@@ -42,7 +42,7 @@ jobs:
     # After a release: only when it succeeded.
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: [self-hosted, webcake-vps]
-    environment: prod
+    environment: production
     timeout-minutes: 30
     defaults:
       run:

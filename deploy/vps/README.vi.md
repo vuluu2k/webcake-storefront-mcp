@@ -55,7 +55,7 @@ Runner chỉ kết nối **ra ngoài** tới GitHub — VPS không cần IP publ
 | Secret | `PG_PASSWORD` | `openssl rand -hex 16` — **đặt 1 lần, đừng đổi** (Postgres chỉ nhận mật khẩu lúc khởi tạo volume) |
 | Secret | `PEXELS_API_KEY` | (tuỳ chọn) |
 
-Workflow dùng environment `prod` (cùng cái Auto Release đang dùng — có thể bật *Required reviewers* để duyệt tay trước mỗi deploy).
+Workflow dùng environment `production` — GitHub tự tạo ở lần chạy đầu (có thể bật *Required reviewers* để duyệt tay trước mỗi deploy).
 
 **Chạy** — thay đổi `src/**` trên `main` tự deploy **sau khi Auto Release chạy thành công** (VPS chạy đúng version đã bump, release lỗi thì không deploy); push chỉ đổi `deploy/vps/**`, `scripts/**`, deps thì deploy ngay; hoặc *Actions → Deploy VPS → Run workflow*.
 
