@@ -165,16 +165,16 @@ that view is the public one, so hidden posts and posts scheduled in the future a
 Built via the dashboard command pipeline: title + optional summary, HTML content, image URLs, and
 category linkage. Pass category_ids from create_blog_category / list articles' categories so the
 post shows up under those categories (it is also auto-filed under the default category). Image URLs
-must be hosted (search_images / upload_images). The backend generates the id and slug.`,
+must be hosted (search_images / upload_images). The backend generates the id and slug.
+SEO: set it afterwards with update_article({ id, seo }).`,
     {
       name: z.string().describe("Article title"),
       content: z.string().optional().describe("HTML content of the post"),
       summary: z.string().optional().describe("Short summary / excerpt"),
       images: z.array(z.string()).optional().describe("Hosted image URLs; the first is the cover image"),
       category_ids: z.array(z.string()).optional().describe("Blog category IDs to file the post under (from create_blog_category)"),
-      seo: seoSchema,
     },
-    ({ name, content, summary, images, category_ids, seo }) =>
+    ({ name, content, summary, images, category_ids }) =>
       handle(async () => {
         const id = randomUUID();
         const commands: any[] = [{ name: "create_article", data: { id, name } }];
@@ -183,7 +183,6 @@ must be hosted (search_images / upload_images). The backend generates the id and
         if (content) commands.push({ name: "content_article", data: { id, content } });
         if (category_ids && category_ids.length)
           commands.push({ name: "bulk_add_category_to_article", data: { id, ids: category_ids } });
-        if (seo) commands.push({ name: "set_article_seo", data: { id, meta_tags: mergeSeoTags(seo) } });
 
         await api.createBlogArticle(commands);
         return {

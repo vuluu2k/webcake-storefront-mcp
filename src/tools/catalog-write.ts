@@ -65,7 +65,8 @@ export function registerCatalogWriteTools(server: McpServer, api: WebcakeCmsApi,
     `Create a product so the storefront has real merchandise (grid-product / slider-product bindings need this).
 Simple use: pass name + price (+ images, category_ids). One default variation with the price/stock is created for you.
 Advanced use: pass attributes (e.g. Color/Size) + variations for a multi-SKU product.
-Images must be HOSTED URLs — get them from search_images or upload_images first. The backend generates id, slug and publishes the product.`,
+Images must be HOSTED URLs — get them from search_images or upload_images first. The backend generates id, slug and publishes the product.
+SEO: set it afterwards with update_product({ product_id, seo }).`,
     {
       name: z.string().describe("Product name"),
       price: z.number().optional().describe("Selling price (used when you don't pass variations). Required unless variations are given."),
@@ -81,9 +82,8 @@ Images must be HOSTED URLs — get them from search_images or upload_images firs
         .optional()
         .describe("Variant axes, e.g. [{name:'Color',values:['Đen','Trắng']},{name:'Size',values:['S','M','L']}]"),
       variations: z.array(variationSpec).optional().describe("Explicit per-SKU variations. Omit to auto-build one from price/stock/sku."),
-      seo: seoSchema,
     },
-    ({ name, price, original_price, stock, sku, images, description, short_description, category_ids, attributes, variations, seo }) =>
+    ({ name, price, original_price, stock, sku, images, description, short_description, category_ids, attributes, variations }) =>
       handle(async () => {
         let vars = variations;
         // Enrich attribute axes with the id + keyword shape the storefront variation selector
@@ -160,12 +160,7 @@ Images must be HOSTED URLs — get them from search_images or upload_images firs
         // Success response is { product: {...} } at the top level (not under data).
         const prod = res?.product || res?.data?.product || res?.data?.attributes || res?.data || {};
         const productId = prod?.id || null;
-        const warning =
-          seo && productId
-            ? await applyProductSeo(api, productId, seo).then(() => undefined, (e) => `Product created, but SEO failed: ${e?.message ?? e}`)
-            : undefined;
         return {
-          ...(warning ? { warning } : {}),
           success: true,
           product_id: productId,
           name,
@@ -180,15 +175,15 @@ Images must be HOSTED URLs — get them from search_images or upload_images firs
   server.tool(
     "create_product_category",
     `Create a product category (so grid-category / a category page has something to show, and products can be filed under it).
-Returns the new category id — pass it to create_product's category_ids. Image must be a hosted URL.`,
+Returns the new category id — pass it to create_product's category_ids. Image must be a hosted URL.
+SEO: set it afterwards with update_product_category({ id, seo }).`,
     {
       name: z.string().describe("Category name"),
       image: z.string().optional().describe("Hosted image URL for the category card"),
       description: z.string().optional().describe("Category description"),
       parent_id: z.string().optional().describe("Parent category id for a sub-category"),
-      seo: seoSchema,
     },
-    ({ name, image, description, parent_id, seo }) =>
+    ({ name, image, description, parent_id }) =>
       handle(async () => {
         const id = randomUUID();
         const commands: any[] = [
@@ -202,8 +197,6 @@ Returns the new category id — pass it to create_product's category_ids. Image 
           });
         }
 
-        if (seo) commands.push({ name: "set_category_seo", data: { id, meta_tags: mergeSeoTags(seo) } });
-
         await api.createProductCategory(commands);
         return { success: true, category_id: id, name, ...(parent_id ? { parent_id } : {}) };
       })
@@ -211,20 +204,19 @@ Returns the new category id — pass it to create_product's category_ids. Image 
 
   server.tool(
     "create_blog_category",
-    `Create a blog/article category. Returns the new category id — pass it to create_article's category_id so posts are grouped (post-list / blog pages bind to it). Image must be a hosted URL.`,
+    `Create a blog/article category. Returns the new category id — pass it to create_article's category_id so posts are grouped (post-list / blog pages bind to it). Image must be a hosted URL.
+SEO: set it afterwards with update_blog_category({ id, seo }).`,
     {
       name: z.string().describe("Blog category name"),
       image: z.string().optional().describe("Hosted image URL"),
       description: z.string().optional().describe("Category description"),
-      seo: seoSchema,
     },
-    ({ name, image, description, seo }) =>
+    ({ name, image, description }) =>
       handle(async () => {
         const id = randomUUID();
         const commands: any[] = [{ name: "create_category", data: { id, name } }];
         if (description) commands.push({ name: "description_category", data: { id, description } });
         if (image) commands.push({ name: "image_category", data: { id, image } });
-        if (seo) commands.push({ name: "set_category_seo", data: { id, meta_tags: mergeSeoTags(seo) } });
 
         await api.createBlogCategory(commands);
         return { success: true, category_id: id, name };
