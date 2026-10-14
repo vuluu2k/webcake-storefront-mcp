@@ -5,6 +5,13 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.34.1] - 2026-10-14
+
+### Fixed
+- Cảnh báo "not a container" của `validate_page` nay chỉ xuất hiện với các element leaf thật sự (`text`, `image`, `button`, các input, dataset...); các element dạng container như `swiper`, `grid-product`, `post-list`, `member-bar` không còn bị cảnh báo sai khi có children, dù factory của chúng mặc định không tạo children nào.
+- `build_page`, `add_section` và các thao tác ghi khác có áp dụng breakpoint của site nay coi breakpoint rộng nhất (không giới hạn trên) là view desktop, nhờ đó site chỉ định nghĩa một breakpoint duy nhất không còn bị áp layout điện thoại ở mọi nơi.
+- Kết quả tra breakpoint của site bị lỗi nay không còn được cache lại, nhờ đó lần lưu trang kế tiếp sẽ thử lại thay vì mãi mãi rơi về bốn breakpoint chuẩn.
+
 ## [1.34.0] - 2026-10-14
 
 ### Added

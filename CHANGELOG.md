@@ -5,6 +5,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.34.1] - 2026-10-14
+
+### Fixed
+- `validate_page`'s "not a container" warning now only fires for true leaf elements (`text`, `image`, `button`, inputs, datasets, etc.); container-like elements such as `swiper`, `grid-product`, `post-list`, and `member-bar` no longer wrongly warn when they have children, even though their factories create none by default.
+- `build_page`, `add_section`, and other site-breakpoint-aware writes now treat the open-ended (widest) site breakpoint as the desktop view, so a site defined with a single breakpoint no longer has the phone layout applied everywhere.
+- A failed site-breakpoint lookup is no longer cached, so the next page save retries it instead of permanently falling back to the standard breakpoints.
+
 ## [1.34.0] - 2026-10-14
 
 ### Added
