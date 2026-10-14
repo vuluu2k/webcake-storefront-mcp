@@ -5,6 +5,15 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.33.0] - 2026-10-14
+
+### Added
+- Every tool, whether registered natively or reached through the search gateway (`search_tools`/`invoke_tool`/`list_tool_groups`), now reports `readOnlyHint` and `destructiveHint` annotations derived from its name's verb prefix (e.g. `list_`/`get_`/`search_`/`validate_` tools are marked read-only, `delete_`/`remove_`/`uninstall_` tools are marked destructive), so MCP clients can auto-allow reads and warn before destructive calls.
+- New on-demand `image_seo` tool group ("Image alt / SEO audit") bundles `scan_unique_images`, `read_image`, `read_images`, `list_image_elements`, `fetch_images_for_alt_fill`, and `set_image_alts`, discoverable via `list_tool_groups` and reachable through `search_tools` + `invoke_tool`.
+
+### Changed
+- `scan_unique_images`, `read_image`, `read_images`, `list_image_elements`, `fetch_images_for_alt_fill`, and `set_image_alts` are no longer part of the always-loaded `web` group; they now load on demand under the new `image_seo` group (via `WEBCAKE_TOOLS` or `search_tools`/`invoke_tool`), trimming the native tool count by default.
+
 ## [1.32.0] - 2026-10-14
 
 ### Changed

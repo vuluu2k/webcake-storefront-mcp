@@ -5,6 +5,15 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.33.0] - 2026-10-14
+
+### Added
+- Mọi tool, dù được đăng ký native hay được tiếp cận qua search gateway (`search_tools`/`invoke_tool`/`list_tool_groups`), nay đều có thêm annotation `readOnlyHint` và `destructiveHint` được suy ra từ tiền tố động từ trong tên tool (ví dụ các tool `list_`/`get_`/`search_`/`validate_` được đánh dấu read-only, các tool `delete_`/`remove_`/`uninstall_` được đánh dấu destructive), nhờ đó client MCP có thể tự động cho phép các lệnh đọc và cảnh báo trước các lệnh phá hủy.
+- Nhóm tool mới dạng on-demand `image_seo` ("Image alt / SEO audit") gồm `scan_unique_images`, `read_image`, `read_images`, `list_image_elements`, `fetch_images_for_alt_fill` và `set_image_alts`, có thể xem qua `list_tool_groups` và gọi qua `search_tools` + `invoke_tool`.
+
+### Changed
+- `scan_unique_images`, `read_image`, `read_images`, `list_image_elements`, `fetch_images_for_alt_fill` và `set_image_alts` không còn thuộc nhóm `web` luôn được tải sẵn; các tool này nay được tải theo yêu cầu dưới nhóm `image_seo` mới (qua `WEBCAKE_TOOLS` hoặc `search_tools`/`invoke_tool`), giúp giảm số lượng tool native được tải theo mặc định.
+
 ## [1.32.0] - 2026-10-14
 
 ### Changed
