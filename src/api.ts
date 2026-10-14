@@ -208,8 +208,15 @@ export class WebcakeCmsApi {
   listPageContents(query?: any) {
     return this.request("GET", `/api/v1/site/${this.siteId}/page_contents`, { query });
   }
-  updatePageContent(params: any) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/page_contents/page_content`, { body: params });
+  /** One page's translation in one language: { content: { [elementId]: {...} } } ({} when none yet). Read-only. */
+  getPageContent(page_id: string, lang: string) {
+    return this.request("POST", `/api/v1/site/${this.siteId}/page_contents/page_content`, { body: { page_id, lang } });
+  }
+  /** Upsert one page translation (matched by page_id + language_code) — the editor's multilingual save. */
+  updatePageContent({ page_id, language_code, content, meta_tags }: { page_id: string; language_code: string; content: any; meta_tags?: any[] }) {
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/multilingual/update_page_contents`, {
+      body: { pages: [{ contents: [{ page_id, language_code, content, meta_tags, site_id: this.siteId }] }] },
+    });
   }
   listGlobalSections() {
     return this.request("GET", `/api/v1/site/${this.siteId}/global_sections`);
@@ -652,14 +659,24 @@ export class WebcakeCmsApi {
   listCustomers(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/customer/all`, { query });
   }
+  /** /api/v1/cms_function/:site_id/* sits behind builderx_api's CmsFunctionAuth plug, which only
+   *  accepts the site's CMS admin token (db_collections/token) as the Bearer — the session JWT 401s. */
+  private async cmsFunction(method: string, path: string, body?: any) {
+    await this.fetchCmsTokens();
+    if (!this._adminToken) throw new Error("This site has no CMS admin token, so cms_function routes are unavailable.");
+    return this.request(method, `/api/v1/cms_function/${this.siteId}${path}`, {
+      body,
+      headers: { Authorization: `Bearer ${this._adminToken}` },
+    });
+  }
   findCustomerById(id: string) {
-    return this.request("GET", `/api/v1/cms_function/${this.siteId}/customer/identity/${id}`);
+    return this.cmsFunction("GET", `/customer/identity/${encodeURIComponent(id)}`);
   }
   findCustomerByPhone(phone: string) {
-    return this.request("GET", `/api/v1/cms_function/${this.siteId}/customer/phone/${phone}`);
+    return this.cmsFunction("GET", `/customer/phone/${encodeURIComponent(phone)}`);
   }
   findCustomerByEmail(email: string) {
-    return this.request("GET", `/api/v1/cms_function/${this.siteId}/customer/email/${email}`);
+    return this.cmsFunction("GET", `/customer/email/${encodeURIComponent(email)}`);
   }
 
   // ── Global Sources (cart, popup, overview, etc.) ──
@@ -711,7 +728,7 @@ export class WebcakeCmsApi {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/automations/delete`, { body: { ids } });
   }
   sendMail(params: any) {
-    return this.request("POST", `/api/v1/cms_function/${this.siteId}/application/automation/send_mail`, { body: params });
+    return this.cmsFunction("POST", "/application/automation/send_mail", params);
   }
 
   // ── App lifecycle (applications/subcriptions) ──
@@ -1161,13 +1178,7 @@ export class WebcakeCmsApi {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/course-app/members`, { query });
   }
 
-  // ── Sale channels: sitemap + partner feeds + catalogs ──
-  sitemapSync(kind: string) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/sale_channels/sitemap/sync_${kind}`, { body: {} });
-  }
-  sitemapRebuild(type?: string) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/sale_channels/sitemap/rebuild`, { body: { type } });
-  }
+  // ── Sale channels: partner feeds + catalogs ──
   listPartnerFeeds(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/sale_channels/partner_feeds/all`, { query });
   }

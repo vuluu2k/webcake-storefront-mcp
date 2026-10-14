@@ -348,6 +348,16 @@ create the globals — they embed into each page's source. If you later overwrit
 (delete_global_section by the section NODE id, then create once) to re-embed cleanly. Edit a global
 later with update_global_section_element(s) and it updates on every page at once.
 
+STICKY & PINNED (runtime.config, on a section or any element):
+  position:"sticky"  sticks while scrolling — the usual sticky header: the header section gets
+                     { position:"sticky", stickyPosition:"autotop", stickyTop:0 }. stickyPosition:
+                     autotop (default) | autobottom | default (both); offsets stickyTop / stickyBottom (px).
+  position:"pinned"  fixed to the viewport — floating hotline/Zalo button, back-to-top. ALSO set
+                     runtime.style.position:"fixed". fixedPosition: top_left | top_center | top_right |
+                     bottom_left | bottom_center | bottom_right | center_left | center_right; offsets
+                     fixedTop / fixedLeft / fixedRight / fixedBottom (px, default 20).
+  Anything else (or unset) = normal flow. stickyPosition alone does nothing without position:"sticky".
+
 ### HEADER must be RESPONSIVE — add a MOBILE MENUBAR, don't just let nav stack
 A header built as one horizontal row of nav links looks fine on desktop but on a phone the links
 squash or collapse into an ugly vertical pile. Build a header that carries TWO navs and swap them
@@ -374,7 +384,7 @@ A popup is a GLOBAL SOURCE, not a page section. Compose it from elements (there 
 shortcut), then save it as a "popup" global source:
 1. Build the popup node: new_element("popup", { children:[…heading,text,form,close button…], style:{ width:480, background:"#fff", borderRadius:"12px" }, config:{ popupHorizontalPosition:"center", popupVerticalPosition:"center" }, specials:{ effect:"fade-in", timeAnim:0.5 } }).
    - SIZE + POSITION live in the popup's runtime style/config (width/height/background + popupHorizontalPosition/popupVerticalPosition), NOT in specials. createPopup seeds a centred-modal default.
-   - TRIGGER (auto-open) lives in SPECIALS: \`openPopupAction:"openPopupWithTime"\` + \`timeOpenPopup:<seconds>\` for a delay; \`page_ids:[…]\` to limit which pages it shows on; \`effect\`/\`timeAnim\` for the animation. (There is no exit-intent/only-once flag in the node — those are app settings.)
+   - TRIGGER (auto-open) lives in SPECIALS: \`openPopupAction:"openPopupWithTime"\` + \`timeOpenPopup:<seconds>\` for a delay; \`page_ids:[…]\` to limit which pages it shows on; \`effect\`/\`timeAnim\` for the animation. Other triggers: \`openPopupWhenScroll\` + \`target:"<elementId>"\` (opens when that element scrolls into view), \`openWhenNonLogin\` (logged-out visitors only, after \`timeOpenPopup\`). \`countOpenPopup:<n>\` caps auto-opens per browser session (unset = every page view). There is no exit-intent trigger.
    - OVERLAY is NOT on the popup node — it's a field on the open_popup EVENT (popup_overlay:true).
 2. Save it: create_global_source({ component:"popup", source:{ sections:[<popupNode>] } }) -> returns its id.
 3. Open/close from any element via events: a button { action:"open_popup", popup_id:"<id>", popup_overlay:true };

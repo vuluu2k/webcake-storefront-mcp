@@ -65,7 +65,7 @@ test("search_tools surfaces the right tool for representative queries", async ()
     "affiliate payout": "list_affiliate_payouts",
     "email template": "get_email_templates",
     "appointment calendar": "list_appointment_calendars",
-    "sitemap": "sync_sitemap",
+    "partner feed": "list_partner_feeds",
     "pwa manifest": "get_pwa",
     "product ribbon": "list_ribbons",
   };

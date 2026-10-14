@@ -523,11 +523,21 @@ For full rewrites, use update_site_custom_code instead.`,
 
   server.tool(
     "list_page_contents",
-    "List multi-language contents of a page",
+    "List multi-language contents (translations) of the site's pages and global sections. Pass page_id + language_code to read one page's translation.",
     {
-      page_id: z.string().optional().describe("Filter by Page ID"),
+      page_id: z.string().optional().describe("Page ID — narrows the result to that page"),
+      language_code: z.string().optional().describe("With page_id: return just that language's content map"),
     },
-    ({ page_id }) => handle(() => api.listPageContents({ page_id }))
+    ({ page_id, language_code }) =>
+      handle(async () => {
+        if (page_id && language_code) {
+          const res: any = await api.getPageContent(page_id, language_code);
+          return res?.data ?? res;
+        }
+        const res: any = await api.listPageContents(); // backend ignores page_id here, so filter client-side
+        const data = res?.data ?? res;
+        return page_id ? { pages: (data?.pages || []).filter((p: any) => p.id === page_id) } : data;
+      })
   );
 
   server.tool(
@@ -537,26 +547,25 @@ IMPORTANT: Before calling, you MUST read existing content with list_page_content
     {
       page_id: z.string().describe("Page ID"),
       language_code: z.string().describe("Language code (e.g. 'en', 'vi')"),
-      content: z.record(z.any()).describe("Page content"),
+      content: z
+        .record(z.any())
+        .describe('Translations keyed by element id → field, e.g. { "<elementId>": { "text": "Hello" } } (also "placeholder", or "options": [{ id, name }]). Replaces this language\'s whole map — merge into the existing one.'),
       meta_tags: z.array(z.record(z.any())).optional().describe("SEO meta tags"),
     },
     ({ page_id, language_code, content, meta_tags }) =>
       handle(async () => {
         // Safeguard: read existing content and block if new content is suspiciously smaller
-        const existingRes = await api.listPageContents({ page_id });
-        const existingContents = (existingRes && existingRes.data) || existingRes || [];
-        if (Array.isArray(existingContents)) {
-          const existing = existingContents.find((c) => c.language_code === language_code);
-          if (existing && existing.content) {
-            const existingStr = JSON.stringify(existing.content);
-            const newStr = JSON.stringify(content);
-            if (existingStr.length > 200 && newStr.length < existingStr.length * 0.5) {
-              return {
-                error: `BLOCKED: New content (${newStr.length} chars) is much smaller than existing (${existingStr.length} chars) — ${Math.round((newStr.length / existingStr.length) * 100)}% of original. This may indicate fabricated data or data loss. Read existing content with list_page_contents first, then merge your changes.`,
-                existing_length: existingStr.length,
-                new_length: newStr.length,
-              };
-            }
+        const existingRes: any = await api.getPageContent(page_id, language_code);
+        const existing = existingRes?.data ?? existingRes;
+        if (existing && existing.content) {
+          const existingStr = JSON.stringify(existing.content);
+          const newStr = JSON.stringify(content);
+          if (existingStr.length > 200 && newStr.length < existingStr.length * 0.5) {
+            return {
+              error: `BLOCKED: New content (${newStr.length} chars) is much smaller than existing (${existingStr.length} chars) — ${Math.round((newStr.length / existingStr.length) * 100)}% of original. This may indicate fabricated data or data loss. Read it with list_page_contents(page_id, language_code) first, then merge your changes.`,
+              existing_length: existingStr.length,
+              new_length: newStr.length,
+            };
           }
         }
 

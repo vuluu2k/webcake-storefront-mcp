@@ -3,26 +3,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
 
-// Sale-channels app: sitemap generation, partner product feeds (Google/Facebook/etc.),
-// and catalog syncs. Google Ads / OAuth-connect flows are intentionally omitted —
+// Sale-channels app: partner product feeds (Google/Facebook/etc.) and catalog syncs.
+// Sitemaps need no tool: the backend builds them at render time (<domain>/root_sitemaps.xml). Google Ads / OAuth-connect flows are intentionally omitted —
 // they require an externally-authorized Google/Facebook partner.
 
 export function registerSaleChannelTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   const unwrap = (res: any, key?: string) => (key && (res?.data?.[key] ?? res?.[key])) ?? res?.data ?? res;
-
-  // ── Sitemap ──
-  server.tool(
-    "sync_sitemap",
-    "Sync a resource type into the site's sitemap. Requires sitemap enabled in site settings.",
-    { kind: z.enum(["products", "categories", "articles", "pages"]).describe("What to sync into the sitemap") },
-    ({ kind }) => handle(() => api.sitemapSync(kind)),
-  );
-  server.tool(
-    "rebuild_sitemap",
-    "Rebuild the whole sitemap (async background job).",
-    { type: z.string().optional().describe("Optional rebuild scope hint") },
-    ({ type }) => handle(() => api.sitemapRebuild(type)),
-  );
 
   // ── Partner feeds ──
   server.tool(

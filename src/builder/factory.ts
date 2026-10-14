@@ -640,6 +640,10 @@ export const createCartIcon = ({ svg, itemCount, config, style, children }: any 
 
   if (children) cart.children = children || []
 
+  // The renderer's cart-icon has no click handler of its own — opening the cart IS this event
+  // (SPA factory.js 9877f2c99). Without it a built cart icon does nothing when clicked.
+  cart.events = [{ id: 'EVENT-' + randomString(6), eventName: 'click', action: 'open_cart' }]
+
   return cart
 }
 
