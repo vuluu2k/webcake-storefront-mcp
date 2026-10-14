@@ -5,6 +5,11 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.33.1] - 2026-10-14
+
+### Changed
+- `create_product`, `create_product_category`, `create_blog_category`, and `create_article` no longer accept a `seo` parameter; set SEO afterwards with `update_product`, `update_product_category`, `update_blog_category`, or `update_article` respectively, as each create tool's description now points out.
+
 ## [1.33.0] - 2026-10-14
 
 ### Added

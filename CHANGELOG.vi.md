@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.33.1] - 2026-10-14
+
+### Changed
+- `create_product`, `create_product_category`, `create_blog_category` và `create_article` không còn nhận tham số `seo`; hãy đặt SEO sau khi tạo bằng `update_product`, `update_product_category`, `update_blog_category` hoặc `update_article` tương ứng, như mô tả của từng tool create đã chỉ ra.
+
 ## [1.33.0] - 2026-10-14
 
 ### Added
