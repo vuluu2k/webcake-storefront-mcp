@@ -5,6 +5,26 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.33.2] - 2026-10-14
+
+### Added
+- Kết quả trả về của `list_orders` nay có thêm trường `status_name` bên cạnh `status` dạng số.
+- `list_page_contents` nay nhận thêm tham số tùy chọn `language_code` (đi kèm `page_id`) để đọc trực tiếp content map của một bản dịch, thay vì chỉ liệt kê.
+
+### Changed
+- Tham số lọc `status` của `list_orders` nay ghi rõ enum trạng thái thật của backend (`new`, `submitted`, `shipped`, `delivered`, `returning`, `returned`, `canceled`, `removed`, `packing`, `pending`, `waiting`, `wait_print`, `printed`, `part_returned`, `received_money`, `wait_submit`, `ordered`, `draft`, `blocked`) thay vì các mã tự đặt trước đây, và nói rõ rằng bỏ trống (hoặc truyền `-1`) sẽ trả về mọi đơn hàng trừ `removed`/`blocked`.
+- `get_build_guide` và mô tả của element `section` nay mô tả đúng `runtime.config.position` (`sticky` so với `pinned`) cùng ý nghĩa thật của `stickyPosition`/`stickyTop`/`stickyBottom` và `fixedPosition`/`fixedTop`/`fixedLeft`/`fixedRight`/`fixedBottom`, thay cho mô tả chỉ có `stickyPosition` trước đây.
+- Mô tả của element `popup` và `get_build_guide` nay ghi đúng các trường trigger tự mở trong `specials` (`openPopupAction`, `timeOpenPopup`, `target`, `page_ids`, `countOpenPopup`) thay vì các tên trigger tự đặt trước đây.
+
+### Fixed
+- `find_customer` và `send_mail` không còn bị lỗi 401 Unauthorized: các route `cms_function` phía dưới nay xác thực bằng CMS admin token của site thay vì session JWT.
+- `update_page_content` nay ghi dữ liệu qua đúng endpoint cập nhật đa ngôn ngữ thay vì một endpoint chỉ-đọc, nhờ đó các thay đổi bản dịch được lưu thật.
+- Cơ chế an toàn chống mất dữ liệu của `update_page_content` nay so sánh với nội dung hiện có thật của đúng `page_id` và `language_code`, thay vì một lệnh liệt kê mà tham số `page_id` bị backend bỏ qua.
+- Element `cart-icon` được tạo qua `new_element`/`build_page` nay có sẵn event click → `open_cart` mặc định, nhờ đó cart icon vừa tạo sẽ mở giỏ hàng thay vì không phản hồi khi bấm.
+
+### Removed
+- Gỡ bỏ tool `sync_sitemap` và `rebuild_sitemap`: các route backend tương ứng đã bị xóa, vì sitemap nay được tạo tự động tại thời điểm render.
+
 ## [1.33.1] - 2026-10-14
 
 ### Changed

@@ -5,6 +5,26 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.33.2] - 2026-10-14
+
+### Added
+- `list_orders` responses now include a `status_name` field alongside the numeric `status`.
+- `list_page_contents` accepts an optional `language_code` (together with `page_id`) to read a single page's translation content map directly, instead of only listing.
+
+### Changed
+- `list_orders`'s `status` filter now documents the real backend status enum (`new`, `submitted`, `shipped`, `delivered`, `returning`, `returned`, `canceled`, `removed`, `packing`, `pending`, `waiting`, `wait_print`, `printed`, `part_returned`, `received_money`, `wait_submit`, `ordered`, `draft`, `blocked`) instead of invented codes, and clarifies that omitting it (or passing `-1`) returns all orders except `removed`/`blocked`.
+- `get_build_guide` and the `section` element docs now describe `runtime.config.position` (`sticky` vs `pinned`) with accurate `stickyPosition`/`stickyTop`/`stickyBottom` and `fixedPosition`/`fixedTop`/`fixedLeft`/`fixedRight`/`fixedBottom` semantics, replacing the previous `stickyPosition`-only description.
+- The `popup` element docs and `get_build_guide` now document the real auto-open trigger fields in `specials` (`openPopupAction`, `timeOpenPopup`, `target`, `page_ids`, `countOpenPopup`) instead of invented trigger names.
+
+### Fixed
+- `find_customer` and `send_mail` no longer fail with 401 Unauthorized: their underlying `cms_function` routes now authenticate with the site's CMS admin token instead of the session JWT.
+- `update_page_content` now writes through the correct multilingual update endpoint instead of a read-only one, so translation edits actually persist.
+- `update_page_content`'s data-loss safeguard now compares against the real existing content for the given `page_id` and `language_code`, instead of a listing call whose `page_id` filter was ignored by the backend.
+- `cart-icon` elements created via `new_element`/`build_page` now get a default click → `open_cart` event, so a built cart icon opens the cart instead of doing nothing.
+
+### Removed
+- `sync_sitemap` and `rebuild_sitemap` tools: the backend routes were deleted, as sitemaps are now built automatically at render time.
+
 ## [1.33.1] - 2026-10-14
 
 ### Changed
