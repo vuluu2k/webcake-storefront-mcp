@@ -107,3 +107,39 @@ test("invoke_tool dispatches to a real handler (reaches the stub api)", async ()
   const r = await callJson(s, "invoke_tool", { name: "list_ribbons", arguments: {} });
   assert.equal(r.isError, false, `expected success, got: ${r.text}`);
 });
+
+test("every tool carries annotations matching its verb", () => {
+  const s = build({ tools: "all" });
+  for (const [name, t] of Object.entries(s._registeredTools)) {
+    const a = t.annotations;
+    assert.equal(typeof a?.readOnlyHint, "boolean", `${name} has no readOnlyHint`);
+    if (/^(list|get|search)_/.test(name)) assert.equal(a.readOnlyHint, true, `${name} should be read-only`);
+    if (/^(delete|remove)_/.test(name)) assert.equal(a.destructiveHint, true, `${name} should be destructive`);
+    if (/^(create|update|delete|publish|upsert)_/.test(name)) assert.equal(a.readOnlyHint, false, `${name} writes`);
+  }
+});
+
+test("registry and native registration agree on the full catalog", async () => {
+  const s = build({ tools: "all" });
+  const groups = (await callJson(s, "list_tool_groups")).json;
+  const inRegistry = groups.reduce((n, g) => n + g.tool_count, 0);
+  assert.equal(inRegistry, toolNames(s).length - 3, "every registry tool must register natively in all mode (no silent overwrite)");
+  assert.ok(groups.every((g) => g.tool_count > 0), `empty group: ${groups.filter((g) => !g.tool_count).map((g) => g.name)}`);
+});
+
+test("every tool with arguments yields a real JSON schema via search_tools", async () => {
+  const s = build({ tools: "all" });
+  const withArgs = Object.entries(s._registeredTools).filter(([, t]) => t.inputSchema && Object.keys(t.inputSchema.shape || {}).length);
+  for (const [name] of withArgs) {
+    const { json } = await callJson(s, "search_tools", { query: name, limit: 3 });
+    const hit = json.find((r) => r.name === name);
+    if (!hit) continue; // gateway meta-tools aren't in the registry
+    assert.ok(hit.input_schema.properties && Object.keys(hit.input_schema.properties).length, `${name}: schema conversion fell back to {type:object}`);
+  }
+});
+
+test("core tool budget: image alt/SEO stays on-demand", () => {
+  const names = toolNames(build());
+  assert.ok(!names.includes("set_image_alts"), "image_seo group must not load natively");
+  assert.ok(names.length <= 133, `core grew to ${names.length} tools — move a group on-demand or raise this deliberately`);
+});

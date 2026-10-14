@@ -56,6 +56,7 @@ export const GROUPS: { name: string; title: string; desc: string; core?: boolean
   { name: "apps_advanced", title: "Advanced apps", desc: "Product design, personal product design (PPD), course app" },
   { name: "channels", title: "Sale channels", desc: "Sitemap sync, partner product feeds, Google merchants" },
   { name: "automation", title: "Automation", desc: "Marketing automations and send-mail" },
+  { name: "image_seo", title: "Image alt / SEO audit", desc: "Scan site images, read them, bulk-fill and set alt text" },
 ];
 
 /** Each tool module mapped to its group. Order matches the original registration order. */
@@ -88,7 +89,7 @@ const MODULES: [string, RegisterFn][] = [
   ["web", registerGlobalSectionTools],
   ["web", registerGlobalSectionWriteTools],
   ["session", registerResultCacheTools],
-  ["web", registerImageTools],
+  ["image_seo", registerImageTools],
   ["web", registerBuilderTools],
   ["web", registerBuilderExtraTools],
   ["web", registerPageDraftTools],
@@ -132,6 +133,19 @@ export function resolveNativeGroups(spec?: string): Set<string> {
   return set;
 }
 
+/** MCP tool annotations derived from the verb prefix, so clients can auto-allow read-only
+ *  tools and warn on destructive ones. Unlisted verbs (update/upsert/set/publish…) keep the
+ *  spec defaults (a non-read-only tool is assumed possibly destructive). */
+const READ_ONLY = /^(list|get|search|read|query|find|count|semantic|check|validate|scan|fetch|new|ingest)_/;
+const DESTRUCTIVE = /^(delete|remove|uninstall|empty|clear|block|unblock|refuse)_/;
+const ADDITIVE = /^(create|add|upload|install|invite|duplicate|save)_/;
+export function toolAnnotations(name: string): { readOnlyHint?: boolean; destructiveHint?: boolean } {
+  if (READ_ONLY.test(name)) return { readOnlyHint: true };
+  if (DESTRUCTIVE.test(name)) return { readOnlyHint: false, destructiveHint: true };
+  if (ADDITIVE.test(name)) return { readOnlyHint: false, destructiveHint: false };
+  return { readOnlyHint: false };
+}
+
 const errorResult = (text: string): McpResult => ({ content: [{ type: "text", text }], isError: true });
 
 /** Build a compact capability index (group list with loaded/on-demand tags) to inject into the
@@ -172,7 +186,7 @@ export function installTools(
   let nativeCount = 0;
   for (const e of collector.entries) {
     if (native.has(e.group)) {
-      server.tool(e.name, e.description, e.shape, e.handler as any);
+      server.tool(e.name, e.description, e.shape, toolAnnotations(e.name), e.handler as any);
       nativeCount++;
     }
   }
@@ -194,6 +208,7 @@ export function installTools(
     "list_tool_groups",
     "List every WebCake tool group, how many tools it has, and whether it is loaded natively or reached on-demand via search_tools + invoke_tool.",
     {},
+    toolAnnotations("list_tool_groups"),
     () =>
       handle(async () =>
         GROUPS.map((g) => ({
@@ -216,6 +231,7 @@ courses, sale channels, automation…). Returns name, group, description and JSO
       group: z.string().optional().describe("Restrict to a group name (see list_tool_groups)"),
       limit: z.number().optional().describe("Max results (default 8)"),
     },
+    toolAnnotations("search_tools"),
     ({ query, group, limit }) =>
       handle(async () => {
         const ql = query.toLowerCase();
@@ -263,6 +279,7 @@ courses, sale channels, automation…). Returns name, group, description and JSO
           name: e.name,
           group: e.group,
           native: native.has(e.group),
+          annotations: toolAnnotations(e.name),
           description: e.description,
           input_schema: jsonSchema(e),
         }));
@@ -277,6 +294,8 @@ Arguments are validated before running. Use this for tools that are not loaded n
       name: z.string().describe("Exact tool name (from search_tools)"),
       arguments: z.record(z.any()).optional().describe("Arguments object matching the tool's input schema"),
     },
+    toolAnnotations("invoke_tool"), // runs any tool, so never read-only
+
     async ({ name, arguments: args }) => {
       const e = registry.get(name);
       if (!e) return errorResult(`Error: unknown tool "${name}". Use search_tools to find available tools.`);
