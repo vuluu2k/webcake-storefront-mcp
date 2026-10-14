@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.32.0] - 2026-10-14
+
+### Changed
+- Server nay phục vụ thêm icon dạng raster PNG (`/favicon.ico`, `/favicon.png`, `/icon.png`, `/apple-touch-icon.png`) bên cạnh favicon SVG hiện có, và khai báo `title`, `websiteUrl`, `icons` trong `serverInfo` của MCP, nhờ đó các client bỏ qua favicon SVG (ví dụ danh sách connector của claude.ai, vốn sẽ hiển thị hình quả địa cầu mặc định) sẽ hiển thị đúng logo thương hiệu WebCake.
+
 ## [1.31.13] - 2026-10-09
 
 ### Added
