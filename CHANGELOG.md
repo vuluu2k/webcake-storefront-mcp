@@ -5,6 +5,23 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.34.0] - 2026-10-14
+
+### Added
+- New `list_section_templates` tool browses the designer-made section template library (categories, search by `term`, thumbnails) for starting a section from a ready-made block.
+- `add_section` accepts a `template: { category_id, id }` parameter to insert a library section (from `list_section_templates`) instead of only a hand-built `section`.
+- New BuilderX elements `wishlist-container`, `wishlist-item`, and `wishlist-empty` for building wishlist pages, with a new `wishlist_item` binding dataset (`product_name`, `product_price`, `product_original_price`, `product_image`, `product_short_description`).
+- New BuilderX elements `otp-method` and `list-courses`.
+- 13 new event actions matching the editor's own set (`filter`, `change_language`, `change_text_style`, `open_product_link`, `add_bonus_product_to_cart`, `send_botcake_mess`, `delete_customer_address`, `course_submit`, `auto_next_track`, `play_video`, `close_search_droppable`, `bold`, `create_article`), each with its real required/optional fields.
+- `validate_page` now warns when a top-level node isn't a section, when children are placed on a non-container element, when a submit button sits outside a form, and when a `wishlist_item` binding sits outside a `wishlist-item`.
+- `get_site_info` now returns `preview_img`, the latest homepage screenshots (desktop and mobile); `publish_site` responses note when a fresh set becomes available.
+
+### Changed
+- `build_page`, `add_section`, global section writes, and `commit_page_draft` now read the site's custom breakpoints and remap the generated `bp1`-`bp4` styles onto them, so pages render correctly on sites that don't use the standard four breakpoints.
+- `validate_page`'s event-target checks now validate list-valued target fields (e.g. `filter`'s `filters`), not only single element ids.
+- `get_build_guide` documents motion (`runtime.config.animation`, animated-word `<span>` markup, hover duration) and typography presets (`var(--font_N)`), and clarifies that sticky/pinned positioning applies to text, image, button, shape, and container elements, not only sections.
+- The `wishlist` element's docs now clarify it has no built-in click behavior and needs an `open_page` event wired to the wishlist page.
+
 ## [1.33.2] - 2026-10-14
 
 ### Added

@@ -5,6 +5,23 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.34.0] - 2026-10-14
+
+### Added
+- Tool mới `list_section_templates` để duyệt thư viện mẫu section do designer tạo (theo danh mục, tìm kiếm bằng `term`, có thumbnail) làm điểm khởi đầu cho một section thay vì soạn từ đầu.
+- `add_section` nay nhận thêm tham số `template: { category_id, id }` để chèn một section từ thư viện (lấy từ `list_section_templates`) thay vì chỉ nhận `section` tự dựng.
+- Các element BuilderX mới `wishlist-container`, `wishlist-item` và `wishlist-empty` để dựng trang wishlist, cùng dataset binding mới `wishlist_item` (`product_name`, `product_price`, `product_original_price`, `product_image`, `product_short_description`).
+- Các element BuilderX mới `otp-method` và `list-courses`.
+- 13 action event mới khớp với bộ action của editor (`filter`, `change_language`, `change_text_style`, `open_product_link`, `add_bonus_product_to_cart`, `send_botcake_mess`, `delete_customer_address`, `course_submit`, `auto_next_track`, `play_video`, `close_search_droppable`, `bold`, `create_article`), mỗi action kèm đúng các trường bắt buộc/tùy chọn thật.
+- `validate_page` nay cảnh báo khi một node ở cấp cao nhất không phải section, khi children được đặt trên một element không phải container, khi submit button nằm ngoài form, và khi binding `wishlist_item` nằm ngoài `wishlist-item`.
+- `get_site_info` nay trả về `preview_img`, ảnh chụp trang chủ mới nhất (bản desktop và mobile); phản hồi của `publish_site` nay có ghi chú khi nào bộ ảnh mới sẽ sẵn sàng.
+
+### Changed
+- `build_page`, `add_section`, các thao tác ghi global section và `commit_page_draft` nay đọc breakpoints tùy chỉnh của site và ánh xạ lại style `bp1`-`bp4` được sinh ra theo đúng breakpoints đó, nhờ đó trang hiển thị đúng trên các site không dùng bốn breakpoint chuẩn.
+- Việc kiểm tra target của event trong `validate_page` nay xác thực cả các trường target dạng danh sách (ví dụ `filters` của action `filter`), không chỉ id đơn lẻ.
+- `get_build_guide` nay mô tả hiệu ứng chuyển động (`runtime.config.animation`, cú pháp `<span>` cho chữ chạy/animated words, thời lượng hover) và các preset typography (`var(--font_N)`), đồng thời nói rõ sticky/pinned áp dụng được cho text, image, button, shape và container, không chỉ riêng section.
+- Mô tả của element `wishlist` nay nói rõ nó không có sẵn hành vi click và cần gắn thêm event `open_page` trỏ tới trang wishlist.
+
 ## [1.33.2] - 2026-10-14
 
 ### Added
