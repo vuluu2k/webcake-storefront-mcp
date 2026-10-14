@@ -145,7 +145,10 @@ export class WebcakeCmsApi {
         const settings = typeof site?.settings === "string" ? JSON.parse(site.settings || "{}") : site?.settings;
         return settings?.breakpoints || null;
       })
-      .catch(() => null);
+      .catch(() => {
+        this._siteBps = null; // don't cache a failed lookup — retry on the next save
+        return null;
+      });
     return this._siteBps;
   }
   /** Update auth token (in-memory) */

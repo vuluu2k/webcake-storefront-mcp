@@ -118,3 +118,34 @@ test("site info exposes post-publish screenshots", async () => {
   const s = createServer(stubApi({ getSite: async () => ({ data: { id: "S1", preview_img: { "1920_1080": "https://img/d.jpg" } } }) }));
   assert.equal((await call(s, "get_site_info", {})).json.preview_img["1920_1080"], "https://img/d.jpg");
 });
+
+test("containers with childless factories (swiper, grid-product, post-list) don't trigger the leaf warning", () => {
+  const sec = buildSection([
+    { type: "swiper", children: [{ type: "slide" }, { type: "slide" }] },
+    { type: "grid-product", children: [{ type: "product-overlay" }] },
+    { type: "post-list", children: [{ type: "post-overlay" }] },
+  ]);
+  const w = (validatePage({ sections: [sec] }).warnings || []).join("\n");
+  assert.doesNotMatch(w, /won't render/);
+});
+
+test("a site cut down to one open-ended breakpoint keeps the desktop layout", () => {
+  const fresh = () => buildSection([{ type: "text", opts: { text: "Hi" } }]);
+  const std = finalizeForRender({ sections: [fresh()] }).sections[0];
+  const one = finalizeForRender({ sections: [fresh()] }, { bp1: [320, 1e9] }).sections[0];
+  assert.deepEqual(one.children[0].bp1, std.children[0].bp1);
+  assert.deepEqual(one.bp1.config.columns, genGridByBp(1320).columns);
+});
+
+test("a failed breakpoint lookup is retried on the next save", async () => {
+  let calls = 0;
+  const api = new WebcakeCmsApi({ baseUrl: "https://x", token: "t", siteId: "S1" });
+  api.getSite = async () => {
+    calls++;
+    if (calls === 1) throw new Error("timeout");
+    return { data: { settings: { breakpoints: { bp1: [320, 1e9] } } } };
+  };
+  assert.equal(await api.getSiteBreakpoints(), null);
+  assert.deepEqual(await api.getSiteBreakpoints(), { bp1: [320, 1e9] });
+  assert.equal(calls, 2);
+});

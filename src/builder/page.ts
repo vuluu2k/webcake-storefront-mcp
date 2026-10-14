@@ -5,7 +5,7 @@
 // child's runtime.config (columnStart/End, rowStart/End, constraintX/Y). The helpers here
 // produce that structure the same way the builder does, so generated pages render.
 
-import { buildElement, isKnownType, ELEMENT_TYPES, CONTAINER_TYPE_SET } from "./catalog.js";
+import { buildElement, isKnownType, ELEMENT_TYPES } from "./catalog.js";
 import { randomString } from "./factory.js";
 import { validateEvents } from "./events.js";
 import { validateBindings } from "./bindings.js";
@@ -395,13 +395,15 @@ export function validatePage(source: any) {
   });
 
   // Third pass (needs ancestry): structures the renderer silently mishandles. Warnings only.
+  // Child check uses LEAF_TYPES, not "factory has no children": swiper, grid-product, post-list,
+  // member-bar… render children even though their factories create none.
   const checkTree = (node: any, ancestors: string[]) => {
     if (!node || typeof node !== "object") return;
     const type = node.type;
     const kids: any[] = Array.isArray(node.children) ? node.children : [];
     if (!ancestors.length && type && type !== "section" && type !== "popup")
       warnings.push(`Top-level node "${node.id}" is a ${type}: pages render only sections at the top level — wrap it in a section.`);
-    if (kids.length && type && isKnownType(type) && !CONTAINER_TYPE_SET.has(type))
+    if (kids.length && LEAF_TYPES.has(type))
       warnings.push(`"${node.id}" (${type}) has ${kids.length} child node(s), but ${type} is not a container — they won't render.`);
     if (type === "submit-button" && !ancestors.some((t) => /form/.test(t)))
       warnings.push(`Submit button "${node.id}" is not inside a form — it has nothing to submit.`);
@@ -427,6 +429,12 @@ export function validatePage(source: any) {
  * widths shrink on smaller screens). Nodes already in breakpoint shape are left as-is,
  * so this is safe to run over a mixed source (e.g. add_section onto an existing page).
  */
+/** Renderer builders that never draw children (builderx_api lib/qwik/html) — deliberately short. */
+const LEAF_TYPES = new Set([
+  "text", "image", "button", "line", "video", "input", "email", "password", "text-area", "select",
+  "text-dataset", "image-dataset", "submit-button",
+]);
+
 /** A site's own breakpoints ({ bpN: [minW, maxW] }) when they differ from the standard four. */
 export type SiteBreakpoints = Record<string, [number, number]> | null | undefined;
 
@@ -447,13 +455,17 @@ function customBreakpoints(site: SiteBreakpoints): Record<string, [number, numbe
  *  breakpoint containing its min width; sections regenerate their grid for that width. */
 function remapToSiteBreakpoints(node: any, site: Record<string, [number, number]>) {
   const std = Object.entries(BREAKPOINTS);
-  const pick = (minW: number) => (std.find(([, [lo, hi]]) => minW >= lo && minW <= hi) || std[std.length - 1])[0];
   const out: Record<string, any> = {};
-  for (const [key, [minW]] of Object.entries(site)) {
-    const from = node[pick(minW)];
+  for (const [key, [minW, maxW]] of Object.entries(site)) {
+    // The open-ended (widest) breakpoint is the desktop view: a site cut down to one breakpoint
+    // ({bp1:[320,1e9]}) must not get the phone layout everywhere.
+    const openEnded = maxW >= BREAKPOINTS.bp1[1];
+    const src = openEnded ? "bp1" : (std.find(([, [lo, hi]]) => minW >= lo && minW <= hi) || std[std.length - 1])[0];
+    const from = node[src];
     if (!from) continue;
     out[key] = clone(from);
-    if (node.type === "section") out[key].config.columns = clone(genGridByBp(minW).columns);
+    const gridWidth = openEnded ? Math.max(minW, BREAKPOINTS.bp1[0]) : minW;
+    if (node.type === "section") out[key].config.columns = clone(genGridByBp(gridWidth).columns);
   }
   for (const k of BREAKPOINT_KEYS) delete node[k];
   Object.assign(node, out);
