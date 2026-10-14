@@ -1,0 +1,92 @@
+# Deploy the remote MCP server to the private-IP VPS via a SELF-HOSTED runner
+# installed ON that VPS (see deploy/vps/README.md). The runner builds the image
+# locally and restarts the compose stack — no registry, no SSH, no inbound port.
+#
+# ORDER: a `src/**` change is deployed only AFTER Auto Release succeeds (workflow_run),
+# so the VPS runs the bumped commit and a failed release never ships. Changes that
+# don't trigger a release (deploy config, scripts, deps) deploy straight on push.
+# ponytail: a push touching BOTH src/** and a path below deploys twice (serialized by
+# `concurrency`; the second, post-release one wins) — harmless, so not de-duplicated.
+#
+# SECURITY: the repo is public. Only push/workflow_run/workflow_dispatch trigger this —
+# never add `pull_request` (a fork PR would run arbitrary code on the VPS).
+
+name: Deploy VPS
+
+on:
+  workflow_run:
+    workflows: ["Auto Release"]
+    types: [completed]
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - "deploy/vps/**"
+      - "deploy/coolify/Dockerfile*"
+      - ".github/workflows/deploy-vps.yml"
+  workflow_dispatch:
+
+# One deploy at a time; a newer push waits for the running one instead of racing it.
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # After a release: only when it succeeded.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: [self-hosted, webcake-vps]
+    environment: prod
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: deploy/vps
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main # workflow_run: deploy main's tip (incl. the release bump), not the pre-bump sha
+
+      - name: Write .env
+        env:
+          BIND_IP: ${{ vars.BIND_IP }}
+          HOST_PORT: ${{ vars.HOST_PORT || '8788' }}
+          WEBCAKE_ENV: ${{ vars.WEBCAKE_ENV || 'prod' }}
+          PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+        run: |
+          : "${BIND_IP:?set repo variable BIND_IP}" "${PG_PASSWORD:?set secret PG_PASSWORD}"
+          umask 077
+          cat > .env <<EOF
+          BIND_IP=$BIND_IP
+          HOST_PORT=$HOST_PORT
+          WEBCAKE_ENV=$WEBCAKE_ENV
+          PG_PASSWORD=$PG_PASSWORD
+          PEXELS_API_KEY=$PEXELS_API_KEY
+          EOF
+
+      - name: Build & restart
+        run: docker compose up -d --build --remove-orphans
+
+      - name: Health check
+        run: |
+          for _ in $(seq 1 30); do
+            if curl -fsS "http://${{ vars.BIND_IP }}:${{ vars.HOST_PORT || '8788' }}/health"; then echo; exit 0; fi
+            sleep 2
+          done
+          docker compose ps
+          docker compose logs --tail 100 webcake-mcp
+          exit 1
+
+      - name: Prune old images
+        if: always()
+        run: docker image prune -f
+
+      - name: Remove .env
+        if: always()
+        run: rm -f .env
