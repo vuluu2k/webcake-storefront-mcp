@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "./api.js";
 import { installTools, buildToolGroupIndex } from "./tools/registry.js";
+import { ICON_PNG } from "./web-guide.js";
 
 /** Server version, read from package.json so it always tracks the published release. */
 export const SERVER_VERSION: string = (() => {
@@ -54,7 +55,14 @@ export interface ServerOptions {
 export function createServer(api: WebcakeCmsApi, opts: ServerOptions = {}): McpServer {
   const toolsSpec = opts.tools ?? process.env.WEBCAKE_TOOLS;
   const server = new McpServer(
-    { name: "webcake-storefront", version: SERVER_VERSION },
+    {
+      name: "webcake-storefront",
+      version: SERVER_VERSION,
+      // Shown by MCP clients (e.g. claude.ai connectors) instead of a generic globe.
+      title: "WebCake Storefront",
+      websiteUrl: "https://webcake.io",
+      icons: [{ src: `data:image/png;base64,${ICON_PNG.toString("base64")}`, mimeType: "image/png", sizes: ["192x192"] }],
+    },
     { instructions: `${INSTRUCTIONS}\n\n${buildToolGroupIndex(toolsSpec)}` }
   );
 

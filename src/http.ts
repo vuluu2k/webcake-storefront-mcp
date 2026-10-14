@@ -11,7 +11,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createServer } from "./server.js";
 import { makeApi, resolveEnv, ENVIRONMENTS, DEFAULT_ENV } from "./config.js";
-import { landingHtml, faviconSvg, ogImageSvg, normalizeLang } from "./web-guide.js";
+import { landingHtml, faviconSvg, ogImageSvg, normalizeLang, ICON_PNG } from "./web-guide.js";
 import { privacyHtml, termsHtml } from "./legal.js";
 import {
   registerClient,
@@ -298,7 +298,14 @@ export async function startHttpServer(port: number): Promise<void> {
     const path = (req.url ?? "").split("?")[0];
 
     // ---- Favicon / brand icon ----
-    if (req.method === "GET" && (path === "/favicon.ico" || path === "/favicon.svg")) {
+    // Google s2 (what the claude.ai connector list uses) skips SVG favicons and shows a
+    // globe, so /favicon.ico and friends serve the raster src/icon.png (→ dist/icon.png).
+    if ((req.method === "GET" || req.method === "HEAD") && ["/favicon.ico", "/favicon.png", "/icon.png", "/apple-touch-icon.png"].includes(path)) {
+      res.writeHead(200, { "content-type": "image/png", "cache-control": "public, max-age=86400" });
+      res.end(ICON_PNG);
+      return;
+    }
+    if (req.method === "GET" && path === "/favicon.svg") {
       res.writeHead(200, { "content-type": "image/svg+xml", "cache-control": "public, max-age=86400" });
       res.end(faviconSvg());
       return;

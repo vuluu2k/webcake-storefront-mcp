@@ -678,6 +678,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
 <link rel="alternate" hreflang="vi" href="${origin}/">
 <link rel="alternate" hreflang="en" href="${origin}/?lang=en">
 <link rel="alternate" hreflang="x-default" href="${origin}/">
+<link rel="icon" type="image/png" sizes="192x192" href="/favicon.png">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="WebCake Storefront MCP">
@@ -1169,6 +1170,9 @@ export function ogImageSvg(): string {
  * Favicon SVG — the branded "S" mark with yellow dot.
  * Served at /favicon.svg and /favicon.ico by http.ts.
  */
+// Raster icon (192px, generated from ICON_SVG) — shared by /favicon.ico and serverInfo.icons.
+export const ICON_PNG = readFileSync(new URL("./icon.png", import.meta.url));
+
 export function faviconSvg(): string {
   return ICON_SVG;
 }
