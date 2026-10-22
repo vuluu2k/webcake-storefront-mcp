@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [Unreleased]
+
+### Changed
+- `list_my_sites` nay trả về domain chính (`primary_domain.domain`) trong `domain` và thêm trường `custom_domain_verified`.
+
 ## [1.34.1] - 2026-10-14
 
 ### Fixed

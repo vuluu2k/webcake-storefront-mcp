@@ -150,7 +150,8 @@ export function registerContextTools(server: McpServer, api: WebcakeCmsApi, hand
         const sites = list.map((s: any) => ({
           id: s.id,
           name: s.name,
-          domain: s.domain || s.sub_domain || null,
+          domain: s.primary_domain?.domain || (typeof s.domain === "string" ? s.domain : null),
+          custom_domain_verified: s.primary_domain?.is_verified ?? null,
           is_current: s.id === api.siteId,
         }));
         return {
