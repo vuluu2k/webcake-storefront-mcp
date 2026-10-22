@@ -5,6 +5,18 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [Unreleased]
+
+### Added
+- Tool mới `get_site_subscription` đọc gói cước của site (mặc định site hiện tại): `plan_name`, `status` (`active` | `expired` | `pending_payment` | `none`), `expired_at`, `days_left`, thời gian ân hạn 15 ngày, và lịch sử mua gói đã lọc bỏ thông tin thanh toán nhạy cảm.
+- Tool mới `count_my_sites` đếm site cá nhân của tài khoản: đang hoạt động, đã xoá (thùng rác), đang có gói kèm số lượng theo từng gói, chưa có gói, hết hạn, chờ thanh toán, và site dùng tên miền riêng đã xác minh (báo `checked/total` khi vượt `max_sites`).
+- Tool mới `list_plans` liệt kê danh mục gói cước.
+
+### Changed
+- `list_my_sites` nhận `filter` (`all` | `removed`) và trả thêm `status`, `slug`, `published_at`, `has_custom_domain` cho từng site.
+- `list_my_sites` nay trả về domain chính (`primary_domain.domain`) trong `domain` và thêm trường `custom_domain_verified`.
+- `list_apps` nay lấy danh sách app từ `apps`, rồi `data.apps`, rồi `data` (nếu là mảng), và thêm `is_active` vào mỗi app vì backend dùng `is_active`/`is_removed` thay vì `status`.
+
 ## [1.34.1] - 2026-10-14
 
 ### Fixed

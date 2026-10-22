@@ -5,6 +5,18 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [Unreleased]
+
+### Added
+- New `get_site_subscription` tool reads a site's plan (current/default site): `plan_name`, `status` (`active` | `expired` | `pending_payment` | `none`), `expired_at`, `days_left`, the 15-day grace window, and a purchase history with payment secrets stripped.
+- New `count_my_sites` tool counts the account's personal sites: active, deleted (trash), active by plan with a per-plan breakdown, no plan, expired, pending payment, and sites on a verified custom domain (reports `checked/total` past `max_sites`).
+- New `list_plans` tool lists the plan catalog.
+
+### Changed
+- `list_my_sites` accepts `filter` (`all` | `removed`) and returns `status`, `slug`, `published_at` and `has_custom_domain` per site.
+- `list_my_sites` now returns the primary custom domain (`primary_domain.domain`) as `domain` and adds `custom_domain_verified`.
+- `list_apps` now reads the app list from `apps`, then `data.apps`, then `data` (if an array), and includes `is_active` on each app since the backend uses `is_active`/`is_removed` rather than `status`.
+
 ## [1.34.1] - 2026-10-14
 
 ### Fixed

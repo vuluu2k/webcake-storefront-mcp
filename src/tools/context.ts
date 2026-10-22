@@ -4,6 +4,7 @@ import { resolvePreviewUrl } from "../config.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
+import { SITE_FILTERS, normalizeSiteFilter, hasCustomDomain } from "./site-plans.js";
 
 /** Read all saved credentials from the local config file for startup */
 export function getSavedConfig() {
@@ -136,21 +137,30 @@ export function registerContextTools(server: McpServer, api: WebcakeCmsApi, hand
 
   server.tool(
     "list_my_sites",
-    "List all sites accessible by the current account. Use this to find a site_id before switching",
+    `List the current account's PERSONAL sites (team sites are not included). Use this to find a site_id before switching.
+filter: "all" = active sites (default), "removed" = sites in trash. Each site has status, published_at (set at
+creation — not proof of publishing), slug, primary domain and has_custom_domain (verified, live, non-default domain).
+For plans use get_site_subscription / count_my_sites.`,
     {
       page: z.number().default(1).describe("Page number"),
       limit: z.number().default(20).describe("Items per page"),
-      term: z.string().optional().describe("Search by site name"),
+      term: z.string().optional().describe("Search by site name, site id or domain"),
+      filter: z.enum(SITE_FILTERS).optional().describe('"all" (active, default) or "removed" (trash)'),
     },
-    ({ page, limit, term }) =>
+    ({ page, limit, term, filter }) =>
       handle(async () => {
-        const res = await api.listMySites({ page, limit, ...(term && { term }) });
+        const res = await api.listMySites({ page, limit, filter: normalizeSiteFilter(filter), ...(term && { term }) });
         const raw = (res as any)?.data?.sites || (res as any)?.data || [];
         const list: any[] = Array.isArray(raw) ? raw : [];
         const sites = list.map((s: any) => ({
           id: s.id,
           name: s.name,
-          domain: s.domain || s.sub_domain || null,
+          status: s.status,
+          slug: s.site_slug?.slug ?? null,
+          published_at: s.published_at ?? null,
+          domain: s.primary_domain?.domain ?? null,
+          custom_domain_verified: s.primary_domain?.is_verified ?? null,
+          has_custom_domain: hasCustomDomain(s),
           is_current: s.id === api.siteId,
         }));
         return {
@@ -158,6 +168,7 @@ export function registerContextTools(server: McpServer, api: WebcakeCmsApi, hand
           sites,
           total: (res as any)?.data?.total_entries || sites.length,
           page,
+          ...((res as any)?.data?.has_site_in_trash && { has_site_in_trash: true }),
         };
       })
   );

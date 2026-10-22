@@ -180,6 +180,7 @@ trong chat bằng `update_auth` và `switch_site` — lưu vào file cấu hình
 | **Nội dung & store** | bài blog · theme / site style · app · khách hàng · `send_mail` | token + session |
 | **Code backend** | CRUD HTTP-function (`get_http_function`, `edit_http_function`, `run_function`, `debug_function`…) | token + session |
 | **Ngữ cảnh** | `get_current_context` · `list_my_sites` · `switch_site` · `update_auth` · `toggle_confirm_mode` | token |
+| **Gói cước site** | `get_site_subscription` (gói hiện tại, trạng thái, số ngày còn lại) · `count_my_sites` (theo gói / tên miền riêng / thùng rác) · `list_plans` | token |
 
 Mọi thao tác ghi **mặc định `dry_run=true`** — xem trước thay đổi, chỉ đụng site khi bạn chạy lại với `dry_run=false`.
 
