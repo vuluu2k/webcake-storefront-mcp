@@ -158,7 +158,7 @@ export function buildToolGroupIndex(spec?: string): string {
   return `## Capability map (WebCake tool groups)
 Every capability below exists. Groups marked [loaded] are available as direct tools right now.
 Groups marked [on-demand] are NOT loaded to save context — to use one, call search_tools("english keywords")
-then invoke_tool(name, arguments). NEVER tell the user a capability is missing without searching first;
+then invoke_read_tool(name, arguments) for read-only tools (list_/get_/search_…) or invoke_tool for the rest. NEVER tell the user a capability is missing without searching first;
 if the user's request touches an [on-demand] area (or you're unsure), search_tools BEFORE concluding.
 Tip: search_tools matches English tool names/descriptions — translate the user's intent into English keywords.
 
@@ -227,7 +227,7 @@ export function installTools(
     "search_tools",
     `Find WebCake tools by keyword across the FULL catalog — including capabilities NOT loaded natively
 (marketing/CRM, translations, media, appointments, affiliate, reviews, domains/SEO/shipping, brands/tags/ribbons,
-courses, sale channels, automation…). Returns name, group, description and JSON input schema. Then run one with invoke_tool.`,
+courses, sale channels, automation…). Returns name, group, description and JSON input schema. Then run one with invoke_read_tool (read-only) or invoke_tool.`,
     {
       query: z.string().describe("Keywords, e.g. 'affiliate payout', 'translate product', 'add domain ssl', 'block phone'"),
       group: z.string().optional().describe("Restrict to a group name (see list_tool_groups)"),
@@ -288,26 +288,43 @@ courses, sale channels, automation…). Returns name, group, description and JSO
       })
   );
 
+  const runTool = async (name: string, args: Record<string, unknown> | undefined, readOnlyOnly: boolean) => {
+    const e = registry.get(name);
+    if (!e) return errorResult(`Error: unknown tool "${name}". Use search_tools to find available tools.`);
+    if (readOnlyOnly && !toolAnnotations(name).readOnlyHint) {
+      return errorResult(`Error: "${name}" is not read-only — run it with invoke_tool.`);
+    }
+    const parsed = z.object(e.shape).safeParse(args ?? {});
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`).join("; ");
+      return errorResult(`Error: invalid arguments for "${name}": ${issues}`);
+    }
+    return e.handler(parsed.data, {});
+  };
+  const gatewayArgs = {
+    name: z.string().describe("Exact tool name (from search_tools)"),
+    arguments: z.record(z.any()).optional().describe("Arguments object matching the tool's input schema"),
+  };
+
+  // invoke_tool can run writes, so it is never read-only — and clients that gate non-read-only tools
+  // behind a human approval (e.g. "ask before running") then stall EVERY on-demand read on a click.
+  // invoke_read_tool runs only read-only tools, so it can carry readOnlyHint and be auto-allowed.
+  server.tool(
+    "invoke_read_tool",
+    `Run a READ-ONLY WebCake tool (list_*/get_*/search_*/count_*… — annotations.readOnlyHint in search_tools)
+by exact name with its arguments. Prefer this over invoke_tool for lookups. Refuses tools that change data.`,
+    gatewayArgs,
+    { readOnlyHint: true },
+    ({ name, arguments: args }) => runTool(name, args, true)
+  );
+
   server.tool(
     "invoke_tool",
     `Run any WebCake tool by exact name with its arguments (discover names + schemas via search_tools).
-Arguments are validated before running. Use this for tools that are not loaded natively.`,
-    {
-      name: z.string().describe("Exact tool name (from search_tools)"),
-      arguments: z.record(z.any()).optional().describe("Arguments object matching the tool's input schema"),
-    },
+Arguments are validated before running. For read-only tools prefer invoke_read_tool.`,
+    gatewayArgs,
     toolAnnotations("invoke_tool"), // runs any tool, so never read-only
-
-    async ({ name, arguments: args }) => {
-      const e = registry.get(name);
-      if (!e) return errorResult(`Error: unknown tool "${name}". Use search_tools to find available tools.`);
-      const parsed = z.object(e.shape).safeParse(args ?? {});
-      if (!parsed.success) {
-        const issues = parsed.error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`).join("; ");
-        return errorResult(`Error: invalid arguments for "${name}": ${issues}`);
-      }
-      return e.handler(parsed.data, {});
-    }
+    ({ name, arguments: args }) => runTool(name, args, false)
   );
 
   return { total: collector.entries.length, native: nativeCount, groups: GROUPS.length };
