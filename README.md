@@ -181,6 +181,7 @@ in chat via `update_auth` and `switch_site` — saved to a local config file at 
 | **Content & store** | blog articles · themes / site style · apps · customers · `send_mail` | token + session |
 | **Backend code** | HTTP-function CRUD (`get_http_function`, `edit_http_function`, `run_function`, `debug_function`…) | token + session |
 | **Context** | `get_current_context` · `list_my_sites` · `switch_site` · `update_auth` · `toggle_confirm_mode` | token |
+| **Site plans** | `get_site_subscription` (current plan, status, days left) · `count_my_sites` (by plan / custom domain / trash) · `list_plans` | token |
 
 Every write **defaults to `dry_run=true`** — it previews the exact change and only touches your site when you re-run with `dry_run=false`.
 

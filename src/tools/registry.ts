@@ -36,6 +36,7 @@ import { registerImageTools } from "./images.js";
 import { registerBuilderTools } from "./builder.js";
 import { registerBuilderExtraTools } from "./builder-extras.js";
 import { registerPageDraftTools } from "./page-draft.js";
+import { registerSitePlanTools } from "./site-plans.js";
 
 type RegisterFn = (server: any, api: WebcakeCmsApi, handle: Handle, opts: any) => void;
 
@@ -46,7 +47,7 @@ export const GROUPS: { name: string; title: string; desc: string; core?: boolean
   { name: "store", title: "Store", core: true, desc: "Products, categories, collections, orders, promotions, combos" },
   { name: "content", title: "Content & customers", core: true, desc: "Blog articles, customers, CMS files / HTTP functions" },
   { name: "catalog", title: "Catalog extras", desc: "Brands, suppliers, product tags, ribbons, materials, variations, measurement, price-contact" },
-  { name: "site_config", title: "Site configuration", desc: "Custom domains, SEO redirects, shipping, UTM links, fonts, site settings, API keys, publish history" },
+  { name: "site_config", title: "Site configuration", desc: "Custom domains, SEO redirects, shipping, UTM links, fonts, site settings, API keys, publish history, site plans/subscriptions (gói cước), site counts" },
   { name: "marketing", title: "Marketing & CRM", desc: "Email templates, contacts, subscribers, customer tags, employees, invitations, insight, notifications" },
   { name: "i18n", title: "Multilingual", desc: "Enable languages and manage translations for products/categories/articles/etc." },
   { name: "media", title: "Media & PWA", desc: "Media library folders/content, capacity, base64 upload, PWA manifest" },
@@ -93,6 +94,7 @@ const MODULES: [string, RegisterFn][] = [
   ["web", registerBuilderTools],
   ["web", registerBuilderExtraTools],
   ["web", registerPageDraftTools],
+  ["site_config", registerSitePlanTools],
 ];
 
 interface ToolEntry {

@@ -95,8 +95,20 @@ export class WebcakeCmsApi {
   getMe() {
     return this.request("GET", `/api/v1/@me`);
   }
+  /** Personal sites only (persona_or_team==0). `filter` must be "all" (status 1) or "removed"
+   *  (trash, status 0) — any other value makes the backend 500. */
   listMySites(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/all`, { query });
+  }
+  /** Plan purchase history of one site, `{ subscriptions: { data[], total_entries } }`.
+   *  The path's misspelling is the real route. Rows carry payment secrets — whitelist before
+   *  returning. 404 for a site in trash (SitePlug requires status 1). */
+  getSiteSubscriptions(siteId = this.siteId, query: any = { page: 1, limit: 100 }) {
+    return this.request("GET", `/api/v1/site/${siteId}/get_subsctription_package_by_site_id`, { query });
+  }
+  /** Plan catalog `{ packages: { data[] } }` (names are free text, no enum). */
+  listPackages(query: any = { page: 1, limit: 100 }) {
+    return this.request("GET", `/api/v1/site/${this.siteId}/get_packages`, { query });
   }
   /** Create a brand-new personal site. The backend seeds sample categories/products/blog
    *  but NO pages. Returns { data: { site: { id, site_slug:{slug}, ... } } }.

@@ -68,6 +68,8 @@ test("search_tools surfaces the right tool for representative queries", async ()
     "partner feed": "list_partner_feeds",
     "pwa manifest": "get_pwa",
     "product ribbon": "list_ribbons",
+    "site subscription plan": "get_site_subscription",
+    "count sites by plan": "count_my_sites",
   };
   for (const [q, expected] of Object.entries(cases)) {
     const { json } = await callJson(s, "search_tools", { query: q, limit: 6 });
