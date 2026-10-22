@@ -9,6 +9,7 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 - `list_my_sites` nay trả về domain chính (`primary_domain.domain`) trong `domain` và thêm trường `custom_domain_verified`.
+- `list_apps` nay lấy danh sách app từ `apps`, rồi `data.apps`, rồi `data` (nếu là mảng), và thêm `is_active` vào mỗi app vì backend dùng `is_active`/`is_removed` thay vì `status`.
 
 ## [1.34.1] - 2026-10-14
 
