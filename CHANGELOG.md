@@ -5,6 +5,20 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.36.0] - 2026-10-22
+
+### Added
+- New `invoke_read_tool` runs any read-only on-demand tool (`list_*`/`get_*`/`search_*`, i.e. tools with `readOnlyHint`) by name through the gateway, so clients that require manual approval for `invoke_tool` can auto-allow lookups instead of prompting on every read.
+
+### Changed
+- `list_promotions` now walks every page of results (up to 2000 rows) instead of returning only the first page, and each row carries `pos_id` (non-null means synced with POS); the response adds a `summary` with `total`, `linked_pos`, `not_linked_pos`, and `activated` counts, and drops the per-row `coupon_info` (use `get_promotion` for full rules).
+- `search_promotions` likewise searches across every page, filters `term` and `is_activated` server-side while applying `type`/`status` locally, and no longer accepts `page`/`limit` parameters.
+- `list_apps` now returns `installed[]` (`id`, `type`, `name`, `enabled`) and `not_installed[]` (app names) instead of a single `apps[]` array, and no longer returns app `settings`, which could expose provider keys such as Zalo.
+- Tool-discovery instructions and the `search_tools`/`list_tool_groups` guidance now point read-only lookups at `invoke_read_tool` instead of `invoke_tool`.
+
+### Fixed
+- API requests no longer hang indefinitely when the response body stalls after headers arrive; the request timeout now covers the body read as well as the initial response.
+
 ## [1.35.0] - 2026-10-22
 
 ### Added

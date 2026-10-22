@@ -5,6 +5,20 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.36.0] - 2026-10-22
+
+### Added
+- Tool mới `invoke_read_tool` chạy bất kỳ tool chỉ-đọc nào (`list_*`/`get_*`/`search_*`, tức tool có `readOnlyHint`) qua gateway theo tên, nhờ đó client nào bắt duyệt tay cho `invoke_tool` có thể tự cho phép các lượt tra cứu thay vì hỏi ở mọi lần đọc.
+
+### Changed
+- `list_promotions` nay đi hết tất cả các trang kết quả (tối đa 2000 dòng) thay vì chỉ trả về trang đầu, mỗi dòng có thêm `pos_id` (khác null nghĩa là đã đồng bộ với POS); phản hồi có thêm `summary` gồm `total`, `linked_pos`, `not_linked_pos`, `activated`, và bỏ `coupon_info` khỏi từng dòng (dùng `get_promotion` để xem đầy đủ quy tắc).
+- `search_promotions` cũng tìm trên toàn bộ các trang, lọc `term` và `is_activated` ở backend trong khi `type`/`status` lọc tại chỗ, và không còn nhận tham số `page`/`limit`.
+- `list_apps` nay trả về `installed[]` (`id`, `type`, `name`, `enabled`) và `not_installed[]` (tên các app) thay vì một mảng `apps[]` duy nhất, và không còn trả về `settings` của app vì có thể lộ khoá của bên thứ ba như Zalo.
+- Hướng dẫn khám phá tool và phần mô tả của `search_tools`/`list_tool_groups` nay trỏ các lượt tra cứu chỉ-đọc sang `invoke_read_tool` thay vì `invoke_tool`.
+
+### Fixed
+- Request API không còn treo vô hạn khi phần body của phản hồi bị treo sau khi đã nhận header; bộ đếm thời gian timeout nay bao luôn cả việc đọc body chứ không chỉ phần phản hồi ban đầu.
+
 ## [1.35.0] - 2026-10-22
 
 ### Added
