@@ -13,13 +13,13 @@ App type codes: ${APP_TYPE_REFERENCE}.`,
     () =>
       handle(async () => {
         const res: any = await api.listApps();
-        const raw = res?.data ?? res ?? [];
-        const list: any[] = Array.isArray(raw) ? raw : raw?.data || [];
+        const list: any[] = res?.apps ?? res?.data?.apps ?? (Array.isArray(res?.data) ? res.data : []);
         return {
           apps: list.map((a: any) => ({
             type: a.type,
             type_name: APP_NAME_BY_TYPE[a.type] ?? undefined,
             status: a.status,
+            is_active: a.is_active,
             id: a.id,
           })),
           app_types: APP_TYPES,

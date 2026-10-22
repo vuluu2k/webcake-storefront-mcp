@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `list_my_sites` now returns the primary custom domain (`primary_domain.domain`) as `domain` and adds `custom_domain_verified`.
+- `list_apps` now reads the app list from `apps`, then `data.apps`, then `data` (if an array), and includes `is_active` on each app since the backend uses `is_active`/`is_removed` rather than `status`.
 
 ## [1.34.1] - 2026-10-14
 
