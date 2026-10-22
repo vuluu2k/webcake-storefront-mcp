@@ -4,26 +4,38 @@ import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
 import { APP_TYPES, APP_NAMES, APP_TYPE_REFERENCE, APP_NAME_BY_TYPE, type AppName } from "../enums.js";
 
+/** Presence in /subcriptions/all = installed (that is what the dashboard shows). builderx_api get_app ignores
+ *  is_active for every type except product_design (10), so is_active=false alone does not mean "off". */
+export function summarizeApps(list: any[]) {
+  const installed = list.map((a: any) => ({
+    id: a.id,
+    type: a.type,
+    name: APP_NAME_BY_TYPE[a.type] ?? undefined,
+    enabled: a.type === APP_TYPES.product_design ? Boolean(a.is_active) : true,
+    is_active: a.is_active,
+  }));
+  const have = new Set(list.map((a: any) => a.type));
+  return {
+    installed_count: installed.length,
+    installed,
+    not_installed: APP_NAMES.filter((n) => !have.has(APP_TYPES[n])),
+  };
+}
+
 export function registerAppTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "list_apps",
-    `List the site's installed applications (type, status, settings).
+    `Which applications are installed / enabled on the site — and which are not — in ONE call.
+Returns installed[] (id, type, name, enabled) plus not_installed[] (app names). Do NOT call get_app per type
+to answer "which apps are on"; use get_app only for one app's settings.
 App type codes: ${APP_TYPE_REFERENCE}.`,
     {},
     () =>
       handle(async () => {
         const res: any = await api.listApps();
+        // Real shape: { success, apps:[…] } — every non-removed AppSubscription row of the site.
         const list: any[] = res?.apps ?? res?.data?.apps ?? (Array.isArray(res?.data) ? res.data : []);
-        return {
-          apps: list.map((a: any) => ({
-            type: a.type,
-            type_name: APP_NAME_BY_TYPE[a.type] ?? undefined,
-            status: a.status,
-            is_active: a.is_active,
-            id: a.id,
-          })),
-          app_types: APP_TYPES,
-        };
+        return summarizeApps(list);
       })
   );
 
