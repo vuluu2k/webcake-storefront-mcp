@@ -72,6 +72,7 @@ export class WebcakeCmsApi {
     const timer = setTimeout(() => controller.abort(), timeout || DEFAULT_TIMEOUT);
 
     let res: Response;
+    let json: any;
     try {
       res = await fetch(url, {
         method,
@@ -79,11 +80,14 @@ export class WebcakeCmsApi {
         body: body ? JSON.stringify(body) : undefined,
         signal: controller.signal,
       });
+      // Read the body under the same timer — clearing it after the headers left a stalled body unbounded.
+      json = await res.json().catch((e) => {
+        if (controller.signal.aborted) throw e; // timed out mid-body: an error, not an empty success
+        return null;
+      });
     } finally {
       clearTimeout(timer);
     }
-
-    const json: any = await res.json().catch(() => null);
     if (!res.ok) {
       const msg = (json && json.message) || (json && json.error) || res.statusText;
       throw new Error(`API ${res.status}: ${msg}`);
@@ -664,6 +668,8 @@ export class WebcakeCmsApi {
   }
 
   // ── Promotions ──
+  /** `{ success, data[], total_entries }`, 15 rows/page by default; accepts term + is_activated
+   *  (search_promotions uses this too — the dedicated get_promotions_advance endpoint 404s on prod). */
   listPromotions(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/promotion_advance/all`, { query });
   }
@@ -675,12 +681,6 @@ export class WebcakeCmsApi {
   }
   getActivePromotions() {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/promotion_advance/get_promotions_actived`);
-  }
-  /** Search/list promotions. The dedicated get_promotions_advance endpoint 404s on prod, so
-   *  this uses the same /all list endpoint (which accepts a query); the tool filters the
-   *  returned page client-side for type/status/keyword. */
-  searchPromotions(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/promotion_advance/all`, { query });
   }
 
   // ── Combos ──

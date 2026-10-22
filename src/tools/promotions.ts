@@ -38,39 +38,68 @@ const PROMOTION_TYPES = `
 - is_hidden: hidden from storefront but still active
 `;
 
+/** /promotion_advance/all pages at 15 rows by default (builderx_api Tools.get_page_limit_from_params),
+ *  so one call used to show 15 of 46 promotions — walk every page instead. */
+const PAGE_SIZE = 100;
+const MAX_ROWS = 2000; // ponytail: 20 pages max; a site past 2000 promotions gets `truncated: true`
+export async function fetchAllPromotions(api: WebcakeCmsApi, query: Record<string, unknown> = {}) {
+  const rows: any[] = [];
+  let total = 0;
+  for (let page = 1; rows.length < MAX_ROWS; page++) {
+    const res: any = await api.listPromotions({ ...query, page, limit: PAGE_SIZE });
+    const data: any[] = Array.isArray(res?.data) ? res.data : [];
+    total = Number(res?.total_entries) || total;
+    rows.push(...data);
+    if (data.length < PAGE_SIZE || (total && rows.length >= total)) break;
+  }
+  return { rows: rows.slice(0, MAX_ROWS), total: total || rows.length };
+}
+
+/** Compact row: the list endpoint already carries pos_id + is_activated, so nobody needs get_promotion per row. */
+export const promotionRow = (p: any) => ({
+  id: p.id,
+  name: p.name,
+  type: p.type,
+  promotion_classify: p.promotion_classify || undefined,
+  is_activated: p.is_activated,
+  pos_id: p.pos_id || null, // non-null = linked/synced with Pancake POS
+  start_time: p.start_time || undefined,
+  end_time: p.end_time || undefined,
+  priority_level: p.priority_level ?? undefined,
+  is_free_shipping: p.is_free_shipping || undefined,
+  is_hidden: p.is_hidden || undefined,
+  used_count: p.used_count || 0,
+  inserted_at: p.inserted_at,
+});
+
+/** Totals the model is usually asked for, so it never has to count rows itself. */
+export function summarizePromotions(rows: any[], total: number) {
+  const linked = rows.filter((p) => p.pos_id).length;
+  return {
+    total,
+    returned: rows.length,
+    ...(rows.length < total ? { truncated: true } : {}),
+    linked_pos: linked,
+    not_linked_pos: rows.length - linked,
+    activated: rows.filter((p) => p.is_activated).length,
+  };
+}
+
 export function registerPromotionTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool(
     "list_promotions",
-    "List all promotions/discounts of the site (metadata only). Use get_promotion for full details",
+    `List ALL promotions/discounts of the site (every page is fetched for you). Each row has id, name, type,
+is_activated, pos_id (non-null = linked/synced with POS), start/end time. The summary answers "how many promotions /
+how many synced with POS / how many active" in ONE call — do not call get_promotion per row for that.
+Use get_promotion only for one promotion's full rules.`,
     {
-      page: z.number().optional().describe("Page number (default: 1)"),
-      limit: z.number().optional().describe("Items per page (default: 20)"),
       include_guide: z.boolean().optional().describe("Include promotion type reference guide"),
     },
-    ({ page, limit, include_guide }) =>
+    ({ include_guide }) =>
       handle(async () => {
-        const res = await api.listPromotions({ page, limit });
-        const promotions = (res && res.data) || [];
-        const result: Record<string, any> = {
-          data: Array.isArray(promotions)
-            ? promotions.map((p: any) => ({
-                id: p.id,
-                name: p.name,
-                type: p.type,
-                promotion_classify: p.promotion_classify || undefined,
-                is_activated: p.is_activated,
-                start_time: p.start_time || undefined,
-                end_time: p.end_time || undefined,
-                priority_level: p.priority_level,
-                is_free_shipping: p.is_free_shipping || undefined,
-                is_hidden: p.is_hidden || undefined,
-                coupon_info: p.coupon_info || undefined,
-                used_count: p.used_count || 0,
-                inserted_at: p.inserted_at,
-              }))
-            : promotions,
-          total: res.total_entries || res.total || (Array.isArray(promotions) ? promotions.length : 0),
-        };
+        const { rows, total } = await fetchAllPromotions(api);
+        const data = rows.map(promotionRow);
+        const result: Record<string, any> = { summary: summarizePromotions(data, total), data };
         if (include_guide) result.guide = PROMOTION_TYPES.trim();
         return result;
       })
@@ -138,33 +167,25 @@ export function registerPromotionTools(server: McpServer, api: WebcakeCmsApi, ha
 
   server.tool(
     "search_promotions",
-    "Search/filter promotions with advanced filters: by type, status (coming_soon/in_progress/finished), keyword, date range",
+    "Search/filter ALL promotions (every page): by keyword, type, time status (coming_soon/in_progress/finished), active flag. Rows carry pos_id (non-null = synced with POS)",
     {
       term: z.string().optional().describe("Search by promotion name"),
       type: z.string().optional().describe("Filter by type: normal, same_price, coupon, coupon_id_multiple_times, discount_by_coupon_id, promotion_order, promotion_category, x_get_y_prod, x_get_y_category"),
       status: z.number().optional().describe("Filter by time status: 1=coming_soon, 2=in_progress, 3=finished"),
       is_activated: z.boolean().optional().describe("Filter by active status"),
-      page: z.number().optional().describe("Page number"),
-      limit: z.number().optional().describe("Items per page"),
     },
-    ({ term, type, status, is_activated, page, limit }) =>
+    ({ term, type, status, is_activated }) =>
       handle(async () => {
-        const query: Record<string, any> = {};
-        if (term) query.term = term;
-        if (type) query.type = type;
-        if (status != null) query.status = status;
+        // term + is_activated filter server-side; type/status are applied here (the backend's `types`
+        // filter wants a list, which a query string can't carry).
+        const query: Record<string, unknown> = {};
+        if (term && term.trim()) query.term = term.trim();
         if (is_activated != null) query.is_activated = is_activated;
-        if (page) query.page = page;
-        if (limit) query.limit = limit;
-        const res = await api.searchPromotions({ page: page ?? 1, limit: limit ?? 50 });
-        let list: any[] = (res && (res.data?.result || res.data)) || [];
-        if (!Array.isArray(list)) return res;
-        // The /all endpoint doesn't filter, so apply the requested filters client-side.
-        if (term) list = list.filter((p) => (p.name || "").toLowerCase().includes(term.toLowerCase()));
+        let list = (await fetchAllPromotions(api, query)).rows;
         if (type) list = list.filter((p) => p.type === type);
         if (status != null) list = list.filter((p) => p.time_status === status || p.status === status);
-        if (is_activated != null) list = list.filter((p) => Boolean(p.is_activated) === is_activated);
-        return { data: list, total: list.length, total_unfiltered: (res as any).total_entries };
+        const data = list.map(promotionRow);
+        return { summary: summarizePromotions(data, data.length), data };
       })
   );
 }

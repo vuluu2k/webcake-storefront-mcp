@@ -16,7 +16,7 @@ const safe = (t) => { try { return JSON.parse(t); } catch { return t; } };
 
 test("gateway meta-tools are always present", () => {
   const s = build();
-  for (const n of ["list_tool_groups", "search_tools", "invoke_tool"]) {
+  for (const n of ["list_tool_groups", "search_tools", "invoke_tool", "invoke_read_tool"]) {
     assert.ok(toolNames(s).includes(n), `${n} must be registered`);
   }
 });
@@ -125,7 +125,7 @@ test("registry and native registration agree on the full catalog", async () => {
   const s = build({ tools: "all" });
   const groups = (await callJson(s, "list_tool_groups")).json;
   const inRegistry = groups.reduce((n, g) => n + g.tool_count, 0);
-  assert.equal(inRegistry, toolNames(s).length - 3, "every registry tool must register natively in all mode (no silent overwrite)");
+  assert.equal(inRegistry, toolNames(s).length - 4, "every registry tool must register natively in all mode (no silent overwrite)");
   assert.ok(groups.every((g) => g.tool_count > 0), `empty group: ${groups.filter((g) => !g.tool_count).map((g) => g.name)}`);
 });
 
