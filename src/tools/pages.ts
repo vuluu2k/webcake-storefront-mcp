@@ -3,6 +3,7 @@ import { CUSTOM_CODE_GUIDE } from "../guides.js";
 import { getConfirmMode } from "./context.js";
 import { normalizeEvents } from "../builder/events.js";
 import { normalizeBindings } from "../builder/bindings.js";
+import { checkEmbeds } from "../builder/page.js";
 import { PAGE_TYPE_NUM, PAGE_KINDS, applyPageMeta, normalizeSlug, checkPageCreateConflict } from "./builder.js";
 
 const pageSeoSchema = z.object({
@@ -769,6 +770,9 @@ Safeguarded: blocks if new source is <50% of existing size.`,
 
         // Safeguard: force fresh read and block if new source is suspiciously smaller
         if (body.source) {
+          const embeds = checkEmbeds(body.source);
+          if (embeds.errors.length) return { error: "BLOCKED: whole-page HTML embed — not saving.", errors: embeds.errors };
+
           invalidatePageCache();
           const { source: existingSource, error } = await getPageWithSource(api, page_id);
           if (!error && existingSource) {

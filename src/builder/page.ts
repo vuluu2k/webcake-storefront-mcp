@@ -344,6 +344,33 @@ export function buildFromSpec(spec: any) {
 }
 
 /** Validate a page source. Errors block a save; warnings are fixable design issues. */
+/** Embeds render as a sandboxed, fixed-height `<iframe src="blob:…">` (builderx_api
+ *  assets/render/embed.js): invisible to SEO, links can't navigate the site, forms never reach
+ *  WebCake. A whole exported page (Google Stitch / Figma / Tailwind-CDN HTML) dumped into one is
+ *  therefore a broken page, not a shortcut. Errors block the save; warnings are a fix list. */
+export function checkEmbeds(source: any) {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  walk(source, (node) => {
+    if (node.type !== "embed") return;
+    const code = String((node.specials && node.specials.htmlCode) || "");
+    if (/<!doctype\s|<html[\s>]|<body[\s>]/i.test(code)) {
+      errors.push(
+        `Embed "${node.id}" holds a whole HTML document (${code.length} chars). Embed is a last resort: build natively everything ` +
+          `native elements can (text/image/button/form/container… via ingest_html → new_section), and embed ONLY the one piece no element ` +
+          `can do (third-party widget, tracking snippet, custom animation). Embeds render as a sandboxed fixed-height iframe — ` +
+          `not indexed by Google, links can't open site pages, forms submit nowhere.`
+      );
+      return;
+    }
+    if (/<form[\s>]/i.test(code))
+      warnings.push(`Embed "${node.id}" contains a <form> — native form elements can do this: its submissions never reach WebCake from the sandboxed iframe. Rebuild it as a native form.`);
+    if (/href\s*=\s*["']\/(?!\/)/i.test(code))
+      warnings.push(`Embed "${node.id}" has site links (href="/…") — native buttons/menus can do this: inside the embed's blob iframe they don't open your site. Rebuild them natively.`);
+  });
+  return { errors, warnings };
+}
+
 export function validatePage(source: any) {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -412,6 +439,10 @@ export function validatePage(source: any) {
     for (const c of kids) checkTree(c, [...ancestors, type]);
   };
   for (const s of source.sections) checkTree(s, []);
+
+  const embeds = checkEmbeds(source);
+  errors.push(...embeds.errors);
+  warnings.push(...embeds.warnings);
 
   return {
     valid: errors.length === 0,

@@ -225,6 +225,14 @@ You can still hand-set a final \`node.bpN\` when editing an already-saved page.
 - Form: wrap inputs in a \`form\`; set \`form.specials.type\`
   (form_order | form_login | form_signup | form_discount | order_tracking). Each input
   needs \`specials.field_name\`.
+- EMBED = LAST RESORT. Build everything native elements can build (text, image, button, form,
+  container, gallery, swiper, video, googlemap, countdown…) natively. Use \`embed\` ONLY for the
+  one piece no element can do (a third-party widget, a tracking/chat snippet, a custom
+  animation/canvas) — and embed just THAT piece, sized to it, inside a native section.
+  An embed renders as a sandboxed fixed-height iframe: Google can't index it, its links can't
+  open site pages, its forms never reach WebCake. So reference HTML (Google Stitch / Figma /
+  any exported page) is REBUILT natively section by section (ingest_html → new_section) —
+  never pasted whole into an embed (a whole HTML document in an embed is rejected on save).
 - Dataset elements (text-dataset, image-dataset, rectangle-dataset…) and the CHILDREN of
   a repeater (grid-product, cart-items, order-items, post-list, grid-category, customer-address)
   pull live data via a \`bindings\` array. Each binding is

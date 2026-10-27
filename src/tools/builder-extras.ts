@@ -328,7 +328,7 @@ Two-step safety: dry_run=true (default) describes what will happen; dry_run=fals
 
   server.tool(
     "ingest_html",
-    "Parse reference HTML into a structural blueprint (title, headings, paragraphs, images, buttons, colour palette) you can rebuild as BuilderX sections with new_section. Not a 1:1 clone.",
+    "Parse reference HTML (e.g. a Google Stitch / Figma / Codex export) into a structural blueprint (title, headings, paragraphs, images, buttons, colour palette) you can rebuild as native BuilderX sections with new_section. Not a 1:1 clone. Rebuild every part native elements can do; use an embed only for a piece no element can (third-party widget, custom animation) — never paste the whole HTML into one (sandboxed iframe: no SEO, broken links, dead forms; rejected on save).",
     {
       html: z.string().describe("Raw HTML to analyse"),
     },

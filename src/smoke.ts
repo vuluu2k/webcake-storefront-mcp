@@ -90,6 +90,19 @@ console.log("== page: grid composition + validation ==");
   dup.sections.push(a, b);
   check("duplicate ids fail validation", validatePage(dup).valid === false);
 
+  // a whole exported HTML page dumped into an embed must fail; a small snippet must not
+  const embedPage = (htmlCode: string) => {
+    const p = newPageSkeleton();
+    const sec = buildElement("section");
+    const emb = buildElement("embed");
+    emb.specials = { ...emb.specials, type: "code", htmlCode };
+    sec.children = [emb];
+    p.sections.push(sec);
+    return validatePage(p);
+  };
+  check("whole-document embed fails validation", embedPage('<!DOCTYPE html><html><body><form></form></body></html>').valid === false);
+  check("small embed snippet passes", embedPage('<iframe src="https://www.youtube.com/embed/x"></iframe>').valid === true);
+
   // reassignIds gives a fresh id
   const before = a.id;
   reassignIds(a);
