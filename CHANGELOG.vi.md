@@ -5,6 +5,15 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.36.1] - 2026-10-27
+
+### Changed
+- `get_build_guide` và mô tả tool `ingest_html` nay nêu rõ `embed` chỉ là phương án cuối: dựng native mọi thứ có thể bằng `new_section`, chỉ dùng `embed` cho phần duy nhất không element nào làm được (widget bên thứ ba, đoạn mã tracking, animation tuỳ biến).
+
+### Fixed
+- `validate_page` và `update_page_source` nay chặn lưu trang khi `specials.htmlCode` của một node `embed` chứa nguyên một tài liệu HTML (`<!doctype`/`<html`/`<body`) — trước đây vẫn lưu được và render thành iframe sandbox cao cố định mà Google không index, link không mở được trang của site, form không gửi về WebCake.
+- `validate_page` nay cảnh báo khi `specials.htmlCode` của node `embed` chứa `<form>` hoặc link nội bộ (`href="/…"`), vì cả hai đều không hoạt động trong iframe sandbox của embed và cần được dựng lại bằng element native.
+
 ## [1.36.0] - 2026-10-22
 
 ### Added

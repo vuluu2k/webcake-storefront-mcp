@@ -5,6 +5,15 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.36.1] - 2026-10-27
+
+### Changed
+- `get_build_guide` and the `ingest_html` tool description now state that `embed` is a last resort: build everything native elements can with `new_section`, and use `embed` only for the one piece no element can do (third-party widget, tracking snippet, custom animation).
+
+### Fixed
+- `validate_page` and `update_page_source` now reject a page when an `embed` node's `specials.htmlCode` holds a whole HTML document (`<!doctype`/`<html`/`<body`), which previously saved as a sandboxed, fixed-height iframe that Google can't index, whose links can't navigate the site, and whose forms never reach WebCake.
+- `validate_page` now warns when an `embed` node's `specials.htmlCode` contains a `<form>` or a site-relative link (`href="/…"`), since neither works from inside the embed's sandboxed iframe and should be rebuilt with native elements.
+
 ## [1.36.0] - 2026-10-22
 
 ### Added
