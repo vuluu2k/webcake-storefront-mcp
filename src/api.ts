@@ -1,3 +1,5 @@
+import { BREAKPOINTS } from "./builder/grid.js";
+
 const DEFAULT_TIMEOUT = 15000;
 /** Stamped on every site and page this MCP server creates (backend columns `sites.by_ai`
  *  and `pages.by_ai`), so the builder can flag AI-authored work. Mirrors the landing-page convention. */
@@ -17,7 +19,27 @@ interface RequestOpts {
   headers?: Record<string, string>;
 }
 
+const SETTINGS_READ_ERR = "Không đọc được site settings, huỷ lưu để tránh ghi đè rỗng";
+
 export class WebcakeCmsApi {
+  /** Parse (if string) and guarantee settings.breakpoints is a usable object — an empty/missing
+   *  breakpoints would make the backend compile CSS without media queries. */
+  private ensureSafeSettings(s: any): Record<string, any> {
+    const obj: any = typeof s === "string" ? JSON.parse(s) : s && typeof s === "object" ? { ...s } : {};
+    const bp = obj.breakpoints;
+    const valid =
+      bp && typeof bp === "object" && !Array.isArray(bp) &&
+      Object.values(bp).some((v: any) => Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === "number"));
+    if (!valid) obj.breakpoints = { ...BREAKPOINTS };
+    return obj;
+  }
+  private async readSettingsOrThrow(): Promise<Record<string, any>> {
+    try {
+      return await this.getSiteSettings();
+    } catch (e: any) {
+      throw new Error(`${SETTINGS_READ_ERR}: ${e?.message || e}`);
+    }
+  }
   baseUrl: string;
   token: string;
   siteId: string;
@@ -272,8 +294,8 @@ export class WebcakeCmsApi {
    *  current site settings (string) or /save would null them; we fetch them when omitted. */
   async saveGlobalSections({ global_sections = [], pages = [], settings, changes }: { global_sections?: any[]; pages?: any[]; settings?: any; changes?: any } = {}) {
     let s = settings;
-    if (s === undefined) s = await this.getSiteSettings().catch(() => ({}));
-    const settingsStr = typeof s === "string" ? s : JSON.stringify(s || {});
+    if (s === undefined) s = await this.readSettingsOrThrow();
+    const settingsStr = JSON.stringify(this.ensureSafeSettings(s));
     return this.request("POST", `/api/v1/site/${this.siteId}/save`, {
       body: {
         settings: settingsStr,
@@ -315,8 +337,8 @@ export class WebcakeCmsApi {
       .filter(Boolean);
     if (!pages.length) return { rebuilt: 0 };
     let s = settings;
-    if (s === undefined) s = await this.getSiteSettings().catch(() => ({}));
-    const settingsStr = typeof s === "string" ? s : JSON.stringify(s || {});
+    if (s === undefined) s = await this.readSettingsOrThrow();
+    const settingsStr = JSON.stringify(this.ensureSafeSettings(s));
     const changes: Record<string, number> = {};
     for (const p of pages as any[]) changes[p.id] = 1;
     await this.request("POST", `/api/v1/site/${this.siteId}/save`, {
@@ -342,11 +364,11 @@ export class WebcakeCmsApi {
   async publishSite(params: any = {}) {
     let settings = params.settings;
     if (settings === undefined) {
-      settings = await this.getSiteSettings().catch(() => ({}));
+      settings = await this.readSettingsOrThrow();
     }
     // The save pipeline stores site.settings as a JSON STRING — an object body is
     // rejected (422). Stringify unless the caller already passed a string.
-    const settingsStr = typeof settings === "string" ? settings : JSON.stringify(settings || {});
+    const settingsStr = JSON.stringify(this.ensureSafeSettings(settings));
 
     // Collect every page WITH its saved source so the backend has something to publish.
     let pages = params.pages;
@@ -414,7 +436,7 @@ export class WebcakeCmsApi {
     try { return JSON.parse(raw.slice(vStart, vEnd)); } catch { return ""; }
   }
   async updateSiteSettings(newSettings: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/update_site`, { body: { settings: newSettings }, timeout: 60000 });
+    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/update_site`, { body: { settings: this.ensureSafeSettings(newSettings) }, timeout: 60000 });
   }
   /** Read the full site.settings object (parsed). Empty object if unset/unparseable. */
   async getSiteSettings(): Promise<Record<string, any>> {
@@ -422,7 +444,7 @@ export class WebcakeCmsApi {
     const raw = (siteRes && siteRes.data && siteRes.data.settings) || "";
     if (raw && typeof raw === "object") return raw as Record<string, any>;
     if (typeof raw === "string" && raw.trim()) {
-      try { return JSON.parse(raw); } catch { return {}; }
+      try { return JSON.parse(raw); } catch { throw new Error(`${SETTINGS_READ_ERR} (settings không phải JSON hợp lệ)`); }
     }
     return {};
   }
