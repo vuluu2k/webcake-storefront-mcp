@@ -5,6 +5,12 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.36.2] - 2026-10-29
+
+### Fixed
+- `publish_site`, `create_global_section`, `delete_global_section`, `update_site_custom_code` và `append_site_custom_code` nay báo lỗi rõ ràng thay vì âm thầm lưu site settings rỗng khi không đọc được hoặc không parse được settings hiện tại.
+- Các thao tác ghi trên nay luôn đảm bảo `settings.breakpoints` là một object hợp lệ trước khi lưu, tự động dùng breakpoints mặc định khi giá trị bị thiếu hoặc sai định dạng, vì trước đây giá trị rỗng/thiếu khiến backend build CSS mà không có media query.
+
 ## [1.36.1] - 2026-10-27
 
 ### Changed

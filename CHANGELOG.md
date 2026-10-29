@@ -5,6 +5,12 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.36.2] - 2026-10-29
+
+### Fixed
+- `publish_site`, `create_global_section`, `delete_global_section`, `update_site_custom_code`, and `append_site_custom_code` now fail with a clear error instead of silently saving empty site settings when the current settings can't be read or parsed.
+- These same writes now guarantee `settings.breakpoints` is always a valid object before saving, falling back to the default breakpoints when it is missing or malformed, since an empty/missing value previously made the backend compile CSS without media queries.
+
 ## [1.36.1] - 2026-10-27
 
 ### Changed
