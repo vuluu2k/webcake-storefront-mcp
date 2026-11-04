@@ -2,6 +2,7 @@ import { z } from "zod";
 import { getConfirmMode } from "./context.js";
 import { normalizeEvents } from "../builder/events.js";
 import { normalizeBindings } from "../builder/bindings.js";
+import { checkContentPlaceholders, checkElementPatch, checkNativeContent } from "../builder/page.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -28,6 +29,15 @@ export function parseSource(sourceJson: any): any {
     return null;
   }
 }
+
+/** Global sources come as a root node, { sections }, or an array: normalize so every shape is checked. */
+const ALLOW_SHRINK = z.boolean().optional()
+  .describe("Allow the source to shrink by more than half: set it when native elements replaced an oversized embed or custom_css and you have read it first.");
+
+const asPageShape = (source: any) => {
+  const parsed = parseSource(source);
+  return { sections: parsed?.sections ?? (Array.isArray(parsed) ? parsed : parsed ? [parsed] : []) };
+};
 
 /** Get root nodes from source — handles both formats:
  *  - Page format: { sections: [...] } → returns sections array
@@ -483,8 +493,9 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
       events: z.array(z.record(z.any())).optional().describe("Complete events array (replaces existing)"),
       bindings: z.array(z.record(z.any())).optional().describe("Complete bindings array (replaces existing)"),
       responsive: z.record(z.any()).optional().describe("Responsive overrides (e.g. {bp1: {style: {...}}})"),
+      allow_shrink: ALLOW_SHRINK,
     },
-    ({ global_source_id, element_id, component, dry_run: dryRunParam, ...updates }) =>
+    ({ global_source_id, element_id, component, dry_run: dryRunParam, allow_shrink, ...updates }) =>
       handle(async () => {
         // Resolve dry_run: explicit param wins, otherwise follow confirm_mode setting
         const dry_run = dryRunParam !== undefined ? dryRunParam : getConfirmMode() === "always_confirm";
@@ -500,6 +511,8 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
         // Clone node before mutation for diff
         const beforeNode = JSON.parse(JSON.stringify(node));
         applyNodeUpdates(node, updates);
+        const codeErrors = checkElementPatch(asPageShape(source), node, beforeNode, updates.specials);
+        if (codeErrors.length) return { error: "BLOCKED: not saving.", element_id, errors: codeErrors };
         const diff = computeNodeDiff(beforeNode, node);
 
         if (!diff) return { info: "No changes detected", element_id };
@@ -519,7 +532,7 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
         const newLen = JSON.stringify(source).length;
 
         // Safeguard: block if source shrinks significantly
-        if (existingLen > 200 && newLen < existingLen * 0.5) {
+        if (!allow_shrink && existingLen > 200 && newLen < existingLen * 0.5) {
           return {
             error: `BLOCKED: Source would shrink from ${existingLen} to ${newLen} chars. This indicates data loss.`,
             existing_length: existingLen,
@@ -556,8 +569,9 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
       component: z.string().optional().describe('Component hint for faster lookup'),
       dry_run: z.boolean().optional().describe("Preview only (true) or apply changes (false). Defaults to confirm_mode setting."),
       updates: z.array(elementUpdateShape).describe("Array of element updates"),
+      allow_shrink: ALLOW_SHRINK,
     },
-    ({ global_source_id, component, dry_run: dryRunParam, updates: elementUpdates }) =>
+    ({ global_source_id, component, dry_run: dryRunParam, updates: elementUpdates, allow_shrink }) =>
       handle(async () => {
         const dry_run = dryRunParam !== undefined ? dryRunParam : getConfirmMode() === "always_confirm";
         invalidateGsCache();
@@ -575,6 +589,8 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
           const beforeNode = JSON.parse(JSON.stringify(node));
           const { element_id, ...updates } = upd;
           applyNodeUpdates(node, updates);
+          const codeErrors = checkElementPatch(asPageShape(source), node, beforeNode, updates.specials);
+          if (codeErrors.length) return { error: "BLOCKED: not saving any of this batch.", element_id, errors: codeErrors };
           const diff = computeNodeDiff(beforeNode, node);
           results.push({ element_id, diff: diff || "no changes" });
         }
@@ -591,7 +607,7 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
         const existingLen = JSON.stringify(parseSource(gs.source)).length;
         const newLen = JSON.stringify(source).length;
 
-        if (existingLen > 200 && newLen < existingLen * 0.5) {
+        if (!allow_shrink && existingLen > 200 && newLen < existingLen * 0.5) {
           return {
             error: `BLOCKED: Source would shrink from ${existingLen} to ${newLen} chars. This indicates data loss.`,
             existing_length: existingLen,
@@ -627,6 +643,8 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
     },
     ({ component, source, type }) =>
       handle(async () => {
+        const code = checkNativeContent(asPageShape(source));
+        if (code.errors.length) return { error: "BLOCKED: not saving.", errors: code.errors };
         const params = { component, source, type, site_id: api.siteId };
         const res = component === "cart-droppable"
           ? await api.createSourceCart(params)
@@ -647,8 +665,9 @@ Safeguarded: blocks if new source is <50% of existing size. For element-level ch
     {
       global_source_id: z.string().describe("Global source ID"),
       source: z.any().describe("New source configuration (JSON object)"),
+      allow_shrink: ALLOW_SHRINK,
     },
-    ({ global_source_id, source: newSourceInput }) =>
+    ({ global_source_id, source: newSourceInput, allow_shrink }) =>
       handle(async () => {
         // Force fresh read before write to avoid stale cache
         invalidateGsCache();
@@ -658,11 +677,13 @@ Safeguarded: blocks if new source is <50% of existing size. For element-level ch
         // Ensure source is an object (not string) — backend does Jason.encode! so we must send object
         const newSourceObj = typeof newSourceInput === "string" ? JSON.parse(newSourceInput) : newSourceInput;
         const newLen = JSON.stringify(newSourceObj).length;
+        const code = checkNativeContent(asPageShape(newSourceObj), existingSource ? asPageShape(existingSource) : undefined);
+        if (code.errors.length) return { error: "BLOCKED: not saving.", errors: code.errors };
 
         // Safeguard: block if new source is suspiciously smaller
         if (existingSource) {
           const existingLen = JSON.stringify(existingSource).length;
-          if (existingLen > 200 && newLen < existingLen * 0.5) {
+          if (!allow_shrink && existingLen > 200 && newLen < existingLen * 0.5) {
             return {
               error: `BLOCKED: New source (${newLen} chars) is much smaller than existing (${existingLen} chars) — ${Math.round((newLen / existingLen) * 100)}% of original. Use get_global_source_detail to read existing data first, or use update_global_source_element for targeted changes.`,
               existing_length: existingLen,
@@ -724,6 +745,17 @@ IMPORTANT: Before calling, you MUST read existing contents with get_global_sourc
     ({ contents }) =>
       handle(async () => {
         // Safeguard: for each entry, check existing content size
+        for (const c of contents as any[]) {
+          if (!checkContentPlaceholders(c.content).length) continue;
+          const res = await api.getGlobalSourceContents({ site_id: api.siteId, component: c.type_component });
+          const list = (res && res.data) || res || [];
+          const old = Array.isArray(list)
+            ? list.find((e: any) => String(e.global_source_id) === String(c.global_source_id) && e.language_code === c.language_code)
+            : null;
+          const placeholders = checkContentPlaceholders(c.content, old?.content);
+          if (placeholders.length) return { error: "BLOCKED: not saving.", errors: placeholders };
+        }
+
         for (const entry of contents) {
           if (!entry.content) continue;
           const component = entry.type_component;

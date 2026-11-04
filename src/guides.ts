@@ -1,3 +1,5 @@
+import { NATIVE_FIRST_GUIDE } from "./builder/native-first.js";
+
 export const HTTP_FUNCTION_GUIDE = `
 # HTTP Function Guide
 
@@ -114,7 +116,7 @@ A "collection" is a custom DB table. To stand one up and use it from a function:
    await T.deleteMany({ email: "a@b.com" });                   // delete
    const rows = await T.find({ … }).select([…]).limit(50);     // query
    (There is NO direct dashboard record-INSERT API — record writes MUST go through a function.
-    Deploy the function with the update_http_function MCP tool, then call it with run_function.)
+    Deploy the function with the edit_http_function MCP tool (action "add" or "replace_function"; update_http_function replaces the WHOLE file), then call it with run_function.)
 
 ## Built-in @webcake/* modules (first arg is always request; they auth via global.token — these run
 ## INSIDE the function sandbox, so they reach the /cms_function endpoints the dashboard JWT can't)
@@ -238,6 +240,8 @@ export const post_MyMembers = async (request) => {
 
 export const CUSTOM_CODE_GUIDE = `
 # Custom Code Guide
+
+${NATIVE_FIRST_GUIDE}
 
 Custom code is stored in site settings (applies to entire site, not per page).
 

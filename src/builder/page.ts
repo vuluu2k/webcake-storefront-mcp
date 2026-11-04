@@ -9,6 +9,7 @@ import { buildElement, isKnownType, ELEMENT_TYPES } from "./catalog.js";
 import { randomString } from "./factory.js";
 import { validateEvents } from "./events.js";
 import { validateBindings } from "./bindings.js";
+import { NODE_CODE_BUDGET } from "./native-first.js";
 import {
   BREAKPOINTS,
   BREAKPOINT_KEYS,
@@ -352,8 +353,10 @@ export function checkEmbeds(source: any) {
   const errors: string[] = [];
   const warnings: string[] = [];
   walk(source, (node) => {
-    if (node.type !== "embed") return;
-    const code = String((node.specials && node.specials.htmlCode) || "");
+    // googlemap counts too: the renderer inlines its specials.iframe as raw HTML.
+    if (node.type !== "embed" && node.type !== "googlemap") return;
+    const s = node.specials || {};
+    const code = String(s.htmlCode || "") + String(s.iframe || "");
     if (/<!doctype\s|<html[\s>]|<body[\s>]/i.test(code)) {
       errors.push(
         `Embed "${node.id}" holds a whole HTML document (${code.length} chars). Embed is a last resort: build natively everything ` +
@@ -371,7 +374,69 @@ export function checkEmbeds(source: any) {
   return { errors, warnings };
 }
 
-export function validatePage(source: any) {
+/** A text element holding only a JSON object is a slot for a script to fill, not content: that's how
+ *  a page ends up empty on the canvas with its real UI in custom code. */
+const isDataPlaceholder = (text: string) => {
+  const plain = text.replace(/<[^>]+>/g, "").replace(/&quot;|&#0*34;|&#x0*22;/gi, '"').trim();
+  if (!/^[{[]/.test(plain)) return false;
+  try {
+    const value = JSON.parse(plain);
+    const first = Array.isArray(value) ? value[0] : value;
+    return !!first && typeof first === "object" && Object.keys(first).length > 0;
+  } catch {
+    return false;
+  }
+};
+
+function scanCode(source: any) {
+  const { errors, warnings } = checkEmbeds(source);
+  let code = 0;
+  walk(source, (node) => {
+    const s = node.specials || {};
+    code += String(s.custom_css || "").length + String(s.htmlCode || "").length + String(s.iframe || "").length;
+    if (typeof s.text === "string" && isDataPlaceholder(s.text))
+      errors.push(`"${node.id}" holds placeholder JSON for a script to fill (${s.text.slice(0, 60)}). Put the real content in native elements. See get_build_guide → NATIVE FIRST. If visitors should really read this JSON, add words around it.`);
+  });
+  return { errors, warnings, code };
+}
+
+const codeVolumeError = (code: number) =>
+  `${code} chars of custom_css + embed code (limit ${NODE_CODE_BUDGET.hard}). Build this with native elements. See get_build_guide → NATIVE FIRST.`;
+
+/** Everything validatePage refuses about code inside a source: embeds, placeholders, code volume.
+ *  Pass the `previous` source when saving over one: only what this save ADDS is refused, so an old
+ *  page can still be edited and moved to native elements section by section. */
+export function checkNativeContent(source: any, previous?: any) {
+  const { errors, warnings, code } = scanCode(source);
+  const old = previous ? scanCode(previous) : null;
+  const added = old ? errors.filter((e) => !old.errors.includes(e)) : errors;
+  if (code > NODE_CODE_BUDGET.hard && (!old || code > old.code)) added.push(codeVolumeError(code));
+  else if (code > NODE_CODE_BUDGET.soft)
+    warnings.push(`${code} chars of custom_css + embed code (budget ${NODE_CODE_BUDGET.soft}): check whether native elements or their settings can replace it.`);
+  return { errors: added, warnings };
+}
+
+/** For element edits, after the patch is applied to `node` inside `source`: what the patch added to
+ *  this element, plus the code total across the page, so batches can't add up past the limit. */
+export function checkElementPatch(source: any, node: any, before: any, specials: unknown): string[] {
+  if (!specials) return [];
+  const alone = (n: any) => scanCode({ sections: [{ ...n, children: undefined }] });
+  const now = alone(node);
+  const old = alone(before);
+  const errors = now.errors.filter((e) => !old.errors.includes(e));
+  const total = scanCode(source).code;
+  if (now.code > old.code && total > NODE_CODE_BUDGET.hard) errors.push(codeVolumeError(total));
+  return errors;
+}
+
+/** Translations are per-element text overrides, so they can hold placeholders too. Keyed by element id. */
+export function checkContentPlaceholders(content: any, previous?: any): string[] {
+  return Object.entries(content || {})
+    .filter(([id, v]: [string, any]) => typeof v?.text === "string" && isDataPlaceholder(v.text) && previous?.[id]?.text !== v.text)
+    .map(([id]) => `"${id}" translation holds placeholder JSON for a script to fill. Translate real text. See get_build_guide → NATIVE FIRST.`);
+}
+
+export function validatePage(source: any, previous?: any) {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -440,9 +505,9 @@ export function validatePage(source: any) {
   };
   for (const s of source.sections) checkTree(s, []);
 
-  const embeds = checkEmbeds(source);
-  errors.push(...embeds.errors);
-  warnings.push(...embeds.warnings);
+  const code = checkNativeContent(source, previous);
+  errors.push(...code.errors);
+  warnings.push(...code.warnings);
 
   return {
     valid: errors.length === 0,

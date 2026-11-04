@@ -479,7 +479,7 @@ Two-step safety: dry_run=true (default) previews; dry_run=false saves.`,
         }
 
         source.sections.push(sectionNode);
-        const validation: any = validatePage(source);
+        const validation: any = validatePage(source, { sections: source.sections.slice(0, -1) });
 
         if (dry_run) {
           return {

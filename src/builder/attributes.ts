@@ -38,8 +38,8 @@ export interface ElementAttrs {
 
 // Cross-cutting specials available on virtually every element.
 export const SHARED_SPECIALS: Record<string, string> = {
-  custom_class: "CSS class(es) on the element — target it with .your-class in site custom CSS.",
-  custom_css: "Raw CSS scoped to this element.",
+  custom_class: "CSS class(es) on the element — a hook for a few lines of site CSS, or for CMS glue code to write into it. Try style/config first.",
+  custom_css: "Raw CSS scoped to this element. Last resort: try runtime.style/config first (see NATIVE FIRST).",
   element_async: "Mark the element async/lazy (advanced — usually leave unset).",
   event_name_custom: "Custom analytics event name fired on interaction.",
   tabIndex: "Bind this element to a tab item (TAB-ITEM-…) so a tabs element shows/hides it.",

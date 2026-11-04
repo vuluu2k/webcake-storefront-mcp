@@ -3,7 +3,8 @@ import { CUSTOM_CODE_GUIDE } from "../guides.js";
 import { getConfirmMode } from "./context.js";
 import { normalizeEvents } from "../builder/events.js";
 import { normalizeBindings } from "../builder/bindings.js";
-import { checkEmbeds } from "../builder/page.js";
+import { checkContentPlaceholders, checkElementPatch, checkNativeContent } from "../builder/page.js";
+import { SITE_CODE_FIELDS, checkSiteCode, codeGuard, codeUsage } from "../builder/native-first.js";
 import { PAGE_TYPE_NUM, PAGE_KINDS, applyPageMeta, normalizeSlug, checkPageCreateConflict } from "./builder.js";
 
 const pageSeoSchema = z.object({
@@ -266,6 +267,17 @@ async function getPageWithSource(api: WebcakeCmsApi, pageId: string): Promise<an
   return { page, source };
 }
 
+async function readSiteCode(api: WebcakeCmsApi): Promise<Record<string, any>> {
+  const values = await Promise.all(SITE_CODE_FIELDS.map((f) => api.getSiteSettingField(f)));
+  return Object.fromEntries(SITE_CODE_FIELDS.map((f, i) => [f, values[i] || ""]));
+}
+
+const ALLOW_SHRINK = z.boolean().optional()
+  .describe("Allow the source to shrink by more than half: set it when native elements replaced an oversized embed or custom_css and you have read it first.");
+
+const NATIVE_GAP = z.string().min(30).optional()
+  .describe("Only when the code was refused and no native way exists: the need, the elements/apps you checked, and what each one lacks. Tell the user first.");
+
 export function registerPageTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool("list_pages", "List all pages of the site (metadata only, without source)", {}, () =>
     handle(async () => {
@@ -398,7 +410,8 @@ seo / settings are MERGED into the page's current settings — fields you don't 
     `Get custom code of the site (CSS/JS). Two modes:
 - Default: returns ALL 4 code fields (full content)
 - With field filter: returns only the specified field(s) — saves tokens when you only need CSS or JS
-Add include_guide=true on first call to get the coding guide`,
+Add include_guide=true on first call to get the coding guide.
+Custom code is the last resort: see get_build_guide → NATIVE FIRST before adding any. All-fields reads include _budget (usage vs limits).`,
     {
       fields: z.array(z.enum(["code_before_head", "code_before_body", "code_custom_css", "code_custom_javascript"]))
         .optional()
@@ -419,6 +432,7 @@ Add include_guide=true on first call to get the coding guide`,
           for (const f of allFields) {
             res._sizes[f] = (res[f] || "").length;
           }
+          res._budget = codeUsage(res);
         }
         if (include_guide) res.guide = CUSTOM_CODE_GUIDE;
         return res;
@@ -428,6 +442,7 @@ Add include_guide=true on first call to get the coding guide`,
   server.tool(
     "update_site_custom_code",
     `Update custom code (CSS/JS) for the entire site. Only sends fields you specify — others remain unchanged.
+LAST RESORT: use native elements, their settings or an app first; a special feature uses the CMS app (collection + HTTP function) with only a small glue script here. See get_build_guide → NATIVE FIRST. Oversized code or UI/data in code is refused unless native_gap explains why.
 IMPORTANT: Before calling, you MUST read existing code with get_site_custom_code first, then show the user what will change and get explicit confirmation. NEVER update without user approval.
 - code_before_head: HTML/script inserted before </head>
 - code_before_body: HTML/script inserted before </body>
@@ -438,8 +453,10 @@ IMPORTANT: Before calling, you MUST read existing code with get_site_custom_code
       code_before_body: z.string().optional().describe("HTML/script to insert before </body>"),
       code_custom_css: z.string().optional().describe("Custom CSS for the site"),
       code_custom_javascript: z.string().optional().describe("Custom JavaScript for the site"),
+      native_gap: NATIVE_GAP,
+      allow_shrink: z.boolean().optional().describe("Allow removing more than half of a field: set it when native elements or the CMS replaced that code and you have read it first."),
     },
-    (codes) => {
+    ({ native_gap, allow_shrink, ...codes }) => {
       const settings: Record<string, any> = {};
       for (const [k, v] of Object.entries(codes)) {
         if (v != null) settings[k] = v;
@@ -449,18 +466,20 @@ IMPORTANT: Before calling, you MUST read existing code with get_site_custom_code
         if (fieldsToUpdate.length === 0) return { error: "No fields specified" };
 
         // Safeguard: read existing values and compare before overwriting
-        const existingValues = await Promise.all(fieldsToUpdate.map((f) => api.getSiteSettingField(f)));
+        const current = await readSiteCode(api);
+        const blocked = codeGuard(checkSiteCode(current, settings), native_gap);
+        if (blocked) return blocked;
+
         const comparison: Record<string, any> = {};
-        for (let i = 0; i < fieldsToUpdate.length; i++) {
-          const field = fieldsToUpdate[i];
-          const existing = existingValues[i] || "";
+        for (const field of fieldsToUpdate) {
+          const existing = current[field] || "";
           const newVal = settings[field] || "";
           comparison[field] = { existing_length: existing.length, new_length: newVal.length };
 
           // Block if existing content is substantial and new content is much smaller (likely data loss)
-          if (existing.length > 100 && newVal.length < existing.length * 0.5) {
+          if (!allow_shrink && existing.length > 100 && newVal.length < existing.length * 0.5) {
             return {
-              error: `BLOCKED: Field "${field}" would shrink from ${existing.length} to ${newVal.length} chars (${Math.round((newVal.length / existing.length) * 100)}% of original). This may indicate data loss. Read existing content with get_site_custom_code first, then merge your changes.`,
+              error: `BLOCKED: Field "${field}" would shrink from ${existing.length} to ${newVal.length} chars (${Math.round((newVal.length / existing.length) * 100)}% of original). This may indicate data loss. Read existing content with get_site_custom_code first, then merge your changes. If native elements or the CMS replaced this code, pass allow_shrink:true.`,
               existing_preview: existing.substring(0, 500),
               comparison,
             };
@@ -475,25 +494,29 @@ IMPORTANT: Before calling, you MUST read existing code with get_site_custom_code
 
   server.tool(
     "append_site_custom_code",
-    `Append or prepend code to a custom code field WITHOUT reading the existing content first.
-Use this when you need to ADD new CSS rules, JS code, or script tags — no need to read first.
+    `Append or prepend code to a custom code field.
+LAST RESORT: use native elements, their settings or an app first; a special feature uses the CMS app (collection + HTTP function) with only a small glue script here. See get_build_guide → NATIVE FIRST. Oversized code or UI/data in code is refused unless native_gap explains why.
 For full rewrites, use update_site_custom_code instead.`,
     {
       field: z.enum(["code_before_head", "code_before_body", "code_custom_css", "code_custom_javascript"])
         .describe("Which code field to modify"),
       code: z.string().describe("Code to add"),
       position: z.enum(["append", "prepend"]).default("append").describe("Add to end (append) or beginning (prepend)"),
+      native_gap: NATIVE_GAP,
     },
-    ({ field, code, position }) =>
+    ({ field, code, position, native_gap }) =>
       handle(async () => {
-        const existing = await api.getSiteSettingField(field);
-        let content = existing || "";
+        const current = await readSiteCode(api);
+        let content = current[field] || "";
 
         if (position === "prepend") {
           content = code.trimEnd() + "\n\n" + content.trimStart();
         } else {
           content = content.trimEnd() + "\n\n" + code.trimEnd() + "\n";
         }
+
+        const blocked = codeGuard(checkSiteCode(current, { [field]: content }), native_gap);
+        if (blocked) return blocked;
 
         await api.updateSiteSettings({ [field]: content });
         return { success: true, field, position, new_length: content.length };
@@ -558,6 +581,8 @@ IMPORTANT: Before calling, you MUST read existing content with list_page_content
         // Safeguard: read existing content and block if new content is suspiciously smaller
         const existingRes: any = await api.getPageContent(page_id, language_code);
         const existing = existingRes?.data ?? existingRes;
+        const placeholders = checkContentPlaceholders(content, existing?.content);
+        if (placeholders.length) return { error: "BLOCKED: not saving.", errors: placeholders };
         if (existing && existing.content) {
           const existingStr = JSON.stringify(existing.content);
           const newStr = JSON.stringify(content);
@@ -622,8 +647,9 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
       events: z.array(z.record(z.any())).optional().describe("Complete events array (replaces existing)"),
       bindings: z.array(z.record(z.any())).optional().describe("Complete bindings array (replaces existing)"),
       responsive: z.record(z.any()).optional().describe("Responsive breakpoint overrides (e.g. {bp1: {style: {...}, config: {...}}})"),
+      allow_shrink: ALLOW_SHRINK,
     },
-    ({ page_id, element_id, dry_run: dryRunParam, ...updates }) =>
+    ({ page_id, element_id, dry_run: dryRunParam, allow_shrink, ...updates }) =>
       handle(async () => {
         const dry_run = dryRunParam !== undefined ? dryRunParam : getConfirmMode() === "always_confirm";
         invalidatePageCache();
@@ -636,6 +662,8 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
 
         const beforeNode = JSON.parse(JSON.stringify(node));
         applyNodeUpdates(node, updates);
+        const codeErrors = checkElementPatch(source, node, beforeNode, updates.specials);
+        if (codeErrors.length) return { error: "BLOCKED: not saving.", element_id, errors: codeErrors };
         const diff = computeNodeDiff(beforeNode, node);
 
         if (!diff) return { info: "No changes detected", element_id };
@@ -653,7 +681,7 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
         const newLen = JSON.stringify(source).length;
         const existingLen = JSON.stringify(parseSource(page.source && page.source.source)).length;
 
-        if (existingLen > 200 && newLen < existingLen * 0.5) {
+        if (!allow_shrink && existingLen > 200 && newLen < existingLen * 0.5) {
           return {
             error: `BLOCKED: Page source would shrink from ${existingLen} to ${newLen} chars. This indicates data loss.`,
             existing_length: existingLen,
@@ -691,8 +719,9 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
         bindings: z.array(z.record(z.any())).optional(),
         responsive: z.record(z.any()).optional(),
       })).describe("Array of element updates"),
+      allow_shrink: ALLOW_SHRINK,
     },
-    ({ page_id, dry_run: dryRunParam, updates: elementUpdates }) =>
+    ({ page_id, dry_run: dryRunParam, updates: elementUpdates, allow_shrink }) =>
       handle(async () => {
         const dry_run = dryRunParam !== undefined ? dryRunParam : getConfirmMode() === "always_confirm";
         invalidatePageCache();
@@ -710,6 +739,8 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
           const beforeNode = JSON.parse(JSON.stringify(node));
           const { element_id, ...updates } = upd;
           applyNodeUpdates(node, updates);
+          const codeErrors = checkElementPatch(source, node, beforeNode, updates.specials);
+          if (codeErrors.length) return { error: "BLOCKED: not saving any of this batch.", element_id, errors: codeErrors };
           const diff = computeNodeDiff(beforeNode, node);
           results.push({ element_id, diff: diff || "no changes" });
         }
@@ -726,7 +757,7 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
         const newLen = JSON.stringify(source).length;
         const existingLen = JSON.stringify(parseSource(page.source && page.source.source)).length;
 
-        if (existingLen > 200 && newLen < existingLen * 0.5) {
+        if (!allow_shrink && existingLen > 200 && newLen < existingLen * 0.5) {
           return {
             error: `BLOCKED: Page source would shrink from ${existingLen} to ${newLen} chars. This indicates data loss.`,
             existing_length: existingLen,
@@ -755,9 +786,11 @@ Safeguarded: blocks if new source is <50% of existing size.`,
     {
       page_id: z.string().describe("Page ID"),
       source: z.any().describe("Full page source object (sections tree) or JSON string"),
-      custom_code: z.string().optional().describe("Custom code (CSS/JS) for this page"),
+      custom_code: z.string().optional().describe("Custom code (CSS/JS) for this page. Last resort, same rules as update_site_custom_code."),
+      native_gap: NATIVE_GAP,
+      allow_shrink: ALLOW_SHRINK,
     },
-    ({ page_id, source, custom_code }) =>
+    ({ page_id, source, custom_code, native_gap, allow_shrink }) =>
       handle(async () => {
         const body: Record<string, any> = {};
         if (source != null) {
@@ -765,20 +798,28 @@ Safeguarded: blocks if new source is <50% of existing size.`,
           body.source = typeof source === "string" ? JSON.parse(source) : source;
         }
         if (custom_code != null) {
+          invalidatePageCache();
+          const { page } = await getPageWithSource(api, page_id);
+          const old = page?.source?.custom_code;
+          const blocked = codeGuard(
+            checkSiteCode({ code_custom_javascript: typeof old === "string" ? old : JSON.stringify(old ?? "") }, { code_custom_javascript: custom_code }),
+            native_gap,
+          );
+          if (blocked) return blocked;
           body.custom_code = custom_code;
         }
 
         // Safeguard: force fresh read and block if new source is suspiciously smaller
         if (body.source) {
-          const embeds = checkEmbeds(body.source);
-          if (embeds.errors.length) return { error: "BLOCKED: whole-page HTML embed — not saving.", errors: embeds.errors };
-
           invalidatePageCache();
           const { source: existingSource, error } = await getPageWithSource(api, page_id);
+          const code = checkNativeContent(body.source, existingSource || undefined);
+          if (code.errors.length) return { error: "BLOCKED: not saving.", errors: code.errors };
+
           if (!error && existingSource) {
             const existingLen = JSON.stringify(existingSource).length;
             const newLen = JSON.stringify(body.source).length;
-            if (existingLen > 200 && newLen < existingLen * 0.5) {
+            if (!allow_shrink && existingLen > 200 && newLen < existingLen * 0.5) {
               return {
                 error: `BLOCKED: New source (${newLen} chars) is much smaller than existing (${existingLen} chars) — ${Math.round((newLen / existingLen) * 100)}% of original. This may indicate fabricated data or data loss. Read the page source with get_page_source/get_page_element first, then apply changes.`,
                 existing_length: existingLen,

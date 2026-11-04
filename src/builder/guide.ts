@@ -1,7 +1,10 @@
 // Generation guide injected into builder tools so an AI agent understands the BuilderX
 // page model well enough to author pages that actually render.
+import { NATIVE_FIRST_GUIDE } from "./native-first.js";
 
 export const BUILD_GUIDE = `# BuilderX page authoring guide
+
+${NATIVE_FIRST_GUIDE}
 
 ## DESIGN SYSTEM — lock this FIRST, every build (this is what makes free composition look DESIGNED)
 There are NO page templates here and NO seeded data — you COMPOSE every page from elements

@@ -553,6 +553,7 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
             if (!node) { perItem.push({ element_id: it.element_id, error: "Element not found" }); continue; }
             const probe = probeImagePaths(node);
             const path = it.alt_path || probe.alt_path;
+            if (!/(?:^|[._])alt$/i.test(path)) { perItem.push({ element_id: it.element_id, error: `alt_path "${path}" is not an alt field` }); continue; }
             const before = path.split(".").reduce((acc: any, k: string) => (acc == null ? acc : acc[k]), node);
             setByPath(node, path, it.alt);
             perItem.push({ element_id: it.element_id, alt_path: path, before: before == null ? "" : before, after: it.alt, _src: probe.src });
