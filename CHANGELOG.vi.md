@@ -5,6 +5,25 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.37.0] - 2026-11-04
+
+### Added
+- Hướng dẫn "native first" mới nay được chèn vào build guide của `get_build_guide`, custom-code guide của `get_http_function` và `get_site_custom_code`, cùng hướng dẫn khởi động của server: một thứ tự ưu tiên (element native → cài đặt của element → app có sẵn → app CMS kèm script nối nhỏ → snippet bên thứ ba), bảng tra nhu cầu → element, và ngân sách code cho site/trang.
+- `update_site_custom_code`, `append_site_custom_code`, và `custom_code` của `update_page_source` nay nhận tham số `native_gap` để giải thích lý do cần đoạn code vượt ngân sách hoặc giống UI/dữ liệu, và mọi tool ghi code hoặc source (`update_site_custom_code`, `update_page_source`, `update_page_element`, `batch_update_page_elements`, `update_global_source`, `update_global_source_element`, `batch_update_global_source_elements`) nay nhận tham số `allow_shrink` để chủ động thu nhỏ nội dung khi native element đã thay thế đoạn code quá khổ.
+- Lượt đọc đầy đủ các trường của `get_site_custom_code` nay có thêm trường `_budget` báo mức dùng script/CSS so với ngân sách code của site.
+
+### Changed
+- `update_site_custom_code` và `append_site_custom_code` nay từ chối đoạn code vượt ngân sách script/CSS của site hoặc có dấu hiệu là UI/dữ liệu nhúng trong code (thẻ HTML, lệnh dựng DOM, các object JSON, nguyên một tài liệu HTML được dán vào, quá nhiều `!important`), trừ khi `native_gap` giải thích vì sao không element hay app nào đáp ứng được nhu cầu đó.
+- `validate_page`, và do đó `add_section` cùng `update_page_source`, nay cũng chặn các text element chỉ chứa JSON làm chỗ để script điền vào, và giới hạn tổng lượng `custom_css` cộng embed code trên một trang hoặc global source, nhưng chỉ xét phần nội dung mà lượt lưu MỚI THÊM vào nên các trang/site cũ đã quá khổ vẫn lưu được.
+- `update_page_content` và `update_global_source_contents` nay từ chối các bản dịch có trường `text` là JSON giữ chỗ thay vì nội dung thật.
+- `update_site_settings` nay từ chối thay đổi trực tiếp các trường `code_before_head`, `code_before_body`, `code_custom_javascript`, `code_custom_css`, và hướng người gọi sang `update_site_custom_code` — nơi áp dụng các kiểm tra native-first.
+- Phần phát hiện tài liệu HTML nguyên trang trong `validate_page` và `update_page_source` nay cũng xét `specials.iframe` của element `googlemap`, không chỉ `specials.htmlCode` của node `embed`.
+- Mô tả trường `custom_class`/`custom_css` trên mọi element nay hướng AI dùng `runtime.style`/`runtime.config` trước.
+- Hướng dẫn của `get_http_function` nay trỏ đúng sang `edit_http_function` (action `"add"`/`"replace_function"`) để deploy function, thay vì `update_http_function` — tool này ghi đè toàn bộ file.
+
+### Fixed
+- `set_image_alts` nay từ chối `alt_path` không thực sự trỏ tới trường alt, thay vì âm thầm ghi đè lên một thuộc tính khác của element.
+
 ## [1.36.2] - 2026-10-29
 
 ### Fixed

@@ -5,6 +5,25 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.37.0] - 2026-11-04
+
+### Added
+- A new native-first guide is now injected into `get_build_guide`'s build guide, `get_http_function`'s and `get_site_custom_code`'s custom-code guide, and the server's startup instructions: a priority order (native element → element settings → existing app → CMS app with a small glue script → third-party snippet), a need-to-element lookup table, and site/page code budgets.
+- `update_site_custom_code`, `append_site_custom_code`, and `update_page_source`'s `custom_code` now accept a `native_gap` parameter to justify custom code that is over budget or looks like UI/data, and every code- or source-writing tool (`update_site_custom_code`, `update_page_source`, `update_page_element`, `batch_update_page_elements`, `update_global_source`, `update_global_source_element`, `batch_update_global_source_elements`) accepts `allow_shrink` to intentionally shrink content once native elements replace oversized code.
+- `get_site_custom_code`'s all-fields read now includes a `_budget` field reporting script/CSS usage against the site code budget.
+
+### Changed
+- `update_site_custom_code` and `append_site_custom_code` now refuse code that crosses the site script/CSS budget or smells like UI or data embedded in code (HTML tags, DOM-building calls, JSON object literals, a whole pasted HTML document, excessive `!important`), unless `native_gap` explains why no native element or app covers the need.
+- `validate_page`, and therefore `add_section` and `update_page_source`, now also rejects text elements holding placeholder JSON meant to be filled by a script and caps total `custom_css` plus embed code per page or global source, while only evaluating what a save newly adds so edits to already-oversized legacy pages or sites can still land.
+- `update_page_content` and `update_global_source_contents` now reject translations whose `text` field is placeholder JSON instead of real copy.
+- `update_site_settings` now refuses to change the `code_before_head`, `code_before_body`, `code_custom_javascript`, or `code_custom_css` fields directly, pointing callers to `update_site_custom_code` where the native-first checks apply.
+- The whole-document detection behind `validate_page` and `update_page_source` now also inspects a `googlemap` element's `specials.iframe`, not just an `embed` node's `specials.htmlCode`.
+- Every element's `custom_class`/`custom_css` field descriptions now point agents to `runtime.style`/`runtime.config` first.
+- The `get_http_function` guide now correctly points at `edit_http_function` (action `"add"`/`"replace_function"`) to deploy a function, instead of `update_http_function`, which replaces the whole file.
+
+### Fixed
+- `set_image_alts` now rejects an `alt_path` that doesn't actually point to an alt field instead of silently overwriting an unrelated element property.
+
 ## [1.36.2] - 2026-10-29
 
 ### Fixed
