@@ -12,10 +12,13 @@
  * SoftwareApplication + WebSite + FAQPage so links unfurl nicely and the page
  * can be indexed. ogImageSvg() is served at /og.svg; /og.png if you rasterize it.
  *
- * Self-contained (inline CSS + JS, no external fonts/trackers) so it loads instantly.
+ * Inline CSS + JS, no fonts or trackers, so it loads instantly. The only extra download
+ * is three.js from jsDelivr for the 3D scene, fetched when that section nears the
+ * viewport (see web-guide-scene.ts).
  */
 
 import { readFileSync } from "node:fs";
+import { GLASS_CSS, SCENE_JS, sceneHtml } from "./web-guide-scene.js";
 
 // The SPA page (on the builder app) that shows the user their personal remote
 // connector link with login already built in — see builderx_spa McpRemoteStore.vue
@@ -179,8 +182,6 @@ type Strings = {
   ctaStart: string;
   ctaStar: string;
   flowH2: string;
-  flow: Array<{ icon: string; t: string; s: string }>;
-  flowCap: string;
   howH2: string;
   how: Array<{ icon: string; t: string; d: string }>;
   buildH2: string;
@@ -223,15 +224,7 @@ const T: Record<Lang, Strings> = {
       ". Không kéo-thả, không học gì thêm — nhanh hơn thuê người làm web cả tuần.",
     ctaStart: "Bắt đầu ngay",
     ctaStar: "Tặng sao trên GitHub",
-    flowH2: "Chỉ 4 bước đơn giản",
-    flow: [
-      { icon: "bulb", t: "Bạn nói", s: "mô tả trang bạn muốn" },
-      { icon: "brain", t: "Trợ lý AI", s: "Claude · Cursor · Windsurf…" },
-      { icon: "server", t: "WebCake", s: "lưu & kiểm tra trang" },
-      { icon: "window", t: "Cửa hàng của bạn", s: "trang web thật, live" },
-    ],
-    flowCap:
-      "① Bạn nói mong muốn → ② Trợ lý AI dựng trang → ③ Bạn xem trước, chỉnh nếu thích → ④ Đăng lên là xong. Không cần biết lập trình, không cần kéo-thả block.",
+    flowH2: "Từ một câu nói đến trang web thật",
     howH2: "Tại sao dùng được ngay, không lo hỏng",
     how: [
       {
@@ -305,10 +298,10 @@ const T: Record<Lang, Strings> = {
     m1Steps: [
       "<b>Cài Node.js 18+</b> (miễn phí) nếu máy chưa có — tải tại <b>nodejs.org</b>.",
       "<b>Mở Terminal</b> (hoặc Command Prompt), dán lệnh sau và nhấn Enter:<pre>" + INSTALL_CMD + "</pre>",
-      "<b>Làm theo hướng dẫn hiện ra:</b> chọn ứng dụng bạn dùng (Claude, Cursor, Windsurf…) → đăng nhập tài khoản WebCake khi được hỏi.",
+      "<b>Bấm “Kết nối” trên trang vừa mở ra</b> trong trình duyệt (đăng nhập WebCake nếu được hỏi). Công cụ tự cài vào ứng dụng AI có trên máy bạn (Claude, Cursor, Windsurf…).",
       '<b>Mở lại ứng dụng AI.</b> Khi thấy <code class="inl">webcake-storefront</code> xuất hiện trong danh sách công cụ là bạn đã kết nối thành công — hãy thử nói "Tạo cho tôi trang sản phẩm…"',
     ],
-    m1Note: "Muốn cài cho nhiều ứng dụng cùng lúc — dùng lệnh này:",
+    m1Note: "Cần cài cho mọi ứng dụng, kể cả ứng dụng chưa có trên máy, hoặc chạy bằng script? Dùng lệnh này:",
     m2Tag: "Cách ② · Dùng link — không cần cài gì",
     m2Sub:
       "Phù hợp khi bạn dùng Claude trên web (claude.ai), máy không cài được phần mềm, hoặc dùng theo nhóm.",
@@ -395,15 +388,7 @@ const T: Record<Lang, Strings> = {
       ". No dragging blocks, nothing to learn — faster than waiting weeks for a web agency.",
     ctaStart: "Get started",
     ctaStar: "Star on GitHub",
-    flowH2: "Just 4 simple steps",
-    flow: [
-      { icon: "bulb", t: "You describe", s: "what you want the page to be" },
-      { icon: "brain", t: "AI assistant", s: "Claude · Cursor · Windsurf…" },
-      { icon: "server", t: "WebCake", s: "saves & checks the page" },
-      { icon: "window", t: "Your store", s: "a real, live page" },
-    ],
-    flowCap:
-      "① You say what you want → ② The AI builds the page → ③ You preview it, tweak if you like → ④ Publish and you're done. No coding, no drag-and-drop.",
+    flowH2: "From one sentence to a live page",
     howH2: "Why you can trust it straight away",
     how: [
       {
@@ -477,10 +462,10 @@ const T: Record<Lang, Strings> = {
     m1Steps: [
       "<b>Install Node.js 18+</b> (free) if you don't have it yet — get it at <b>nodejs.org</b>.",
       "<b>Open Terminal</b> (or Command Prompt), paste the command below and press Enter:<pre>" + INSTALL_CMD + "</pre>",
-      "<b>Follow the prompts that appear:</b> pick your app (Claude, Cursor, Windsurf…) → sign in to your WebCake account when asked.",
+      "<b>Click “Connect” on the page that opens</b> in your browser (sign in to WebCake if asked). The tool sets itself up in the AI apps on your computer (Claude, Cursor, Windsurf…).",
       '<b>Reopen your AI app.</b> When you see <code class="inl">webcake-storefront</code> in the tools list, you\'re connected — try saying "Create a product page for…"',
     ],
-    m1Note: "Want to set up multiple apps at once — use this command:",
+    m1Note: "Need every app configured, even ones not on this computer yet, or running from a script? Use this command:",
     m2Tag: "Way ② · Use a link — nothing to install",
     m2Sub:
       "Best if you use Claude on the web (claude.ai), can't install software, or work as a team.",
@@ -789,26 +774,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   .feat li{display:flex;gap:13px;align-items:center;font-size:.97rem;padding:13px 16px}
   .feat li b{color:var(--ink)}
   .cta-row{display:flex;gap:12px;flex-wrap:wrap;margin:22px 0 6px}
-  .flow{display:flex;align-items:flex-start;gap:0;padding:24px 18px 18px;overflow-x:auto}
-  .flow .node{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;width:104px}
-  .flow .node .ic{width:54px;height:54px;border-radius:16px}
-  .flow .node .ic .i{width:27px;height:27px}
-  .flow .node b{font-size:.93rem}
-  .flow .node span{font-size:.75rem;color:var(--mut)}
-  .flow .wire{flex:1 1 auto;min-width:30px;position:relative;height:2px;margin-top:27px;
-    background:linear-gradient(90deg,var(--line),rgba(16,139,103,.45),var(--line))}
-  .flow .wire .pkt{position:absolute;top:50%;left:0;width:9px;height:9px;margin:-5px 0 0 -4px;border-radius:50%;
-    background:var(--g);box-shadow:0 0 9px 1px rgba(16,139,103,.7)}
-  .flow .wire::after{content:"";position:absolute;right:-1px;top:50%;width:7px;height:7px;margin-top:-4px;
-    border-top:2px solid var(--g7);border-right:2px solid var(--g7);transform:rotate(45deg)}
   .flow-cap{color:var(--mut);font-size:.9rem;margin:2px 2px 0;max-width:68ch}
-  @media(prefers-reduced-motion:no-preference){
-    .flow .wire .pkt{animation:pkt 2.4s ease-in-out infinite}
-    @keyframes pkt{0%{left:0;opacity:0}12%{opacity:1}88%{opacity:1}100%{left:100%;opacity:0}}
-    .flow .node .ic{animation:nodepop 2.4s ease-in-out infinite}
-  }
-  @media(prefers-reduced-motion:reduce){.flow .wire .pkt{display:none}}
-  @keyframes nodepop{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 4px rgba(16,139,103,.12)}}
   .btn{display:inline-flex;align-items:center;gap:9px;padding:11px 19px;border-radius:11px;cursor:pointer;
     background:var(--g);color:#fff;text-decoration:none;font-weight:700;font-size:.93rem;
     box-shadow:0 4px 12px -4px rgba(16,139,103,.5);transition:transform .15s ease,background .15s ease}
@@ -902,16 +868,6 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     .cl-wrap{padding:18px 16px 10px}
     .langsw{padding:6px 10px}
     .uses li,.feat li{padding:14px}
-    .flow{flex-direction:column;align-items:stretch;overflow:visible;padding:16px}
-    .flow .node{flex-direction:row;width:auto;align-items:center;gap:13px;text-align:left}
-    .flow .node .ic{width:44px;height:44px;border-radius:13px}
-    .flow .node .ic .i{width:22px;height:22px}
-    .flow .node b{font-size:.95rem}
-    .flow .node span{font-size:.8rem}
-    .flow .wire{flex:0 0 auto;width:2px;height:20px;min-width:0;margin:3px 0 3px 21px;
-      background:linear-gradient(var(--line),var(--g))}
-    .flow .wire::after{content:none}
-    .flow .wire .pkt{display:none}
   }
   @media(prefers-reduced-motion:no-preference){
     .js .reveal{opacity:0;transform:translateY(24px);
@@ -920,6 +876,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
     .hero-in{animation:rise2 .8s cubic-bezier(.2,.7,.2,1) both}
     @keyframes rise2{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
   }
+${GLASS_CSS}
 </style></head>
 <body>
 <div class="blobs"><b></b><b></b><b></b></div>
@@ -953,18 +910,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   </nav>
 
   <h2 id="flow" class="reveal">${t.flowH2}</h2>
-  <div class="glass flow reveal">
-    ${t.flow
-      .map(
-        (n, i) =>
-          `<div class="node"><span class="ic" style="animation-delay:${(i * 0.8).toFixed(1)}s">${icon(n.icon)}</span><b>${n.t}</b><span>${n.s}</span></div>` +
-          (i < t.flow.length - 1
-            ? `<div class="wire"><i class="pkt" style="animation-delay:${(i * 0.8).toFixed(1)}s"></i></div>`
-            : ""),
-      )
-      .join("\n    ")}
-  </div>
-  <p class="flow-cap reveal">${t.flowCap}</p>
+  ${sceneHtml(L)}
 
   <h2 id="how" class="reveal">${t.howH2}</h2>
   <div class="grid">
@@ -1122,6 +1068,7 @@ export function guideHtml(origin: string, lang: Lang = "vi"): string {
   }
 })();
 </script>
+<script>${SCENE_JS}</script>
 </body></html>`;
 }
 

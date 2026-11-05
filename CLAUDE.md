@@ -17,7 +17,7 @@ npm run dev          # tsc --watch
 
 # CLI subcommands (also available via `npx -y webcake-storefront-mcp <cmd>`):
 node dist/index.js              # stdio MCP server (default; use in IDE configs)
-node dist/index.js install      # write MCP config into IDEs (Claude Desktop/Code, Cursor, Windsurf, VSCode)
+node dist/index.js install      # no questions: prod, browser Connect, every detected IDE (--dev: wizard with env choice)
 node dist/index.js login        # browser login → saves token to ~/.webcake-storefront-mcp/ db
 node dist/index.js serve --port 8787   # remote Streamable-HTTP MCP
 ```
@@ -53,7 +53,8 @@ src/                — TypeScript source (strict); compiles to dist/
   index.ts          — CLI dispatcher: stdio server (default) + install / uninstall / login / serve subcommands
   server.ts         — createServer(api): builds McpServer, registers every tool module, exposes Handle type
   config.ts         — env presets + resolveSettings() + makeApi() (overrides > env > saved db)
-  install.ts        — writes MCP config into IDE config files (Claude Desktop/Code, Cursor, Windsurf, VSCode)
+  install.ts        — merges MCP config into every detected IDE's file (keeps a backup; VS Code uses `servers`)
+  web-guide.ts      — marketing page at GET /; web-guide-scene.ts holds the liquid-glass CSS + three.js scene (same file in webcake-landing-mcp)
   auth/login.ts     — loopback browser login → builderx_spa /mcp-storefront → saves token + session_id to the local db
   http.ts           — remote Streamable-HTTP transport; per-session JWT/site via headers or ?query
   db.ts             — JSON files at ~/.webcake-storefront-mcp/; config + image-alt cache
