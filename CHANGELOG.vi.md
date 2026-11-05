@@ -5,6 +5,23 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.38.0] - 2026-11-05
+
+### Changed
+- Lệnh `install` nay không còn hỏi gì: mở thẳng trang kết nối prod trên trình duyệt và ghi cấu hình vào mọi ứng dụng AI phát hiện được trên máy (Claude Desktop, Claude Code, Cursor, Windsurf, Augment/VS Code, Codex, Antigravity, Gemini CLI, Cline, Kiro, OpenCode); wizard hỏi từng bước cũ (chọn môi trường, đăng nhập trình duyệt hoặc dán token, chọn IDE) nay chỉ chạy khi thêm cờ `--dev`.
+- `install` nay ghi cấu hình VS Code / Augment vào khóa `servers` kèm `type: "stdio"` thay vì `mcpServers`, đúng với khóa VS Code thực sự đọc.
+- `install` nay chạy `claude mcp add` kèm `--scope user` để đăng ký server theo tài khoản thay vì chỉ có tác dụng trong thư mục đang chạy lệnh.
+- `install` nay sao lưu file cấu hình IDE trước khi sửa (`<file>.webcake-storefront-mcp-backup`) và bỏ qua việc ghi nếu nội dung tạo ra không đổi.
+- `install` nay không còn dừng cấu hình các IDE còn lại khi một ứng dụng bị lỗi; ứng dụng đó được báo là bị bỏ qua và các ứng dụng khác vẫn tiếp tục.
+- `uninstall` nay cũng xoá entry của server khỏi vị trí cũ `~/.vscode/mcp.json` và khỏi cả hai khóa `mcpServers` và `servers` của một file cấu hình.
+- Phần "cách hoạt động" trên trang hướng dẫn web nay là sơ đồ 3D tương tác (bạn → trợ lý AI → WebCake MCP → cửa hàng của bạn) dựng bằng three.js, chỉ tải khi cuộn tới gần phần đó và tự chuyển về danh sách bước dạng chữ nếu tải lỗi.
+- Hướng dẫn cài đặt trên trang web nay mô tả việc bấm "Kết nối" trên trang do lệnh install mở ra, thay vì chọn IDE từ một lượt hỏi.
+- Độ tương phản chữ trên trang hướng dẫn web nay được tăng trên cả giao diện sáng/tối và máy tính/điện thoại để đạt tỉ lệ tương phản 4.5:1.
+
+### Fixed
+- `login` nay không còn dùng lại `api_url` staging đã lưu từ trước khi mở trang kết nối prod, vốn có thể ghép một lượt đăng nhập prod với api base staging đã cũ.
+- Khối lệnh ở phần hướng dẫn cài đặt trên trang hướng dẫn web nay không còn bị tràn ngang trên điện thoại.
+
 ## [1.37.0] - 2026-11-04
 
 ### Added

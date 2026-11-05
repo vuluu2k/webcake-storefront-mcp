@@ -5,6 +5,23 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.38.0] - 2026-11-05
+
+### Changed
+- The `install` command no longer asks any questions: it opens the prod browser connect page and configures every AI app it detects on the machine (Claude Desktop, Claude Code, Cursor, Windsurf, Augment/VS Code, Codex, Antigravity, Gemini CLI, Cline, Kiro, OpenCode); the old step-by-step wizard (environment choice, browser login or pasted token, IDE picklist) is now opt-in via `--dev`.
+- `install` now writes the VS Code / Augment config under the `servers` key with `type: "stdio"` instead of `mcpServers`, matching the key VS Code actually reads.
+- `install` now runs `claude mcp add` with `--scope user` so the server is registered for the account instead of only the directory the command was run from.
+- `install` now backs up an IDE config file before modifying it (`<file>.webcake-storefront-mcp-backup`) and skips the write entirely when the generated content is unchanged.
+- `install` no longer stops configuring the remaining IDEs when one of them fails; it reports that app as skipped and continues.
+- `uninstall` now also removes the server entry from the legacy `~/.vscode/mcp.json` location and from both the `mcpServers` and `servers` keys of a config file.
+- The web guide landing page's "how it works" section is now an interactive 3D diagram (user → AI assistant → WebCake MCP → your store) built with three.js, loaded lazily only when the section scrolls into view and falling back to a plain step list if it fails to load.
+- The web guide landing page's install instructions now describe clicking "Connect" on the page opened by the install command instead of picking an IDE from a prompt.
+- The web guide landing page's text contrast was raised across light/dark themes and desktop/mobile to meet a 4.5:1 contrast ratio.
+
+### Fixed
+- `login` no longer reuses a previously saved staging `api_url` when opening the prod connect page, which could pair a prod login attempt with a stale staging API base.
+- The web guide landing page's install-steps command block no longer overflows horizontally on mobile.
+
 ## [1.37.0] - 2026-11-04
 
 ### Added
