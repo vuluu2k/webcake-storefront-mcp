@@ -100,29 +100,42 @@ Pick **one**. Both hand your AI tool the full storefront toolkit. No coding.
 
 ### ① `npx` — runs on your machine (recommended)
 
-Zero install, always the latest version, needs Node.js 18+. **One line** configures your IDE:
+Zero install, always the latest version, needs Node.js 18+. **One line** connects your account and configures your AI apps:
 
 ```bash
-# Interactive — pick your IDE(s) and paste your credentials
+# Opens the browser — click Connect, your installed IDEs are configured (prod)
 npx -y webcake-storefront-mcp install
 
-# Non-interactive — configure every supported IDE at once
+# Developers only — step by step: environment, login or token, IDE(s)
+npx -y webcake-storefront-mcp install --dev
+
+# Scripts and CI — every supported IDE, even ones not installed yet
 npx -y webcake-storefront-mcp install --ide all --token <token> --session <session-id>
 
 # Remove the server from every IDE config
 npx -y webcake-storefront-mcp uninstall
 ```
 
-Targets: `claude-desktop`, `claude-code`, `cursor`, `windsurf`, `vscode`, or `all`.
+**`install` asks nothing.** It connects to production, opens your browser so you can click *Connect*, then adds the server
+to every AI app it finds on this computer. Your other servers are kept, and any config file it changes is backed up next to
+the original as `<file>.webcake-storefront-backup`. No AI app found? It says so and exits with an error: install one and run it again,
+or name it with `--ide`.
+
+Need staging or local? `--dev` opens the step-by-step wizard, or skip it with `--env staging` / `--env local`.
+
+> **Installed with an older version?** Run `install` again. Older versions wrote VS Code's config under the wrong key, so the
+> server never appeared there, and registered Claude Code for the current folder only.
+
+Targets for `--ide`: `claude-desktop`, `claude-code`, `cursor`, `windsurf`, `vscode`, `codex`, `antigravity`, `gemini`, `cline`, `kiro`, `opencode`, or `all`.
 Just want to run the server (configure by hand)? `npx -y webcake-storefront-mcp`.
 
-### ② Browser login — no token copy/paste
+### ② Reconnect your account — no token copy/paste
 
 ```bash
 npx -y webcake-storefront-mcp login
 ```
 
-Opens the builder's **connect page**; click *Connect* and your token + session are saved locally and picked up automatically.
+`install` already does this the first time. Use `login` when your token expires: it opens the builder's **connect page**, you click *Connect*, and your token + session are saved locally and picked up automatically.
 
 ### Remote URL — self-hosted, nothing per-client to install
 

@@ -9,7 +9,7 @@ Usage: npx -y webcake-storefront-mcp [command] [options]
 
 Commands:
   (none)             start the stdio MCP server (use this in IDE configs)
-  install            configure the server in your IDE(s) — interactive (env + browser login/token) or via flags
+  install            connect to prod via the browser and configure your IDE(s) (--dev: step-by-step wizard with env choice)
   uninstall          remove the server from your IDE configs
   login              grab your token via the browser (saved to the local config db)
   serve [--port N]   run the remote Streamable-HTTP server (default 8787; or PORT env)

@@ -4,7 +4,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { randomBytes } from "node:crypto";
 import { spawn, execFile } from "node:child_process";
-import { resolveSettings } from "../config.js";
+import { DEFAULT_ENV, resolveSettings } from "../config.js";
 import { setConfig } from "../db.js";
 
 interface LoginOpts {
@@ -144,7 +144,8 @@ function pathOf(url: string | undefined): string {
 
 export async function runLogin(argv: string[]): Promise<void> {
   const opts = parseArgs(argv);
-  const settings = resolveSettings({ apiUrl: opts.apiUrl, appUrl: opts.appUrl });
+  // Pin the env: a stale saved api_url (an old staging login) must not pair with the prod connect page.
+  const settings = resolveSettings({ env: process.env.WEBCAKE_ENV || DEFAULT_ENV, apiUrl: opts.apiUrl, appUrl: opts.appUrl });
   const appUrl = settings.appUrl.replace(/\/$/, "");
   const apiUrl = settings.apiUrl.replace(/\/$/, "");
   const state = randomBytes(16).toString("hex");

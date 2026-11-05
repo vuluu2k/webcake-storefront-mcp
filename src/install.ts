@@ -1,7 +1,7 @@
 // Installer: writes (or removes) this MCP server's entry in the config files of the
-// supported IDEs / agents. Flag-driven; falls back to a friendly numbered wizard on a
-// TTY. Mirrors webcake-landing-mcp's installer (numbered choices, colours, multi-IDE).
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+// supported IDEs / agents. A plain run connects to prod via the browser and
+// configures the detected IDEs with no questions; --dev opens the numbered wizard. Mirrors webcake-landing-mcp's installer (numbered choices, colours, multi-IDE).
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir, platform } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -56,6 +56,7 @@ interface InstallOpts {
   siteId?: string;
   apiUrl?: string;
   launch?: "npx" | "local";
+  dev?: boolean;
 }
 
 // ── arg parsing ──────────────────────────────────────────────────────────────
@@ -72,6 +73,7 @@ function parseArgs(argv: string[]): InstallOpts {
     else if (a === "--api-url" || a === "--api-base") o.apiUrl = argv[++i];
     else if (a === "--npx") o.launch = "npx";
     else if (a === "--local") o.launch = "local";
+    else if (a === "--dev") o.dev = true;
   }
   return o;
 }
@@ -97,7 +99,20 @@ function buildEnv(opts: InstallOpts): Env {
 }
 
 // ── generic JSON config (Claude Desktop/Code, Cursor, Windsurf, VS Code, …) ───
-function mergeJson(file: string, launch: Launch, env: Env): boolean {
+// These are the user's own files: an unchanged one isn't touched, a changed one keeps
+// its previous version alongside so the install can be undone.
+function writeConfig(file: string, next: string): void {
+  if (existsSync(file)) {
+    if (readFileSync(file, "utf8") === next) return;
+    const backup = `${file}.${NAME}-backup`;
+    copyFileSync(file, backup);
+    info(`Previous file saved as ${backup}`);
+  }
+  writeFileSync(file, next);
+}
+
+// VS Code is the one client that keeps servers under `servers` (and requires `type`).
+function mergeJson(file: string, launch: Launch, env: Env, key: "mcpServers" | "servers" = "mcpServers"): boolean {
   mkdirSync(dirname(file), { recursive: true });
   let cfg: any = {};
   if (existsSync(file)) {
@@ -111,13 +126,14 @@ function mergeJson(file: string, launch: Launch, env: Env): boolean {
       }
     }
   }
-  if (typeof cfg.mcpServers !== "object" || !cfg.mcpServers) cfg.mcpServers = {};
-  cfg.mcpServers[NAME] = {
+  if (typeof cfg[key] !== "object" || !cfg[key]) cfg[key] = {};
+  cfg[key][NAME] = {
+    ...(key === "servers" ? { type: "stdio" } : {}),
     command: launch.command,
     args: launch.args,
     ...(Object.keys(env).length ? { env } : {}),
   };
-  writeFileSync(file, JSON.stringify(cfg, null, 2) + "\n");
+  writeConfig(file, JSON.stringify(cfg, null, 2) + "\n");
   return true;
 }
 
@@ -144,7 +160,7 @@ function mergeOpencodeJson(file: string, launch: Launch, env: Env): boolean {
     enabled: true,
     ...(Object.keys(env).length ? { environment: env } : {}),
   };
-  writeFileSync(file, JSON.stringify(cfg, null, 2) + "\n");
+  writeConfig(file, JSON.stringify(cfg, null, 2) + "\n");
   return true;
 }
 
@@ -153,16 +169,15 @@ function configureCodex(launch: Launch, env: Env) {
   const dir = join(HOME, ".codex");
   const cfg = join(dir, "config.toml");
   mkdirSync(dir, { recursive: true });
-  const argsToml = launch.args.map((a) => `"${a}"`).join(", ");
+  const argsToml = launch.args.map((a) => JSON.stringify(a)).join(", ");
   const envParts = Object.entries(env)
-    .map(([k, v]) => `"${k}" = "${v}"`)
+    .map(([k, v]) => `${JSON.stringify(k)} = ${JSON.stringify(v)}`)
     .join(", ");
   const envLine = envParts ? `env = { ${envParts} }\n` : "";
-  const block = `\n[mcp_servers.${NAME}]\ncommand = "${launch.command}"\nargs = [${argsToml}]\n${envLine}`;
+  const block = `\n[mcp_servers.${NAME}]\ncommand = ${JSON.stringify(launch.command)}\nargs = [${argsToml}]\n${envLine}`;
   let content = existsSync(cfg) ? readFileSync(cfg, "utf8") : "# WebCake Storefront MCP\n";
   content = content.replace(new RegExp(`\\n?\\[mcp_servers\\.${NAME}\\][\\s\\S]*?(?=\\n\\[|$)`), "");
-  content = content.trimEnd() + "\n" + block;
-  writeFileSync(cfg, content);
+  writeConfig(cfg, content.trimEnd() + "\n" + block);
 }
 
 // ── IDE config-file locations ────────────────────────────────────────────────
@@ -189,9 +204,7 @@ function vscodeUserDir(): string {
   if (PLAT === "win32") return join(APPDATA, "Code", "User");
   const mac = join(HOME, "Library", "Application Support", "Code", "User");
   if (existsSync(mac)) return mac;
-  const lin = join(HOME, ".config", "Code", "User");
-  if (existsSync(lin)) return lin;
-  return join(HOME, ".vscode");
+  return join(HOME, ".config", "Code", "User");
 }
 const vscodeUserPath = () => join(vscodeUserDir(), "mcp.json");
 const cursorPath = () => join(HOME, ".cursor", "mcp.json");
@@ -209,13 +222,32 @@ function hasClaudeCli(): boolean {
   return probe.status === 0;
 }
 
+// Installed = its config dir exists (Claude Code: also the CLI on PATH), so a normal
+// install needs no IDE question and never creates config for an app the user lacks.
+function detectIdes(): string[] {
+  const marks: Record<string, string> = {
+    "claude-desktop": dirname(claudeDesktopPath()),
+    "claude-code": claudeJsonPath(),
+    cursor: join(HOME, ".cursor"),
+    windsurf: join(HOME, ".codeium", "windsurf"),
+    augment: vscodeUserDir(),
+    codex: join(HOME, ".codex"),
+    antigravity: dirname(antigravityPath()),
+    gemini: geminiPath(),
+    cline: dirname(dirname(clinePath())),
+    kiro: join(HOME, ".kiro"),
+    opencode: dirname(opencodePath()),
+  };
+  return Object.keys(marks).filter((id) => existsSync(marks[id]) || (id === "claude-code" && hasClaudeCli()));
+}
+
 // ── per-IDE configure ────────────────────────────────────────────────────────
 function configureClaudeCode(launch: Launch, env: Env) {
   info("Claude Code…");
   if (hasClaudeCli()) {
     spawnSync("claude", ["mcp", "remove", NAME], { stdio: "ignore" });
     const envFlags = Object.entries(env).flatMap(([k, v]) => ["-e", `${k}=${v}`]);
-    const r = spawnSync("claude", ["mcp", "add", NAME, ...envFlags, "--", launch.command, ...launch.args], {
+    const r = spawnSync("claude", ["mcp", "add", "--scope", "user", NAME, ...envFlags, "--", launch.command, ...launch.args], {
       stdio: "inherit",
     });
     if (r.status === 0) {
@@ -243,7 +275,7 @@ function configureWindsurf(launch: Launch, env: Env) {
 }
 function configureAugment(launch: Launch, env: Env) {
   info("Augment / VS Code…");
-  if (mergeJson(vscodeUserPath(), launch, env)) ok(`VS Code configured (${vscodeUserPath()})`);
+  if (mergeJson(vscodeUserPath(), launch, env, "servers")) ok(`VS Code configured (${vscodeUserPath()})`);
 }
 function configureCodexIde(launch: Launch, env: Env) {
   info("Codex…");
@@ -326,8 +358,16 @@ function normalizeIdes(ides: string[]): string[] {
 function runConfigure(ides: string[], launch: Launch, env: Env) {
   for (const id of ides) {
     const conf = CONFIGURATORS[id];
-    if (conf) conf.run(launch, env);
-    else warn(`Unknown IDE: ${id}`);
+    if (!conf) {
+      warn(`Unknown IDE: ${id}`);
+      continue;
+    }
+    // One broken client must not leave the others unconfigured.
+    try {
+      conf.run(launch, env);
+    } catch (e: any) {
+      warn(`${conf.label} skipped: ${e?.message ?? e}`);
+    }
   }
 }
 
@@ -336,8 +376,9 @@ function removeFromJson(file: string) {
   if (!existsSync(file)) return;
   try {
     const cfg = JSON.parse(readFileSync(file, "utf8"));
-    if (cfg.mcpServers && cfg.mcpServers[NAME]) {
-      delete cfg.mcpServers[NAME];
+    const holders = [cfg.mcpServers, cfg.servers].filter((s) => s && s[NAME]);
+    if (holders.length) {
+      for (const s of holders) delete s[NAME];
       writeFileSync(file, JSON.stringify(cfg, null, 2) + "\n");
       ok(`Cleaned ${file}`);
     }
@@ -355,6 +396,7 @@ function uninstall() {
     cursorPath(),
     windsurfPath(),
     vscodeUserPath(),
+    join(HOME, ".vscode", "mcp.json"), // older versions wrote here; nothing reads it
     antigravityPath(),
     geminiPath(),
     clinePath(),
@@ -385,18 +427,20 @@ function uninstall() {
 }
 
 /**
- * Interactive numbered wizard (TTY only): pick environment → authenticate (browser
- * login, recommended, or paste a token) → pick IDEs by number. Returns whether a
- * browser login completed (token then lives in the local config db, so it is NOT
+ * Default: prod, straight to the browser connect page, every detected IDE — never a
+ * question, TTY or not (only a scripted --ide run without a TTY skips the browser).
+ * --dev on a TTY: the numbered wizard (environment → login or pasted token → IDEs). Returns whether a browser
+ * login completed (token then lives in the local config db, so it is NOT
  * written into the IDE env block) and a short auth note for the summary.
  */
 async function promptInteractive(opts: InstallOpts): Promise<{ loggedIn: boolean; authNote: string }> {
   let loggedIn = false;
   let authNote = opts.token ? "token (from flag)" : "";
-  if (!process.stdin.isTTY || !process.stdout.isTTY) return { loggedIn, authNote };
+  const tty = process.stdin.isTTY && process.stdout.isTTY;
+  const wizard = opts.dev && tty;
 
   // 1) Environment — one choice sets the API + app base URLs (default prod).
-  if (!opts.env && !process.env.WEBCAKE_ENV) {
+  if (wizard && !opts.env && !process.env.WEBCAKE_ENV) {
     log(`\n${c.bold}1) Environment${c.reset} ${c.gray}(sets the WebCake API + app URLs)${c.reset}`);
     log(`  ${c.bold}1${c.reset}) prod      ${c.gray}api.storefront.webcake.io${c.reset}  ${c.gray}(default)${c.reset}`);
     log(`  ${c.bold}2${c.reset}) staging   ${c.gray}api.staging.storecake.io${c.reset}`);
@@ -404,15 +448,19 @@ async function promptInteractive(opts: InstallOpts): Promise<{ loggedIn: boolean
     const pick = (await ask(`  ${c.cyan}Select [1=prod, Enter to accept]:${c.reset} `)).trim();
     opts.env = ({ "1": "prod", "2": "staging", "3": "local" } as Record<string, string>)[pick] ?? "prod";
   }
-  if (opts.env) process.env.WEBCAKE_ENV = opts.env; // so the login flow opens the right app
+  opts.env ||= process.env.WEBCAKE_ENV || "prod";
+  process.env.WEBCAKE_ENV = opts.env; // so the login flow opens the right app
 
   // 2) Authentication — browser login (recommended), paste a token, or skip.
-  if (!opts.token && !process.env.WEBCAKE_TOKEN) {
-    log(`\n${c.bold}2) Connect your WebCake account${c.reset}`);
-    log(`  ${c.bold}1${c.reset}) Log in via browser   ${c.gray}(recommended — opens WebCake, saves a token)${c.reset}`);
-    log(`  ${c.bold}2${c.reset}) Paste a token manually`);
-    log(`  ${c.bold}3${c.reset}) Skip for now         ${c.gray}(set credentials later with the login command)${c.reset}`);
-    const choice = (await ask(`  ${c.cyan}Select [1]:${c.reset} `)).trim() || "1";
+  if (!opts.token && !process.env.WEBCAKE_TOKEN && (tty || !opts.ides.length)) {
+    let choice = "1";
+    if (wizard) {
+      log(`\n${c.bold}2) Connect your WebCake account${c.reset}`);
+      log(`  ${c.bold}1${c.reset}) Log in via browser   ${c.gray}(recommended — opens WebCake, saves a token)${c.reset}`);
+      log(`  ${c.bold}2${c.reset}) Paste a token manually`);
+      log(`  ${c.bold}3${c.reset}) Skip for now         ${c.gray}(set credentials later with the login command)${c.reset}`);
+      choice = (await ask(`  ${c.cyan}Select [1]:${c.reset} `)).trim() || "1";
+    }
     if (choice === "1") {
       info("Opening your browser to log in…");
       try {
@@ -420,11 +468,13 @@ async function promptInteractive(opts: InstallOpts): Promise<{ loggedIn: boolean
         loggedIn = true;
         authNote = "browser login (saved to local config)";
       } catch (e: any) {
-        warn(`Login didn't complete (${e?.message ?? e}). Paste a token now, or run \`npx -y ${PKG} login\` later.`);
-        const t = (await ask(`  ${c.cyan}Token (paste JWT, or Enter to skip):${c.reset} `)).trim();
-        if (t) opts.token = t;
-        const s = t ? (await ask(`  ${c.cyan}Session id (x-session-id):${c.reset} `)).trim() : "";
-        if (s) opts.sessionId = s;
+        warn(`Login didn't complete (${e?.message ?? e}). Run \`npx -y ${PKG} login\` to connect later.`);
+        if (wizard) {
+          const t = (await ask(`  ${c.cyan}Token (paste JWT, or Enter to skip):${c.reset} `)).trim();
+          if (t) opts.token = t;
+          const s = t ? (await ask(`  ${c.cyan}Session id (x-session-id):${c.reset} `)).trim() : "";
+          if (s) opts.sessionId = s;
+        }
       }
     } else if (choice === "2") {
       const t = (await ask(`  ${c.cyan}Token (paste JWT):${c.reset} `)).trim();
@@ -437,7 +487,8 @@ async function promptInteractive(opts: InstallOpts): Promise<{ loggedIn: boolean
   if (!authNote) authNote = opts.token || process.env.WEBCAKE_TOKEN ? "token" : "none — log in later";
 
   // 3) IDEs to configure — numbered, comma-separated (e.g. 1,2 or the "All" number).
-  if (!opts.ides.length) {
+  if (!opts.ides.length && !wizard) opts.ides = detectIdes();
+  else if (!opts.ides.length) {
     log(`\n${c.bold}3) Which IDE(s) / agent(s) to configure?${c.reset}`);
     IDE_ORDER.forEach((id, i) => {
       const n = `${c.bold}${String(i + 1).padStart(2)}${c.reset}`;
@@ -471,12 +522,13 @@ export async function runInstaller(argv: string[]): Promise<void> {
   // promptInteractive returns early without touching opts.ides.
   const ides = normalizeIdes(opts.ides);
   if (!ides.length) {
-    if (!process.stdin.isTTY) {
-      warn("No --ide given (or not a TTY). Nothing to configure.");
-      log(`${c.gray}  Try: npx -y ${PKG} install --ide all${c.reset}\n`);
-    } else {
+    if (opts.dev) {
       warn("No IDE selected — nothing to configure.");
+      return;
     }
+    warn("No AI app found on this computer (Claude, Cursor, VS Code…).");
+    log(`${c.gray}  Install one and run this again, or name it: npx -y ${PKG} install --ide <name>${c.reset}\n`);
+    process.exitCode = 1;
     return;
   }
 

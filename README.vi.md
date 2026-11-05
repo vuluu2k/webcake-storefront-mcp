@@ -100,29 +100,41 @@ Chọn **một**. Cả hai đều trao cho AI toàn bộ bộ công cụ storefr
 
 ### ① `npx` — chạy trên máy bạn (khuyên dùng)
 
-Không cần cài, luôn mới nhất, cần Node.js 18+. **Một dòng** cấu hình IDE:
+Không cần cài, luôn mới nhất, cần Node.js 18+. **Một dòng** kết nối tài khoản và cấu hình các ứng dụng AI:
 
 ```bash
-# Tương tác — chọn IDE và dán thông tin
+# Mở trình duyệt — bấm Kết nối, các IDE trên máy được cấu hình tự động (prod)
 npx -y webcake-storefront-mcp install
 
-# Phi tương tác — cấu hình mọi IDE hỗ trợ cùng lúc
+# Chỉ dành cho dev — từng bước: môi trường, đăng nhập hoặc token, IDE
+npx -y webcake-storefront-mcp install --dev
+
+# Script và CI — mọi IDE được hỗ trợ, kể cả IDE chưa cài
 npx -y webcake-storefront-mcp install --ide all --token <token> --session <session-id>
 
 # Gỡ khỏi mọi IDE
 npx -y webcake-storefront-mcp uninstall
 ```
 
-Hỗ trợ: `claude-desktop`, `claude-code`, `cursor`, `windsurf`, `vscode`, hoặc `all`.
+**`install` không hỏi gì cả.** Lệnh kết nối tới production, mở trình duyệt để bạn bấm *Kết nối*, rồi thêm server vào mọi ứng dụng AI
+tìm thấy trên máy. Các server khác của bạn được giữ nguyên, và file cấu hình nào bị đổi đều có bản sao lưu ngay cạnh, tên
+`<file>.webcake-storefront-backup`. Không tìm thấy ứng dụng AI nào? Lệnh báo rõ và thoát với lỗi: hãy cài một ứng dụng rồi chạy lại, hoặc chỉ định bằng `--ide`.
+
+Cần staging hoặc local? `--dev` mở các bước hỏi lần lượt, hoặc bỏ qua bằng `--env staging` / `--env local`.
+
+> **Đã cài bằng bản cũ?** Hãy chạy lại `install`. Bản cũ ghi cấu hình VS Code sai khóa nên server không hiện trong VS Code, và chỉ đăng ký
+> Claude Code cho đúng thư mục lúc chạy lệnh.
+
+Giá trị cho `--ide`: `claude-desktop`, `claude-code`, `cursor`, `windsurf`, `vscode`, `codex`, `antigravity`, `gemini`, `cline`, `kiro`, `opencode`, hoặc `all`.
 Chỉ muốn chạy server (cấu hình tay)? `npx -y webcake-storefront-mcp`.
 
-### ② Đăng nhập trình duyệt — khỏi copy token
+### ② Kết nối lại tài khoản — khỏi copy token
 
 ```bash
 npx -y webcake-storefront-mcp login
 ```
 
-Mở **trang kết nối** của builder; bấm *Kết nối* là token + session được lưu cục bộ và tự nạp.
+`install` đã làm việc này ở lần đầu. Dùng `login` khi token hết hạn: lệnh mở **trang kết nối** của builder, bấm *Kết nối* là token + session được lưu cục bộ và tự nạp.
 
 ### Remote URL — tự host, mỗi client khỏi cài gì
 
