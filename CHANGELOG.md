@@ -5,6 +5,27 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.39.0] - 2026-11-13
+
+### Added
+- New `preview_page` tool screenshots the saved (unpublished) draft at desktop and mobile widths through the editor's own preview host, so a page can be reviewed and fixed with `update_page_element`/`update_page_elements` before `publish_site`.
+- `publish_site`'s `dry_run` now runs a preflight that checks every saved page with `validate_page`, the site's script/CSS usage against the code budget ceiling, and breakpoint coverage; a real publish is blocked while any preflight error remains.
+- `publish_site` now fetches the live homepage after publishing and reports `success:false` with the concrete problem (e.g. an empty breakpoint list) if the site is still broken, instead of trusting the publish API's response alone.
+- `validate_page`, and therefore `build_page`, `new_section`, `update_page_source`, `update_page_element(s)`, and `update_global_source_element(s)`, now also catches shapes that blank the live page or the editor: null entries in `children`, non-object `specials`/breakpoint objects, breakpoints missing `style`/`config`, invalid `widthUnit`, empty constraints, and malformed `columns`/`rows`/`grid` values.
+
+### Changed
+- `build_page`, `new_section`, `update_page_source`, and `create_page` now re-save through the same pipeline the editor uses: every write rebuilds the page's compiled CSS, propagates header/footer edits to every page that embeds them (only when that write actually changed them), and sends the cart drawer and popups along with the save so they go live with their own CSS instead of being dropped.
+- `create_page` now seeds a new page with one blank grid section, matching what the editor creates, instead of an empty `sections` array.
+- `update_page` no longer fails with a server error when renaming a page that has no `seo.title` yet; it stamps the editor's default title first.
+- `update_page_element(s)` and `update_global_source_element(s)` now write `style`/`config` into the page's per-breakpoint keys the same way the editor does (previously written to a `node.style` the renderer ignores), and accept both `font-size` and `fontSize` spellings.
+- Site custom code already past the script/CSS ceiling can no longer grow by any amount on a single write; only shrinking or swapping code is allowed, closing a path that let a site's CSS ratchet up past the ceiling in small increments and then fail to publish.
+- `build_page`/`new_section`-generated sections now use the site's actual default grid, `specials.element_async` is now set automatically on a node whenever its breakpoints actually diverge, carousel children are laid out in a row like the editor, and empty `container`/`form`/`popup` elements get a 1x1 grid instead of a zero-height one.
+- `delete_page` now also removes the deleted page from every global section's page list, matching the editor's own delete behavior.
+- `get_build_guide`'s build workflow now ends with `preview_page` before `publish_site`, and documents that a contact/lead/newsletter form must use `specials.type: "subscribe"` rather than being left untyped.
+
+### Fixed
+- The web guide landing page's 3D "how it works" diagram no longer flashes its labels in the corner before they animate into place while three.js loads.
+
 ## [1.38.0] - 2026-11-05
 
 ### Changed

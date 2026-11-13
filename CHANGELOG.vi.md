@@ -5,6 +5,27 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.39.0] - 2026-11-13
+
+### Added
+- Tool mới `preview_page` chụp ảnh bản nháp đã lưu (chưa publish) ở cả độ rộng máy tính và điện thoại qua host xem trước của chính editor, nhờ đó có thể xem lại và sửa bằng `update_page_element`/`update_page_elements` trước khi `publish_site`.
+- `dry_run` của `publish_site` nay chạy một lượt preflight: kiểm tra mọi trang đã lưu bằng `validate_page`, mức dùng script/CSS của site so với ngân sách code, và độ phủ breakpoint; lượt publish thật bị chặn khi preflight còn lỗi.
+- `publish_site` nay tải lại trang chủ trên live sau khi publish và báo `success:false` kèm lỗi cụ thể (ví dụ danh sách breakpoint rỗng) nếu site vẫn hỏng, thay vì chỉ tin vào phản hồi của API publish.
+- `validate_page`, và do đó `build_page`, `new_section`, `update_page_source`, `update_page_element(s)`, `update_global_source_element(s)`, nay cũng bắt các dạng dữ liệu làm trắng trang live hoặc trắng editor: phần tử null trong `children`, `specials`/object breakpoint không phải object, breakpoint thiếu `style`/`config`, `widthUnit` không hợp lệ, constraint rỗng, và `columns`/`rows`/`grid` sai định dạng.
+
+### Changed
+- `build_page`, `new_section`, `update_page_source`, và `create_page` nay lưu lại qua đúng pipeline mà editor dùng: mỗi lượt ghi dựng lại CSS đã build của trang, đẩy các sửa đổi header/footer sang mọi trang có nhúng chúng (chỉ khi lượt ghi đó thực sự thay đổi), và gửi kèm giỏ hàng cùng popup trong lượt lưu để lên live kèm CSS riêng thay vì bị bỏ qua.
+- `create_page` nay tạo trang mới với sẵn một section grid trống, giống với trang editor tạo ra, thay vì một `sections` rỗng.
+- `update_page` nay không còn báo lỗi server khi đổi tên một trang chưa có `seo.title`; tool sẽ gán sẵn tiêu đề mặc định của editor trước.
+- `update_page_element(s)` và `update_global_source_element(s)` nay ghi `style`/`config` vào đúng các khóa breakpoint của trang như editor làm (trước đây ghi vào `node.style` mà renderer không đọc), và nhận cả hai cách viết `font-size` và `fontSize`.
+- Code tùy biến của site đã vượt ngân sách script/CSS nay không thể tăng thêm dù chỉ một chút trong một lượt ghi; chỉ được phép thu nhỏ hoặc thay đổi code, bịt lại đường cho phép site tăng dần CSS vượt ngưỡng qua từng lần sửa nhỏ rồi cuối cùng không publish được.
+- Các section do `build_page`/`new_section` dựng ra nay dùng đúng grid mặc định của site, `specials.element_async` nay được tự động gán khi breakpoint của một node thực sự khác nhau, các con trong carousel nay xếp theo hàng như editor, và các element `container`/`form`/`popup` rỗng nay có grid 1x1 thay vì cao bằng 0.
+- `delete_page` nay cũng gỡ trang đã xoá khỏi danh sách trang của mọi global section, giống hành vi xoá trang của editor.
+- Quy trình dựng trang trong `get_build_guide` nay kết thúc bằng `preview_page` trước khi `publish_site`, và nêu rõ form liên hệ/thu thập lead/đăng ký nhận tin phải dùng `specials.type: "subscribe"` thay vì để trống loại.
+
+### Fixed
+- Sơ đồ 3D "cách hoạt động" trên trang hướng dẫn web nay không còn nhấp nháy các nhãn ở góc trước khi chúng chuyển động vào đúng vị trí trong lúc three.js đang tải.
+
 ## [1.38.0] - 2026-11-05
 
 ### Changed
