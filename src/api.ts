@@ -396,8 +396,11 @@ export class WebcakeCmsApi {
       for (const p of pages as any[]) changes[p.id] = 1;
     }
 
-    // Regenerate compiled CSS for every page before publishing (no-op-safe on failure).
-    await this.rebuildSiteCss(settingsStr).catch(() => {});
+    // Regenerate compiled CSS for every page first. A failure here used to be swallowed, which
+    // published pages with stale dynamic CSS; stop instead and say which stage broke.
+    await this.rebuildSiteCss(settingsStr).catch((e: any) => {
+      throw new Error(`Stage 1/2 (rebuild CSS via /save) failed, nothing published: ${e?.message || e}`);
+    });
     return this.request("POST", `/api/v1/site/${this.siteId}/publish`, {
       body: {
         pages,
@@ -409,6 +412,8 @@ export class WebcakeCmsApi {
         settings: settingsStr,
       },
       timeout: 120000,
+    }).catch((e: any) => {
+      throw new Error(`Stage 2/2 (/publish) failed, CSS was rebuilt but the live site is unchanged: ${e?.message || e}`);
     });
   }
   uploadImageBase64({ base64, content_type }: { base64?: string; content_type?: string } = {}) {

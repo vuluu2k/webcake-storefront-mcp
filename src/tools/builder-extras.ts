@@ -3,12 +3,94 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
 import { resolvePreviewUrl } from "../config.js";
+import { validatePage, missingBreakpoints, checkNativeContent } from "../builder/page.js";
+import { BREAKPOINT_KEYS } from "../builder/grid.js";
+import { CODE_BUDGET, codeUsage } from "../builder/native-first.js";
 import { getCachedUpload, setCachedUpload } from "../persistence/imageCache.js";
 import { parse as parseHtml } from "node-html-parser";
 import { stat, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+
+/** Checks the SAVED site before publish_site sends it: anything here that is an error either makes
+ *  /publish fail (500) or ships a broken storefront, so it blocks the publish. */
+export async function preflightSite(api: WebcakeCmsApi) {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const settings: any = await api.getSiteSettings();
+
+  const bps = settings.breakpoints;
+  const bpKeys = bps && typeof bps === "object" && !Array.isArray(bps)
+    ? Object.keys(bps).filter((k) => Array.isArray(bps[k]) && bps[k].length === 2)
+    : [];
+  if (!bpKeys.length) warnings.push("Site settings have no usable breakpoints; publish fills in the standard four (bp1..bp4).");
+
+  const usage: any = codeUsage(settings);
+  for (const kind of ["script", "css"] as const)
+    if (usage[kind].used > CODE_BUDGET[kind].hard)
+      errors.push(`Site ${kind} is ${usage[kind].used} chars (ceiling ${CODE_BUDGET[kind].hard}). Shrink it with update_site_custom_code, moving per-element rules into native element styles, then publish.`);
+
+  const res: any = await api.listPages();
+  const list = (res && res.data) || res || [];
+  let checked = 0;
+  for (const p of Array.isArray(list) ? list : []) {
+    const raw = p && p.source && p.source.source;
+    if (raw == null || raw === "") continue;
+    const name = p.is_homepage ? "/ (home)" : `/${p.slug || p.id}`;
+    let src: any;
+    try {
+      src = typeof raw === "string" ? JSON.parse(raw) : raw;
+    } catch {
+      errors.push(`${name}: saved source is not valid JSON.`);
+      continue;
+    }
+    if (!src || !Array.isArray(src.sections)) {
+      warnings.push(`${name}: saved source has no sections array; skipped.`);
+      continue;
+    }
+    checked++;
+    const v: any = validatePage(src);
+    // Native-first errors (embedded HTML document, placeholder JSON, code volume) guard NEW writes;
+    // old pages carrying them published fine before, so here they only warn. Structural errors
+    // (missing/duplicate id, missing type) break the renderer and block.
+    const native = checkNativeContent(src).errors;
+    const errs: string[] = (v.errors || []).filter((e: string) => !native.includes(e));
+    if (native.length) warnings.push(...native.map((e) => `${name}: ${e}`));
+    errors.push(...errs.slice(0, 10).map((e) => `${name}: ${e}`));
+    if (errs.length > 10) errors.push(`${name}: …and ${errs.length - 10} more (run validate_page on this page).`);
+    const keys = bpKeys.length ? bpKeys : BREAKPOINT_KEYS;
+    const m = missingBreakpoints(src, keys);
+    if (m.missing)
+      warnings.push(`${name}: ${m.missing}/${m.total} elements lack a breakpoint (${keys.join(", ")}) and render unstyled at that width, e.g. ${m.sample.join(", ")}.`);
+    if (v.warnings && v.warnings.length) warnings.push(`${name}: ${v.warnings.length} validate_page warning(s), e.g. ${v.warnings[0]}`);
+  }
+  return { ok: !errors.length, pages_checked: checked, errors, warnings };
+}
+
+/** Fetch the live page after a publish. Its HTML carries the site breakpoints as `bps = [...]`;
+ *  an empty list makes the storefront's detectBp throw, so the page renders blank. Retries while
+ *  the CDN catches up. */
+export async function checkLive(url: string, tries = 3, waitMs = 5000) {
+  let problems: string[] = [];
+  let unverified: string | undefined;
+  for (let i = 0; i < tries; i++) {
+    if (i) await new Promise((r) => setTimeout(r, waitMs));
+    problems = [];
+    unverified = undefined;
+    try {
+      const r = await fetch(`${url}${url.includes("?") ? "&" : "?"}_mcp=${Date.now()}`, { signal: AbortSignal.timeout(15000) });
+      const html = await r.text();
+      // A WAF block or fresh-domain DNS lag says nothing about the publish: unverified, not failed.
+      if (!r.ok) unverified = `HTTP ${r.status}`;
+      else if (/\bbps\s*=\s*\[\s*\]/.test(html)) problems.push("Published HTML has an empty breakpoint list (bps = []): the storefront cannot pick a layout and renders blank.");
+    } catch (e: any) {
+      unverified = `Could not fetch the live page: ${e?.message || e}`;
+    }
+    if (!problems.length && !unverified) break;
+  }
+  return { url, ok: !problems.length, problems, ...(unverified ? { unverified } : {}) };
+}
 
 const ALLOWED_IMG = /^image\/(jpe?g|png|webp)$/;
 const LOCAL_MAX = 200 * 1024 * 1024; // 200 MB, matches the backend multipart limit
@@ -237,27 +319,41 @@ Processes up to 20 entries per call in parallel; non jpeg/png/webp inputs are co
     "publish_site",
     `Publish the whole site live — snapshots all current page sources into the live (published) version.
 Note: BuilderX publishes at the SITE level, not per page; publishing makes every saved page go live.
-Two-step safety: dry_run=true (default) describes what will happen; dry_run=false actually publishes.`,
+Two-step safety: dry_run=true (default) runs the preflight and describes what will happen; dry_run=false publishes.
+Preflight: every saved page through validate_page, site CSS/JS against the ceiling, breakpoints. Any error BLOCKS the
+publish (fix it first); warnings are listed. After publishing, the live homepage is fetched and checked; success is
+false when it is still broken (e.g. bps = []).`,
     {
       dry_run: z.boolean().default(true).describe("Preview (true) or publish for real (false)"),
     },
     ({ dry_run }) =>
       handle(async () => {
         const preview_url = await resolvePreviewUrl(api);
+        const preflight = await preflightSite(api);
         if (dry_run) {
           return {
             dry_run: true,
             preview_url,
-            note: "This will publish ALL saved pages of the site live. Call again with dry_run=false to publish.",
+            preflight,
+            note: preflight.ok
+              ? "This will publish ALL saved pages of the site live. Call again with dry_run=false to publish."
+              : "Publishing is BLOCKED until the preflight errors are fixed.",
           };
         }
+        if (!preflight.ok) return { error: "BLOCKED: preflight failed, nothing published.", ...preflight };
         // builderx_spa's Publish button sends `domain: this.link` (the site's live URL) in the
         // /publish body — without it the backend publishes to an expiring preview. preview_url
         // is exactly that link (resolvePreviewUrl == link(): primary_domain wins, else subdomain).
         const res = await api.publishSite(preview_url ? { domain: preview_url } : {});
         const data = (res && res.data) || res;
+        const live_check = preview_url ? await checkLive(preview_url) : null;
         return {
-          success: true,
+          success: !live_check || live_check.ok,
+          ...(live_check && !live_check.ok
+            ? { error: "The publish API answered OK but the live site is still broken. Do not report success; show the user live_check.problems." }
+            : {}),
+          live_check,
+          warnings: preflight.warnings,
           published_at: data && data.published_at,
           site: data && data.name,
           preview_url,

@@ -1,5 +1,5 @@
 // Offline checks for the native-first policy: custom code is the last resort, enforced on every
-// code writer, while a site that is already large can still shrink and ship small fixes. Run: npm test.
+// code writer, while a site that is already large can still shrink or swap code, but never grow past the ceiling. Run: npm test.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../dist/server.js";
@@ -85,15 +85,14 @@ test("UI, data and volume in code are caught", () => {
   assert.ok(codeGuard({ hard: ["no"], soft: [] }, GAP).error);
 });
 
-test("a large site can shrink or swap code, and small fixes still need a stated gap", () => {
+test("a site past the ceiling can shrink or swap code, but not grow", () => {
   const big = { [JS]: "`<div></div>`;".repeat(50000) };
   assert.deepEqual(checkSiteCode(big, { [JS]: big[JS].slice(0, 1000) }), { hard: [], soft: [] });
   assert.deepEqual(checkSiteCode(big, { [JS]: big[JS] }), { hard: [], soft: [] });
+  // past the ceiling even a few chars are refused, with or without a stated gap
   const grow = checkSiteCode(big, { [JS]: big[JS] + "fix();" });
-  assert.equal(grow.hard.length, 0);
-  assert.ok(grow.soft.length > 0);
-  assert.equal(codeGuard(grow, GAP), null);
-  // past the ceiling, real growth stays refused even with a stated gap
+  assert.equal(grow.hard.length, 1);
+  assert.ok(codeGuard(grow, GAP).error);
   const flood = checkSiteCode(big, { [JS]: big[JS] + "x".repeat(1_000_000) });
   assert.equal(flood.hard.length, 1);
   assert.ok(codeGuard(flood, GAP).error);

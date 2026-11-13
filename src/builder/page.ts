@@ -7,12 +7,15 @@
 
 import { buildElement, isKnownType, ELEMENT_TYPES } from "./catalog.js";
 import { randomString } from "./factory.js";
-import { validateEvents } from "./events.js";
-import { validateBindings } from "./bindings.js";
+import { validateEvents, normalizeEvents } from "./events.js";
+import { validateBindings, normalizeBindings } from "./bindings.js";
 import { NODE_CODE_BUDGET } from "./native-first.js";
+import { checkShape } from "./shape.js";
 import {
   BREAKPOINTS,
   BREAKPOINT_KEYS,
+  STYLE_ASYNC,
+  CONFIG_ASYNC,
   genGridByBp,
   SECTION_CONTENT_COL_START,
   SECTION_CONTENT_COL_END,
@@ -64,7 +67,8 @@ export function walk(source: any, fn: (node: any) => any) {
   const visit = (node: any) => {
     if (!node) return true;
     if (fn(node) === false) return false;
-    for (const child of node.children || []) {
+    // Not `|| []`: a non-array children (an object, a string) must not crash the validator itself.
+    for (const child of Array.isArray(node.children) ? node.children : []) {
       if (visit(child) === false) return false;
     }
     return true;
@@ -505,6 +509,12 @@ export function validatePage(source: any, previous?: any) {
   };
   for (const s of source.sections) checkTree(s, []);
 
+  // Crash-level shapes for the renderer and the editor (null children, non-object specials/bp,
+  // bad widthUnit/constraints/grid…). See shape.ts.
+  const shape = checkShape(source);
+  errors.push(...shape.errors);
+  warnings.push(...shape.warnings);
+
   const code = checkNativeContent(source, previous);
   errors.push(...code.errors);
   warnings.push(...code.warnings);
@@ -515,6 +525,106 @@ export function validatePage(source: any, previous?: any) {
     ...(warnings.length ? { warnings } : {}),
     stats: { sections: source.sections.length, total_elements: total, element_types: typeCounts },
   };
+}
+
+/** Saved nodes missing one of the site's breakpoint keys: the renderer reads node[bp] with no
+ *  fallback, so at that screen width the node renders unstyled and off-grid. An empty `{}` counts as
+ *  missing, and so does a node left in `runtime` (both consumers ignore runtime). `keys` = the
+ *  site's breakpoint names (default bp1..bp4). */
+const isFilled = (v: any) => !!v && typeof v === "object" && Object.keys(v).length > 0;
+export function missingBreakpoints(source: any, keys: string[] = BREAKPOINT_KEYS) {
+  let total = 0;
+  const ids: string[] = [];
+  walk(source, (node) => {
+    total++;
+    if (!keys.every((k) => isFilled(node[k]))) ids.push(node.id);
+  });
+  return { total, missing: ids.length, sample: ids.slice(0, 5) };
+}
+
+/** validatePage errors that a write ADDS over `before` (the source as saved). An old defect never
+ *  blocks an unrelated save, so a broken page can still be edited and repaired. */
+export function addedErrors(after: any, before?: any): string[] {
+  const now: string[] = (validatePage(after, before) as any).errors || [];
+  if (!before) return now;
+  // Compare without the tree path (sections[2]>0…): inserting a section shifts every index, and an
+  // old defect must not read as new. Messages still carry the node id, so distinct nodes stay distinct.
+  const key = (e: string) => e.replace(/sections\[\d+\](>\d+)*/g, "");
+  const old = new Set(((validatePage(before) as any).errors || []).map(key));
+  return now.filter((e) => !old.has(key(e)));
+}
+
+/** What a patch changed on one node, key by key (style/config per breakpoint), or null. */
+export function computeNodeDiff(before: any, after: any): any {
+  const diff: Record<string, any> = {};
+  const keys = (b: any, a: any) => {
+    const out: Record<string, any> = {};
+    for (const k of new Set([...Object.keys(b || {}), ...Object.keys(a || {})]))
+      if (JSON.stringify(b?.[k]) !== JSON.stringify(a?.[k])) out[k] = { before: b?.[k] ?? null, after: a?.[k] ?? null };
+    return Object.keys(out).length ? out : null;
+  };
+  for (const f of ["specials", "style", "config"]) {
+    const d = keys(before[f], after[f]);
+    if (d) diff[f] = d;
+  }
+  for (const f of ["events", "bindings"])
+    if (JSON.stringify(before[f] || null) !== JSON.stringify(after[f] || null))
+      diff[f] = { before: before[f] || null, after: after[f] || null };
+  for (const k of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    if (!/^(bp\d+|runtime)$/.test(k)) continue;
+    const layer: Record<string, any> = {};
+    for (const f of ["style", "config"]) {
+      const d = keys(before[k]?.[f], after[k]?.[f]);
+      if (d) layer[f] = d;
+    }
+    if (Object.keys(layer).length) (diff.responsive ??= {})[k] = layer;
+  }
+  return Object.keys(diff).length ? diff : null;
+}
+
+/** Editor style keys are camelCase (fontSize); accept CSS spelling (font-size) too. */
+const camelKeys = (o: any) =>
+  Object.fromEntries(Object.entries(o || {}).map(([k, v]) => [k.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), v]));
+
+/** Apply an element patch (update_page_element & co.) where the renderer reads it. Style/config
+ *  live per breakpoint (node.bp1..bpN); a top-level node.style is never rendered. Like the editor's
+ *  breakpoint sync: size/position keys (STYLE_ASYNC/CONFIG_ASYNC) land on the base breakpoint
+ *  only, everything else (colour, font, border…) on every breakpoint. `responsive` targets one. */
+export function applyNodeUpdates(node: any, updates: any): void {
+  const style = updates.style ? camelKeys(updates.style) : null;
+  const config = updates.config || null;
+  if (style || config) {
+    const bps = Object.keys(node).filter((k) => /^bp\d+$/.test(k) && node[k] && typeof node[k] === "object");
+    if (!bps.length && node.runtime && typeof node.runtime === "object") {
+      if (style) node.runtime.style = { ...(node.runtime.style || {}), ...style };
+      if (config) node.runtime.config = { ...(node.runtime.config || {}), ...config };
+    } else {
+      const targets = bps.length ? bps : ["bp1"];
+      const base = targets.includes("bp1") ? "bp1" : [...targets].sort()[0];
+      const only = (o: any, async: string[], bp: string) =>
+        bp === base ? o : Object.fromEntries(Object.entries(o).filter(([k]) => !async.includes(k)));
+      for (const bp of targets) {
+        const cur = node[bp] || {};
+        node[bp] = {
+          ...cur,
+          style: { ...(cur.style || {}), ...(style ? only(style, STYLE_ASYNC, bp) : {}) },
+          config: { ...(cur.config || {}), ...(config ? only(config, CONFIG_ASYNC, bp) : {}) },
+        };
+      }
+    }
+  }
+  if (updates.specials) node.specials = { ...(node.specials || {}), ...updates.specials };
+  // Normalize so events/bindings carry a valid id + eventName (the renderer won't dispatch without).
+  if (updates.events !== undefined) node.events = normalizeEvents(updates.events, node.type);
+  if (updates.bindings !== undefined) node.bindings = normalizeBindings(updates.bindings);
+  if (updates.responsive) {
+    for (const [bp, val] of Object.entries(updates.responsive) as [string, any][]) {
+      if (!/^bp\d+$/.test(bp) || !val || typeof val !== "object") continue;
+      const cur = node[bp] || {};
+      // Always both keys: a bp layer missing config/style crashes the renderer's CSS builders.
+      node[bp] = { ...cur, style: { ...(cur.style || {}), ...camelKeys(val.style) }, config: { ...(cur.config || {}), ...(val.config || {}) } };
+    }
+  }
 }
 
 /**

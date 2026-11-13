@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { getConfirmMode } from "./context.js";
-import { normalizeEvents } from "../builder/events.js";
-import { normalizeBindings } from "../builder/bindings.js";
-import { checkContentPlaceholders, checkElementPatch, checkNativeContent } from "../builder/page.js";
+import { STYLE_DESC, CONFIG_DESC } from "./pages.js";
+import { addedErrors, applyNodeUpdates, computeNodeDiff, checkContentPlaceholders, checkElementPatch } from "../builder/page.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -110,63 +109,7 @@ export function findNodeById(source: any, elementId: string): any {
   return found;
 }
 
-/** Deep-diff two nodes — returns only changed fields with before/after.
- *  Objects (style, config, specials) are diffed at key-level.
- *  Arrays (events, bindings) show full before/after.
- *  Responsive breakpoints diffed individually.
- */
-function computeNodeDiff(beforeNode: any, afterNode: any): any {
-  const diff: any = {};
-  const objFields = ["style", "config", "specials"];
-  const arrFields = ["events", "bindings"];
 
-  for (const field of objFields) {
-    const b = beforeNode[field] || {};
-    const a = afterNode[field] || {};
-    if (JSON.stringify(b) === JSON.stringify(a)) continue;
-    const fieldDiff: any = {};
-    for (const k of new Set([...Object.keys(b), ...Object.keys(a)])) {
-      if (JSON.stringify(b[k]) !== JSON.stringify(a[k])) {
-        fieldDiff[k] = { before: b[k] ?? null, after: a[k] ?? null };
-      }
-    }
-    if (Object.keys(fieldDiff).length) diff[field] = fieldDiff;
-  }
-
-  for (const field of arrFields) {
-    if (JSON.stringify(beforeNode[field] || null) !== JSON.stringify(afterNode[field] || null)) {
-      diff[field] = { before: beforeNode[field] || null, after: afterNode[field] || null };
-    }
-  }
-
-  for (const key of new Set([...Object.keys(beforeNode), ...Object.keys(afterNode)])) {
-    if (!/^bp\d+$/.test(key)) continue;
-    if (JSON.stringify(beforeNode[key] || null) !== JSON.stringify(afterNode[key] || null)) {
-      if (!diff.responsive) diff.responsive = {};
-      diff.responsive[key] = { before: beforeNode[key] || null, after: afterNode[key] || null };
-    }
-  }
-
-  return Object.keys(diff).length ? diff : null;
-}
-
-function applyNodeUpdates(node: any, updates: any): void {
-  if (updates.style) node.style = { ...(node.style || {}), ...updates.style };
-  if (updates.config) node.config = { ...(node.config || {}), ...updates.config };
-  if (updates.specials) node.specials = { ...(node.specials || {}), ...updates.specials };
-  // Normalize so updated events/bindings get a valid id + eventName (renderer needs it).
-  if (updates.events !== undefined) node.events = normalizeEvents(updates.events, node.type);
-  if (updates.bindings !== undefined) node.bindings = normalizeBindings(updates.bindings);
-  if (updates.responsive) {
-    for (const [bp, val] of Object.entries(updates.responsive)) {
-      if (/^bp\d+$/.test(bp)) {
-        node[bp] = node[bp]
-          ? { style: { ...node[bp].style, ...(val as any).style }, config: { ...node[bp].config, ...(val as any).config } }
-          : val;
-      }
-    }
-  }
-}
 
 export function searchElements(source: any, filters: any): any[] {
   const results: any[] = [];
@@ -319,8 +262,8 @@ async function getGsWithSource(
 
 const elementUpdateShape = z.object({
   element_id: z.string().describe("Element ID"),
-  style: z.record(z.any()).optional(),
-  config: z.record(z.any()).optional(),
+  style: z.record(z.any()).optional().describe(STYLE_DESC),
+  config: z.record(z.any()).optional().describe(CONFIG_DESC),
   specials: z.record(z.any()).optional(),
   events: z.array(z.record(z.any())).optional(),
   bindings: z.array(z.record(z.any())).optional(),
@@ -487,8 +430,8 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
       element_id: z.string().describe("Element ID to update (e.g. 'TEXT-3', 'BUTTON-1')"),
       component: z.string().optional().describe('Component hint for faster lookup'),
       dry_run: z.boolean().optional().describe("Preview only (true) or apply changes (false). Defaults to confirm_mode setting. Use toggle_confirm_mode to change default."),
-      style: z.record(z.any()).optional().describe("CSS style properties to merge"),
-      config: z.record(z.any()).optional().describe("Config properties to merge"),
+      style: z.record(z.any()).optional().describe(STYLE_DESC),
+      config: z.record(z.any()).optional().describe(CONFIG_DESC),
       specials: z.record(z.any()).optional().describe("Specials to merge (text, custom_class, custom_css)"),
       events: z.array(z.record(z.any())).optional().describe("Complete events array (replaces existing)"),
       bindings: z.array(z.record(z.any())).optional().describe("Complete bindings array (replaces existing)"),
@@ -504,6 +447,7 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
         const { gs, source, error } = await getGsWithSource(api, global_source_id, component);
         if (error) return { error };
         if (!source) return { error: "Global source has no source data" };
+        const saved0 = structuredClone(source); // before any patch: source may be the cached object itself
 
         const node = findNodeById(source, element_id);
         if (!node) return { error: `Element "${element_id}" not found` };
@@ -513,6 +457,8 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
         applyNodeUpdates(node, updates);
         const codeErrors = checkElementPatch(asPageShape(source), node, beforeNode, updates.specials);
         if (codeErrors.length) return { error: "BLOCKED: not saving.", element_id, errors: codeErrors };
+        const shapeErrors = addedErrors(asPageShape(source), asPageShape(saved0));
+        if (shapeErrors.length) return { error: "BLOCKED: not saving.", element_id, errors: shapeErrors };
         const diff = computeNodeDiff(beforeNode, node);
 
         if (!diff) return { info: "No changes detected", element_id };
@@ -578,6 +524,7 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
         const { gs, source, error } = await getGsWithSource(api, global_source_id, component);
         if (error) return { error };
         if (!source) return { error: "Global source has no source data" };
+        const saved0 = structuredClone(source); // before any patch: source may be the cached object itself
 
         const results: any[] = [];
         for (const upd of elementUpdates) {
@@ -594,6 +541,8 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
           const diff = computeNodeDiff(beforeNode, node);
           results.push({ element_id, diff: diff || "no changes" });
         }
+        const shapeErrors = addedErrors(asPageShape(source), asPageShape(saved0));
+        if (shapeErrors.length) return { error: "BLOCKED: not saving any of this batch.", errors: shapeErrors };
 
         if (dry_run) {
           return {
@@ -643,8 +592,8 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
     },
     ({ component, source, type }) =>
       handle(async () => {
-        const code = checkNativeContent(asPageShape(source));
-        if (code.errors.length) return { error: "BLOCKED: not saving.", errors: code.errors };
+        const errors = addedErrors(asPageShape(source));
+        if (errors.length) return { error: "BLOCKED: not saving.", errors };
         const params = { component, source, type, site_id: api.siteId };
         const res = component === "cart-droppable"
           ? await api.createSourceCart(params)
@@ -677,8 +626,8 @@ Safeguarded: blocks if new source is <50% of existing size. For element-level ch
         // Ensure source is an object (not string) — backend does Jason.encode! so we must send object
         const newSourceObj = typeof newSourceInput === "string" ? JSON.parse(newSourceInput) : newSourceInput;
         const newLen = JSON.stringify(newSourceObj).length;
-        const code = checkNativeContent(asPageShape(newSourceObj), existingSource ? asPageShape(existingSource) : undefined);
-        if (code.errors.length) return { error: "BLOCKED: not saving.", errors: code.errors };
+        const errors = addedErrors(asPageShape(newSourceObj), existingSource ? asPageShape(existingSource) : undefined);
+        if (errors.length) return { error: "BLOCKED: not saving.", errors };
 
         // Safeguard: block if new source is suspiciously smaller
         if (existingSource) {

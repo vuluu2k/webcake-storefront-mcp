@@ -34,8 +34,6 @@ export const CODE_BUDGET = {
 };
 /** custom_css + embed code across one page or global source. */
 export const NODE_CODE_BUDGET = { soft: 10_000, hard: 30_000 };
-/** Growth still allowed on a site already past the ceiling, so it can ship fixes while it migrates. */
-const SMALL_FIX = 2_000;
 
 export const NATIVE_FIRST_GUIDE = `## NATIVE FIRST — elements on the canvas before any code
 Pages are edited by dragging elements on the canvas. UI written in code is not on that canvas: the
@@ -72,7 +70,7 @@ ${NATIVE_ALTERNATIVES.map((a) => `- ${a.need}: ${a.elements.join(", ")}${a.note 
 
 Limits: site scripts ${CODE_BUDGET.script.soft / 1000}k chars, site CSS ${CODE_BUDGET.css.soft / 1000}k chars. Above that, a write is refused unless
 it names the gap in native_gap (scripts ${CODE_BUDGET.script.hard / 1000}k / CSS ${CODE_BUDGET.css.hard / 1000}k is refused outright; a site already past that may only
-remove code or add small fixes). validate_page also refuses new placeholder JSON in text and more than
+shrink or swap code: no write may grow it, publish_site refuses to publish it). validate_page also refuses new placeholder JSON in text and more than
 ${NODE_CODE_BUDGET.hard / 1000}k chars of custom_css + embed code on one page. Content already on a page never blocks an unrelated save.`;
 
 const SMELLS = [
@@ -130,7 +128,8 @@ export function codeUsage(values: Record<string, any>) {
 }
 
 /** Judge a write by what it ADDS: shrinking or swapping code on an already-large site always passes,
- *  so a site can move off custom code step by step and still ship small fixes. */
+ *  so a site can move off custom code step by step. Past the ceiling nothing may grow: small fixes
+ *  used to be allowed and ratcheted a site to 90k chars of CSS, which then failed to publish. */
 export function checkSiteCode(before: Record<string, any>, changes: Record<string, any>) {
   const after = { ...before, ...changes };
   const hard: string[] = [];
@@ -144,7 +143,7 @@ export function checkSiteCode(before: Record<string, any>, changes: Record<strin
     const { old, now } = texts(kind);
     if (now.length <= old.length) continue;
     const { soft: softLimit, hard: hardLimit } = CODE_BUDGET[kind];
-    if (now.length > hardLimit && (old.length <= hardLimit || now.length - old.length > SMALL_FIX))
+    if (now.length > hardLimit)
       hard.push(`Site ${kind} would reach ${now.length} chars (ceiling ${hardLimit}). That is an app, not a snippet: move UI to native elements, data to a collection, logic to an HTTP function.`);
     else if (now.length > softLimit) soft.push(`Site ${kind} would reach ${now.length} chars (budget ${softLimit}).`);
   }
