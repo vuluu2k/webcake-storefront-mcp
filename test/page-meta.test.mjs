@@ -29,8 +29,15 @@ test("slug-only update still resends current settings (never null)", async () =>
   assert.deepEqual(api.calls, [{ slug: "x", settings: { page_mask: { type: "none" } } }]);
 });
 
-test("name-only update does not touch settings", async () => {
-  const api = stub({});
+test("name-only update leaves settings alone when the page already has an SEO title", async () => {
+  const api = stub({ seo: { title: "{{name_page}} | {{name_site}}" } });
   await applyPageMeta(api, "p1", { name: "N" });
   assert.deepEqual(api.calls, [{ name: "N" }]);
+});
+
+test("renaming a page with no SEO title writes the editor default first (backend splits it)", async () => {
+  const api = stub(null);
+  await applyPageMeta(api, "p1", { name: "N" });
+  assert.equal(api.calls[0].settings.seo.title, "{{name_page}} | {{name_site}}");
+  assert.deepEqual(api.calls[1], { name: "N" });
 });

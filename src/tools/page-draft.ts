@@ -186,7 +186,7 @@ RESUMABLE: if a request fails mid-commit, the draft keeps its page_id + committe
         }
 
         // Expand runtime -> bp1..bp4 so the saved nodes actually render.
-        finalizeForRender(full, await api.getSiteBreakpoints());
+        finalizeForRender(full, await api.getSiteBreakpoints(), await api.getSiteDefaultGrid());
         const finalizedSections: any[] = full.sections;
 
         try {
@@ -205,10 +205,11 @@ RESUMABLE: if a request fails mid-commit, the draft keeps its page_id + committe
 
           // Append the remaining sections one at a time, saving progress after each.
           for (let i = draft.committed_count ?? 1; i < finalizedSections.length; i++) {
+            // Rebuild CSS / sync globals once, on the last section (each sync builds the whole page CSS).
             await api.updatePageSource(
               draft.page_id!,
               { source: { sections: finalizedSections.slice(0, i + 1) } },
-              { timeout: 120000 },
+              { timeout: 120000, sync: i === finalizedSections.length - 1 },
             );
             draft.committed_count = i + 1;
             await setDraft(draft);

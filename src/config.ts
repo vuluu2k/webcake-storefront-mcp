@@ -19,6 +19,9 @@ export interface EnvPreset {
   appUrl: string;
   /** Rule for building the published-site preview URL. */
   preview: PreviewRule;
+  /** Host of the editor's Preview (builderx_spa Preview.vue): `${draft}/${siteId}/${slug}` renders
+   *  the SAVED, unpublished source. On prod it opens for ~10 min after the last /save. */
+  draft: string;
 }
 
 // Per-environment endpoints so you can switch with `--env <name>` / WEBCAKE_ENV
@@ -28,16 +31,19 @@ export const ENVIRONMENTS: Record<EnvName, EnvPreset> = {
     apiUrl: "http://localhost:24679",
     appUrl: "http://localhost:5173",
     preview: { kind: "path", base: "http://demo.localhost:24679" },
+    draft: "http://demo.localhost:24679",
   },
   staging: {
     apiUrl: "https://api.staging.storecake.io",
     appUrl: "https://staging.webcake.io",
     preview: { kind: "path", base: "https://staging2.webcake.me" },
+    draft: "https://staging2.webcake.me",
   },
   prod: {
     apiUrl: "https://api.storefront.webcake.io",
     appUrl: "https://webcake.io",
     preview: { kind: "subdomain", suffix: "webcake.me" },
+    draft: "https://preview.webcake.biz",
   },
 };
 
@@ -74,6 +80,11 @@ export async function resolvePreviewUrl(api: WebcakeCmsApi): Promise<string | nu
     return slug ? `https://${slug}.${rule.suffix}` : null;
   }
   return `${rule.base}/${api.siteId}`;
+}
+
+/** The editor's draft-preview URL for a page slug (homepage: ""). */
+export function draftPreviewUrl(api: WebcakeCmsApi, slug: string): string {
+  return `${ENVIRONMENTS[envFromApiUrl(api.baseUrl)].draft}/${api.siteId}/${slug.replace(/^\/+/, "")}`;
 }
 
 export function resolveEnv(name: string | undefined): EnvPreset | undefined {

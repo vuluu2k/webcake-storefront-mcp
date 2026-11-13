@@ -46,10 +46,15 @@ test("site CSS past the ceiling blocks publish, dry run says why", async () => {
   assert.equal(calls.length, 0);
 });
 
-test("a broken page blocks publish, a clean site publishes", async () => {
+test("a page that would blank the storefront blocks publish; old non-crash defects only warn; a clean site publishes", async () => {
+  const broken = page();
+  broken.sections[0].children.push(null); // renderer Map.put on nil → blank page
+  assert.match((await run(site({ pages: [broken] }).tools, "publish_site", { dry_run: false })).errors[0], /children\[1\] is null/);
   const dup = page();
   dup.sections.push(structuredClone(dup.sections[0]));
-  assert.match((await run(site({ pages: [dup] }).tools, "publish_site", { dry_run: false })).errors[0], /Duplicate/);
+  const dry = await run(site({ pages: [dup] }).tools, "publish_site", { dry_run: true });
+  assert.equal(dry.preflight.ok, true);
+  assert.match(dry.preflight.warnings.join(" "), /Duplicate/);
   const ok = site();
   assert.equal((await run(ok.tools, "publish_site", { dry_run: false })).success, true);
   assert.equal(ok.calls.length, 1);
@@ -90,4 +95,19 @@ test("update_page_source refuses new structural errors but lets a broken page be
   edited.sections[0].children[0].specials.text = "new";
   assert.equal((await run(legacy.tools, "update_page_source", { page_id: "P0", source: edited })).error, undefined);
   assert.equal(legacy.calls.length, 1);
+});
+
+test("a crash-level popup blocks publish too", async () => {
+  const t = createServer(new Proxy({}, {
+    get: (_, k) => {
+      if (k === "baseUrl") return "http://x";
+      if (k === "getSiteSettings") return async () => ({});
+      if (k === "listPages") return async () => ({ data: [] });
+      if (k === "globalSourcesForSave") return async () => [{ id: "P", component: "popup", source: { id: "POPUP-1", type: "popup", specials: [] } }];
+      return async () => ({});
+    },
+  }), { tools: "all" })._registeredTools;
+  const dry = await run(t, "publish_site", { dry_run: true });
+  assert.equal(dry.preflight.ok, false);
+  assert.match(dry.preflight.errors[0], /popup P: .*specials must be an object/);
 });

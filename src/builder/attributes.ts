@@ -40,7 +40,7 @@ export interface ElementAttrs {
 export const SHARED_SPECIALS: Record<string, string> = {
   custom_class: "CSS class(es) on the element — a hook for a few lines of site CSS, or for CMS glue code to write into it. Try style/config first.",
   custom_css: "Raw CSS scoped to this element. Last resort: try runtime.style/config first (see NATIVE FIRST).",
-  element_async: "Mark the element async/lazy (advanced — usually leave unset).",
+  element_async: "Editor responsive toggle: true = this element keeps different styles per breakpoint (the editor stops copying desktop edits onto tablet/mobile). Set automatically when breakpoints differ.",
   event_name_custom: "Custom analytics event name fired on interaction.",
   tabIndex: "Bind this element to a tab item (TAB-ITEM-…) so a tabs element shows/hides it.",
   text_animation_type: "Animated words in text/button: set to the type used by the <span class=\"animationText\" data-type …> inside specials.text (typed|typed2|clip|rotate3|animate.css name). See get_build_guide → Motion.",

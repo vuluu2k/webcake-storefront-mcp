@@ -225,9 +225,10 @@ You can still hand-set a final \`node.bpN\` when editing an already-saved page.
 - Image: \`runtime.config.src\` (URL). The URL MUST be a WebCake CDN url — the storefront
   whitelists image domains, so external URLs (Pexels, random sites) won't render. Get CDN
   urls from search_images (uploads by default → use its cdn_url) or upload_images.
-- Form: wrap inputs in a \`form\`; set \`form.specials.type\`
-  (form_order | form_login | form_signup | form_discount | order_tracking). Each input
-  needs \`specials.field_name\`.
+- Form: wrap inputs in a \`form\`; ALWAYS set \`form.specials.type\` — the renderer treats a form
+  with no type as form_order (a checkout). Contact / lead / quote request / newsletter →
+  \`subscribe\` (the editor's own contact form). Others: form_order (checkout) | form_login |
+  form_signup | form_discount | order_tracking | form_booking. Each input needs \`specials.field_name\`.
 - EMBED = LAST RESORT. Build everything native elements can build (text, image, button, form,
   container, gallery, swiper, video, googlemap, countdown…) natively. Use \`embed\` ONLY for the
   one piece no element can do (a third-party widget, a tracking/chat snippet, a custom
@@ -427,9 +428,14 @@ List existing popups with list_global_sources({component:"popup"}); edit via upd
 2. list_elements / get_element to pick the right component types; get_page_schema for the exact
    node contract ({ sections:[ { id,type,specials,runtime:{style,config},children,events,bindings } ] }).
 3. Build sections with new_section (or new_element for one node), fill content.
-4. validate_page — fix every error and review warnings.
+4. validate_page — fix every error; treat warnings as a fix list.
 5. build_page with dry_run:true first → review → dry_run:false to persist.
-6. For existing pages, prefer surgical edits (update_page_element) over full rewrites.
+6. LOOK at it: preview_page (desktop 1280 + mobile 420 screenshots of the saved draft, nothing
+   goes live). Judge it like the designer at the canvas: matches the brief? clear hierarchy,
+   consistent spacing and colours from the design system, nothing cut off or overflowing,
+   images loaded, mobile stacks cleanly. Fix each issue with update_page_element(s) (per
+   breakpoint via responsive.bpN), then preview_page again. Only then publish_site.
+7. For existing pages, prefer surgical edits (update_page_element) over full rewrites.
 
 ## LARGE PAGES — avoid timeout (use the DRAFT flow)
 A multi-section page sent in one build_page can be a huge request and hit the 15s timeout.

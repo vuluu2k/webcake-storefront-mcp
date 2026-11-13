@@ -83,9 +83,22 @@ export function newPageSkeleton(): { sections: any[] } {
   return { sections: [] };
 }
 
-const typePrefix = (type: string): string =>
-  ({ rectangle: "RECT", "grid-category": "GRID-CATE", "slider-category": "SLIDER-CATE" }[type] ||
-    type.toUpperCase());
+/** The id prefix the factory itself gives a type (TEXT-, PAYPAL-BTN-…): the editor recognises
+ *  some elements by id prefix, so re-ided nodes must keep the factory's, not type.toUpperCase(). */
+const prefixCache = new Map<string, string>();
+const typePrefix = (type: string): string => {
+  if (!prefixCache.has(type)) {
+    // Two fresh ids share exactly the factory's fixed part: some factories add "-" before the
+    // random suffix (TEXT-x1y2…), some don't (INPUT-NUMBERx1y2…), one has none (PD-IMG-CAROUSEL-).
+    let p = "";
+    try {
+      const a = String(buildElement(type).id || ""), b = String(buildElement(type).id || "");
+      p = a === b ? a : a.slice(0, a.length - 8);
+    } catch { /* unknown type */ }
+    prefixCache.set(type, p.replace(/-+$/, "") || type.toUpperCase());
+  }
+  return prefixCache.get(type)!;
+};
 
 /** Re-id every node in a subtree so a cloned/template node can't collide with existing ids. */
 export function reassignIds(node: any) {
@@ -334,7 +347,10 @@ export function buildFromSpec(spec: any) {
     const kids = spec.children.map((c: any) => buildFromSpec(c));
     // `layout:"row"` lays the children out side by side (responsive); default is a
     // top-to-bottom vertical stack. rowGap/columnGap/colWidths/collapse tune the layout.
-    if (spec.layout === "row") {
+    if (spec.type === "carousel") {
+      const n = kids.length;
+      rowChildren(node, kids, { columnGap: spec.columnGap, rowGap: spec.rowGap, colWidths: spec.colWidths, collapse: { bp2: n, bp3: n, bp4: n } });
+    } else if (spec.layout === "row") {
       rowChildren(node, kids, {
         columnGap: spec.columnGap,
         rowGap: spec.rowGap,
@@ -444,6 +460,11 @@ export function validatePage(source: any, previous?: any) {
   const errors: string[] = [];
   const warnings: string[] = [];
 
+  // editor_v2 pages ({ nodes, root_node_id, schema_version }) are a different model this server
+  // doesn't author; judging them by v1 rules would block publishing every V2 site.
+  if (source && typeof source === "object" && source.nodes && source.root_node_id) {
+    return { valid: true, skipped: "editor_v2 source (nodes/root_node_id): not checked by the v1 validator" };
+  }
   if (!source || typeof source !== "object" || !Array.isArray(source.sections)) {
     return { valid: false, errors: ["Source must be an object shaped { sections: [...] }."] };
   }
@@ -624,6 +645,7 @@ export function applyNodeUpdates(node: any, updates: any): void {
       // Always both keys: a bp layer missing config/style crashes the renderer's CSS builders.
       node[bp] = { ...cur, style: { ...(cur.style || {}), ...camelKeys(val.style) }, config: { ...(cur.config || {}), ...(val.config || {}) } };
     }
+    markAsyncIfDiverged(node);
   }
 }
 
@@ -671,16 +693,58 @@ function remapToSiteBreakpoints(node: any, site: Record<string, [number, number]
     if (!from) continue;
     out[key] = clone(from);
     const gridWidth = openEnded ? Math.max(minW, BREAKPOINTS.bp1[0]) : minW;
-    if (node.type === "section") out[key].config.columns = clone(genGridByBp(gridWidth).columns);
+    if (node.type === "section") out[key].config.columns = sectionColumns(key, gridWidth);
   }
   for (const k of BREAKPOINT_KEYS) delete node[k];
   Object.assign(node, out);
 }
 
+/** Grid boxes the editor creates with a 1x1 grid (ContainerPicker.vue / popupBPSample). Left with
+ *  no rows, the editor's useFindGridArea throws (nothing can be dropped in) and the renderer
+ *  emits an empty grid-template with a zero height. */
+const EMPTY_GRID_TYPES = new Set(["container", "form", "popup"]);
+/** Margin offsets the editor writes on every drop (setDimensionUnit, editor.js). Missing, the
+ *  renderer prints `margin-left: %;` and the constraint/align panels compute NaN. */
+const OFFSET_ZEROS = {
+  relLeft: 0, relRight: 0, absRight: 0, relTop: 0, relBottom: 0, absBottom: 0,
+  absLeftCenterX: 0, relLeftCenterX: 0, absRightCenterX: 0, relRightCenterX: 0,
+  absTopCenterY: 0, relTopCenterY: 0, absBottomCenterY: 0, relBottomCenterY: 0,
+};
+
+/** The editor's breakpoint sync (arrange.js syncElement) copies every non-size/position key
+ *  from the active breakpoint onto the others on each save, UNLESS specials.element_async is set
+ *  (its "this breakpoint only" toggle). So a node whose breakpoints differ on such a key needs
+ *  the flag, or the editor's first save wipes its mobile/tablet overrides. */
+export function markAsyncIfDiverged(node: any) {
+  const bps = Object.keys(node).filter((k) => BP_KEY_RE.test(k) && node[k] && typeof node[k] === "object");
+  const base = node.bp1;
+  if (!base || bps.length < 2) return;
+  const differs = (a: any = {}, b: any = {}, async: string[]) =>
+    [...new Set([...Object.keys(a), ...Object.keys(b)])].some(
+      (k) => k !== "loaded" && !async.includes(k) && JSON.stringify(a[k]) !== JSON.stringify(b[k]),
+    );
+  if (bps.some((bp) => bp !== "bp1" && (differs(base.style, node[bp].style, STYLE_ASYNC) || differs(base.config, node[bp].config, CONFIG_ASYNC))))
+    node.specials = { ...(node.specials || {}), element_async: true };
+}
+const BP_KEY_RE = /^bp\d+$/;
+
 function expandNodeToBreakpoints(node: any, site: Record<string, [number, number]> | null): any {
   const rt = node && node.runtime;
+  // The editor merges runtime.specials into specials on drop (ElementDrag.vue); 26 factories
+  // (tabs, tags, coupon…) keep their defaults and the caller's opts.specials there.
+  if (rt && rt.specials && typeof rt.specials === "object") node.specials = { ...(node.specials || {}), ...rt.specials };
   if (rt && (rt.style || rt.config || rt.responsive)) {
-    const baseConfig = { ...(rt.config || {}), loaded: true };
+    let baseConfig: any = { ...(rt.config || {}), loaded: true };
+    if (node.type !== "section") baseConfig = { ...OFFSET_ZEROS, ...baseConfig };
+    if (node.type === "popup" && !baseConfig.widthUnit) baseConfig.widthUnit = "px"; // editor popupBPSample
+    if (EMPTY_GRID_TYPES.has(node.type) && !(node.children || []).length && !(Array.isArray(baseConfig.rows) && baseConfig.rows.length))
+      baseConfig = {
+        ...baseConfig,
+        grid: "1x1",
+        columns: [{ unit: "fr", value: 1 }],
+        rows: [{ unit: "min/max", min: { unit: "px", absValue: pxToNum(rt.style?.height) || 280 }, max: { unit: "max-c" } }],
+        heightUnit: baseConfig.heightUnit || "auto",
+      };
     const isSection = node.type === "section";
     const rowMeta = baseConfig.__row; // this node is a multi-column row container
     const cellMeta = baseConfig.__cell; // this node is a cell inside a row
@@ -711,7 +775,7 @@ function expandNodeToBreakpoints(node: any, site: Record<string, [number, number
         const g = genGridByBp(minW);
         const sectionRows =
           baseConfig.rows && baseConfig.rows.length ? clone(baseConfig.rows) : clone(g.rows);
-        config.columns = clone(g.columns);
+        config.columns = sectionColumns(bp, minW);
         config.rows = sectionRows;
         config.grid = `3x${sectionRows.length}`;
         config.heightUnit = config.heightUnit || "auto";
@@ -741,6 +805,25 @@ function expandNodeToBreakpoints(node: any, site: Record<string, [number, number
       }
       node[bp] = { style, config };
     }
+    // Grid-placed nodes only: a fixed/absolute node anchored by right/bottom (a floating chat or
+    // back-to-top button) must not gain a left/top that overrides its anchor.
+    if (node.type !== "section")
+      for (const bp of BREAKPOINT_KEYS) {
+        const { style: st, config: cf } = node[bp];
+        if ((cf.position || "default") !== "default") continue;
+        if (st.top == null && st.bottom == null) st.top = 0;
+        if (st.left == null && st.right == null) st.left = 0;
+      }
+    // A button the factory sizes to its content (widthUnit "auto") still needs a width and
+    // relWidth: the editor's W field reads style.width ("undefinedauto") and a unit switch
+    // computes parent*relWidth/100 (NaN).
+    if (baseConfig.widthUnit === "auto")
+      for (const bp of BREAKPOINT_KEYS) {
+        const st = node[bp].style;
+        if (st.width == null) st.width = Math.round(String(node.specials?.text || "").replace(/<[^>]*>/g, "").length * 9 + 56);
+        if (node[bp].config.relWidth == null) node[bp].config.relWidth = 100;
+      }
+    markAsyncIfDiverged(node);
     delete node.runtime;
     if (site) remapToSiteBreakpoints(node, site);
   }
@@ -755,11 +838,41 @@ function expandNodeToBreakpoints(node: any, site: Record<string, [number, number
  * is removed. MUST be called before saving a page built with new_section/new_element —
  * otherwise the page renders with no styling or grid placement.
  */
-export function finalizeForRender(source: any, siteBreakpoints?: SiteBreakpoints): any {
+export function finalizeForRender(source: any, siteBreakpoints?: SiteBreakpoints, defaultGrid?: Record<string, any> | null): any {
   const sections = source && Array.isArray(source.sections) ? source.sections : [];
   const custom = customBreakpoints(siteBreakpoints);
-  for (const s of sections) expandNodeToBreakpoints(s, custom);
+  siteGrid = defaultGrid && typeof defaultGrid === "object" ? defaultGrid : null;
+  try {
+    for (const s of sections) expandNodeToBreakpoints(s, custom);
+  } finally {
+    siteGrid = null;
+  }
+  walk(source, nameLikeEditor);
   return source;
+}
+
+/** The site's section grid (settings.defaultGrid, set by the editor per breakpoint), for the
+ *  duration of one synchronous finalizeForRender. */
+let siteGrid: Record<string, any> | null = null;
+/** A section's columns at a breakpoint: the site's defaultGrid (what the editor's addBlankSection
+ *  uses) when it is the usual 3-track centred grid, else the standard one for that width. */
+function sectionColumns(bp: string, width: number) {
+  const own = siteGrid?.[bp]?.columns;
+  return clone(Array.isArray(own) && own.length === 3 && own.every((c: any) => c && typeof c === "object") ? own : genGridByBp(width).columns);
+}
+
+const FORM_PREFIX: Record<string, string> = {
+  form_order: "ORDER", subscribe: "SUB", order_tracking: "TRACK", form_discount: "DISC", customer_data: "MEM",
+  form_search_agency: "SAG", forgot_password: "FORGOT", reset_password: "RESET", reward_points: "POINTS",
+  form_booking: "BOOKING", question_form: "QUESTION", course_form_submit: "COURSE-SUBMIT",
+};
+const MENU_PREFIX: Record<string, string> = { horizontal: "HOR", vertical: "VER", collapse: "COL", hamburger: "HAM" };
+/** Names the editor gives forms and menus on drop (ElementDrag.vue handleNameForm): its form and
+ *  menu pickers list elements by these names. */
+function nameLikeEditor(node: any) {
+  if (node.name || !node.id || (node.type !== "form" && node.type !== "menu")) return;
+  const pre = (node.type === "form" ? FORM_PREFIX : MENU_PREFIX)[node.specials?.type];
+  node.name = pre ? `${pre}-${node.id}` : node.id;
 }
 
 export { ELEMENT_TYPES };

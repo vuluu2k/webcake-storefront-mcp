@@ -2,8 +2,10 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
-import { resolvePreviewUrl } from "../config.js";
-import { validatePage, missingBreakpoints, checkNativeContent } from "../builder/page.js";
+import { resolvePreviewUrl, draftPreviewUrl } from "../config.js";
+import { captureScreenshot, resolveMicrolinkKey, resolveScreenshotProxyBase } from "../persistence/screenshot-client.js";
+import { validatePage, missingBreakpoints } from "../builder/page.js";
+import { checkShape } from "../builder/shape.js";
 import { BREAKPOINT_KEYS } from "../builder/grid.js";
 import { CODE_BUDGET, codeUsage } from "../builder/native-first.js";
 import { getCachedUpload, setCachedUpload } from "../persistence/imageCache.js";
@@ -19,6 +21,18 @@ export async function preflightSite(api: WebcakeCmsApi) {
   const errors: string[] = [];
   const warnings: string[] = [];
   const settings: any = await api.getSiteSettings();
+  // Saved data is judged by what BREAKS the live storefront: checkShape's renderer crashes
+  // (verified against builderx_api qwik) block; editor-only breakage warns. Everything else validatePage refuses on a NEW
+  // write (missing/duplicate id, native-first volume…) already publishes today, so it only warns.
+  const judge = (name: string, src: any, v: any) => {
+    const shape = checkShape(src);
+    const crash = shape.errors.filter((e) => !shape.editorOnly.includes(e)); // the live site blanks
+    const fatal = (v.errors || []).filter((e: string) => crash.includes(e));
+    const rest = (v.errors || []).filter((e: string) => !crash.includes(e));
+    errors.push(...fatal.slice(0, 10).map((e: string) => `${name}: ${e}`));
+    if (fatal.length > 10) errors.push(`${name}: …and ${fatal.length - 10} more (run validate_page on this page).`);
+    warnings.push(...rest.slice(0, 5).map((e: string) => `${name}: ${e}`));
+  };
 
   const bps = settings.breakpoints;
   const bpKeys = bps && typeof bps === "object" && !Array.isArray(bps)
@@ -51,19 +65,21 @@ export async function preflightSite(api: WebcakeCmsApi) {
     }
     checked++;
     const v: any = validatePage(src);
-    // Native-first errors (embedded HTML document, placeholder JSON, code volume) guard NEW writes;
-    // old pages carrying them published fine before, so here they only warn. Structural errors
-    // (missing/duplicate id, missing type) break the renderer and block.
-    const native = checkNativeContent(src).errors;
-    const errs: string[] = (v.errors || []).filter((e: string) => !native.includes(e));
-    if (native.length) warnings.push(...native.map((e) => `${name}: ${e}`));
-    errors.push(...errs.slice(0, 10).map((e) => `${name}: ${e}`));
-    if (errs.length > 10) errors.push(`${name}: …and ${errs.length - 10} more (run validate_page on this page).`);
+    judge(name, src, v);
     const keys = bpKeys.length ? bpKeys : BREAKPOINT_KEYS;
     const m = missingBreakpoints(src, keys);
     if (m.missing)
       warnings.push(`${name}: ${m.missing}/${m.total} elements lack a breakpoint (${keys.join(", ")}) and render unstyled at that width, e.g. ${m.sample.join(", ")}.`);
     if (v.warnings && v.warnings.length) warnings.push(`${name}: ${v.warnings.length} validate_page warning(s), e.g. ${v.warnings[0]}`);
+  }
+  // Popups and the cart drawer publish with the site too (global_sources); a crash-level shape in
+  // one blanks it on every page. Same rules, same "native-first only warns" policy.
+  const globals: any = await api.globalSourcesForSave().catch(() => []);
+  for (const g of Array.isArray(globals) ? globals : []) {
+    const name = `${g.component} ${g.id}`;
+    const root = g.source;
+    const src = root && Array.isArray(root.sections) ? root : { sections: Array.isArray(root) ? root : root ? [root] : [] };
+    judge(name, src, validatePage(src));
   }
   return { ok: !errors.length, pages_checked: checked, errors, warnings };
 }
@@ -360,6 +376,58 @@ false when it is still broken (e.g. bps = []).`,
           screenshots: "Homepage screenshots (desktop 1920_1080 + mobile 430_932) are captured in the background after a publish (at most once an hour). About a minute later get_site_info returns them in preview_img — open one with invoke_tool('read_image', { url }) to check the live result visually.",
         };
       })
+  );
+
+  // ── See the saved draft, like the designer looking at the canvas ─────────────
+  server.tool(
+    "preview_page",
+    `LOOK at a saved page before publishing: screenshots of the SAVED (unpublished) draft at desktop and
+mobile width, through the editor's own Preview host (it renders page.source + the CSS /save built for it).
+A designer judges the canvas by eye; do the same after every build or batch of edits: compare with the
+brief (section order, hierarchy, colors, spacing, alignment, overflowing or cut text, images, mobile
+stacking), fix with update_page_element(s), then preview again until it matches. Nothing goes live.
+Engine: Microlink free tier (~50 shots/day per IP) unless RENDER_SCREENSHOT_BASE / MICROLINK_API_KEY is
+set; when it can't capture, open the returned url with your own browser if you have one. The
+screenshot service fetches the draft url (a third party sees the unpublished page; self-host via
+RENDER_SCREENSHOT_BASE to avoid that).`,
+    {
+      page_id: z.string().describe("Page to preview"),
+      widths: z.array(z.number().int().min(320).max(2560)).max(3).default([1280, 420])
+        .describe("Viewport widths; default desktop 1280 + mobile 420 (the site's bp1 and bp4)"),
+      full_page: z.boolean().default(true).describe("Whole scrollable page (default) or just the first screen"),
+    },
+    async ({ page_id, widths, full_page }) => {
+      try {
+        const res: any = await api.listPages();
+        const page = ((res && res.data) || res || []).find((p: any) => p && p.id === page_id);
+        if (!page) return { content: [{ type: "text" as const, text: JSON.stringify({ error: `Page ${page_id} not found` }) }], isError: true };
+        // /save stamps published_at: the draft preview opens for ~10 min (PreviewExpire), content untouched.
+        await api.refreshDraftPreview();
+        const url = draftPreviewUrl(api, page.is_homepage ? "" : page.slug || "");
+        const engine = { proxyBase: resolveScreenshotProxyBase(), microlinkKey: resolveMicrolinkKey() };
+        const content: any[] = [];
+        const failed: string[] = [];
+        for (const width of widths) {
+          const r = await captureScreenshot(url, { fullPage: full_page, width }, engine, Date.now());
+          if (r.ok && r.dataBase64) {
+            content.push({ type: "text" as const, text: `${width}px wide:` });
+            content.push({ type: "image" as const, data: r.dataBase64, mimeType: r.mimeType || "image/png" });
+          } else failed.push(`${width}px: ${r.quota_exhausted ? "screenshot quota reached" : r.error || `HTTP ${r.status}`}`);
+        }
+        content.unshift({
+          type: "text" as const,
+          text: JSON.stringify({
+            url,
+            page: page.name || page.slug,
+            ...(failed.length ? { failed, hint: "Open the url in your own browser if you can; otherwise check the source with validate_page and retry later." } : {}),
+            next: "Compare with the brief. Fix what differs with update_page_element(s), then preview_page again.",
+          }),
+        });
+        return { content };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: JSON.stringify({ error: e?.message || String(e) }) }], isError: true };
+      }
+    }
   );
 
   // ── Ingest reference HTML / URL into a blueprint ────────────────────────────

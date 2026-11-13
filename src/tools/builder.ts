@@ -150,19 +150,26 @@ export async function applyPageMeta(
   pageId: string,
   { name, slug, is_homepage, settings, seo }: { name?: string; slug?: string | null; is_homepage?: boolean; settings?: any; seo?: any },
 ) {
-  if (name != null) await api.updatePage(pageId, { name });
   if (is_homepage) await api.updatePage(pageId, { is_homepage: true });
   const seoBlock = seo ? buildPageSeo(seo) : {};
-  if (!slug && !settings && !Object.keys(seoBlock).length) return;
-  // ponytail: no get-page-by-id route, so this pulls the full page list (with sources) once.
-  const res: any = await api.listPages();
-  const list = res?.data || res?.pages || res;
-  let cur = (Array.isArray(list) ? list : []).find((p: any) => p.id === pageId)?.settings;
-  if (typeof cur === "string") try { cur = JSON.parse(cur); } catch { cur = null; }
-  if (!cur || typeof cur !== "object") cur = {};
-  const next = { ...cur, ...(settings || {}) };
-  if (Object.keys(seoBlock).length) next.seo = { ...(next.seo || {}), ...seoBlock };
-  await api.updatePage(pageId, { ...(slug ? { slug } : {}), settings: next });
+  if (slug || settings || Object.keys(seoBlock).length || name != null) {
+    // ponytail: no get-page-by-id route, so this pulls the full page list (with sources) once.
+    const res: any = await api.listPages();
+    const list = res?.data || res?.pages || res;
+    let cur = (Array.isArray(list) ? list : []).find((p: any) => p.id === pageId)?.settings;
+    if (typeof cur === "string") try { cur = JSON.parse(cur); } catch { cur = null; }
+    if (!cur || typeof cur !== "object") cur = {};
+    const next = { ...cur, ...(settings || {}) };
+    if (Object.keys(seoBlock).length) next.seo = { ...(next.seo || {}), ...seoBlock };
+    // Renaming (update_name_page) decodes page.settings and splits seo.title on "|": it 500s on a
+    // page with no settings or no seo.title, i.e. every page create_page makes. Give it the
+    // editor's default title first (builderx_spa utils/editor_v2/seo.js DEFAULT_TITLE).
+    const needsTitle = name != null && typeof next.seo?.title !== "string";
+    if (needsTitle) next.seo = { ...(next.seo || {}), title: "{{name_page}} | {{name_site}}" };
+    if (slug || settings || Object.keys(seoBlock).length || needsTitle)
+      await api.updatePage(pageId, { ...(slug ? { slug } : {}), settings: next });
+  }
+  if (name != null) await api.updatePage(pageId, { name });
 }
 
 /** Normalize a page slug to what the storefront matches on. The storefront routes by the
@@ -372,7 +379,7 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
         }
 
         // Expand runtime -> bp1..bp4 so the saved source actually renders on the storefront.
-        finalizeForRender(parsed, await api.getSiteBreakpoints());
+        finalizeForRender(parsed, await api.getSiteBreakpoints(), await api.getSiteDefaultGrid());
 
         // createPage saves the page AND its source in one call (source is required there).
         const created = await api.createPage({ name, source: parsed, ...(typeNum != null ? { type: typeNum } : {}) });
@@ -496,7 +503,7 @@ Two-step safety: dry_run=true (default) previews; dry_run=false saves.`,
 
         // Expand the newly-added section's runtime -> bp1..bp4 (existing sections are
         // already in breakpoint shape and are left untouched).
-        finalizeForRender(source, await api.getSiteBreakpoints());
+        finalizeForRender(source, await api.getSiteBreakpoints(), await api.getSiteDefaultGrid());
         const saved = await api.updatePageSource(page_id, { source });
         return {
           success: true,

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { CUSTOM_CODE_GUIDE } from "../guides.js";
 import { getConfirmMode } from "./context.js";
-import { addedErrors, applyNodeUpdates, computeNodeDiff, checkContentPlaceholders, checkElementPatch } from "../builder/page.js";
+import { addedErrors, applyNodeUpdates, computeNodeDiff, checkContentPlaceholders, checkElementPatch, finalizeForRender } from "../builder/page.js";
 import { SITE_CODE_FIELDS, checkSiteCode, codeGuard, codeUsage } from "../builder/native-first.js";
 import { PAGE_TYPE_NUM, PAGE_KINDS, applyPageMeta, normalizeSlug, checkPageCreateConflict } from "./builder.js";
 
@@ -479,7 +479,14 @@ For full rewrites, use update_site_custom_code instead.`,
     ({ page_id }) => handle(async () => {
       const res = await api.deletePage({ page_id });
       invalidatePageCache();
-      return res;
+      // Like the editor: a deleted page leaves every global section's page list. The page is
+      // already gone, so a failure here is a warning, not a failed delete (a retry would 404).
+      try {
+        const unlinked = await api.unlinkPageFromGlobalSections(page_id);
+        return unlinked ? { ...res, global_sections_unlinked: unlinked } : res;
+      } catch (e: any) {
+        return { ...res, warning: `Page deleted, but removing it from global sections' page lists failed: ${e?.message || e}` };
+      }
     })
   );
 
@@ -750,6 +757,9 @@ Safeguarded: blocks if new source is <50% of existing size.`,
         if (source != null) {
           // Ensure source is an object — backend does Jason.encode! so we must send object, not string
           body.source = typeof source === "string" ? JSON.parse(source) : source;
+          // Nodes still in builder shape (runtime, e.g. straight from new_element) get their
+          // per-breakpoint keys like every other writer; nodes already in bp shape are untouched.
+          finalizeForRender(body.source, await api.getSiteBreakpoints(), await api.getSiteDefaultGrid());
         }
         if (custom_code != null) {
           invalidatePageCache();

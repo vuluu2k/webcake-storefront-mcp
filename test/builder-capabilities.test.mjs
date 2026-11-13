@@ -46,7 +46,7 @@ test("wishlist, OTP and course blocks build, and wishlist_item binds", () => {
 
 test("structure warnings: top level, non-container children, orphan submit, wishlist binding scope", () => {
   const good = buildSection([
-    { type: "form", children: [{ type: "input", opts: { specials: { field_name: "email" } } }, { type: "submit-button", opts: { text: "Gửi" } }] },
+    { type: "form", opts: { specials: { type: "subscribe" } }, children: [{ type: "input", opts: { specials: { field_name: "email" } } }, { type: "submit-button", opts: { text: "Gửi" } }] },
     { type: "wishlist-container", children: [
       { type: "wishlist-item", children: [{ type: "text-dataset", opts: { bindings: [{ target: "wishlist_item::product_name" }] } }] },
       { type: "wishlist-empty", children: [{ type: "text", opts: { text: "Trống" } }] },

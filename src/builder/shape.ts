@@ -18,17 +18,25 @@ const NEEDS_SPECIALS = new Set([
   "text", "button", "input", "text-area", "select", "radio", "checkbox", "radio-group", "checkbox-group",
   "menu", "carousel", "swiper",
 ]);
+/** Containers whose children are all one kind (build_swiper renders every child as a slide…). */
+const CHILD_TYPES: Record<string, string[]> = { swiper: ["slide"], menu: ["menu-item", "menu-droppable"], collapse: ["collapse-item"] };
+/** Editor components that index specials.options (Select.vue, Radio.vue, Checkbox). */
+const OPTION_TYPES = new Set(["select", "radio", "checkbox"]);
 const GRID_CONTAINERS = new Set(["section", "container", "form", "popup", "carousel"]);
 const UNIT_SUFFIXED = /^-?\d+(\.\d+)?(px|%|vw|vh|rem|em)$/;
 const NUMERIC_STYLE = ["width", "height", "top", "left", "right", "bottom", "columnGap", "rowGap"];
 
-export function checkShape(source: any): { errors: string[]; warnings: string[] } {
+export function checkShape(source: any): { errors: string[]; warnings: string[]; editorOnly: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
-  if (!isObj(source) || !Array.isArray(source.sections)) return { errors, warnings }; // validatePage reports it
+  /** Breaks the editor only (an element/canvas goes blank there); the storefront renders. Still
+   *  refused on a write, but publish_site doesn't block on it: the live site works. */
+  const editorOnly: string[] = [];
+  const editorErr = (m: string) => { errors.push(m); editorOnly.push(m); };
+  if (!isObj(source) || !Array.isArray(source.sections)) return { errors, warnings, editorOnly }; // validatePage reports it
 
   source.sections.forEach((s: any, i: number) => {
-    if (!isObj(s)) errors.push(`sections[${i}] is ${s === null ? "null" : typeof s}, not an element: the editor never finishes loading.`);
+    if (!isObj(s)) editorErr(`sections[${i}] is ${s === null ? "null" : typeof s}, not an element: the editor never finishes loading.`);
   });
 
   const layer = (node: any, at: string, where: string, isBp: boolean) => {
@@ -38,7 +46,10 @@ export function checkShape(source: any): { errors: string[]; warnings: string[] 
       errors.push(`${at}.${where} must be an object (got ${Array.isArray(v) ? "array" : v === null ? "null" : typeof v}): the renderer throws and the page goes blank.`);
       return;
     }
-    if (isBp && Object.keys(v).length && (!isObj(v.style) || !isObj(v.config)))
+    // build_section reads `el[bp]["style"] || %{}`; the element builders pattern-match
+    // %{"style" => _, "config" => _} = el[bp] (dynamic/index.ex). Real editor sections carry
+    // config-only layers, so only non-sections are refused.
+    if (isBp && node.type !== "section" && Object.keys(v).length && (!isObj(v.style) || !isObj(v.config)))
       errors.push(`${at}.${where} needs both style:{} and config:{} objects: the CSS builders pattern-match them and all page CSS is lost.`);
     if (isObj(v.style)) style(v.style, `${at}.${where}.style`);
     if (isObj(v.config)) config(node, v.config, `${at}.${where}.config`);
@@ -55,9 +66,9 @@ export function checkShape(source: any): { errors: string[]; warnings: string[] 
 
   const config = (node: any, cfg: any, at: string) => {
     const wu = cfg.widthUnit;
-    if (wu != null && !WIDTH_UNITS.has(wu)) {
-      if (wu === "vw") warnings.push(`${at}.widthUnit "vw" has no renderer branch; use "%" or "px".`);
-      else errors.push(`${at}.widthUnit "${wu}" must be auto, px or %: the renderer has no branch for it and all page CSS is lost.`);
+    // "vw" is what the editor itself writes for overlays, droppables and submenus.
+    if (wu != null && wu !== "vw" && !WIDTH_UNITS.has(wu)) {
+      errors.push(`${at}.widthUnit "${wu}" must be auto, px or %: the renderer has no branch for it and all page CSS is lost.`);
     }
     for (const [key, allowed] of [["constraintX", CONSTRAINT_X], ["constraintY", CONSTRAINT_Y]] as const) {
       const c = cfg[key];
@@ -76,17 +87,19 @@ export function checkShape(source: any): { errors: string[]; warnings: string[] 
       if (!t) continue;
       // grid-product & co. store a per-row COUNT here; only grid containers map it as tracks.
       if (typeof t === "number" && !GRID_CONTAINERS.has(node.type)) continue;
-      if (!Array.isArray(t) || !t.every(isObj)) {
+      // null tracks are saved by the editor itself; convert_style_grid treats nil as %{}.
+      if (!Array.isArray(t) || !t.every((tr: any) => tr === null || isObj(tr))) {
         errors.push(`${at}.${key} must be an array of track objects { unit, value }: the grid builder throws.`);
         continue;
       }
       t.forEach((tr: any, i: number) => {
-        if (tr.unit != null && !TRACK_UNITS.has(tr.unit)) warnings.push(`${at}.${key}[${i}].unit "${tr.unit}" is unknown; the editor drops the whole grid template.`);
+        if (tr && tr.unit != null && !TRACK_UNITS.has(tr.unit)) warnings.push(`${at}.${key}[${i}].unit "${tr.unit}" is unknown; the editor drops the whole grid template.`);
       });
     }
     if (cfg.grid != null && cfg.grid !== "") {
       const m = /^(\d+)x(\d+)$/.exec(String(cfg.grid));
-      if (!m || +m[1] < 1 || +m[2] < 1) errors.push(`${at}.grid "${cfg.grid}" must be "<cols>x<rows>" (both ≥ 1): the editor throws a RangeError when the element is selected.`);
+      if (!m) editorErr(`${at}.grid "${cfg.grid}" must be "<cols>x<rows>": the editor parses it when the element is selected.`);
+      else if (+m[1] < 1 || +m[2] < 1) warnings.push(`${at}.grid "${cfg.grid}" has a zero dimension; set it to match columns×rows.`);
     }
     if (cfg.animation != null && !isObj(cfg.animation)) errors.push(`${at}.animation must be an object: the renderer throws.`);
     if (cfg.borderEdges != null && !Array.isArray(cfg.borderEdges)) errors.push(`${at}.borderEdges must be an array: the renderer throws.`);
@@ -107,16 +120,16 @@ export function checkShape(source: any): { errors: string[]; warnings: string[] 
     if ("specials" in node && !isObj(node.specials))
       errors.push(`${label}.specials must be an object: every renderer builder reads it and the page goes blank.`);
     else if (!("specials" in node) && NEEDS_SPECIALS.has(type))
-      errors.push(`${label} has no specials: the editor's ${type} component reads it without a default and the element goes blank.`);
+      editorErr(`${label} has no specials: the editor's ${type} component reads it without a default and the element goes blank.`);
     const sp = isObj(node.specials) ? node.specials : {};
     for (const k of ["custom_css", "custom_class"])
       if (sp[k] != null && typeof sp[k] !== "string") errors.push(`${label}.specials.${k} must be a string: the renderer splits it and the page goes blank.`);
     if (type === "text" && sp.tag != null && typeof sp.tag !== "string") errors.push(`${label}.specials.tag must be a string (h1, p…): the page goes blank.`);
-    if (sp.options != null && (!Array.isArray(sp.options) || sp.options.some((o: any) => o == null)))
-      errors.push(`${label}.specials.options must be an array with no null entries: the editor's ${type} goes blank.`);
+    if (OPTION_TYPES.has(type) && sp.options != null && (!Array.isArray(sp.options) || sp.options.some((o: any) => o == null)))
+      editorErr(`${label}.specials.options must be an array with no null entries: the editor's ${type} goes blank.`);
     if (type === "select" && Array.isArray(sp.options) && sp.defaultValue != null && sp.defaultValue !== "" && sp.defaultValue !== "none" &&
       sp.options.every((o: any) => isObj(o) && "id" in o) && !sp.options.some((o: any) => o.id === sp.defaultValue))
-      errors.push(`${label}.specials.defaultValue "${sp.defaultValue}" names no option id: the editor's select goes blank.`);
+      editorErr(`${label}.specials.defaultValue "${sp.defaultValue}" names no option id: the editor's select goes blank.`);
 
     if (node.events != null && (!Array.isArray(node.events) || !node.events.every(isObj)))
       errors.push(`${label}.events must be an array of event objects: the renderer throws and the page goes blank.`);
@@ -126,6 +139,11 @@ export function checkShape(source: any): { errors: string[]; warnings: string[] 
 
     if (type === "section" && parentType) warnings.push(`${label}: a section nested inside a ${parentType} renders as an empty box in the editor.`);
     if (type === "popup" && !parentType) warnings.push(`${label}: popups belong in a global source (popup), not the page's sections; inline it renders without its overlay.`);
+    if (type === "form" && !sp.type)
+      warnings.push(`${label}: no specials.type, so the renderer treats it as form_order (a checkout). Contact/lead/newsletter → "subscribe".`);
+    const kinds = CHILD_TYPES[type];
+    if (kinds && Array.isArray(node.children) && node.children.some((c: any) => isObj(c) && !kinds.includes(c.type)))
+      warnings.push(`${label}: a ${type} holds only ${kinds.join("/")} children (the renderer treats each child as one); wrap other content inside a ${kinds[0]}.`);
     if (type === "dropdown" && !(Array.isArray(node.children) && node.children.length))
       warnings.push(`${label}: a dropdown needs its content child, or the editor can't render it.`);
 
@@ -134,23 +152,16 @@ export function checkShape(source: any): { errors: string[]; warnings: string[] 
         errors.push(`${label}.children must be an array (got ${node.children === null ? "null" : typeof node.children}): the renderer maps over it and the page goes blank.`);
         return;
       }
-      const cols = Array.isArray(node.bp1?.config?.columns) ? node.bp1.config.columns.length : 0;
-      const rows = Array.isArray(node.bp1?.config?.rows) ? node.bp1.config.rows.length : 0;
       node.children.forEach((c: any, i: number) => {
         if (!isObj(c)) {
           errors.push(`${label}.children[${i}] is ${c === null ? "null" : Array.isArray(c) ? "an array" : typeof c}, not an element: the renderer throws and the editor blanks every section.`);
           return;
         }
-        const cc = c.bp1?.config;
-        if (cols && cc && Number(cc.columnEnd) > cols + 1)
-          warnings.push(`${label}.children[${i}] (${c.id}) ends at column ${cc.columnEnd} but the grid has ${cols} columns: it spills into an implicit track.`);
-        if (rows && cc && Number(cc.rowEnd) > rows + 1)
-          warnings.push(`${label}.children[${i}] (${c.id}) ends at row ${cc.rowEnd} but the grid has ${rows} rows: it spills into an implicit track.`);
         check(c, `${at}>${i}`, type || null);
       });
     }
   };
 
   source.sections.forEach((s: any, i: number) => check(s, `sections[${i}]`, null));
-  return { errors, warnings };
+  return { errors, warnings, editorOnly };
 }

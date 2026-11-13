@@ -1,3 +1,4 @@
+import { buildSection, finalizeForRender } from "./builder/page.js";
 import { BREAKPOINTS } from "./builder/grid.js";
 
 const DEFAULT_TIMEOUT = 15000;
@@ -20,6 +21,13 @@ interface RequestOpts {
 }
 
 const SETTINGS_READ_ERR = "Không đọc được site settings, huỷ lưu để tránh ghi đè rỗng";
+
+const listOf = (r: any): any[] => (Array.isArray(r?.data) ? r.data : Array.isArray(r) ? r : []);
+const parseMaybe = (v: any) => (typeof v === "string" ? (v ? JSON.parse(v) : null) : v ?? null);
+const globalsOf = (src: any): any[] => (src?.sections || []).filter((s: any) => s && s.specials && s.specials.global);
+/** Key-order-independent JSON, so a re-serialised but equal node doesn't count as an edit. */
+const canon = (v: any) =>
+  JSON.stringify(v ?? null, (_k, x) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1))) : x));
 
 export class WebcakeCmsApi {
   /** Parse (if string) and guarantee settings.breakpoints is a usable object — an empty/missing
@@ -46,7 +54,7 @@ export class WebcakeCmsApi {
   sessionId: string;
   private _adminToken: string | null;
   private _cmsApiKey: string | null;
-  private _siteBps: Promise<Record<string, [number, number]> | null> | null = null;
+  private _siteBps: Promise<any> | null = null; // cached site.settings (breakpoints, defaultGrid)
 
   constructor({ baseUrl, token, siteId, sessionId }: ApiInit) {
     this.baseUrl = (baseUrl || "").replace(/\/$/, "");
@@ -177,11 +185,18 @@ export class WebcakeCmsApi {
   /** The site's breakpoints ({ bpN: [minW, maxW] } from settings, which may be a JSON string),
    *  or null when unset/unreadable — callers then use the standard four. Cached per site. */
   getSiteBreakpoints(): Promise<Record<string, [number, number]> | null> {
+    return this.siteLayout().then((s) => s?.breakpoints || null);
+  }
+  /** The site's section grid per breakpoint (settings.defaultGrid): the editor builds every new
+   *  section from it (editor.js addBlankSection), so generated sections must too. */
+  getSiteDefaultGrid(): Promise<Record<string, any> | null> {
+    return this.siteLayout().then((s) => s?.defaultGrid || null);
+  }
+  private siteLayout(): Promise<any> {
     this._siteBps ??= this.getSite()
       .then((res: any) => {
         const site = res?.data ?? res;
-        const settings = typeof site?.settings === "string" ? JSON.parse(site.settings || "{}") : site?.settings;
-        return settings?.breakpoints || null;
+        return (typeof site?.settings === "string" ? JSON.parse(site.settings || "{}") : site?.settings) || null;
       })
       .catch(() => {
         this._siteBps = null; // don't cache a failed lookup — retry on the next save
@@ -250,18 +265,38 @@ export class WebcakeCmsApi {
    *  `slug`/`is_homepage` are NOT applied at create — set them afterwards via updatePage.
    *  Every page born here is AI-authored, so we stamp `by_ai` (persisted to `pages.by_ai`)
    *  and the builder shows an "AI" tag next to the page name. */
-  createPage(params: any, opts?: { timeout?: number }) {
+  async createPage(params: any, opts?: { timeout?: number }) {
     const body: any = { ...params };
     if (body.source != null && typeof body.source !== "string") body.source = JSON.stringify(body.source);
-    if (body.source == null) body.source = JSON.stringify({ sections: [] });
+    // The editor never saves an empty page: it creates one blank grid section to drop into
+    // (editor.js createPage). An empty `sections` opened with nothing to drop elements on.
+    if (body.source == null)
+      body.source = JSON.stringify(
+        finalizeForRender({ sections: [buildSection([])] }, await this.getSiteBreakpoints(), await this.getSiteDefaultGrid()),
+      );
     if (body.by_ai == null) body.by_ai = BY_AI_MARKER;
     return this.request("POST", `/api/v1/site/${this.siteId}/page`, { body, timeout: opts?.timeout });
   }
   updatePage(pageId: string, params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/${pageId}/update_page`, { body: params });
   }
-  updatePageSource(pageId: string, params: any, opts?: { timeout?: number }) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/${pageId}/update_page_source`, { body: params, timeout: opts?.timeout });
+  /** Write a page source, then re-save it through /save like the editor (CSS + global sections,
+   *  see syncPageAfterWrite). The source is already stored when the sync runs, so a sync failure
+   *  says so instead of reading as a lost write. `sync:false` skips the /save, for intermediate
+   *  writes of a batch whose last write syncs (each sync rebuilds the page CSS). */
+  async updatePageSource(pageId: string, params: any, opts?: { timeout?: number; sync?: boolean }) {
+    const sync = params && params.source != null && opts?.sync !== false;
+    const src = sync ? (typeof params.source === "string" ? JSON.parse(params.source) : params.source) : null;
+    // With a global section on the page, keep the sources as they were BEFORE this write: only a
+    // global node this write actually changed may be pushed to the other pages.
+    const before = src && globalsOf(src).length ? listOf(await this.listPages()) : null;
+    const res = await this.request("POST", `/api/v1/site/${this.siteId}/${pageId}/update_page_source`, { body: params, timeout: opts?.timeout });
+    if (sync) {
+      await this.syncPageAfterWrite(pageId, src, before).catch((e: any) => {
+        throw new Error(`Page source SAVED, but rebuilding its CSS / syncing global sections via /save failed: ${e?.message || e}. Retry the same write.`);
+      });
+    }
+    return res;
   }
   deletePage(params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/delete_page`, { body: params });
@@ -285,136 +320,144 @@ export class WebcakeCmsApi {
   listGlobalSections() {
     return this.request("GET", `/api/v1/site/${this.siteId}/global_sections`);
   }
-  /** Upsert/delete global sections (Header/Footer/reusable blocks) via the site /save
-   *  pipeline — the SAME endpoint the builder uses. Each entry carries a `status`
-   *  ("new"|"update"|"delete") and is matched by (site_id, section_id). `section` is sent
-   *  as an OBJECT (backend Jason.encode!s it). Optionally pass `pages` (each { id, source }
-   *  with source a JSON STRING) to embed the section node into page sources in the same
-   *  atomic save — required for a header/footer to actually render. `settings` MUST be the
-   *  current site settings (string) or /save would null them; we fetch them when omitted. */
-  async saveGlobalSections({ global_sections = [], pages = [], settings, changes }: { global_sections?: any[]; pages?: any[]; settings?: any; changes?: any } = {}) {
-    let s = settings;
-    if (s === undefined) s = await this.readSettingsOrThrow();
-    const settingsStr = JSON.stringify(this.ensureSafeSettings(s));
-    return this.request("POST", `/api/v1/site/${this.siteId}/save`, {
+  /** The cart drawer + popups, as the editor sends them with every save and publish
+   *  (PagePublish.vue: `global_sources: cart.source.concat(popup.popups)`). /save builds the
+   *  cart CSS only from these, and /publish copies them into the LIVE global sources: sending []
+   *  left popups and the cart unpublished and dropped the cart CSS. `source` goes as an object
+   *  (the backend Jason.encode!s it). */
+  async globalSourcesForSave(): Promise<any[]> {
+    const list = (r: any) => (Array.isArray(r?.data) ? r.data : Array.isArray(r) ? r : []);
+    const [cart, popups] = await Promise.all([this.getSourceCart(), this.getGlobalSources({ component: "popup" })]);
+    return [...list(cart), ...list(popups)].map((g: any) => ({
+      ...g,
+      source: typeof g.source === "string" ? JSON.parse(g.source) : g.source,
+    }));
+  }
+  /** POST /save or /publish with the body the editor sends (PagePublish.vue savePage):
+   *  current site settings (or /save nulls them), the cart + popups, and the given pages /
+   *  global sections. /publish is /save plus the live copy (site_controller.ex `publish` →
+   *  `save(is_publish: true)`), so one call builds each page's CSS and publishes it. Every /save
+   *  also stamps site.published_at, which opens the 10-minute draft preview. */
+  private async siteSave(
+    path: "save" | "publish",
+    { pages = [], global_sections = [], changes = {}, domain }: { pages?: any[]; global_sections?: any[]; changes?: Record<string, number>; domain?: string },
+  ) {
+    const [settings, global_sources] = await Promise.all([this.readSettingsOrThrow(), this.globalSourcesForSave()]);
+    return this.request("POST", `/api/v1/site/${this.siteId}/${path}`, {
       body: {
-        settings: settingsStr,
-        global_sources: [],
-        page_contents: [],
-        changes: changes || {},
+        settings: JSON.stringify(this.ensureSafeSettings(settings)),
         pages,
+        changes,
+        global_sources,
         global_sections,
+        page_contents: [],
+        ...(domain ? { domain } : {}),
       },
       timeout: 120000,
     });
+  }
+  /** A /save with no pages: stamps site.published_at, which (re)opens the draft preview window
+   *  (PreviewExpire: 10 min after published_at on prod) without changing any content. */
+  refreshDraftPreview() {
+    return this.siteSave("save", {});
+  }
+  /** /save every page (as the editor's save does): popups and the cart drawer are compiled into
+   *  each page's app_css (Qwik gets `popups` + `source_cart`), so after one changes, every page's
+   *  CSS must be rebuilt or the new popup/cart renders unstyled until some page is saved. */
+  async resaveAllPages() {
+    const pages = listOf(await this.listPages())
+      .filter((p: any) => p && p.source && p.source.source != null && p.source.source !== "")
+      .map((p: any) => ({ id: p.id, source: typeof p.source.source === "string" ? p.source.source : JSON.stringify(p.source.source) }));
+    return this.siteSave("save", { pages });
+  }
+  /** A popup/cart write landed; rebuild every page's CSS. If that fails the write is still saved,
+   *  so say so: retrying a create would duplicate the popup. */
+  private async afterGlobalSourceWrite(res: any) {
+    await this.resaveAllPages().catch((e: any) => {
+      const id = res?.data?.id ?? res?.id;
+      throw new Error(`Global source SAVED${id ? ` (id ${id})` : ""} — do not create it again — but rebuilding the pages' CSS via /save failed: ${e?.message || e}. Any page save or publish_site rebuilds it.`);
+    });
+  }
+  /** Drop a deleted page from every global section's `pages` list, as the editor does on delete
+   *  (globalSection.js removeGlobalSectionOfPage). */
+  async unlinkPageFromGlobalSections(pageId: string) {
+    const stale = listOf(await this.listGlobalSections()).filter((r: any) => (r.pages || []).includes(pageId));
+    if (!stale.length) return 0;
+    await this.siteSave("save", {
+      global_sections: stale.map((r: any) => ({
+        section_id: r.section_id, name: r.name, type: r.type, status: "update",
+        pages: r.pages.filter((id: string) => id !== pageId), section: parseMaybe(r.section), contents: [],
+      })),
+    });
+    return stale.length;
+  }
+  /** Upsert/delete global sections (Header/Footer/reusable blocks) through /save, like the
+   *  editor. Each entry carries `status` ("new"|"update"|"delete") and is matched by
+   *  (site_id, section_id); `section` is an OBJECT. Pass `pages` (each { id, source } with source
+   *  a JSON STRING) to embed the node in page sources in the same atomic save. */
+  saveGlobalSections({ global_sections = [], pages = [], changes }: { global_sections?: any[]; pages?: any[]; changes?: any } = {}) {
+    return this.siteSave("save", { global_sections, pages, changes: changes || {} });
+  }
+  /** After a page's source is written: re-save it through /save the way the editor does, so
+   *  (1) its compiled CSS (app_css) is rebuilt — update_page_source never builds it, and the
+   *  draft preview renders page.source.app_css; (2) a global header/footer/section edited on
+   *  this page reaches its GlobalSection record and every other page that embeds it — the
+   *  editor's updateGlobalSections(), without which the edit stays on one page and the editor
+   *  later replaces it with the stale record.
+   *  A global node is pushed only when THIS write changed it (vs `pagesBefore`) and it differs
+   *  from the record: a write carrying an older copy of the header must not revert the newer
+   *  one site-wide. `changes` stays {}: a version row per write (and per popup) is noise; publish
+   *  versions every page. */
+  async syncPageAfterWrite(pageId: string, src: any, pagesBefore: any[] | null = null) {
+    const changed: any[] = [];
+    const globals = globalsOf(src);
+    if (globals.length && pagesBefore) {
+      const prev = pagesBefore.find((p) => p && p.id === pageId);
+      const prevSrc = parseMaybe(prev?.source?.source);
+      const prevNode = (id: string) => (prevSrc?.sections || []).find((s: any) => s && s.id === id);
+      const res: any = await this.listGlobalSections();
+      const records = listOf(res);
+      for (const node of globals) {
+        const rec = records.find((r) => r.section_id === node.id);
+        if (!rec || canon(prevNode(node.id)) === canon(node) || canon(parseMaybe(rec.section)) === canon(node)) continue;
+        changed.push({ section_id: rec.section_id, name: rec.name, type: rec.type, pages: rec.pages || [], status: "update", section: node, contents: [] });
+      }
+    }
+    const pages: any[] = [{ id: pageId, source: JSON.stringify(src) }];
+    if (changed.length) {
+      const byId = new Map(changed.map((g) => [g.section_id, g.section]));
+      for (const p of pagesBefore || []) {
+        if (!p || p.id === pageId) continue;
+        const other = parseMaybe(p.source?.source);
+        if (!other || !(other.sections || []).some((s: any) => s && byId.has(s.id))) continue;
+        other.sections = other.sections.map((s: any) => (s && byId.has(s.id) ? byId.get(s.id) : s));
+        pages.push({ id: p.id, source: JSON.stringify(other) });
+      }
+    }
+    await this.siteSave("save", { pages, global_sections: changed });
+    return { rebuilt_pages: pages.length, global_sections_synced: changed.length };
   }
   getSite() {
     return this.request("GET", `/api/v1/site/${this.siteId}/`);
   }
-  saveSite(params: any = {}) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/save`, { body: params, timeout: 60000 });
-  }
-  /** Rebuild every page's compiled CSS (page_source.app_css) by replaying the builder's
-   *  /save pipeline — the ONLY path that regenerates the storefront's dynamic CSS. The
-   *  backend builds CSS per page in `params["pages"]` from that page's `source`; /publish
-   *  does NOT do this, so a site changed only through the MCP renders with stale/empty CSS
-   *  until this runs. Sends each page's CURRENT saved source (stringified) + current
-   *  settings; empty global arrays leave globals/popups untouched. */
-  async rebuildSiteCss(settings?: any): Promise<{ rebuilt: number }> {
+  /** Publish the site live, like the editor's "Xuất bản" (PagePublish.vue): every page with its
+   *  saved source as `{ id, source, type, slug, is_homepage, settings }`. Sending no pages made
+   *  the backend publish nothing. /publish runs the whole /save first, so CSS is built here; the
+   *  old separate rebuild doubled the work and the page-version history. */
+  async publishSite(params: { domain?: string } = {}) {
     const res: any = await this.listPages();
-    const list = (res && res.data) || res || [];
-    const pages = (Array.isArray(list) ? list : [])
-      .map((p: any) => {
-        const src = p && p.source && p.source.source;
-        if (src == null || src === "") return null;
-        return {
-          id: p.id,
-          source: typeof src === "string" ? src : JSON.stringify(src),
-          settings: JSON.stringify(p.settings || {}),
-          custom_code: p.custom_code || {},
-        };
-      })
-      .filter(Boolean);
-    if (!pages.length) return { rebuilt: 0 };
-    let s = settings;
-    if (s === undefined) s = await this.readSettingsOrThrow();
-    const settingsStr = JSON.stringify(this.ensureSafeSettings(s));
-    const changes: Record<string, number> = {};
-    for (const p of pages as any[]) changes[p.id] = 1;
-    await this.request("POST", `/api/v1/site/${this.siteId}/save`, {
-      body: { pages, settings: settingsStr, changes, global_sources: [], global_sections: [], page_contents: [] },
-      timeout: 120000,
-    });
-    return { rebuilt: pages.length };
-  }
-  /** Publish the site live. /publish snapshots the pages in the body into the LIVE version —
-   *  exactly like the builder's "Xuất bản" button (PagePublish.vue): it POSTs every page as
-   *  `{ source, id, type, slug, is_homepage, settings }` plus a `changes` map. Sending NO
-   *  pages (the old behaviour) made the backend publish nothing, so the storefront stayed on
-   *  "Trang chưa có giao diện hoặc chưa xuất bản" and every page kept is_build=false.
-   *  We also (a) keep the CURRENT site.settings so /publish doesn't null the theme + data-source
-   *  flags (use_store/use_blog/…), and (b) rebuild each page's compiled CSS first (rebuildSiteCss),
-   *  because /publish alone does not regenerate the storefront's dynamic CSS.
-   *  Global header/footer are already embedded inside each page's source, so they publish with
-   *  the page; the global_* arrays stay empty (empty = leave server-side globals untouched).
-   *  Pass `domain` (the site's live URL, e.g. https://<slug>.webcake.me) — builderx_spa sends
-   *  `domain: this.link` and without it the backend publishes to an EXPIRING preview. The
-   *  publish_site tool fills it from resolvePreviewUrl. Final body mirrors PagePublish.vue:
-   *  { pages, settings, changes, domain, global_sources:[], global_sections:[], page_contents:[] }. */
-  async publishSite(params: any = {}) {
-    let settings = params.settings;
-    if (settings === undefined) {
-      settings = await this.readSettingsOrThrow();
-    }
-    // The save pipeline stores site.settings as a JSON STRING — an object body is
-    // rejected (422). Stringify unless the caller already passed a string.
-    const settingsStr = JSON.stringify(this.ensureSafeSettings(settings));
-
-    // Collect every page WITH its saved source so the backend has something to publish.
-    let pages = params.pages;
-    let changes = params.changes;
-    if (!Array.isArray(pages)) {
-      const res: any = await this.listPages();
-      const list = (res && res.data) || res || [];
-      pages = (Array.isArray(list) ? list : [])
-        .map((p: any) => {
-          const src = p && p.source && p.source.source;
-          if (src == null || src === "") return null;
-          return {
-            id: p.id,
-            source: typeof src === "string" ? src : JSON.stringify(src),
-            type: p.type,
-            slug: p.slug,
-            is_homepage: p.is_homepage === true,
-            settings: JSON.stringify(p.settings || {}),
-          };
-        })
-        .filter(Boolean);
-    }
-    if (changes === undefined) {
-      changes = {} as Record<string, number>;
-      for (const p of pages as any[]) changes[p.id] = 1;
-    }
-
-    // Regenerate compiled CSS for every page first. A failure here used to be swallowed, which
-    // published pages with stale dynamic CSS; stop instead and say which stage broke.
-    await this.rebuildSiteCss(settingsStr).catch((e: any) => {
-      throw new Error(`Stage 1/2 (rebuild CSS via /save) failed, nothing published: ${e?.message || e}`);
-    });
-    return this.request("POST", `/api/v1/site/${this.siteId}/publish`, {
-      body: {
-        pages,
-        changes,
-        global_sources: [],
-        global_sections: [],
-        page_contents: [],
-        ...params,
-        settings: settingsStr,
-      },
-      timeout: 120000,
-    }).catch((e: any) => {
-      throw new Error(`Stage 2/2 (/publish) failed, CSS was rebuilt but the live site is unchanged: ${e?.message || e}`);
-    });
+    const pages = ((res && res.data) || res || [])
+      .filter((p: any) => p && p.source && p.source.source != null && p.source.source !== "")
+      .map((p: any) => ({
+        id: p.id,
+        source: typeof p.source.source === "string" ? p.source.source : JSON.stringify(p.source.source),
+        type: p.type,
+        slug: p.slug,
+        is_homepage: p.is_homepage === true,
+        settings: JSON.stringify(p.settings || {}),
+      }));
+    const changes = Object.fromEntries(pages.map((p: any) => [p.id, 1]));
+    return this.siteSave("publish", { pages, changes, domain: params.domain });
   }
   uploadImageBase64({ base64, content_type }: { base64?: string; content_type?: string } = {}) {
     return this.request("POST", `/api/v1/site/${this.siteId}/media/content/b64`, {
@@ -748,23 +791,36 @@ export class WebcakeCmsApi {
   getSourceCart() {
     return this.request("GET", `/api/v1/site/${this.siteId}/cart/get_source_cart`);
   }
-  createSourceCart(params: any) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/cart/create_source_cart`, { body: params });
+  async createSourceCart(params: any) {
+    const res = await this.request("POST", `/api/v1/site/${this.siteId}/cart/create_source_cart`, { body: params });
+    await this.afterGlobalSourceWrite(res);
+    return res;
   }
-  updateSourceCart(params: any) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/cart/update_source_cart`, { body: params });
+  async updateSourceCart(params: any) {
+    const res = await this.request("POST", `/api/v1/site/${this.siteId}/cart/update_source_cart`, { body: params });
+    await this.afterGlobalSourceWrite(res);
+    return res;
   }
   getGlobalSources(query?: any) {
     return this.request("GET", `/api/v1/site/${this.siteId}/global_source/`, { query });
   }
-  createGlobalSource(params: any) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/global_source/create`, { body: params });
+  async createGlobalSource(params: any) {
+    const res = await this.request("POST", `/api/v1/site/${this.siteId}/global_source/create`, { body: params });
+    await this.afterGlobalSourceWrite(res);
+    return res;
   }
-  updateGlobalSource(params: any) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/global_source/update`, { body: params });
+  async updateGlobalSource(params: any) {
+    const res = await this.request("POST", `/api/v1/site/${this.siteId}/global_source/update`, { body: params });
+    await this.afterGlobalSourceWrite(res);
+    return res;
   }
-  deleteGlobalSource(params: any) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/global_source/delete`, { body: params });
+  async deleteGlobalSource(params: any) {
+    const res = await this.request("POST", `/api/v1/site/${this.siteId}/global_source/delete`, { body: params });
+    // A deleted popup's CSS stays compiled into every page until they are re-saved.
+    await this.resaveAllPages().catch((e: any) => {
+      throw new Error(`Global source DELETED, but rebuilding the pages' CSS via /save failed: ${e?.message || e}. Any page save or publish_site rebuilds it.`);
+    });
+    return res;
   }
   getGlobalSourceContents(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/multilingual/global_source_contents`, { query });

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getConfirmMode } from "./context.js";
 import { STYLE_DESC, CONFIG_DESC } from "./pages.js";
-import { addedErrors, applyNodeUpdates, computeNodeDiff, checkContentPlaceholders, checkElementPatch } from "../builder/page.js";
+import { addedErrors, applyNodeUpdates, computeNodeDiff, checkContentPlaceholders, checkElementPatch, finalizeForRender } from "../builder/page.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -592,9 +592,12 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
     },
     ({ component, source, type }) =>
       handle(async () => {
-        const errors = addedErrors(asPageShape(source));
+        const obj = typeof source === "string" ? JSON.parse(source) : source;
+        // runtime-shaped nodes (new_element output) → per-breakpoint keys, in place (asPageShape keeps node refs)
+        finalizeForRender(asPageShape(obj), await api.getSiteBreakpoints(), await api.getSiteDefaultGrid());
+        const errors = addedErrors(asPageShape(obj));
         if (errors.length) return { error: "BLOCKED: not saving.", errors };
-        const params = { component, source, type, site_id: api.siteId };
+        const params = { component, source: obj, type, site_id: api.siteId };
         const res = component === "cart-droppable"
           ? await api.createSourceCart(params)
           : await api.createGlobalSource(params);
@@ -625,6 +628,7 @@ Safeguarded: blocks if new source is <50% of existing size. For element-level ch
 
         // Ensure source is an object (not string) — backend does Jason.encode! so we must send object
         const newSourceObj = typeof newSourceInput === "string" ? JSON.parse(newSourceInput) : newSourceInput;
+        finalizeForRender(asPageShape(newSourceObj), await api.getSiteBreakpoints(), await api.getSiteDefaultGrid());
         const newLen = JSON.stringify(newSourceObj).length;
         const errors = addedErrors(asPageShape(newSourceObj), existingSource ? asPageShape(existingSource) : undefined);
         if (errors.length) return { error: "BLOCKED: not saving.", errors };

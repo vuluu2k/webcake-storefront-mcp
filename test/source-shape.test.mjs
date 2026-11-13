@@ -32,7 +32,7 @@ const CRASHES = {
   "constraint not a list": (p, el) => { el.bp1.config.constraintY = "top"; },
   "section columns as a number": (p, el, sec) => { sec.bp1.config.columns = 3; },
   "track not an object": (p, el, sec) => { sec.bp1.config.rows = [1, 2]; },
-  "bad grid string": (p, el, sec) => { sec.bp1.config.grid = "0x3"; },
+  "bad grid string": (p, el, sec) => { sec.bp1.config.grid = "three by one"; },
   "style value is an object": (p, el) => { el.bp1.style.padding = { top: 1 }; },
   "custom_css not a string": (p, el) => { el.specials.custom_css = ["a"]; },
   "text tag not a string": (p, el) => { el.specials.tag = 1; },
@@ -49,6 +49,14 @@ for (const [name, mutate] of Object.entries(CRASHES)) {
     assert.equal(validatePage(p).valid, false);
   });
 }
+
+test("a zero grid dimension warns instead of blocking (real editor forms carry \"2x0\")", () => {
+  const p = pageWith("text");
+  p.sections[0].bp1.config.grid = "2x0";
+  const v = validatePage(p);
+  assert.equal(v.valid, true);
+  assert.match(v.warnings.join(" "), /zero dimension/);
+});
 
 test("legit variants stay valid: grid-product column count, missing widthUnit, two constraints", () => {
   const p = pageWith("text");
@@ -93,6 +101,37 @@ test("element patches that would crash the renderer are refused, even on an obje
   const bad = await run({ page_id: "P", element_id: el.id, dry_run: false, responsive: { bp1: { config: { widthUnit: "em" } } } });
   assert.match(bad.error, /BLOCKED/);
   assert.equal(saved.length, 0);
+});
+
+test("generated nodes match an editor drop: carousel row, form/menu names, factory id prefixes, popup px", async () => {
+  const { buildSection: bs, finalizeForRender: fin, reassignIds } = await import("../dist/builder/page.js");
+  const car = bs([{ type: "carousel", children: [{ type: "image" }, { type: "image" }] }]);
+  fin({ sections: [car] });
+  for (const bp of ["bp1", "bp4"]) assert.deepEqual(car.children[0].children.map((k) => k[bp].config.columnStart), [1, 2]);
+  const forms = bs([{ type: "form", opts: { specials: { type: "subscribe" } } }]);
+  fin({ sections: [forms] });
+  assert.match(forms.children[0].name, /^SUB-FORM-/);
+  // The factory's own prefixes, including the ones it writes without a dash before the random part.
+  for (const [type, prefix] of [["paypal-button", "PAYPAL"], ["text-area", "TEXTAREA"], ["input-number", "INPUT-NUMBER"],
+    ["input-product-note", "INPUT-PRODUCT-NOTE"], ["layout-dataset", "LAYOUT-DATASET"], ["product-image-carousel", "PD-IMG-CAROUSEL"]])
+    assert.match(reassignIds(buildElement(type)).id, new RegExp(`^${prefix}-[a-z0-9]{8}$`), type);
+  const pop = buildElement("popup");
+  fin({ sections: [pop] });
+  assert.equal(pop.bp1.config.widthUnit, "px");
+  assert.ok(pop.bp1.config.rows.length >= 1);
+});
+
+test("sections take their columns from the site's defaultGrid, like the editor's blank section", async () => {
+  const { buildSection: bs, finalizeForRender: fin } = await import("../dist/builder/page.js");
+  const grid = { bp1: { columns: [{ unit: "fr", value: 1 }, { unit: "px", value: 1100 }, { unit: "fr", value: 1 }] } };
+  const s = bs([{ type: "text" }]);
+  fin({ sections: [s] }, null, grid);
+  assert.equal(s.bp1.config.columns[1].value, 1100);
+  assert.notEqual(s.bp4.config.columns[1].value, 1100); // no defaultGrid for bp4 → standard
+});
+
+test("editor_v2 sources are not judged by v1 rules", () => {
+  assert.equal(validatePage({ nodes: {}, root_node_id: "root", schema_version: 1 }).valid, true);
 });
 
 test("element style patches land on the breakpoints the renderer reads", async () => {
