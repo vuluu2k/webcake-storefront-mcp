@@ -244,12 +244,26 @@ BINDING_DATASETS.warehouse = {
   summary: "A store/warehouse row inside a warehouse list (stock per branch on a product page).",
   fields: ["warehouse::name", "warehouse::address", "warehouse::quantity", "warehouse::status"],
 };
+BINDING_DATASETS.separator = {
+  name: "separator",
+  page_type: "any",
+  repeater_parents: ["bonus-items", "cart-items", "order-items"],
+  summary: "A divider between repeated items: separator::hide_last_element hides it after the last item (common.ex bonus_item_binding; the editor's bonus-items template uses it).",
+  fields: ["separator::hide_last_element"],
+};
+BINDING_DATASETS.course = {
+  name: "course",
+  page_type: "store",
+  repeater_parents: ["lesson-items", "list-courses"],
+  summary: "A course (a product of course type): common.ex binds it exactly like product::…; lesson-items fills product::lesson_thumbnail on the client (assets/render/applications/lesson-items.js).",
+  fields: ["product::lesson_thumbnail"],
+};
 const RENDERER_FIELDS: Record<string, string[]> = {
   blog: ["blog::total_post"],
   cart_item: ["cart_item::cart_item_tag_bonus", "cart_item::course_video_quantity", "cart_item::discount_customer_level", "cart_item::preorder_text"],
   customer: ["customer::pos_accumulated_value"],
   order: ["order::subtotal_before_discount"],
-  product: ["product::provisional_invoice_value", "product::selected_total_price", "product::variation_remain_quantity"],
+  product: ["product::lesson_thumbnail", "product::provisional_invoice_value", "product::selected_total_price", "product::variation_remain_quantity"],
   promotion_item: ["promotion_item::promotion_value"],
 };
 for (const [ds, fields] of Object.entries(RENDERER_FIELDS))
@@ -325,6 +339,8 @@ export function validateBindings(node: any): { errors: string[]; warnings: strin
     }
     if (!b.name) {
       warnings.push(`Binding on "${where}" has no name (dataset).`);
+    } else if (String(b.name).includes("::") ? isKnownBindingTarget(b.name) : isKnownBindingName(b.name)) {
+      // known dataset — or a full "dataset::field" in name, as the editor's templates write it
     } else if (!isKnownBindingName(b.name)) {
       // An element id here is a binding to that element (real pages do it), not a dataset.
       const real = /^[A-Z]+(-[A-Z]+)*-[A-Za-z0-9]{6,}$/.test(b.name) || [...realTargets()].some((t) => t.startsWith(`${b.name}::`));

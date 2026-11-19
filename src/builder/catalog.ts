@@ -11,6 +11,25 @@ import { normalizeBindings } from "./bindings.js";
 import { normalizeEvents } from "./events.js";
 import { readFileSync } from "node:fs";
 
+/** What the EDITOR drops for a type (its picker's children/specials/config — e.g. a swiper comes
+ *  with 3 slides, a menu with items) and what the renderer needs to show it
+ *  (src/builder/element-presets.json, read from builderx_spa pickers + lib/qwik). */
+export interface ElementPreset { needs: string; detail: string; preset: any }
+let PRESETS: Record<string, ElementPreset> = {};
+try {
+  PRESETS = JSON.parse(readFileSync(new URL("./element-presets.json", import.meta.url), "utf8"));
+} catch {
+  PRESETS = {};
+}
+export const presetOf = (type: string): ElementPreset | undefined => PRESETS[type];
+
+/** A preset's child, built as-is: its own grid placement is kept (no re-stacking). */
+function buildRaw(spec: any): any {
+  const node = buildElement(spec.type, { ...(spec.opts || {}), preset: false });
+  if (Array.isArray(spec.children)) node.children = spec.children.map(buildRaw);
+  return node;
+}
+
 /** One-line summaries read from the renderer / editor code for types the curated SUMMARY lacks
  *  (src/builder/element-summaries.json). */
 let CODE_SUMMARY: Record<string, string> = {};
@@ -172,8 +191,26 @@ export function buildElement(type: string, opts: any = {}) {
     (err as any).code = "UNKNOWN_TYPE";
     throw err;
   }
+  // No children given → the editor's preset for this type (a swiper's slides, a menu's items…),
+  // under whatever the caller set. opts.preset:false opts out (preset children themselves).
+  const { preset: usePreset, ...rest } = opts || {};
+  opts = rest;
+  const p = usePreset === false ? undefined : PRESETS[type]?.preset;
+  if (p && opts.children === undefined) {
+    const po = p.opts || {};
+    opts = {
+      ...po,
+      ...opts,
+      ...(po.specials || opts.specials ? { specials: { ...(po.specials || {}), ...(opts.specials || {}) } } : {}),
+      ...(po.config || opts.config ? { config: { ...(po.config || {}), ...(opts.config || {}) } } : {}),
+      ...(po.style || opts.style ? { style: { ...(po.style || {}), ...(opts.style || {}) } } : {}),
+    };
+    if (Array.isArray(p.children) && p.children.length) opts.children = p.children.map(buildRaw);
+  }
   // Guarantee children-using factories never throw on a missing children array.
   const node = fn({ children: [], ...opts });
+  // Some factories (swiper…) ignore opts.children: attach what the caller / preset gave.
+  if (Array.isArray(opts.children) && opts.children.length && !(Array.isArray(node.children) && node.children.length)) node.children = opts.children;
   // ~25 ported factories (tabs, menu, breadcrumb, tags, coupon, number-step…) put opts.specials in
   // runtime.specials. Saved pages keep them in node.specials and finalizeForRender drops runtime —
   // so they were silently lost. Lift them where the renderer reads them.
@@ -181,6 +218,8 @@ export function buildElement(type: string, opts: any = {}) {
     node.specials = { ...(node.specials || {}), ...node.runtime.specials };
     delete node.runtime.specials;
   }
+  // Some factories ignore opts.specials (swiper, paypal-button): it is the caller's word, apply it.
+  if (opts.specials && typeof opts.specials === "object") node.specials = { ...(node.specials || {}), ...opts.specials };
   // Some factories (container, menu, menu-droppable, …) IGNORE opts.config / opts.style — they
   // only wire children/specials. That silently dropped base layout keys like config.isHidden
   // (e.g. a "hidden on desktop" mobile bar stayed visible). Backfill them into runtime so EVERY

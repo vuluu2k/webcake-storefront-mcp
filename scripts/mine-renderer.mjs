@@ -267,8 +267,15 @@ if (fs.existsSync(pc)) {
 // a type named as a string in HTML code counts as produced too.
 const htmlNamed = new Set();
 const typeNames = new Set([...dispatched, ...Object.keys(mined)]);
-for (const file of files.filter((f) => /\/html\//.test(f)))
-  for (const m of fs.readFileSync(file, "utf8").matchAll(/"([a-z][a-z0-9-]*)"/g)) if (typeNames.has(m[1])) htmlNamed.add(m[1]);
+// Only real production counts: HTML code that picks a child by its type (child["type"] == "x") or
+// calls the type's own HTML builder (build_slide(child)). A name in a list of ancestor types to
+// look for (purchase-history) produces nothing.
+const htmlSrc = files.filter((f) => /\/html\//.test(f)).map((f) => fs.readFileSync(f, "utf8")).join("\n");
+for (const m of htmlSrc.matchAll(/\["type"\]\s*(?:==|!=)\s*"([a-z][a-z0-9-]*)"/g)) if (typeNames.has(m[1])) htmlNamed.add(m[1]);
+for (const t of typeNames) {
+  const fn = `build_${t.replace(/-/g, "_")}`;
+  if (new RegExp(`\\b${fn}\\(`).test(htmlSrc) && new RegExp(`defp?\\s+${fn}\\b`).test(htmlSrc)) htmlNamed.add(t);
+}
 
 let branch = "?";
 try {

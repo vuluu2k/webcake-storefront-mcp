@@ -575,8 +575,10 @@ export const createSubmenu = (opts: any = {}) => {
   submenu.id = 'SUBMENU-' + randomString(8)
   submenu.type = 'submenu'
 
-  submenu.specials = { ...opts }
-  submenu.children = opts.children || []
+  // The editor calls these with loose keys ({ type }) meant as specials; builder opts are not.
+  const { children, specials, style, config, events, bindings, responsive, align, breakpoint, ...loose } = opts
+  submenu.specials = { ...loose, ...(specials || {}) }
+  submenu.children = children || []
 
   return submenu
 }
@@ -1222,8 +1224,10 @@ export const createMemberDropdown = (opts: any = {}) => {
   submenu.id = 'MEMBER-DROPDOWN-' + randomString(8)
   submenu.type = 'member-dropdown'
 
-  submenu.specials = { ...opts }
-  submenu.children = opts.children || []
+  // The editor calls these with loose keys ({ type }) meant as specials; builder opts are not.
+  const { children, specials, style, config, events, bindings, responsive, align, breakpoint, ...loose } = opts
+  submenu.specials = { ...loose, ...(specials || {}) }
+  submenu.children = children || []
 
   return submenu
 }

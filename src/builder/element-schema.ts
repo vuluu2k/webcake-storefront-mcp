@@ -14,7 +14,7 @@
 // a WARNING with a did-you-mean. Style is different: the renderer emits every style key as CSS
 // (camelCase → kebab), so style keys are checked as CSS properties, not per type.
 import { OBSERVED, ELEMENT_ATTRS, SHARED_SPECIALS, SHARED_KEY_DICT, GENERIC_CONFIG } from "./attributes.js";
-import { buildElement, describeType, isKnownType, ELEMENT_TYPES } from "./catalog.js";
+import { buildElement, describeType, isKnownType, ELEMENT_TYPES, presetOf } from "./catalog.js";
 import { readFileSync } from "node:fs";
 
 const loadJson = (name: string): any => {
@@ -469,6 +469,9 @@ export function relationsOf(type: string): string[] | undefined {
   for (const k of r.provides || []) if (CONTEXT_TEXT[k]?.provides) out.push(`Gives context: ${CONTEXT_TEXT[k].provides}.`);
   for (const k of r.reads || []) if (CONTEXT_TEXT[k]?.reads) out.push(`Takes context: ${CONTEXT_TEXT[k].reads}.`);
   out.push(...(CURATED_RELATIONS[type] || []));
+  const pre = presetOf(type);
+  if (pre && /data|page-context/.test(pre.needs)) out.push(`Shows only with ${pre.needs === "data" ? "site data" : "the right page"}: ${pre.detail}`);
+  else if (pre?.preset) out.push(`new_element gives it the editor's default ${pre.preset.children?.length ? `children (${pre.preset.children.length})` : "settings"} when you pass none.`);
   return out.length ? out : undefined;
 }
 
