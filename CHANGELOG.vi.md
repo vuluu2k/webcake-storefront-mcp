@@ -5,6 +5,25 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.4.0] - 2026-11-19
+
+### Added
+- `get_element` nay trả về thêm trường `relations` mô tả type đó nằm trong gì / chứa gì trên trang thật, ngữ cảnh render mà nó nhận từ hoặc cho neighbour (ví dụ một field của form đọc style của form chứa nó, hoặc một item trong card đọc sản phẩm hiện tại), và đánh dấu NOT RENDERED cho type nào mà renderer đã publish không có nhánh xử lý.
+- `new_row` và bộ dựng row của `new_section` nay nhận thêm `hug:true` để các cột co theo nội dung (max-content) ở mọi breakpoint, dùng cho menu, nhãn lọc, hay nhóm nút cần đứng đúng độ rộng tự nhiên thay vì chia đều cột.
+- `new_row` và `new_section` nay nhận thêm `autoRows:true` để các con xếp chồng lên thành hàng cao theo nội dung thay vì theo px tối thiểu của từng con, tránh để trống khoảng trống khi font hoặc ảnh render thấp hơn dự kiến.
+- `validate_page` nay cảnh báo với mã `NOT_RENDERED` khi một node dùng type mà renderer đã publish không có nhánh xử lý (ví dụ `collapse-item`, `current-location`, `row`), nêu rõ type đó để đổi sang type thực sự render được.
+- `clone_page` nay chụp một phần tử `<details>` của trang nguồn thành element `collapse` native (summary trở thành `specials.name`, phần nội dung trở thành một con `collapse-content`) thay vì bỏ qua không ánh xạ được.
+
+### Changed
+- `clone_page` nay đo số cột thật của từng hàng ở độ rộng tablet, mobile, và phone ngay trên trang nguồn, thay vì đoán kiểu co 2 cột/1 cột, và dùng chính các số đo đó làm `collapse` theo breakpoint của hàng.
+- `clone_page` nay cho một hàng các mục nhỏ, như nhãn lọc hay mục menu, các cột co theo nội dung (`hug`) giữ đúng vị trí khi hàng co lại, co text con theo đúng độ dài chữ thay vì độ rộng cố định, và thu nhỏ khoảng gutter desktop quá lớn ở độ rộng tablet và mobile.
+- `clone_page` nay giữ các ảnh nhỏ như icon, logo, avatar ở đúng độ rộng px đã chụp được và căn giữa, thay vì để chúng giãn ra chia sẻ độ rộng cột như một ảnh lớn.
+- `clone_page` nay tính chiều cao các section và container xếp chồng theo nội dung (`autoRows`) thay vì theo px tối thiểu của từng con, nhờ đó một khối không còn để trống khoảng trống phía sau khi font nhỏ hơn hoặc ảnh trên mobile co lại nhỏ hơn dự kiến.
+- Luật `BAD_PARENT` mà `validate_page` áp dụng nay được rút ra từ dữ liệu trang thật — một type xuất hiện ít nhất 50 lần mà các cha của nó, tối đa ba loại và không loại nào là container chung, phủ ít nhất 99.5% số lần xuất hiện — thay cho một bảng nhỏ được curate tay trước đây, bổ sung các quan hệ như `menu-item` nằm trong `menu`, `submenu` nằm trong `menu-item`, `product-overlay` và `custom-layout` nằm trong `grid-product` hoặc `slider-product`, và các field form như `submit-button`, `coupon` nằm trong `form`.
+
+### Fixed
+- Tài liệu tham số của event `open_link` trước đây bị ghi ngược `link_target` và `link_target_url`; nay `link_target` được ghi đúng là URL còn `link_target_url` là cửa sổ mở (`_self` hoặc `_blank`).
+
 ## [2.3.0] - 2026-11-19
 
 ### Added

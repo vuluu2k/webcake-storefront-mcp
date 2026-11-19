@@ -5,6 +5,25 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.4.0] - 2026-11-19
+
+### Added
+- `get_element` now returns a `relations` field describing where a type sits and what it holds on real pages, the render context it takes from or gives to its neighbours (for example a form field reading its enclosing form's style, or a card item reading the current product), and marks types the published renderer has no branch for as NOT RENDERED.
+- `new_row` and `new_section`'s row builder now accept `hug:true` for content-sized (max-content) columns at every breakpoint, for a menu, filter pills, or a button group that should sit at its natural width instead of sharing equal columns.
+- `new_row` and `new_section` now accept `autoRows:true` so a stack of children lays out in rows sized by their own content height instead of a fixed px minimum per child, avoiding gaps when a font or image renders shorter than expected.
+- `validate_page` now warns with code `NOT_RENDERED` when a node uses a type the published renderer has no branch for (for example `collapse-item`, `current-location`, `row`), naming the type so it can be swapped for one that actually renders.
+- `clone_page` now captures a source page's `<details>` element as a native `collapse` element (the summary becomes `specials.name`, the body becomes one `collapse-content` child) instead of leaving it unmapped.
+
+### Changed
+- `clone_page` now measures each row's real column count at tablet, mobile, and phone widths on the source page itself, instead of guessing a 2-column/1-column collapse, and uses those measurements as the row's responsive `collapse` breakpoints.
+- `clone_page` now gives a row of small items, such as filter pills or menu entries, content-sized (`hug`) columns that keep their position when the row collapses, sizes text children to fit their words instead of a fixed width, and shrinks oversized desktop gutters at tablet and mobile widths.
+- `clone_page` now keeps small pictures such as icons, logos, and avatars at their captured pixel width and centers them, instead of letting them stretch to share a column's width the way a large image does.
+- `clone_page` now sizes stacked sections and containers by their content's height (`autoRows`) instead of a per-child pixel minimum, so a box no longer leaves a trailing gap when a shorter font or a shrunk mobile image renders smaller than expected.
+- `validate_page`'s `BAD_PARENT` check is now derived from real page data — a type with at least 50 uses whose parents, at most three and none of them a generic container, cover at least 99.5% of its occurrences — instead of a small hand-curated table, adding relationships such as `menu-item` inside `menu`, `submenu` inside `menu-item`, `product-overlay` and `custom-layout` inside `grid-product` or `slider-product`, and form fields such as `submit-button` and `coupon` inside `form`.
+
+### Fixed
+- The `open_link` event's documented parameters had `link_target` and `link_target_url` swapped; `link_target` is now correctly documented as the URL and `link_target_url` as the window (`_self` or `_blank`).
+
 ## [2.3.0] - 2026-11-19
 
 ### Added
