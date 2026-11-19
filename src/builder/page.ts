@@ -8,8 +8,8 @@
 import { blockedImageHost, checkElementKeys, checkParent, collapseByCode, countByCode, formatFinding, FORM_FIELDS, suggestType, withCode, type Finding } from "./element-schema.js";
 import { buildElement, isKnownType, ELEMENT_TYPES } from "./catalog.js";
 import { randomString } from "./factory.js";
-import { validateEvents, normalizeEvents } from "./events.js";
-import { validateBindings, normalizeBindings } from "./bindings.js";
+import { validateEvents, normalizeEvents, type EventContext } from "./events.js";
+import { validateBindings, normalizeBindings, BINDING_DATASETS } from "./bindings.js";
 import { NODE_CODE_BUDGET } from "./native-first.js";
 import { checkShape } from "./shape.js";
 import {
@@ -466,7 +466,16 @@ export function checkContentPlaceholders(content: any, previous?: any): string[]
     .map(([id]) => `"${id}" translation holds placeholder JSON for a script to fill. Translate real text. See get_build_guide → NATIVE FIRST.`);
 }
 
-export function validatePage(source: any, previous?: any) {
+/** What a page needs to be judged across sources: its kind (main/store/blog/member/custom…) and the
+ *  site's global sources (popups, cart drawer). Given, checks that depend on them become errors. */
+export interface PageContext extends EventContext {
+  kind?: string;
+}
+/** Datasets that need ONE record from the page itself (a product/post/order detail page) when the
+ *  node is not inside their repeater: on any other kind of page they render empty. */
+const RECORD_DATASETS: Record<string, string[]> = { product: ["store"], post: ["blog"], blog: ["blog"], order: ["store"] }; // search_result: the header search box shows it on any page
+
+export function validatePage(source: any, previous?: any, ctx: PageContext = {}) {
   const errors: string[] = [];
   const warnings: string[] = [];
   const add = (f: Finding) => (f.severity === "error" ? errors : warnings).push(formatFinding(f));
@@ -540,7 +549,7 @@ export function validatePage(source: any, previous?: any) {
   // unknown binding fields).
   walk(source, (node) => {
     if (node.events && node.events.length) {
-      const r = validateEvents(node, allIds);
+      const r = validateEvents(node, allIds, ctx);
       errors.push(...r.errors.map((m) => withCode("EVENT", m)));
       warnings.push(...r.warnings.map((m) => withCode("EVENT", m)));
     }
@@ -580,6 +589,15 @@ export function validatePage(source: any, previous?: any) {
       else if (rows && (cc.rowEnd > rows + 1 || cc.rowStart > rows))
         w("GRID_RANGE", `placed in row ${cc.rowStart}–${cc.rowEnd} but its ${parentNode.type} has ${rows} row(s)`, "use new_section / new_row layouts, or fix rowStart/rowEnd");
     }
+    // A record binding outside its repeater only resolves on a page of the matching kind.
+    if (ctx.kind)
+      for (const b of node.bindings || []) {
+        const ds = b?.name || String(b?.target || "").split("::")[0];
+        const kinds = RECORD_DATASETS[ds];
+        const reps = BINDING_DATASETS[ds]?.repeater_parents || [];
+        if (kinds && !kinds.includes(ctx.kind) && !ancestors.some((a) => reps.includes(a)))
+          e("BINDING_SCOPE", `binds ${ds}::… on a "${ctx.kind}" page outside a ${reps.join("/") || "matching"} list — it renders empty`, `put it inside a ${reps[0] || "list"} or on a ${kinds.join("/")} page`);
+      }
     if ((node.bindings || []).some((b: any) => b?.name === "wishlist_item") && !ancestors.includes("wishlist-item"))
       w("BINDING_SCOPE", `"${node.id}" binds wishlist_item::… outside a wishlist-item — those fields only resolve per saved product`);
     const parent = ancestors.length ? checkParent(node, ancestors) : undefined;
@@ -627,13 +645,13 @@ export function missingBreakpoints(source: any, keys: string[] = BREAKPOINT_KEYS
 
 /** validatePage errors that a write ADDS over `before` (the source as saved). An old defect never
  *  blocks an unrelated save, so a broken page can still be edited and repaired. */
-export function addedErrors(after: any, before?: any): string[] {
-  const now: string[] = (validatePage(after, before) as any).errors || [];
+export function addedErrors(after: any, before?: any, ctx: PageContext = {}): string[] {
+  const now: string[] = (validatePage(after, before, ctx) as any).errors || [];
   if (!before) return now;
   // Compare without the tree path (sections[2]>0…): inserting a section shifts every index, and an
   // old defect must not read as new. Messages still carry the node id, so distinct nodes stay distinct.
   const key = (e: string) => e.replace(/sections\[\d+\](>\d+)*/g, "");
-  const old = new Set(((validatePage(before) as any).errors || []).map(key));
+  const old = new Set(((validatePage(before, undefined, ctx) as any).errors || []).map(key));
   return now.filter((e) => !old.has(key(e)));
 }
 

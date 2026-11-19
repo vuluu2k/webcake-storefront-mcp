@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { repairSource } from "../builder/repair.js";
+import { forgetPageContext } from "./page-context.js";
 import { getConfirmMode } from "./context.js";
 import { STYLE_DESC, CONFIG_DESC } from "./pages.js";
 import { addedErrors, applyNodeUpdates, computeNodeDiff, checkContentPlaceholders, checkElementPatch, finalizeForRender } from "../builder/page.js";
@@ -207,6 +208,7 @@ function cacheItems(items: any[]): void {
 }
 
 function invalidateGsCache(): void {
+  forgetPageContext();
   _gsById.clear();
 }
 

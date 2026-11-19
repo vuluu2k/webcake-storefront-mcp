@@ -10,6 +10,7 @@ import type { Handle } from "../server.js";
 import { BUILD_GUIDE } from "../builder/guide.js";
 import { getCached } from "./result-cache.js";
 import { repairSource } from "../builder/repair.js";
+import { kindOfPage, loadPageContext } from "./page-context.js";
 import { PAGE_SCHEMA } from "../builder/page-schema.js";
 import { listElements, getElement, buildElement } from "../builder/catalog.js";
 import { describeEventsCatalog } from "../builder/events.js";
@@ -318,13 +319,23 @@ Example children: [{ "type":"container", "children":[{"type":"image","opts":{...
     "Validate a page source ({ sections: [...] }) against every element's schema. Each message reads `[CODE] #id (type) where: problem → fix`. errors block saving (duplicate/missing ids, renderer-crash shapes…); warnings render wrong (UNKNOWN_KEY invented/misspelled key, STYLE_KEY not a CSS property, TYPE_MISMATCH, BAD_VALUE outside the allowed values, BAD_PARENT, OUTSIDE_FORM, FIELD_NAME, EVENT/BINDING problems…). Repeated warnings are collapsed per code; summary.by_code counts all. Always run this before build_page and fix by code.",
     {
       source: z.any().describe("Page source object or JSON string"),
+      page_id: z.string().optional().describe("Judge it as that page's save would: its kind + the site's popups / global sources (dangling event targets and record bindings become errors)"),
+      page_kind: z.enum(["main", "store", "member", "blog", "custom", "error", "maintain"]).optional().describe("Page kind when there is no page yet (build_page type)"),
     },
-    ({ source }) =>
+    ({ source, page_id, page_kind }) =>
       handle(async () => {
         // Judge what a save would store: saves repair the one-answer mistakes first (fixed).
         const parsed = structuredClone(parseSource(source));
         const fixed = repairSource(parsed);
-        return { ...validatePage(parsed), ...(fixed.length ? { fixed, fixed_note: "applied automatically by every save" } : {}) };
+        // With page_id / page_kind it is judged like a save: popups + global sources + page kind.
+        let kind: string | undefined = page_kind;
+        if (page_id) {
+          const res: any = await api.listPages();
+          const list = res?.data || res;
+          kind ??= kindOfPage((Array.isArray(list) ? list : []).find((p: any) => p.id === page_id));
+        }
+        const ctx = page_id || page_kind ? await loadPageContext(api, kind) : {};
+        return { ...validatePage(parsed, undefined, ctx), ...(fixed.length ? { fixed, fixed_note: "applied automatically by every save" } : {}) };
       })
   );
 
@@ -363,7 +374,7 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
       handle(async () => {
         const parsed = parseSource(source);
         const fixed = repairSource(parsed);
-        const validation: any = validatePage(parsed);
+        const validation: any = validatePage(parsed, undefined, await loadPageContext(api, type || (is_homepage ? "main" : undefined)));
         // Per-page code is judged against THIS source before anything is created.
         const pageCode = custom_code ? (Object.fromEntries(Object.entries(custom_code).filter(([, v]) => v !== undefined)) as PageCode) : undefined;
         const codeCheck = pageCode ? lintPageCode(mergePageCode({}, pageCode).after, codeTargets(parsed).ids) : undefined;
@@ -535,9 +546,10 @@ Two-step safety: dry_run=true (default) previews; dry_run=false saves.`,
         const fixed = repairSource({ sections: [sectionNode] });
         source.sections.push(sectionNode);
         const before = { sections: source.sections.slice(0, -1) };
-        const validation: any = validatePage(source, before);
+        const ctx = await loadPageContext(api, kindOfPage(page));
+        const validation: any = validatePage(source, before, ctx);
         // Only what THIS section adds blocks: an old defect elsewhere must not stop an append.
-        const added = addedErrors(source, before);
+        const added = addedErrors(source, before, ctx);
         validation.valid = added.length === 0;
         if (added.length) validation.added_errors = added;
 

@@ -4,6 +4,7 @@ import { readPageCode } from "../builder/page-code.js";
 import { CUSTOM_CODE_GUIDE } from "../guides.js";
 import { getConfirmMode } from "./context.js";
 import { repairSource } from "../builder/repair.js";
+import { kindOfPage, loadPageContext } from "./page-context.js";
 import { addedErrors, applyNodeUpdates, computeNodeDiff, checkContentPlaceholders, checkElementPatch, finalizeForRender } from "../builder/page.js";
 import { SITE_CODE_FIELDS, checkSiteCode, codeGuard, codeUsage } from "../builder/native-first.js";
 import { PAGE_TYPE_NUM, PAGE_KINDS, applyPageMeta, normalizeSlug, checkPageCreateConflict } from "./builder.js";
@@ -614,7 +615,7 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
         const codeErrors = checkElementPatch(source, node, beforeNode, updates.specials);
         if (codeErrors.length) return { error: "BLOCKED: not saving.", element_id, errors: codeErrors };
         // A patch can break the renderer too (style value as an object, widthUnit "em"…).
-        const shapeErrors = addedErrors(source, saved0);
+        const shapeErrors = addedErrors(source, saved0, await loadPageContext(api, kindOfPage(page)));
         if (shapeErrors.length) return { error: "BLOCKED: not saving.", element_id, errors: shapeErrors };
         const diff = computeNodeDiff(beforeNode, node);
 
@@ -699,7 +700,7 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
           const diff = computeNodeDiff(beforeNode, node);
           results.push({ element_id, diff: diff || "no changes", ...(fixed.length ? { fixed } : {}) });
         }
-        const shapeErrors = addedErrors(source, saved0);
+        const shapeErrors = addedErrors(source, saved0, await loadPageContext(api, kindOfPage(page)));
         if (shapeErrors.length) return { error: "BLOCKED: not saving any of this batch.", errors: shapeErrors };
 
         if (dry_run) {
@@ -773,9 +774,9 @@ Safeguarded: blocks if new source is <50% of existing size.`,
         // Safeguard: force fresh read and block if new source is suspiciously smaller
         if (body.source) {
           invalidatePageCache();
-          const { source: existingSource, error } = await getPageWithSource(api, page_id);
+          const { page: existingPage, source: existingSource, error } = await getPageWithSource(api, page_id);
           // Full structural + renderer-crash check, refusing only what this save ADDS.
-          const added = addedErrors(body.source, existingSource || undefined);
+          const added = addedErrors(body.source, existingSource || undefined, await loadPageContext(api, kindOfPage(existingPage)));
           if (added.length) return { error: "BLOCKED: not saving.", errors: added };
 
           if (!error && existingSource) {

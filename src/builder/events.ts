@@ -205,7 +205,14 @@ export function normalizeEvents(events: any[], elementType?: string): any[] {
 }
 
 /** Validate one element's events against the catalog + the set of ids present in the page. */
-export function validateEvents(node: any, allIds: Set<string>): { errors: string[]; warnings: string[] } {
+/** What lives outside this page source: node ids of the site's global sources (popups, cart
+ *  drawer…) and which of them are popups. Given, an event target found nowhere is surely broken. */
+export interface EventContext {
+  externalIds?: Set<string>;
+  popupIds?: Set<string>;
+}
+
+export function validateEvents(node: any, allIds: Set<string>, ctx: EventContext = {}): { errors: string[]; warnings: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
   const where = node?.id || node?.type || "?";
@@ -234,9 +241,16 @@ export function validateEvents(node: any, allIds: Set<string>): { errors: string
         (TARGET_FIELDS.has(f) ? errors : warnings).push(`Event "${ev.action}" on "${where}" is missing required field "${f}"${TARGET_FIELDS.has(f) ? " — it has nothing to act on" : ""} → set ${f} (see list_events).`);
     }
     for (const f of def.target_in_page || []) {
-      for (const v of [].concat(ev[f] ?? [])) // a field may hold one id or a list (filter's filters)
-        if (v && !allIds.has(v)) warnings.push(`Event "${ev.action}" on "${where}" targets missing element "${v}" (field ${f}).`);
+      for (const v of [].concat(ev[f] ?? [])) {
+        // a field may hold one id or a list (filter's filters)
+        if (!v || allIds.has(v) || ctx.externalIds?.has(v)) continue;
+        if (ctx.externalIds) errors.push(`Event "${ev.action}" on "${where}" targets "${v}" (field ${f}), which is on no page section, popup or global source → point it at an existing element id.`);
+        else warnings.push(`Event "${ev.action}" on "${where}" targets missing element "${v}" (field ${f}).`);
+      }
     }
+    // open_popup / close_popup must name a POPUP: the site's popups (global sources) or a popup node here.
+    if ((ev.action === "open_popup" || ev.action === "close_popup") && ev.popup_id && ctx.popupIds && !ctx.popupIds.has(ev.popup_id) && !allIds.has(ev.popup_id))
+      errors.push(`Event "${ev.action}" on "${where}" names popup "${ev.popup_id}", but the site has no such popup → list_global_sources({ component:"popup" }) for the ids, or create_global_source to make one.`);
   }
   return { errors, warnings };
 }
