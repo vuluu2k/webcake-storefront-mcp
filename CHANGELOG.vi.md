@@ -5,6 +5,17 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.2.0] - 2026-11-19
+
+### Added
+- `get_element` nay trả về thêm trường `keys` — một dòng cho mỗi key specials/config mà renderer của trang đã publish đọc tới, gồm ý nghĩa, kiểu dữ liệu, giá trị cho phép/đã thấy, và giá trị default; các key style của một phần được gộp vào một dòng `part{Color,FontSize,…}`, còn các key chỉ được lưu mà không có render code nào đọc tới thì liệt trong `no_effect`.
+- Schema element nay dựng thêm từ hai nguồn mới được "mine": `renderer-keys.generated.json` (`npm run mine-renderer`, đọc tĩnh `lib/qwik` và `assets/render` của builderx_api) ghi lại theo từng type những key specials/config mà HTML/CSS builder đọc, giá trị default khi thiếu, và các giá trị được so sánh tới; `editor-keys.generated.json` (`npm run mine-editor`) ghi lại nhãn, loại control, và các option của select trên panel editor cho từng key.
+- `validate_page` nay cảnh báo với mã `NO_EFFECT` khi một node đặt một key specials/config mà không có render code nào đọc tới với type đó, vì giá trị đó sẽ không thay đổi gì trên trang đã publish.
+
+### Changed
+- `get_element` bỏ trường `value_rules`, thay bằng `keys`; trường `attributes` không còn lặp lại các key specials/config đã có trong `keys`.
+- `validate_page` nay cũng áp dụng danh sách giá trị cho phép khi các option select của editor phủ hết các giá trị thấy trên trang thật, bên cạnh các bảng enum đã curate trước đó, nâng số enum được áp dụng từ 40 lên 63 và độ phủ mô tả key từ 19% lên 83%.
+
 ## [2.1.0] - 2026-11-19
 
 ### Added

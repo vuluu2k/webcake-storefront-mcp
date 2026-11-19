@@ -5,6 +5,17 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.2.0] - 2026-11-19
+
+### Added
+- `get_element` now returns a `keys` field with one line per specials/config key the published renderer reads — meaning, type, allowed/seen values, and default — groups a part's style keys into a single `part{Color,FontSize,…}` line, and lists keys that are stored but read by no render code under `no_effect`.
+- Element schemas now also draw from two newly mined sources: `renderer-keys.generated.json` (`npm run mine-renderer`, a static read of builderx_api's `lib/qwik` and `assets/render`) records, per element type, which specials/config keys the HTML/CSS builder reads, their fallback default, and the values they're compared against; `editor-keys.generated.json` (`npm run mine-editor`) records the editor panel's label, control, and select options for each key.
+- `validate_page` now warns with code `NO_EFFECT` when a node sets a specials/config key that no render code reads for that element type, since the value won't change anything on the published page.
+
+### Changed
+- `get_element` drops the `value_rules` field in favor of `keys`, and its `attributes` field no longer repeats the specials/config keys already covered there.
+- `validate_page` now also enforces an allowed-values list when the editor's select options fully cover the values seen on real pages, in addition to the previously curated enum tables, raising enforced enums from 40 to 63 and key description coverage from 19% to 83%.
+
 ## [2.1.0] - 2026-11-19
 
 ### Added
