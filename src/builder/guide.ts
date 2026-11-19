@@ -125,6 +125,15 @@ Rows are RESPONSIVE automatically: finalizeForRender collapses them on small scr
 (default tablet=2 columns, mobile=1) so cards never shrink to slivers — override with
 \`collapse:{bp3:2,bp4:1}\`. Uneven columns via \`colWidths\` (e.g. a 2:1 text/image split:
 \`colWidths:[{unit:'fr',value:2},{unit:'fr',value:1}]\`), spacing via \`columnGap\`/\`rowGap\`.
+CONTENT-SIZED vs SHARED columns (grid has no flex "hug" by default — say which you want):
+- \`hug:true\` on a row = every column is max-content (a menu, filter pills, a button group, icon
+  links): items sit side by side at their natural width and the row keeps them in one line on
+  phones when you set \`collapse:{bp3:N,bp4:N}\`. Give text children \`config:{widthUnit:"auto"}\`
+  (a text is 230px wide by default). Not for cards — cards share the width (fr).
+- Logo left + menu right (space-between): \`colWidths:[{unit:'fr',value:1},{unit:'max-c'}]\`.
+- \`autoRows:true\` on a stacked container (or new_section's section_opts) sizes rows by content
+  instead of each child's px height — use it for cards and accordion bodies so nothing leaves a
+  gap when a font or image renders shorter.
 Each column is usually a \`container\` holding its own stacked children (image + title +
 text). Example feature row:
 \`new_row(children=[

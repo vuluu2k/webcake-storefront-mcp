@@ -33,6 +33,8 @@ const elementSpec = z.object({
   columnGap: z.number().optional().describe("Horizontal gap (px) between columns (layout:'row' only)"),
   colWidths: z.array(z.any()).optional().describe("layout:'row' only — explicit per-column unit objects (length = #children), e.g. [{unit:'fr',value:2},{unit:'fr',value:1}] for a 2:1 split. Default: equal columns."),
   collapse: z.record(z.number()).optional().describe("layout:'row' only — columns to show per breakpoint, e.g. {bp3:2,bp4:1}. Default: tablet 2, mobile 1."),
+  hug: z.boolean().optional().describe("layout:'row' only — content-sized columns (max-content) at every breakpoint: a menu, pills, a button group, icon links. Give text children config.widthUnit:'auto'."),
+  autoRows: z.boolean().optional().describe("Stacked children: rows sized by their content instead of a px minimum from each child's height — no gaps when fonts/images render shorter (cards, accordion bodies)."),
 });
 
 /** A source object, its JSON, or "cache:<id>" — a source parked by clone_page. */
@@ -286,15 +288,17 @@ Example children: [{ "type":"container", "children":[{"type":"image","opts":{...
       row_gap: z.number().optional().describe("Vertical gap (px) between wrapped rows (default 24)"),
       col_widths: z.array(z.any()).optional().describe("Explicit per-column unit objects (length = #children), e.g. [{unit:'fr',value:2},{unit:'fr',value:1}]. Default: equal columns."),
       collapse: z.record(z.number()).optional().describe("Columns to show per breakpoint, e.g. {bp3:2,bp4:1}. Default: tablet 2, mobile 1."),
+      hug: z.boolean().optional().describe("Content-sized columns (max-content): a menu, pills, a button group — not cards"),
       container_opts: z.record(z.any()).optional().describe("Optional factory opts for the row container node itself (e.g. { style:{...} })"),
     },
-    ({ children, column_gap, row_gap, col_widths, collapse, container_opts }) =>
+    ({ children, column_gap, row_gap, col_widths, collapse, hug, container_opts }) =>
       handle(async () =>
         buildRow(children || [], {
           columnGap: column_gap,
           rowGap: row_gap,
           colWidths: col_widths,
           collapse,
+          hug,
           containerOpts: container_opts || {},
         })
       )
