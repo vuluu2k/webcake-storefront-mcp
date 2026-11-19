@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { writePageCode } from "./page-code.js";
+import { readPageCode } from "../builder/page-code.js";
 import { CUSTOM_CODE_GUIDE } from "../guides.js";
 import { getConfirmMode } from "./context.js";
 import { addedErrors, applyNodeUpdates, computeNodeDiff, checkContentPlaceholders, checkElementPatch, finalizeForRender } from "../builder/page.js";
@@ -254,7 +256,8 @@ export function registerPageTools(server: McpServer, api: WebcakeCmsApi, handle:
         const overview = source ? buildOverview(source) : null;
         return {
           page: { id: page.id, name: page.name, slug: page.slug, type: page.type },
-          custom_code: (page.source && page.source.custom_code) || null,
+          custom_code: readPageCode(page.settings),
+          ...(page.source?.custom_code ? { legacy_devmode_code: "page_source.custom_code is set but the storefront never renders it — move it with update_page_custom_code." } : {}),
           overview,
           hint: "Use search_page_elements to query specific elements by type, class, text, etc. Target via CSS: #ELEMENT-ID or .custom-class. Sections have class 'x-section', elements have 'x-element'.",
         };
@@ -736,7 +739,7 @@ Safeguarded: blocks if new source is <50% of existing size.`,
     {
       page_id: z.string().describe("Page ID"),
       source: z.any().describe("Full page source object (sections tree) or JSON string"),
-      custom_code: z.string().optional().describe("Custom code (CSS/JS) for this page. Last resort, same rules as update_site_custom_code."),
+      custom_code: z.string().optional().describe("JS for this page only → page.settings.custom_code.code_custom_javascript (same as update_page_custom_code; use that tool for CSS/head/body slots). Last resort."),
       native_gap: NATIVE_GAP,
       allow_shrink: ALLOW_SHRINK,
     },
@@ -750,16 +753,14 @@ Safeguarded: blocks if new source is <50% of existing size.`,
           // per-breakpoint keys like every other writer; nodes already in bp shape are untouched.
           finalizeForRender(body.source, await api.getSiteBreakpoints(), await api.getSiteDefaultGrid());
         }
+        // page_source.custom_code is stored but never rendered; per-page code lives in
+        // page.settings.custom_code (update_page_custom_code). This param writes there.
+        let pageCode: any;
         if (custom_code != null) {
+          pageCode = await writePageCode(api, page_id, { code_custom_javascript: custom_code }, { native_gap, dry_run: false });
           invalidatePageCache();
-          const { page } = await getPageWithSource(api, page_id);
-          const old = page?.source?.custom_code;
-          const blocked = codeGuard(
-            checkSiteCode({ code_custom_javascript: typeof old === "string" ? old : JSON.stringify(old ?? "") }, { code_custom_javascript: custom_code }),
-            native_gap,
-          );
-          if (blocked) return blocked;
-          body.custom_code = custom_code;
+          if (pageCode.error) return pageCode;
+          if (body.source == null) return { success: true, custom_code: pageCode };
         }
 
         // Safeguard: force fresh read and block if new source is suspiciously smaller
@@ -794,6 +795,7 @@ Safeguarded: blocks if new source is <50% of existing size.`,
           page_source_id: saved.id,
           page_id: saved.page_id,
           source_length: (saved.source || "").length,
+          ...(pageCode ? { custom_code: pageCode } : {}),
         };
       })
   );

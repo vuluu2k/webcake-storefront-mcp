@@ -38,8 +38,8 @@ export const FAMILIES: Record<string, [string, string[]]> = {
   global_section: ["Global header/footer/custom sections shown on every page", [
     "list_global_sections", "get_global_section", "create_global_section", "delete_global_section", "search_global_section_elements", "get_global_section_element",
   ]],
-  site_code: ["Site-wide custom script/CSS (native first: refused when an element can do it)", [
-    "get_site_custom_code", "update_site_custom_code", "append_site_custom_code",
+  site_code: ["Custom code, site-wide or for ONE page (native first: refused when an element can do it)", [
+    "get_site_custom_code", "update_site_custom_code", "append_site_custom_code", "get_page_custom_code", "update_page_custom_code",
   ]],
   theme: ["Site themes and templates", ["list_themes", "semantic_search_themes", "list_template_themes", "create_site_from_template"]],
   product: ["Products of the store", ["list_products", "get_product", "create_product", "update_product", "delete_product", "set_product_published"]],

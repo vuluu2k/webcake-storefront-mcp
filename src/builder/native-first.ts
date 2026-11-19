@@ -56,6 +56,9 @@ page. Go down this list and stop at the FIRST step that works:
       api.get_SizeAdvice({ height }).then((r) => {
         document.querySelector(".size-result p").textContent = r.size;
       });
+   Code only ONE page needs (a landing page's calculator, a one-off effect) goes in that page's
+   code — update_page_custom_code (CSS / JS / head / body for that page only); site-wide code is
+   update_site_custom_code. get_page_custom_code lists the #ids and classes the code can target.
 5. Third-party snippets (tracking, chat, a widget): the smallest code_before_head / embed that works.
    A visual detail no style property can do: a few lines of CSS on a custom_class.
 
@@ -130,7 +133,11 @@ export function codeUsage(values: Record<string, any>) {
 /** Judge a write by what it ADDS: shrinking or swapping code on an already-large site always passes,
  *  so a site can move off custom code step by step. Past the ceiling nothing may grow: small fixes
  *  used to be allowed and ratcheted a site to 90k chars of CSS, which then failed to publish. */
-export function checkSiteCode(before: Record<string, any>, changes: Record<string, any>) {
+export function checkSiteCode(
+  before: Record<string, any>,
+  changes: Record<string, any>,
+  { label = "Site", budget = CODE_BUDGET }: { label?: string; budget?: typeof CODE_BUDGET } = {},
+) {
   const after = { ...before, ...changes };
   const hard: string[] = [];
   const soft: string[] = [];
@@ -142,10 +149,10 @@ export function checkSiteCode(before: Record<string, any>, changes: Record<strin
   for (const kind of ["script", "css"] as const) {
     const { old, now } = texts(kind);
     if (now.length <= old.length) continue;
-    const { soft: softLimit, hard: hardLimit } = CODE_BUDGET[kind];
+    const { soft: softLimit, hard: hardLimit } = budget[kind];
     if (now.length > hardLimit)
-      hard.push(`Site ${kind} would reach ${now.length} chars (ceiling ${hardLimit}). That is an app, not a snippet: move UI to native elements, data to a collection, logic to an HTTP function.`);
-    else if (now.length > softLimit) soft.push(`Site ${kind} would reach ${now.length} chars (budget ${softLimit}).`);
+      hard.push(`${label} ${kind} would reach ${now.length} chars (ceiling ${hardLimit}). That is an app, not a snippet: move UI to native elements, data to a collection, logic to an HTTP function.`);
+    else if (now.length > softLimit) soft.push(`${label} ${kind} would reach ${now.length} chars (budget ${softLimit}).`);
   }
   for (const [field, value] of Object.entries(changes)) {
     if (PASTED_DOCUMENT.test(String(value || "")) && !PASTED_DOCUMENT.test(String(before[field] || "")))

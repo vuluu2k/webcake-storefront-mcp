@@ -1,4 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { checkSiteCode, codeGuard } from "../builder/native-first.js";
+import { PAGE_CODE_ARG, writePageCode } from "./page-code.js";
+import { PAGE_CODE_BUDGET, codeTargets, lintPageCode, mergePageCode, type PageCode } from "../builder/page-code.js";
 import { elementSchema, suggestType, valueRules } from "../builder/element-schema.js";
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -334,12 +337,19 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
         })
         .optional()
         .describe("SEO for this page → settings.seo. Without it the page publishes with an EMPTY title/description. For a store page a good default title is '{{name_product}} | {{name_site}}' (product) or '{{name_category}} | {{name_site}}' (category)."),
+      custom_code: PAGE_CODE_ARG,
+      native_gap: z.string().min(30).optional().describe("Only if custom_code is refused and no native way exists: the need, what you checked, what it lacks."),
       dry_run: z.boolean().default(true).describe("Preview+validate only (true) or create+save (false)"),
     },
-    ({ name, slug, source, type, is_homepage, seo, dry_run }) =>
+    ({ name, slug, source, type, is_homepage, seo, custom_code, native_gap, dry_run }) =>
       handle(async () => {
         const parsed = parseSource(source);
         const validation: any = validatePage(parsed);
+        // Per-page code is judged against THIS source before anything is created.
+        const pageCode = custom_code ? (Object.fromEntries(Object.entries(custom_code).filter(([, v]) => v !== undefined)) as PageCode) : undefined;
+        const codeCheck = pageCode ? lintPageCode(mergePageCode({}, pageCode).after, codeTargets(parsed).ids) : undefined;
+        const codeBlock = pageCode ? codeGuard(checkSiteCode({}, mergePageCode({}, pageCode).after, { label: "Page", budget: PAGE_CODE_BUDGET }), native_gap) : null;
+        if (codeCheck?.errors.length) validation.valid = false;
 
         // Resolve numeric page type + the site data-source flag a special page needs.
         const kind = type || (is_homepage ? "main" : undefined);
@@ -358,6 +368,7 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
             dry_run: true,
             ...(conflict ? { blocked: true, conflict } : {}),
             validation,
+            ...(pageCode ? { custom_code: { errors: codeCheck!.errors, warnings: codeCheck!.warnings, ...(codeBlock ? { blocked: codeBlock } : {}) } } : {}),
             request: { name, slug: cleanSlug ?? null, type: kind ?? null, page_type_num: typeNum ?? null, is_homepage, sections: (parsed && parsed.sections || []).length },
             will_enable_feature: requiredFlag ?? null,
             renders_at_breakpoints: ["bp1", "bp2", "bp3", "bp4"],
@@ -374,8 +385,9 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
         }
 
         if (!validation.valid) {
-          return { error: "Validation failed — not saving.", validation };
+          return { error: "Validation failed — not saving.", validation, ...(codeCheck?.errors.length ? { custom_code_errors: codeCheck.errors } : {}) };
         }
+        if (codeBlock) return codeBlock;
 
         // A special page is useless if its site data-source flag is off (bindings
         // return null). Enable it BEFORE creating the page so the page works on first load.
@@ -402,6 +414,9 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
           () => undefined,
           (e) => `Page saved, but slug/homepage/SEO failed: ${e?.message ?? e}`,
         );
+        const codeSaved = pageCode
+          ? await writePageCode(api, pageId, pageCode, { native_gap, dry_run: false }).catch((e: any) => ({ error: `Page saved, but its custom code failed: ${e?.message ?? e}` }))
+          : undefined;
         return {
           success: true,
           page_id: pageId,
@@ -410,6 +425,7 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
           page_type: kind ?? null,
           ...(feature ? { data_source: { flag: feature.flag, newly_enabled: feature.changed } } : {}),
           stats: validation.stats,
+          ...(codeSaved ? { custom_code: codeSaved } : {}),
           ...(metaWarning ? { warning: metaWarning } : {}),
         };
       })
