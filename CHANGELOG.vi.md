@@ -5,6 +5,17 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.40.0] - 2026-11-19
+
+### Added
+- Server stdio nay tự mở lại trang Connect trên trình duyệt khi token phiên hết hạn hoặc bị backend từ chối với lỗi 401, rồi tự chạy lại lệnh gọi tool bị lỗi đó một lần với token vừa gia hạn.
+- Server remote nay trả về 401 kèm header `WWW-Authenticate` khi token WebCake hết hạn hoặc bị từ chối, thay vì một lỗi auth chung, để client MCP tự biết mà mở lại Connect.
+
+### Fixed
+- Biến môi trường `WEBCAKE_TOKEN` trỏ tới một token đã hết hạn nay không còn lấn át token mới hơn được lưu lại sau một lượt `login`/Connect.
+- Server remote nay cho phép token OAuth Bearer vừa được gia hạn thắng giá trị `?token=`/`x-webcake-jwt` cũ trên query, và áp dụng ngay cho phiên MCP đang mở thay vì buộc phải mở phiên mới.
+- Việc refresh token OAuth và resolve access token nay từ chối JWT WebCake đã hết hạn hoặc bị đánh dấu chết thay vì cấp lại nó, nhờ đó một phiên đã chết buộc phải kết nối lại hoàn toàn thay vì lặp lại lỗi trong âm thầm.
+
 ## [1.39.0] - 2026-11-13
 
 ### Added

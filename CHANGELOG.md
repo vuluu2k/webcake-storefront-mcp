@@ -5,6 +5,17 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.40.0] - 2026-11-19
+
+### Added
+- The stdio server now reopens the browser Connect page automatically when the session token expires or the backend rejects it with a 401, then retries the failed tool call once with the renewed token.
+- The remote server now answers an expired or rejected WebCake token with a 401 and a `WWW-Authenticate` header instead of a generic auth error, so MCP clients know to reopen Connect themselves.
+
+### Fixed
+- A `WEBCAKE_TOKEN` environment variable left pointing at an expired token no longer shadows a fresher token saved by a later `login`/Connect.
+- The remote server now lets a freshly renewed OAuth Bearer token override a stale `?token=`/`x-webcake-jwt` query value, and applies it to an already-open MCP session in place instead of requiring a new one.
+- OAuth token refresh and access-token resolution now reject a WebCake JWT that is expired or has been marked dead instead of reissuing it, so a dead session forces a full reconnect rather than repeatedly failing silently.
+
 ## [1.39.0] - 2026-11-13
 
 ### Added
