@@ -9,6 +9,16 @@ import * as F from "./factory.js";
 import { describeAttributes } from "./attributes.js";
 import { normalizeBindings } from "./bindings.js";
 import { normalizeEvents } from "./events.js";
+import { readFileSync } from "node:fs";
+
+/** One-line summaries read from the renderer / editor code for types the curated SUMMARY lacks
+ *  (src/builder/element-summaries.json). */
+let CODE_SUMMARY: Record<string, string> = {};
+try {
+  CODE_SUMMARY = JSON.parse(readFileSync(new URL("./element-summaries.json", import.meta.url), "utf8"));
+} catch {
+  CODE_SUMMARY = {};
+}
 
 // Probe every factory once with safe default opts to learn the type string it produces
 // and whether it is a container (has a children array). Calling with {children:[]} is
@@ -150,7 +160,7 @@ export function describeType(type: string) {
     type,
     category: CATEGORY_BY_TYPE[type] || "other",
     container: CONTAINER_TYPES.has(type),
-    summary: SUMMARY[type] || `BuilderX "${type}" element.`,
+    summary: SUMMARY[type] || CODE_SUMMARY[type] || `BuilderX "${type}" element.`,
   };
 }
 

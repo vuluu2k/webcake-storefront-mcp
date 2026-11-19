@@ -127,7 +127,7 @@ export interface ElementSchema {
 }
 
 /** Where a node must sit to work. Kept to rules the renderer actually depends on. */
-export const FORM_FIELDS = new Set(["input", "email", "phone-number", "text-area", "select", "address", "password"]);
+export const FORM_FIELDS = new Set(["input", "email", "phone-number", "text-area", "select", "address", "password", "id-number"]);
 /** Where a node must sit, from real pages: a type seen ≥50 times whose parents (≤3, none of them a
  *  generic section/container) cover ≥99.5% of its uses — menu-item ⊂ menu, product-overlay ⊂
  *  grid-product|slider-product, submit-button ⊂ form… Form fields are left to OUTSIDE_FORM. */

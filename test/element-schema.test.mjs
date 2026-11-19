@@ -143,3 +143,17 @@ test("quan hệ element: cha bắt buộc từ trang thật, type không đượ
   assert.match(msgs, /\[BAD_PARENT\].*product-overlay/);
   assert.match(msgs, /\[NOT_RENDERED\].*collapse-item/);
 });
+
+test("element ít dữ liệu: mọi type có mô tả thật; overlay/flash-sale từ factory render được; id-number có", async () => {
+  const { ELEMENT_TYPES, getElement, buildElement, isKnownType } = await import("../dist/builder/catalog.js");
+  const placeholder = ELEMENT_TYPES.filter((t) => /^BuilderX "/.test(getElement(t).summary));
+  assert.deepEqual(placeholder, []);
+  assert.match(getElement("collapse-item").summary, /Not rendered/);
+  assert.match(getElement("grid-blog").summary, /CATEGORIES/);
+  // post-list / slider-post use only overlay type "post-overlay"; grid-blog only "blog-overlay"
+  assert.equal(buildElement("post-overlay").specials.type, "post-overlay");
+  assert.equal(buildElement("blog-overlay").specials.type, "blog-overlay");
+  // the renderer reads el.specials, not runtime.specials
+  assert.deepEqual(buildElement("flash-sale", { specials: { a: 1 } }).specials, { a: 1 });
+  assert.ok(isKnownType("id-number"));
+});

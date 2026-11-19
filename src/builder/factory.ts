@@ -940,6 +940,25 @@ export const createRetypePhoneNumber = (opts: any) => {
 
 }
 
+// Căn cước công dân (citizen ID number field) — builderx_spa factory.js createIdNumber; the
+// renderer handles "id-number" with build_input (a form field styled by its form).
+export const createIdNumber = (opts: any = {}) => {
+  const idNumber = cloneDeep(SKELETON)
+
+  idNumber.id = 'ID-NUMBER-' + randomString(8)
+  idNumber.type = 'id-number'
+
+  idNumber.runtime.style = opts.style || {}
+  idNumber.runtime.config = opts.config || {}
+  idNumber.specials = opts.specials || {}
+
+  if (opts.breakpoint) {
+    buildElementWithBreakpoint(idNumber, opts.breakpoint)
+  }
+
+  return idNumber
+}
+
 export const createPostalCode = (opts: any) => {
   const postalCode = cloneDeep(SKELETON)
 
@@ -1629,7 +1648,8 @@ export const createFlashSale = (opts: any = {}) => {
 
   flash.runtime.style = {...(opts.style || {})}
   flash.runtime.config = {...(opts.config || {})}
-  flash.runtime.specials = {...(opts.specials || {})}
+  // The renderer reads el.specials (the editor's runtime.specials copy is never read).
+  flash.specials = {...(opts.specials || {})}
 
   flash.children = opts.children || []
 
@@ -2173,8 +2193,10 @@ export const createPostOverlay = (opts: any = {}) => {
   element.type = 'post-overlay'
 
   element.children = opts.children || []
+  // post-list / slider-post render only the overlay whose specials.type is 'post-overlay'
+  // (builderx_api html/element.ex) — the editor's 'regular' default is ignored.
   element.specials = {
-    type: opts.type || 'regular'
+    type: opts.type || 'post-overlay'
   }
 
   if (opts.breakpoint) {
@@ -2192,7 +2214,7 @@ export const createBlogOverlay = (opts: any = {}) => {
 
   element.children = opts.children || []
   element.specials = {
-    type: opts.type || 'regular'
+    type: opts.type || 'blog-overlay' // grid-blog / slider-blog use only this type
   }
 
   if (opts.breakpoint) {

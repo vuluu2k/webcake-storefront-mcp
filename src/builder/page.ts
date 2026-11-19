@@ -10,6 +10,7 @@ import { buildElement, isKnownType, ELEMENT_TYPES } from "./catalog.js";
 import { randomString } from "./factory.js";
 import { validateEvents, normalizeEvents, type EventContext } from "./events.js";
 import { validateBindings, normalizeBindings, BINDING_DATASETS } from "./bindings.js";
+import { OBSERVED } from "./attributes.js";
 import { NODE_CODE_BUDGET } from "./native-first.js";
 import { checkShape } from "./shape.js";
 import {
@@ -508,7 +509,12 @@ export function validatePage(source: any, previous?: any, ctx: PageContext = {})
     if (!node.type) add({ code: "MISSING_TYPE", severity: "error", id: node.id || "?", message: "node has no type" });
     else if (!isKnownType(node.type)) {
       const guess = suggestType(node.type);
-      add({ code: "UNKNOWN_TYPE", severity: "error", id: node.id, type: node.type, message: `Unknown element type "${node.type}" — it renders nothing`, fix: guess ? `did you mean "${guess}"?` : "see list_elements" });
+      const legacy = !!OBSERVED[node.type];
+      add({
+        code: "UNKNOWN_TYPE", severity: "error", id: node.id, type: node.type,
+        message: legacy ? `"${node.type}" is a legacy type found on old pages — the renderer has no branch for it, it renders nothing` : `Unknown element type "${node.type}" — it renders nothing`,
+        fix: legacy ? "remove it (copying an old section brings it along)" : guess ? `did you mean "${guess}"?` : "see list_elements",
+      });
     }
 
     // Form fields should carry a field_name so submissions map to data.
