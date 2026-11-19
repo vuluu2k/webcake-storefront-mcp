@@ -1,0 +1,95 @@
+{
+ "content": {
+  "390": {
+   "text": 1,
+   "x": 0.028,
+   "w": 0.049,
+   "order": 1,
+   "height": 1.004,
+   "pixels": 0.221,
+   "score": 92
+  },
+  "768": {
+   "text": 1,
+   "x": 0.014,
+   "w": 0.02,
+   "order": 1,
+   "height": 1.084,
+   "pixels": 0.102,
+   "score": 96
+  },
+  "1440": {
+   "text": 1,
+   "x": 0.015,
+   "w": 0.012,
+   "order": 1,
+   "height": 1.03,
+   "pixels": 0.208,
+   "score": 95
+  },
+  "sections": 2,
+  "coverage": 100
+ },
+ "landing": {
+  "390": {
+   "text": 1,
+   "x": 0.028,
+   "w": 0.056,
+   "order": 0.944,
+   "height": 1.1,
+   "pixels": 0.39,
+   "score": 87
+  },
+  "768": {
+   "text": 1,
+   "x": 0.014,
+   "w": 0.029,
+   "order": 0.944,
+   "height": 1.401,
+   "pixels": 0.449,
+   "score": 86
+  },
+  "1440": {
+   "text": 1,
+   "x": 0.005,
+   "w": 0.037,
+   "order": 0.944,
+   "height": 1.214,
+   "pixels": 0.393,
+   "score": 89
+  },
+  "sections": 5,
+  "coverage": 100
+ },
+ "shop": {
+  "390": {
+   "text": 1,
+   "x": 0.028,
+   "w": 0.075,
+   "order": 0.926,
+   "height": 1.012,
+   "pixels": 0.329,
+   "score": 88
+  },
+  "768": {
+   "text": 1,
+   "x": 0.009,
+   "w": 0.045,
+   "order": 0.852,
+   "height": 1.061,
+   "pixels": 0.547,
+   "score": 86
+  },
+  "1440": {
+   "text": 1,
+   "x": 0.015,
+   "w": 0.024,
+   "order": 0.889,
+   "height": 1.03,
+   "pixels": 0.342,
+   "score": 91
+  },
+  "sections": 4,
+  "coverage": 100
+ }
+}
