@@ -27,7 +27,7 @@ for (const file of files) {
   const src = fs.readFileSync(file, "utf8");
   const mod = /defmodule\s+([\w.]+)/.exec(src)?.[1];
   if (!mod) continue;
-  const m = (modules[mod] ||= { fns: {}, imports: [], aliases: {} });
+  const m = (modules[mod] ||= { fns: {}, imports: [], aliases: {}, file });
   for (const im of src.matchAll(/^\s*import\s+([\w.]+)/gm)) m.imports.push(im[1]);
   for (const al of src.matchAll(/^\s*alias\s+([\w.]+)\.\{([^}]+)\}/gm))
     for (const s of al[2].split(",").map((x) => x.trim())) m.aliases[s.split(".").pop()] = `${al[1]}.${s}`;
@@ -57,10 +57,14 @@ const resolve = (mod, call) => {
 // ── Dispatchers: case el["type"] do "x" -> build_x(...) ─────────────────────────────────
 const dispatch = {}; // type → [[mod, fn], ...]
 const dispatched = new Set(); // every type any build_element has a branch for (resolved or not)
+const dispatchedHtml = new Set(); // … in an HTML builder: only these produce markup
 for (const [mod, m] of Object.entries(modules)) {
   const body = m.fns.build_element;
   if (!body) continue;
-  for (const c of body.matchAll(/^\s*"([a-z][a-z0-9-]*)"\s*->/gm)) dispatched.add(c[1]);
+  for (const c of body.matchAll(/^\s*"([a-z][a-z0-9-]*)"\s*->/gm)) {
+    dispatched.add(c[1]);
+    if (/\/html\//.test(m.file)) dispatchedHtml.add(c[1]);
+  }
   for (const c of body.matchAll(/^\s*"([a-z][a-z0-9-]*)"\s*->\s*([\w.]+)\(/gm)) {
     const r = resolve(mod, c[2]);
     if (r) (dispatch[c[1]] ||= []).push(r);
@@ -259,13 +263,20 @@ if (fs.existsSync(pc)) {
   if (m) for (const h of m[1].matchAll(/"([^"]+)"/g)) imgHosts.push(h[1]);
 }
 
+// A parent builder can render a child type itself (swiper → slide, cart-items → cart-items-empty):
+// a type named as a string in HTML code counts as produced too.
+const htmlNamed = new Set();
+const typeNames = new Set([...dispatched, ...Object.keys(mined)]);
+for (const file of files.filter((f) => /\/html\//.test(f)))
+  for (const m of fs.readFileSync(file, "utf8").matchAll(/"([a-z][a-z0-9-]*)"/g)) if (typeNames.has(m[1])) htmlNamed.add(m[1]);
+
 let branch = "?";
 try {
   branch = execSync("git rev-parse --abbrev-ref HEAD", { cwd: API }).toString().trim();
 } catch {}
 if (branch !== "master" && branch !== "?") console.warn(`! builderx_api is on "${branch}", not master`);
 const sortObj = (o) => Object.fromEntries(Object.entries(o).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, v && typeof v === "object" && !Array.isArray(v) ? sortObj(v) : v]));
-const out = { meta: { source: "builderx_api/lib/qwik + assets/render", branch, types: Object.keys(types).length }, shared: sortObj(shared), dispatched: [...dispatched].sort(), event_actions: [...eventActions].sort(), img_hosts: imgHosts, mentioned: [...mentioned].sort(), types: sortObj(types) };
+const out = { meta: { source: "builderx_api/lib/qwik + assets/render", branch, types: Object.keys(types).length }, shared: sortObj(shared), dispatched: [...dispatched].sort(), dispatched_html: [...new Set([...dispatchedHtml, ...htmlNamed])].sort(), event_actions: [...eventActions].sort(), img_hosts: imgHosts, mentioned: [...mentioned].sort(), types: sortObj(types) };
 fs.writeFileSync(OUT, JSON.stringify(out, null, 1) + "\n");
 const nKeys = Object.values(types).reduce((n, t) => n + Object.keys(t.specials).length + Object.keys(t.config).length, 0);
 const nVals = Object.values(types).reduce((n, t) => n + [...Object.values(t.specials), ...Object.values(t.config)].filter((v) => v.values).length, 0);

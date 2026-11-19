@@ -595,6 +595,27 @@ export function validatePage(source: any, previous?: any, ctx: PageContext = {})
       else if (rows && (cc.rowEnd > rows + 1 || cc.rowStart > rows))
         w("GRID_RANGE", `placed in row ${cc.rowStart}–${cc.rowEnd} but its ${parentNode.type} has ${rows} row(s)`, "use new_section / new_row layouts, or fix rowStart/rowEnd");
     }
+    // Renderer crashes / silent drops found by rendering every type (scripts/render-smoke.mjs).
+    if (type === "checkbox-group") {
+      // build_checkbox_group enumerates specials.options: nil there blanks the page (verified by rendering).
+      if (!Array.isArray(node.specials?.options)) e("PAGE_CRASH", "checkbox-group without specials.options blanks the page", "set specials.options (saves set [] for you)");
+    }
+    if (type === "text") {
+      const layers = ["runtime", "bp1", "bp2", "bp3", "bp4"].map((k) => node[k]?.style).filter((s) => s && typeof s === "object");
+      // style.font = theme typography (var(--font_N)) and carries a size too.
+      if (layers.length && !layers.some((s: any) => s.fontSize || s.font))
+        e("INVISIBLE", "text without style.fontSize (or a theme style.font) renders at font-size 0 — invisible on the published page", "set style.fontSize or style.font: \"var(--font_N)\" (saves set 16px)");
+    }
+    if (type === "number-step") {
+      const layers = ["runtime", "bp1", "bp2", "bp3", "bp4"].map((k) => node[k]?.config).filter(Boolean);
+      if (layers.length && layers.some((c: any) => !(Number(c.buttons_in_row) > 0)))
+        e("PAGE_CRASH", "number-step with buttons_in_row 0/missing fails the page's whole CSS build (the renderer divides by it) — every element loses its style", "set config.buttons_in_row ≥ 1 (saves set 3)");
+    }
+    if (type === "wishlist" && typeof node.specials?.svg !== "string") e("PAGE_CRASH", "wishlist without specials.svg blanks the whole page", "set specials.svg (saves fill the default heart)");
+    if (type === "custom-layout" && parentNode && /^(grid|slider)-product$/.test(parentNode.type) && !(parentNode.specials?.plugins || []).some((p: any) => p?.name === "store_show_extra_info"))
+      e("NOT_RENDERED", `custom-layout renders only when its ${parentNode.type} has the plugin store_show_extra_info`, `add { name:"store_show_extra_info" } to the ${parentNode.type}'s specials.plugins (saves do this for you)`);
+    if (type === "cart-droppable" && ancestors.length)
+      w("WRONG_SOURCE", "cart-droppable is the cart drawer: it lives in the site's cart source, not in a page section", "edit it with the global source tools (component cart-droppable)");
     // A record binding outside its repeater only resolves on a page of the matching kind.
     if (ctx.kind)
       for (const b of node.bindings || []) {
@@ -747,6 +768,7 @@ export function applyNodeUpdates(node: any, updates: any): void {
 const LEAF_TYPES = new Set([
   "text", "image", "button", "line", "video", "input", "email", "password", "text-area", "select",
   "text-dataset", "image-dataset", "submit-button",
+  "calendar-content", // build_calendar_content never renders its children
 ]);
 
 /** A site's own breakpoints ({ bpN: [minW, maxW] }) when they differ from the standard four. */

@@ -116,6 +116,8 @@ Functions follow `export const [method]_[FunctionName]` naming — e.g. `get_Pro
 
 `npm run fidelity` (dev machine only: local builderx_api in Docker + Chrome) clones every `test/fidelity/fixtures/*.html` (or URLs passed as args), writes it into a scratch homepage (`FIDELITY_SITE` / `FIDELITY_PAGE`, backed up and restored), rebuilds its CSS like `/save`, and scores source vs clone at 1440/768/390 (text found, x/width error, order, pixel diff, height ratio) against `test/fidelity/baseline.json` (`-- --save` to update). Run it before and after any change to `builder/clone.ts` or the layout helpers.
 
+`npm run render-smoke` (same setup) builds EVERY element type in the parents it needs, runs the save-time `repairSource`, writes them to the scratch page and opens it: VISIBLE / EMPTY (in the DOM, 0×0 — usually needs data or children) / MISSING (not in the DOM) / PAGE_FAILS (the type blanks the whole page — bisected). It found, and the code now prevents: a text without `fontSize` (or a theme `font: var(--font_N)`) renders at font-size 0 (INVISIBLE; factory + repair give 16px); `number-step` with `buttons_in_row` 0 fails the page's whole CSS build (PAGE_CRASH; default 3); `wishlist` without `specials.svg` and `checkbox-group` without `specials.options` blank the page (filled on save); 25 factories put `opts.specials` in `runtime.specials`, which finalizeForRender drops — `buildElement` lifts them into `specials`; `custom-layout` needs its list's `plugins` to include store_show_extra_info (added on save). A type only counts as rendered if HTML code produces it (`dispatched_html`: an HTML builder branch, or a parent builder naming it) — warehouse-dataset has CSS only.
+
 ## Dependencies
 
 Runtime dependencies:

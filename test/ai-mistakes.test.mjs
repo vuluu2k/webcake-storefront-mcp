@@ -17,7 +17,7 @@ const CASES = {
   "key bịa: specials.href": ["WARN", () => { const n = B("button", { text: "Mua" }); n.specials.href = "https://x"; return [n]; }],
   "key sai chính tả: specials.txt": ["WARN", () => { const n = T("Chào"); n.specials.txt = "hi"; return [n]; }],
   "CSS đặt trong config": ["FIXED", () => { const n = T("Chào"); n.runtime.config.fontSize = "20px"; return [n]; }],
-  "CSS kebab-case": ["FIXED", () => { const n = T("Chào"); n.runtime.style["font-size"] = "20px"; return [n]; }],
+  "CSS kebab-case": ["FIXED", () => { const n = T("Chào"); n.runtime.style["font-weight"] = "700"; return [n]; }],
   "CSS bịa: textColour": ["WARN", () => { const n = T("Chào"); n.runtime.style.textColour = "red"; return [n]; }],
   "tag không tồn tại: h7": ["BLOCK", () => [B("text", { text: "Chào", specials: { tag: "h7" } })]],
   "form type bịa: contact": ["BLOCK", () => { const f = B("form", { specials: { type: "contact" } }); f.children = [B("email", { specials: { field_name: "email" } }), B("submit-button")]; return [f]; }],
@@ -84,4 +84,39 @@ test("catalog bổ sung: action renderer có (open_product, buy_it_now…) và b
   const tr = outcome([B("button", { text: "Mua", events: [{ trigger: "click", action: "fb_tracking" }] })]);
   assert.equal(tr.verdict, "WARN");
   assert.match(tr.detail, /tracking specials/);
+});
+
+test("lỗi tìm ra khi render thử mọi element: được sửa khi lưu hoặc bị chặn", async () => {
+  const { buildElement: build } = await import("../dist/builder/catalog.js");
+  const { finalizeForRender } = await import("../dist/builder/page.js");
+  // text without a font size renders at font-size 0 → fixed with 16px; a theme font counts
+  const bare = T("Chào");
+  delete bare.runtime.style.fontSize;
+  assert.equal(outcome([bare]).verdict, "FIXED");
+  const themed = T("Chào");
+  delete themed.runtime.style.fontSize;
+  themed.runtime.style.font = "var(--font_2)";
+  assert.equal(outcome([themed]).verdict, "OK");
+  // number-step: buttons_in_row 0 fails the page's CSS build → fixed to 3
+  const ns = build("number-step", { config: { buttons_in_row: 0 } });
+  assert.equal(outcome([ns]).verdict, "FIXED");
+  // wishlist without an icon / checkbox-group without options blank the page → filled on save
+  const wl = build("wishlist");
+  delete wl.specials.svg;
+  assert.equal(outcome([wl]).verdict, "FIXED");
+  // custom-layout in a product grid: the plugin that makes it render is added
+  const grid = build("grid-product");
+  grid.children = [build("custom-layout")];
+  const src = { sections: [buildSection([])] };
+  src.sections[0].children = [grid];
+  const { repairSource: repair } = await import("../dist/builder/repair.js");
+  assert.match(repair(src).join("\n"), /store_show_extra_info/);
+  // factories that put opts.specials in runtime.specials no longer lose them on save
+  const tabs = finalizeForRender({ sections: [buildSection([{ type: "tabs", opts: { specials: { navMode: "x" } } }])] }).sections[0].children[0];
+  assert.equal(tabs.specials.navMode, "x");
+  // calendar-content never renders children; cart-droppable belongs in the cart source
+  const cal = build("calendar-content");
+  cal.children = [T("x")];
+  assert.match(outcome([cal]).detail, /LEAF_CHILDREN/);
+  assert.match(outcome([build("cart-droppable")]).detail, /WRONG_SOURCE/);
 });

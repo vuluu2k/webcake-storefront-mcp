@@ -41,10 +41,13 @@ export const createText = (opts: any = {}) => {
   text.specials.text = opts.text || 'Add a heading'
   text.specials = { ...text.specials, ...opts.specials }
 
+  // fontSize is not optional: the renderer sets font-size:0 on the text wrapper and gives the
+  // content only style.fontSize (css/dynamic build_text) — a text without one is invisible.
   text.runtime.style = {
     width: 230,
     height: 44,
     color: '#000000',
+    fontSize: '16px',
     ...opts.style,
   }
 
@@ -647,7 +650,11 @@ export const createCartIcon = ({ svg, itemCount, config, style, children }: any 
   return cart
 }
 
-export const createWishlist = ({ svg, itemCount, config, children, style }: any = {}) => {
+/** The editor's default wishlist icon (WishlistPicker.vue). The renderer calls
+ *  String.starts_with?(specials.svg, …): a wishlist without one blanks the whole page. */
+export const WISHLIST_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 25 25" fill="currentColor"><path d="M17.4375 3.9375C15.4688 3.9375 13.7569 4.82531 12.75 6.31313C11.7431 4.82531 10.0312 3.9375 8.0625 3.9375C6.57119 3.93924 5.14146 4.53243 4.08694 5.58694C3.03243 6.64146 2.43924 8.07119 2.4375 9.5625C2.4375 12.3 4.14375 15.1491 7.50937 18.0291C9.05161 19.3432 10.7175 20.5049 12.4838 21.4978C12.5656 21.5418 12.6571 21.5648 12.75 21.5648C12.8429 21.5648 12.9344 21.5418 13.0162 21.4978C14.7825 20.5049 16.4484 19.3432 17.9906 18.0291C21.3562 15.1491 23.0625 12.3 23.0625 9.5625C23.0608 8.07119 22.4676 6.64146 21.4131 5.58694C20.3585 4.53243 18.9288 3.93924 17.4375 3.9375ZM12.75 20.3541C11.2116 19.4663 3.5625 14.7863 3.5625 9.5625C3.56374 8.36941 4.03825 7.22553 4.88189 6.38189C5.72553 5.53825 6.86941 5.06374 8.0625 5.0625C9.96375 5.0625 11.5603 6.07781 12.2297 7.71281C12.2721 7.81598 12.3442 7.90422 12.4368 7.96632C12.5295 8.02842 12.6385 8.06158 12.75 8.06158C12.8615 8.06158 12.9705 8.02842 13.0632 7.96632C13.1558 7.90422 13.2279 7.81598 13.2703 7.71281C13.9397 6.07781 15.5362 5.0625 17.4375 5.0625C18.6306 5.06374 19.7745 5.53825 20.6181 6.38189C21.4618 7.22553 21.9363 8.36941 21.9375 9.5625C21.9375 14.7863 14.2884 19.4663 12.75 20.3541Z" fill="currentColor"/></svg>'
+
+export const createWishlist = ({ svg = WISHLIST_SVG, itemCount, config, children, style }: any = {}) => {
   const wistlist = cloneDeep(SKELETON)
 
   wistlist.id = 'WISHLIST-' + randomString(8)
@@ -661,7 +668,7 @@ export const createWishlist = ({ svg, itemCount, config, children, style }: any 
   }
 
   wistlist.specials.svg = svg
-  wistlist.specials.itemCount = itemCount
+  if (itemCount !== undefined) wistlist.specials.itemCount = itemCount
 
   if (children) wistlist.children = children || []
 
@@ -1091,7 +1098,8 @@ export const createCheckboxGroup = (opts: any = {}) => {
   checkbox.runtime.style = opts.style || {}
   checkbox.runtime.config = opts.config || {}
 
-  checkbox.specials = opts.specials || {}
+  // build_checkbox_group enumerates specials.options: nil there crashes the page render.
+  checkbox.specials = { options: [], ...(opts.specials || {}) }
 
   return checkbox
 }
@@ -1873,8 +1881,10 @@ export const createNumberStep = (opts: any = {}) => {
   number_step.type = 'number-step'
 
   number_step.runtime.style = opts.style || {}
-  number_step.runtime.config = opts.config || {}
-  number_step.runtime.specials = opts.specials || {}
+  // The editor's defaults (InputPicker.vue). buttons_in_row must be > 0: the CSS builder divides
+  // by it and a 0 fails the page's whole CSS build (every element unstyled).
+  number_step.runtime.config = { buttons_in_row: 3, heightUnit: 'auto', ...(opts.config || {}) }
+  number_step.specials = { minValue: 0, maxValue: 300000, count: 3, shortened: true, numberUnit: 'k', ...(opts.specials || {}) }
 
   return number_step
 }

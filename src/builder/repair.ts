@@ -3,7 +3,7 @@
 // anything ambiguous is left for validatePage to report (and block when it is surely broken).
 import { walk } from "./page.js";
 import { isKnownType } from "./catalog.js";
-import { randomString } from "./factory.js";
+import { randomString, WISHLIST_SVG } from "./factory.js";
 import { CSS_PROPS, elementSchema } from "./element-schema.js";
 import { GENERIC_CONFIG, OBSERVED } from "./attributes.js";
 
@@ -109,7 +109,44 @@ export function repairSource(source: any): string[] {
     }
     if (schema && node.specials && typeof node.specials === "object") retype(node.specials, schema.specials, "specials");
 
-    // 6. events: invented action names / field names with one meaning
+    // 6. render-crash fillers with one answer (builderx_api would blank the WHOLE page)
+    if (node.type === "wishlist" && typeof node.specials?.svg !== "string") {
+      node.specials = { ...(node.specials || {}), svg: WISHLIST_SVG };
+      fixed.push(`${who()}: specials.svg missing → default heart icon (a wishlist without one blanks the page)`);
+    }
+    // A text with no fontSize renders at font-size 0 (invisible): give it the body size.
+    if (node.type === "text") {
+      const layers = layersOf(node);
+      // `font` = a theme typography shorthand (var(--font_N)) that carries the size.
+      const has = layers.some((l) => node[l].style && (node[l].style.fontSize || node[l].style.font));
+      if (!has && layers.length) {
+        const base = layers.includes("runtime") ? "runtime" : layers[0];
+        node[base].style = { ...(node[base].style || {}), fontSize: "16px" };
+        fixed.push(`${who()}: fontSize missing → 16px (without it the text renders invisible)`);
+      }
+    }
+    if (node.type === "number-step")
+      for (const layer of layersOf(node)) {
+        const cfg = (node[layer].config ||= {});
+        if (!(Number(cfg.buttons_in_row) > 0) && (layer === "runtime" || "buttons_in_row" in cfg)) {
+          cfg.buttons_in_row = 3;
+          fixed.push(`${who()} ${layer}.config.buttons_in_row → 3 (0/missing fails the page's CSS build)`);
+        }
+      }
+    if (node.type === "checkbox-group" && !Array.isArray(node.specials?.options)) {
+      node.specials = { ...(node.specials || {}), options: [] };
+      fixed.push(`${who()}: specials.options missing → [] (nil blanks the page)`);
+    }
+    // a custom-layout inside a product list renders only when the list enables store_show_extra_info
+    if ((node.type === "grid-product" || node.type === "slider-product") && (node.children || []).some((c: any) => c?.type === "custom-layout")) {
+      const plugins = Array.isArray(node.specials?.plugins) ? node.specials.plugins : [];
+      if (!plugins.some((p: any) => p?.name === "store_show_extra_info")) {
+        node.specials = { ...(node.specials || {}), plugins: [...plugins, { name: "store_show_extra_info" }] };
+        fixed.push(`${who()}: added plugin store_show_extra_info (its custom-layout renders only with it)`);
+      }
+    }
+
+    // 7. events: invented action names / field names with one meaning
     for (const ev of Array.isArray(node.events) ? node.events : []) {
       if (!ev || typeof ev !== "object") continue;
       if (!ev.eventName && typeof ev.trigger === "string") ev.eventName = ev.trigger;

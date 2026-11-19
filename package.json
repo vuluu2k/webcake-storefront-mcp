@@ -37,7 +37,8 @@
     "test": "node --test \"test/*.test.mjs\"",
     "mine-renderer": "node scripts/mine-renderer.mjs",
     "mine-editor": "node scripts/mine-editor.mjs",
-    "fidelity": "node scripts/fidelity.mjs"
+    "fidelity": "node scripts/fidelity.mjs",
+    "render-smoke": "node scripts/render-smoke.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",

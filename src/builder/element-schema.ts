@@ -27,7 +27,7 @@ const loadJson = (name: string): any => {
 type Bucket = "specials" | "config";
 interface RendererKey { default?: unknown; values?: string[] }
 interface EditorKey { label?: string; control?: string; options?: string[] }
-const RENDERER: { mentioned?: string[]; dispatched?: string[]; event_actions?: string[]; img_hosts?: string[]; shared?: Record<Bucket, Record<string, RendererKey>>; types?: Record<string, Record<Bucket, Record<string, RendererKey>>> } = loadJson("./renderer-keys.generated.json");
+const RENDERER: { mentioned?: string[]; dispatched?: string[]; dispatched_html?: string[]; event_actions?: string[]; img_hosts?: string[]; shared?: Record<Bucket, Record<string, RendererKey>>; types?: Record<string, Record<Bucket, Record<string, RendererKey>>> } = loadJson("./renderer-keys.generated.json");
 const MENTIONED = new Set<string>(RENDERER.mentioned || []);
 /** Parent type → its keys a CHILD's builder reads (menu-item reads its menu's specials.fullField).
  *  "config.*" / "style.*" when a child reads the whole bucket (form fields read the form's style). */
@@ -45,7 +45,8 @@ const CHILD_READS: Record<string, Set<string>> = (() => {
 })();
 
 /** Types the published renderer has a branch for. A type outside it renders nothing. */
-const RENDERED_TYPES = new Set<string>(RENDERER.dispatched || []);
+// Only an HTML builder produces markup (a type with just a CSS branch renders nothing).
+const RENDERED_TYPES = new Set<string>(RENDERER.dispatched_html?.length ? RENDERER.dispatched_html : RENDERER.dispatched || []);
 /** Event actions the published page runs (events.js cases + names common.ex compares). */
 export const RENDERER_EVENT_ACTIONS = new Set<string>(RENDERER.event_actions || []);
 /** Binding targets / datasets real pages use (the binding catalog misses some). */

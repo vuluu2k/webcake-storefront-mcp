@@ -174,6 +174,13 @@ export function buildElement(type: string, opts: any = {}) {
   }
   // Guarantee children-using factories never throw on a missing children array.
   const node = fn({ children: [], ...opts });
+  // ~25 ported factories (tabs, menu, breadcrumb, tags, coupon, number-step…) put opts.specials in
+  // runtime.specials. Saved pages keep them in node.specials and finalizeForRender drops runtime —
+  // so they were silently lost. Lift them where the renderer reads them.
+  if (node.runtime && node.runtime.specials && typeof node.runtime.specials === "object") {
+    node.specials = { ...(node.specials || {}), ...node.runtime.specials };
+    delete node.runtime.specials;
+  }
   // Some factories (container, menu, menu-droppable, …) IGNORE opts.config / opts.style — they
   // only wire children/specials. That silently dropped base layout keys like config.isHidden
   // (e.g. a "hidden on desktop" mobile bar stayed visible). Backfill them into runtime so EVERY
