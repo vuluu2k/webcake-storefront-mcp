@@ -5,6 +5,21 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.0.0] - 2026-11-19
+
+### Added
+- 18 new domain tools (`page`, `page_element`, `page_draft`, `compose`, `builder_ref`, `global_source`, `global_section`, `site_code`, `theme`, `product`, `product_category`, `promotion`, `order`, `blog`, `collection`, `cms_function`, `app`, `cached_result`) each cover every tool of that domain behind one call; pick the operation with the `action` parameter (the action names are the previous tool names, e.g. `compose({ action: "new_section", … })`), and pass `help:true` to get that action's full documentation and argument schema.
+- `api_get` and `api_call` now redact values held under keys such as `token`, `api_key`, `secret`, `password`, and `qr_data`, and a bare `key`/`value` field on a route that issues credentials, replacing them with `"[redacted]"` instead of returning them to the model.
+
+### Changed
+- The natively loaded tool catalog shrinks from 136 to about 40 tools now that each domain's members are reached through its family tool; `invoke_tool` and the server's startup instructions still accept and document every previous tool name as an `action`.
+- 139 tools that only wrapped a single read or write route were removed; calling one of their old names through `invoke_tool` now points to the matching `api_get`/`api_call` call instead of failing, and `api_call` no longer refuses a write to one of those routes since no dedicated tool remains to guard it.
+- The `affiliate`, `catalog-extras`, `media`, and `sale-channels` tool groups were removed from `list_tool_groups`; their routes stay reachable through `api_find` / `api_get` / `api_call`.
+- The server's startup instructions and the web guide's advanced-user tool list now describe the domain/action tool structure and point to `api_find` / `api_get` / `api_call` for anything without a dedicated tool.
+
+### Fixed
+- The generated `api_find`/`api_get`/`api_call` route catalog is now built only from the backend's `master` branch (675 routes) and records which branch/commit it came from, warning on any other branch; the previous catalog had accidentally included about 100 routes that only exist on a backend feature branch and not in production.
+
 ## [1.42.0] - 2026-11-19
 
 ### Added

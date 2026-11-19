@@ -5,6 +5,21 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.0.0] - 2026-11-19
+
+### Added
+- 18 tool theo domain mới (`page`, `page_element`, `page_draft`, `compose`, `builder_ref`, `global_source`, `global_section`, `site_code`, `theme`, `product`, `product_category`, `promotion`, `order`, `blog`, `collection`, `cms_function`, `app`, `cached_result`), mỗi tool gom toàn bộ tool của domain đó vào một lượt gọi; chọn việc bằng tham số `action` (tên action chính là tên tool cũ, ví dụ `compose({ action: "new_section", … })`), và truyền `help:true` để lấy tài liệu cùng schema tham số đầy đủ của action đó.
+- `api_get` và `api_call` nay che các giá trị nằm dưới các key như `token`, `api_key`, `secret`, `password`, `qr_data`, và cả trường `key`/`value` trần trên route cấp credential, thay bằng `"[redacted]"` thay vì trả về cho model.
+
+### Changed
+- Danh sách tool nạp sẵn (native) giảm từ 136 xuống còn khoảng 40 tool, vì mỗi tool thành viên của một domain nay được gọi qua tool theo domain tương ứng; `invoke_tool` và hướng dẫn khởi động của server vẫn nhận và mô tả mọi tên tool cũ dưới dạng một `action`.
+- 139 tool chỉ bọc một lệnh gọi route đọc hoặc ghi duy nhất đã bị xoá; gọi tên tool cũ đó qua `invoke_tool` nay chỉ sang đúng lượt gọi `api_get`/`api_call` tương ứng thay vì báo lỗi, và `api_call` không còn từ chối lượt ghi vào các route đó vì không còn tool riêng nào giữ vai trò chặn nữa.
+- Các nhóm tool `affiliate`, `catalog-extras`, `media`, và `sale-channels` đã bị xoá khỏi `list_tool_groups`; các route của chúng vẫn gọi được qua `api_find` / `api_get` / `api_call`.
+- Hướng dẫn khởi động của server và danh sách tool cho người dùng nâng cao trên trang hướng dẫn web nay mô tả cấu trúc tool theo domain/action, và hướng người dùng sang `api_find` / `api_get` / `api_call` cho mọi thứ chưa có tool riêng.
+
+### Fixed
+- Danh mục route cho `api_find`/`api_get`/`api_call` nay chỉ được sinh từ nhánh `master` của backend (675 route) và ghi lại nhánh/commit đã dùng để sinh, kèm cảnh báo khi sinh từ nhánh khác; danh mục trước đây đã vô tình lấy thêm khoảng 100 route chỉ tồn tại trên một nhánh feature của backend, không có trên production.
+
 ## [1.42.0] - 2026-11-19
 
 ### Added
