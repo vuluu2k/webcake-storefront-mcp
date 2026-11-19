@@ -120,3 +120,17 @@ test("lỗi tìm ra khi render thử mọi element: được sửa khi lưu ho�
   assert.match(outcome([cal]).detail, /LEAF_CHILDREN/);
   assert.match(outcome([build("cart-droppable")]).detail, /WRONG_SOURCE/);
 });
+
+test("điều kiện hiển thị đọc từ code → báo trước khi dựng (EMPTY_RENDER)", () => {
+  const warn = (node, ctx) => {
+    const sec = buildSection([]);
+    sec.children = [node];
+    return (validatePage({ sections: [sec] }, undefined, ctx).warnings || []).join("\n");
+  };
+  assert.match(warn(B("flash-sale")), /EMPTY_RENDER.*promotion_advance_id/);
+  assert.match(warn(B("text-dataset")), /EMPTY_RENDER.*binding/);
+  assert.doesNotMatch(warn(B("text-dataset", { bindings: [{ target: "product::product_name" }] })), /EMPTY_RENDER/);
+  assert.match(warn(B("notify", { specials: { datagrid_id: "" } })), /EMPTY_RENDER.*datagrid_id/);
+  assert.match(warn(B("rating-input"), { kind: "main" }), /auto_hide_without_star:false/);
+  assert.doesNotMatch(warn(B("rating-input"), { kind: "store" }), /EMPTY_RENDER/);
+});

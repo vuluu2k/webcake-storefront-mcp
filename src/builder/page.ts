@@ -611,6 +611,16 @@ export function validatePage(source: any, previous?: any, ctx: PageContext = {})
       if (layers.length && layers.some((c: any) => !(Number(c.buttons_in_row) > 0)))
         e("PAGE_CRASH", "number-step with buttons_in_row 0/missing fails the page's whole CSS build (the renderer divides by it) — every element loses its style", "set config.buttons_in_row ≥ 1 (saves set 3)");
     }
+    // Shown only with data the renderer reads (element-presets.json "needs", from lib/qwik): an
+    // element missing it publishes as an empty box — say so at build time, with the fix.
+    const sp = node.specials || {};
+    const noBind = !(Array.isArray(node.bindings) && node.bindings.length);
+    const empty = (msg: string, fix: string) => w("EMPTY_RENDER", msg, fix);
+    if (type === "flash-sale" && !sp.promotion_advance_id) empty("flash-sale is display:none until specials.promotion_advance_id names an active promotion (element.ex:791)", "set promotion_advance_id (list promotions with the promotion tools)");
+    if ((type === "text-dataset" || type === "video-dataset" || type === "layout-dataset") && noBind) empty(`${type} shows only what its binding fills — it has none`, "add bindings (list_bindings), e.g. product::product_name / product::video_lesson");
+    if (type === "notify" && !sp.datagrid_id) empty("notify stays hidden until it loads rows from specials.datagrid_id (assets/render/notify.js)", "set datagrid_id to a CMS collection with the notifications");
+    if (type === "agency" && !sp.datagrid_id && !(Array.isArray(sp.agencies) && sp.agencies.length)) empty("agency lists rows from specials.agencies or specials.datagrid_id — both empty", "set datagrid_id (a store-locator collection) or agencies");
+    if (type === "rating-input" && sp.auto_hide_without_star !== false && ctx.kind && ctx.kind !== "store") empty(`rating-input hides when the product rating is 0 — on a "${ctx.kind}" page there is no product`, "set specials.auto_hide_without_star:false to always show it");
     if (type === "wishlist" && typeof node.specials?.svg !== "string") e("PAGE_CRASH", "wishlist without specials.svg blanks the whole page", "set specials.svg (saves fill the default heart)");
     if (type === "custom-layout" && parentNode && /^(grid|slider)-product$/.test(parentNode.type) && !(parentNode.specials?.plugins || []).some((p: any) => p?.name === "store_show_extra_info"))
       e("NOT_RENDERED", `custom-layout renders only when its ${parentNode.type} has the plugin store_show_extra_info`, `add { name:"store_show_extra_info" } to the ${parentNode.type}'s specials.plugins (saves do this for you)`);
