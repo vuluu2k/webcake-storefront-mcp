@@ -5,6 +5,18 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.7.0] - 2026-11-19
+
+### Added
+- `new_element` and `build_page` now apply the editor's own default preset for 35 element types (`swiper`'s 3 slides, `menu`'s 4 items, `tabs`, `notify`, `breadcrumb`, `checkbox-group`, `dropdown-content`, `warehouse`, `wishlist-container`, and similar) whenever the caller passes no `children`, so a freshly built element looks the same as one dropped from the editor's picker; pass `preset:false` to opt out.
+- `get_element`'s `relations` now names, for each of those 35 preset types, whether it only shows up with real site data or the right page context, or that `new_element` seeds it with the editor's default children/settings when none are given.
+- `list_bindings` now documents the `separator` dataset (`separator::hide_last_element`, used between repeated `bonus-items`/`cart-items`/`order-items`) and the `course` dataset (a course product inside `lesson-items`/`list-courses`, bound like `product` plus a client-filled `product::lesson_thumbnail`); a binding `name` written as the editor's own `"dataset::field"` template is now also accepted.
+
+### Fixed
+- `new_element` and `build_page` now apply the caller's `specials` even for element types (`swiper`, `paypal-button`, `image`) whose factory previously ignored `opts.specials`.
+- `submenu` and `member-dropdown` elements built by `new_element`/`build_page` no longer dump every builder option (`style`, `config`, `events`, `bindings`, layout keys) into `specials`; only the type's own loose keys and an explicit `opts.specials` are kept, matching what the editor actually writes.
+- `validate_page`'s `NOT_RENDERED` check (and `get_element`'s rendered-type data) now correctly flags `purchase-history` as not rendered, matching `product-add-to-cart`, since neither has an HTML builder branch and both only ever had CSS; `textarea` is now correctly recognized as rendered and no longer wrongly flagged.
+
 ## [2.6.1] - 2026-11-19
 
 ### Added

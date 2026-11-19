@@ -5,6 +5,18 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.7.0] - 2026-11-19
+
+### Added
+- `new_element` và `build_page` nay áp dụng preset mặc định của chính editor cho 35 type element (`swiper` với 3 slide, `menu` với 4 mục, `tabs`, `notify`, `breadcrumb`, `checkbox-group`, `dropdown-content`, `warehouse`, `wishlist-container`, và tương tự) mỗi khi caller không truyền `children`, để một element vừa dựng trông giống hệt khi thả ra từ picker của editor; truyền `preset:false` để bỏ qua.
+- `relations` của `get_element` nay cho biết, với từng type trong 35 type có preset đó, type này chỉ hiện ra khi có dữ liệu thật của site hay đúng ngữ cảnh trang, hoặc `new_element` đã tự điền con/thiết lập mặc định của editor khi không truyền gì.
+- `list_bindings` nay mô tả thêm dataset `separator` (`separator::hide_last_element`, dùng giữa các mục lặp của `bonus-items`/`cart-items`/`order-items`) và dataset `course` (một sản phẩm khoá học nằm trong `lesson-items`/`list-courses`, bind giống `product` cộng thêm `product::lesson_thumbnail` được điền phía client); một `name` binding viết theo đúng mẫu `"dataset::field"` mà editor dùng nay cũng được chấp nhận.
+
+### Fixed
+- `new_element` và `build_page` nay áp dụng đúng `specials` của caller cho cả các type element (`swiper`, `paypal-button`, `image`) mà factory của chúng trước đây bỏ qua `opts.specials`.
+- Element `submenu` và `member-dropdown` dựng bằng `new_element`/`build_page` không còn đổ toàn bộ option của builder (`style`, `config`, `events`, `bindings`, các key layout) vào `specials`; chỉ còn giữ lại key rời của riêng type đó và `opts.specials` được truyền rõ, đúng với cách editor thực sự ghi.
+- Kiểm tra `NOT_RENDERED` của `validate_page` (và dữ liệu type-có-render của `get_element`) nay báo đúng `purchase-history` là không render, giống `product-add-to-cart`, vì cả hai đều không có nhánh HTML builder và trước sau vẫn chỉ có CSS; `textarea` nay được nhận diện đúng là có render, không còn bị báo nhầm.
+
 ## [2.6.1] - 2026-11-19
 
 ### Added
