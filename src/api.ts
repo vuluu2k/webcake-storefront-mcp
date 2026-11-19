@@ -29,6 +29,18 @@ const globalsOf = (src: any): any[] => (src?.sections || []).filter((s: any) => 
 const canon = (v: any) =>
   JSON.stringify(v ?? null, (_k, x) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1))) : x));
 
+/** True when `token` is a JWT whose `exp` is past (with `skewSec` margin). Non-JWTs never count as expired. */
+export function jwtExpired(token: string | undefined | null, skewSec = 30): boolean {
+  try {
+    const exp = JSON.parse(Buffer.from(String(token).split(".")[1], "base64url").toString()).exp;
+    return typeof exp === "number" && exp * 1000 < Date.now() + skewSec * 1000;
+  } catch {
+    return false;
+  }
+}
+
+export type RenewedAuth = { token: string; sessionId?: string } | null;
+
 export class WebcakeCmsApi {
   /** Parse (if string) and guarantee settings.breakpoints is a usable object — an empty/missing
    *  breakpoints would make the backend compile CSS without media queries. */
@@ -55,6 +67,17 @@ export class WebcakeCmsApi {
   private _adminToken: string | null;
   private _cmsApiKey: string | null;
   private _siteBps: Promise<any> | null = null; // cached site.settings (breakpoints, defaultGrid)
+  /** Called when the session JWT is expired or the backend rejects it. Stdio: reopens the browser
+   *  Connect page and returns the new credentials (request is retried once). Remote: marks it dead. */
+  onAuthExpired?: () => Promise<RenewedAuth>;
+
+  private async renewAuth(): Promise<boolean> {
+    const fresh = this.onAuthExpired ? await this.onAuthExpired() : null;
+    if (!fresh?.token) return false;
+    this.switchToken(fresh.token);
+    if (fresh.sessionId) this.switchSession(fresh.sessionId);
+    return true;
+  }
 
   constructor({ baseUrl, token, siteId, sessionId }: ApiInit) {
     this.baseUrl = (baseUrl || "").replace(/\/$/, "");
@@ -83,7 +106,12 @@ export class WebcakeCmsApi {
     return { token: this._adminToken, x_cms_api_key: this._cmsApiKey };
   }
 
-  async request(method: string, path: string, { body, query, timeout, headers: extraHeaders }: RequestOpts = {}): Promise<any> {
+  async request(method: string, path: string, opts: RequestOpts = {}, retried = false): Promise<any> {
+    const { body, query, timeout, headers: extraHeaders } = opts;
+    // Calls that bring their own Bearer (CMS admin token) can't be fixed by a new login.
+    const ownAuth = !extraHeaders?.Authorization;
+    if (ownAuth && !retried && jwtExpired(this.token) && (await this.renewAuth())) return this.request(method, path, opts, true);
+
     const url = new URL(`${this.baseUrl}${path}`);
     if (query) {
       for (const [k, v] of Object.entries(query)) {
@@ -102,7 +130,7 @@ export class WebcakeCmsApi {
     const timer = setTimeout(() => controller.abort(), timeout || DEFAULT_TIMEOUT);
 
     let res: Response;
-    let json: any;
+    let raw: string;
     try {
       res = await fetch(url, {
         method,
@@ -111,14 +139,22 @@ export class WebcakeCmsApi {
         signal: controller.signal,
       });
       // Read the body under the same timer — clearing it after the headers left a stalled body unbounded.
-      json = await res.json().catch((e) => {
-        if (controller.signal.aborted) throw e; // timed out mid-body: an error, not an empty success
-        return null;
-      });
+      raw = await res.text();
     } finally {
       clearTimeout(timer);
     }
+    let json: any = null;
+    try {
+      json = raw ? JSON.parse(raw) : null;
+    } catch {
+      /* non-JSON body (e.g. plain "Unauthorized") */
+    }
     if (!res.ok) {
+      // AuthPlug answers a bad/expired session with a plain-text 401 "Unauthorized".
+      if (res.status === 401 && ownAuth && (jwtExpired(this.token) || raw.trim() === "Unauthorized")) {
+        if (!retried && (await this.renewAuth())) return this.request(method, path, opts, true);
+        throw new Error("API 401: phiên đăng nhập WebCake đã hết hạn (token expired). Bấm Kết nối (Connect) lại để gia hạn — stdio: chạy `npx -y webcake-storefront-mcp login`.");
+      }
       const msg = (json && json.message) || (json && json.error) || res.statusText;
       throw new Error(`API ${res.status}: ${msg}`);
     }

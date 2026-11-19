@@ -5,7 +5,8 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { randomBytes } from "node:crypto";
 import { spawn, execFile } from "node:child_process";
 import { DEFAULT_ENV, resolveSettings } from "../config.js";
-import { setConfig } from "../db.js";
+import { getConfig, setConfig } from "../db.js";
+import type { RenewedAuth } from "../api.js";
 
 interface LoginOpts {
   port?: number;
@@ -212,4 +213,27 @@ export async function runLogin(argv: string[]): Promise<void> {
       reject(new Error("login timed out after 180s."));
     }, 180_000).unref();
   });
+}
+
+// One browser Connect at a time; after a failed/abandoned one, wait before reopening so a
+// looping agent doesn't spam tabs. ponytail: process-wide, fine for one stdio user.
+let renewing: Promise<RenewedAuth> | null = null;
+let lastFail = 0;
+
+/** Token expired mid-session (stdio): reopen the Connect page and hand back the new credentials. */
+export function renewInBrowser(): Promise<RenewedAuth> {
+  if (!renewing && Date.now() - lastFail > 120_000) {
+    console.error("[webcake-storefront] Token hết hạn — mở trình duyệt để Kết nối lại…");
+    renewing = runLogin([])
+      .then(() => ({ token: getConfig("token") || "", sessionId: getConfig("session_id") || "" }))
+      .catch((e) => {
+        lastFail = Date.now();
+        console.error("[webcake-storefront] gia hạn token thất bại:", e?.message || e);
+        return null;
+      })
+      .finally(() => {
+        renewing = null;
+      });
+  }
+  return renewing ?? Promise.resolve(null);
 }

@@ -64,6 +64,8 @@ async function main(): Promise<void> {
   // no env is required to start — auth (token + session) is set via env or `login`,
   // and the site is chosen at runtime with switch_site.
   const api = makeApi();
+  const { renewInBrowser } = await import("./auth/login.js");
+  api.onAuthExpired = renewInBrowser; // expired token → reopen Connect, then retry the call
   const server = createServer(api, { allowLocalFiles: true }); // stdio = user's own machine
   const transport = new StdioServerTransport();
   await server.connect(transport);

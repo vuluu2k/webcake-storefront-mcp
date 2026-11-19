@@ -22,6 +22,7 @@
  * All exported function names and signatures are IDENTICAL to the previous version
  * so http.ts requires no changes.
  */
+import { jwtExpired } from "../api.js";
 import { randomBytes, createHash } from "node:crypto";
 import { getPg, ensureOAuthSchema, type PgPool } from "../persistence/postgres.js";
 import { getRedis, type RedisLike } from "../persistence/redis.js";
@@ -442,6 +443,19 @@ export async function completeAuthorize(
   return { ok: true, redirectUri: p.redirect_uri, code, state: p.state };
 }
 
+// ---- Dead WebCake sessions ---------------------------------------------------
+// The OAuth tokens outlive the WebCake JWT they wrap. Once that JWT is expired (or the
+// backend rejected it), refreshing would just re-issue the dead JWT; refusing it makes the
+// client restart the full flow, i.e. open the Connect page again.
+// ponytail: in-memory set, per process; share it via Redis if the server is ever scaled out.
+const deadJwts = new Set<string>();
+export function markJwtDead(jwt: string | undefined | null): void {
+  if (jwt) deadJwts.add(jwt);
+}
+export function isDeadJwt(jwt: string | undefined | null): boolean {
+  return !!jwt && (deadJwts.has(jwt) || jwtExpired(jwt));
+}
+
 // ---- Token endpoint --------------------------------------------------------
 export type TokenParams = {
   grant_type?: string | null;
@@ -502,6 +516,9 @@ export async function exchangeToken(p: TokenParams): Promise<TokenResult> {
     if (!r) {
       return { ok: false, status: 400, error: "invalid_grant", error_description: "Unknown or expired refresh token." };
     }
+    if (isDeadJwt(r.cred.jwt)) {
+      return { ok: false, status: 400, error: "invalid_grant", error_description: "WebCake session expired — sign in again (Connect)." };
+    }
     return { ok: true, body: await issueTokens(store, r.cred, r.client_id, r.scope) };
   }
   return { ok: false, status: 400, error: "unsupported_grant_type", error_description: "grant_type must be authorization_code or refresh_token." };
@@ -522,12 +539,12 @@ export async function resolveAccessToken(accessToken: string | undefined | null)
   const redis = getRedis();
   if (redis) {
     const cached = await redisCacheGet(redis, accessToken);
-    if (cached) return cached;
+    if (cached) return isDeadJwt(cached.jwt) ? undefined : cached;
   }
 
   // 2. Fall through to the store (Postgres or memory).
   const a = await (await getStore()).getAccess(accessToken);
-  if (!a) return undefined;
+  if (!a || isDeadJwt(a.cred.jwt)) return undefined;
 
   // Backfill the Redis cache for next time.
   if (redis) redisCachePut(redis, accessToken, a.cred);

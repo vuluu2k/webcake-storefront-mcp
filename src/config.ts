@@ -2,7 +2,7 @@
 // login, remote HTTP). Precedence: explicit overrides > environment variables >
 // saved config in the local config file.
 
-import { WebcakeCmsApi } from "./api.js";
+import { WebcakeCmsApi, jwtExpired } from "./api.js";
 import { getSavedConfig } from "./tools/context.js";
 
 export type EnvName = "local" | "staging" | "prod";
@@ -132,10 +132,13 @@ export function resolveSettings(overrides: Overrides = {}): Settings {
     process.env.WEBCAKE_APP_URL ||
     preset?.appUrl ||
     ENVIRONMENTS[DEFAULT_ENV].appUrl;
-  const token = overrides.token || process.env.WEBCAKE_TOKEN || saved.token || "";
+  // An expired env token (pinned in the IDE config) loses to a fresher one saved by a re-login.
+  const envToken = process.env.WEBCAKE_TOKEN;
+  const renewed = !!envToken && jwtExpired(envToken) && !!saved.token && !jwtExpired(saved.token);
+  const token = overrides.token || (renewed ? saved.token : envToken) || saved.token || "";
   const siteId = overrides.siteId || process.env.WEBCAKE_SITE_ID || saved.site_id || "";
   const sessionId =
-    overrides.sessionId || process.env.WEBCAKE_SESSION_ID || saved.session_id || "";
+    overrides.sessionId || (renewed ? saved.session_id : process.env.WEBCAKE_SESSION_ID) || saved.session_id || "";
 
   return { apiUrl, appUrl, token, siteId, sessionId, env: envName };
 }

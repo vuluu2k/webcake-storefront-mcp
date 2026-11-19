@@ -10,6 +10,7 @@ import { randomUUID } from "node:crypto";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createServer } from "./server.js";
+import type { WebcakeCmsApi } from "./api.js";
 import { makeApi, resolveEnv, ENVIRONMENTS, DEFAULT_ENV } from "./config.js";
 import { landingHtml, faviconSvg, ogImageSvg, normalizeLang, ICON_PNG } from "./web-guide.js";
 import { privacyHtml, termsHtml } from "./legal.js";
@@ -20,6 +21,8 @@ import {
   exchangeToken,
   resolveAccessToken,
   revokeToken,
+  isDeadJwt,
+  markJwtDead,
   authServerMetadata,
   protectedResourceMetadata,
   type TokenParams,
@@ -59,6 +62,11 @@ const QUERY_TO_HEADER: Record<string, string> = {
 function header(req: IncomingMessage, name: string): string | undefined {
   const v = req.headers[name];
   return Array.isArray(v) ? v[0] : v;
+}
+
+function setHeader(req: IncomingMessage, name: string, value: string): void {
+  req.headers[name] = value;
+  req.rawHeaders.push(name, value);
 }
 
 /** Copy recognised query params onto request headers so downstream reads are uniform. */
@@ -293,6 +301,7 @@ async function handleOAuth(req: IncomingMessage, res: ServerResponse, path: stri
 
 export async function startHttpServer(port: number): Promise<void> {
   const transports = new Map<string, StreamableHTTPServerTransport>();
+  const apis = new Map<string, WebcakeCmsApi>();
 
   const httpServer = createHttpServer(async (req, res) => {
     const path = (req.url ?? "").split("?")[0];
@@ -360,32 +369,39 @@ export async function startHttpServer(port: number): Promise<void> {
     // Accept credentials via query params for clients that can't set headers.
     applyQueryAuth(req);
 
-    // Resolve an OAuth Bearer access token to { jwt, wsid } and inject both headers
-    // so apiFromRequest picks them up — existing header/query paths remain untouched.
+    // Resolve an OAuth Bearer access token to { jwt, wsid }. It WINS over a ?token= /
+    // x-webcake-jwt pair: a Bearer from our OAuth flow is what the last Connect issued, so
+    // it's the renewed credential when the URL still carries an old, expired one.
     const bearer = bearerFrom(req);
     const oauthCred = await resolveAccessToken(bearer);
     if (oauthCred) {
-      if (req.headers["x-webcake-jwt"] == null) {
-        req.headers["x-webcake-jwt"] = oauthCred.jwt;
-        req.rawHeaders.push("x-webcake-jwt", oauthCred.jwt);
-      }
-      if (oauthCred.wsid && req.headers["x-webcake-session-id"] == null) {
-        req.headers["x-webcake-session-id"] = oauthCred.wsid;
-        req.rawHeaders.push("x-webcake-session-id", oauthCred.wsid);
-      }
-    }
-
-    // Enforce OAuth when enabled: a request with no recognised credential gets 401.
-    if (OAUTH_ENFORCED && !oauthCred && req.headers["x-webcake-jwt"] == null) {
-      res.writeHead(401, {
-        "www-authenticate": `Bearer resource_metadata="${publicBase(req)}${WELL_KNOWN_PR}"`,
-        "content-type": "application/json",
-      });
-      res.end(JSON.stringify({ error: "invalid_token", error_description: "Authentication required — connect via OAuth." }));
-      return;
+      setHeader(req, "x-webcake-jwt", oauthCred.jwt);
+      if (oauthCred.wsid) setHeader(req, "x-webcake-session-id", oauthCred.wsid);
     }
 
     const sidHeader = header(req, "mcp-session-id");
+    const jwt = header(req, "x-webcake-jwt");
+    // An open session picks up a renewed credential in place (no re-initialize needed).
+    const sessionApi = sidHeader ? apis.get(sidHeader) : undefined;
+    if (sessionApi && jwt && jwt !== sessionApi.token && !isDeadJwt(jwt)) {
+      sessionApi.switchToken(jwt);
+      const wsid = header(req, "x-webcake-session-id");
+      if (wsid) sessionApi.switchSession(wsid);
+    }
+
+    // Enforce OAuth when enabled: no credential, or an expired/rejected WebCake token, gets
+    // 401 + WWW-Authenticate so the client (re)opens the Connect page by itself.
+    const dead = isDeadJwt(sessionApi ? sessionApi.token : jwt);
+    if (OAUTH_ENFORCED && (jwt == null || dead)) {
+      res.writeHead(401, {
+        "www-authenticate": `Bearer error="invalid_token", resource_metadata="${publicBase(req)}${WELL_KNOWN_PR}"`,
+        "content-type": "application/json",
+      });
+      const why = dead ? "WebCake session expired — reconnect (Connect) to renew it." : "Authentication required — connect via OAuth.";
+      res.end(JSON.stringify({ error: "invalid_token", error_description: why }));
+      return;
+    }
+
 
     try {
       // Reuse an existing session.
@@ -404,12 +420,21 @@ export async function startHttpServer(port: number): Promise<void> {
             sessionIdGenerator: () => randomUUID(),
             onsessioninitialized: (id: string) => {
               transports.set(id, transport);
+              apis.set(id, api);
             },
           });
           transport.onclose = () => {
-            if (transport.sessionId) transports.delete(transport.sessionId);
+            if (transport.sessionId) {
+              transports.delete(transport.sessionId);
+              apis.delete(transport.sessionId);
+            }
           };
           const api = apiFromRequest(req);
+          // Backend rejected the token → remember it, so the next request 401s into Connect.
+          api.onAuthExpired = async () => {
+            markJwtDead(api.token);
+            return null;
+          };
           const server = createServer(api, { allowLocalFiles: false, tools: header(req, "x-webcake-tools") }); // remote: never read server-side files
           await server.connect(transport);
           await transport.handleRequest(req, res, body);
