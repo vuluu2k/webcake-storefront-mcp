@@ -51,17 +51,6 @@ export function registerProductTools(server: McpServer, api: WebcakeCmsApi, hand
   );
 
   server.tool(
-    "search_products",
-    "Search products by keyword. Returns matching products with basic info",
-    {
-      term: z.string().describe("Search keyword"),
-      page: z.number().optional().describe("Page number"),
-      limit: z.number().optional().describe("Items per page"),
-    },
-    ({ term, page, limit }) => handle(() => api.searchProducts({ term, page, limit }))
-  );
-
-  server.tool(
     "list_categories",
     "List all product categories of the site",
     {},

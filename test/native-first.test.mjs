@@ -1,5 +1,6 @@
 // Offline checks for the native-first policy: custom code is the last resort, enforced on every
 // code writer, while a site that is already large can still shrink or swap code, but never grow past the ceiling. Run: npm test.
+import { toolsOf } from "./tools-of.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../dist/server.js";
@@ -23,7 +24,7 @@ const site = (code = {}, extra = {}) => {
       return extra[k] || (async () => ({}));
     },
   });
-  return { saved, tools: createServer(api, { tools: "all" })._registeredTools };
+  return { saved, tools: toolsOf(createServer(api, { tools: "all" })) };
 };
 const run = async (tools, name, args) => JSON.parse((await tools[name].handler(args, {})).content[0].text);
 

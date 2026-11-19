@@ -11,6 +11,7 @@
 // for a key bound to a variable, the fields read off it one level down.
 import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { execFileSync } from "node:child_process";
 
 const ROOT = resolve(process.env.BUILDERX_API_DIR || new URL("../../builderx_api", import.meta.url).pathname);
 const WEB = join(ROOT, "lib/builderx_api_web");
@@ -256,6 +257,15 @@ for (const [file, alias] of ROUTERS) {
   }
 }
 ops.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method));
-const meta = { generated_from: "builderx_api routers + controllers (static)", operations: ops.length, undescribed };
+// Which backend this was read from — a feature branch carries routes prod doesn't have yet.
+const git = (...a) => {
+  try {
+    return execFileSync("git", ["-C", ROOT, ...a], { encoding: "utf8" }).trim();
+  } catch {
+    return undefined;
+  }
+};
+const meta = { generated_from: "builderx_api routers + controllers (static)", backend: `${git("rev-parse", "--abbrev-ref", "HEAD")}@${git("rev-parse", "--short", "HEAD")}`, operations: ops.length, undescribed };
+if (meta.backend && !/^(master|main)@/.test(meta.backend)) console.error(`warning: builderx_api is on ${meta.backend}, not master — routes may not exist on prod yet`);
 writeFileSync(OUT, `{"meta":${JSON.stringify(meta)},"ops":[\n${ops.map((o) => JSON.stringify(o)).join(",\n")}\n]}\n`);
 console.error(`${ops.length} operations (${undescribed} without a readable action) → ${OUT.pathname}`);

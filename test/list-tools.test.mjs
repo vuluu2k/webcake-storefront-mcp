@@ -1,11 +1,12 @@
 // list_promotions / search_promotions walk every page and carry pos_id; list_apps answers
 // installed/not-installed in one call; invoke_read_tool runs reads only. Stub api, no network.
+import { toolsOf } from "./tools-of.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../dist/server.js";
 
 const call = async (s, name, args) => {
-  const r = await s._registeredTools[name].handler(args ?? {}, {});
+  const r = await toolsOf(s)[name].handler(args ?? {}, {});
   return { isError: !!r.isError, text: r.content[0].text, json: (() => { try { return JSON.parse(r.content[0].text); } catch { return null; } })() };
 };
 
@@ -66,8 +67,8 @@ test("list_apps: installed + not_installed in one call; is_active only gates pro
 test("invoke_read_tool: read-only annotation, runs reads, refuses writes", async () => {
   const s = createServer(new Proxy({}, { get: () => async () => ({ data: {} }) }));
   assert.equal(s._registeredTools.invoke_read_tool.annotations.readOnlyHint, true);
-  assert.equal((await call(s, "invoke_read_tool", { name: "list_domains", arguments: { limit: 100 } })).isError, false);
-  const w = await call(s, "invoke_read_tool", { name: "delete_domain", arguments: { domain_id: "x" } });
+  assert.equal((await call(s, "invoke_read_tool", { name: "list_plans", arguments: {} })).isError, false);
+  const w = await call(s, "invoke_read_tool", { name: "create_contact", arguments: { name: "x" } });
   assert.equal(w.isError, true);
   assert.match(w.text, /not read-only/);
 });

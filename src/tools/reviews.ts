@@ -81,20 +81,4 @@ Omit \`id\` to create; include \`id\` to update. For a reply, set \`parent_id\` 
       })
   );
 
-  server.tool(
-    "remove_reviews",
-    "Delete one or more reviews by id.",
-    { ids: z.array(z.string()).min(1).describe("Review ids to delete") },
-    ({ ids }) => handle(() => api.removeReviews(ids)),
-  );
-
-  server.tool(
-    "moderate_reviews",
-    `Approve or hide reviews (change moderation status). \`permission\`: 0 = approved/shown, 1 = pending/hidden.`,
-    {
-      ids: z.array(z.string()).min(1).describe("Review ids to update"),
-      permission: z.number().describe("0 = approved/shown, 1 = pending/hidden"),
-    },
-    ({ ids, permission }) => handle(() => api.updateReviewStatus({ ids, permission })),
-  );
 }

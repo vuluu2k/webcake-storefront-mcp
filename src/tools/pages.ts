@@ -130,8 +130,6 @@ function findNodeById(source: any, elementId: string): any {
   return found;
 }
 
-
-
 /** Search/filter elements in source by criteria */
 function searchElements(source: any, filters: any): any[] {
   const results: any[] = [];
@@ -488,15 +486,6 @@ For full rewrites, use update_site_custom_code instead.`,
         return { ...res, warning: `Page deleted, but removing it from global sections' page lists failed: ${e?.message || e}` };
       }
     })
-  );
-
-  server.tool(
-    "get_page_versions",
-    "View version history of a page",
-    {
-      page_id: z.string().describe("Page ID"),
-    },
-    ({ page_id }) => handle(() => api.getPageVersions(page_id))
   );
 
   server.tool(

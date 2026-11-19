@@ -1,5 +1,6 @@
 // Shapes that blank the storefront renderer or the builder editor must be refused by validatePage,
 // and nothing the factory builds may trip them. Run: npm test.
+import { toolsOf } from "./tools-of.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { ELEMENT_TYPES, buildElement } from "../dist/builder/catalog.js";
@@ -96,7 +97,7 @@ test("element patches that would crash the renderer are refused, even on an obje
       return async () => ({});
     },
   });
-  const tools = createServer(api, { tools: "all" })._registeredTools;
+  const tools = toolsOf(createServer(api, { tools: "all" }));
   const run = async (args) => JSON.parse((await tools.update_page_element.handler(args, {})).content[0].text);
   const bad = await run({ page_id: "P", element_id: el.id, dry_run: false, responsive: { bp1: { config: { widthUnit: "em" } } } });
   assert.match(bad.error, /BLOCKED/);

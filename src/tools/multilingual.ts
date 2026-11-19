@@ -33,27 +33,6 @@ export function registerMultilingualTools(server: McpServer, api: WebcakeCmsApi,
   const unwrap = (res: any, key: string) => res?.data?.[key] ?? res?.[key] ?? res?.data ?? res;
 
   server.tool(
-    "add_site_languages",
-    `Set the full list of enabled languages for the site (used to add, remove, toggle, or change currency —
-always send the complete updated list). Requires the multilingual app installed.`,
-    {
-      languages: z.array(z.object({
-        lang: z.string().describe("Language code, e.g. 'en', 'vi'"),
-        currency: z.string().optional().describe("Currency code for this language"),
-        status: z.string().optional().describe("Status, e.g. 'ACTIVE'"),
-      }).passthrough()).describe("Complete list of enabled languages"),
-    },
-    ({ languages }) => handle(async () => unwrap(await api.mlAddLanguages(languages), "multiple_language")),
-  );
-
-  server.tool(
-    "set_default_language",
-    "Change which enabled language is the site default.",
-    { language_code: z.string().describe("Language code to make default") },
-    ({ language_code }) => handle(() => api.mlChangeDefault(language_code)),
-  );
-
-  server.tool(
     "list_translations",
     `List translations for a resource type in a target language. Resources: ${RESOURCES.join(", ")}.
 'notification' takes no language filter; 'site' returns a flat key→value object.`,
@@ -132,16 +111,4 @@ translated name/slug/content are untouched; the translation row is created if mi
       })
   );
 
-  server.tool(
-    "auto_translate",
-    `Machine-translate a JSON blob from one language to another. \`type\` must be a valid translation
-type (e.g. 'product', 'category'). Returns { trans, count }.`,
-    {
-      type: z.string().describe("Translation type, e.g. 'product'"),
-      source_language: z.string().describe("Source language code"),
-      target_language: z.string().describe("Target language code"),
-      json: z.record(z.any()).describe("Key→text object to translate"),
-    },
-    (body) => handle(async () => unwrap(await api.mlTranslateJson(body), "translate_json")),
-  );
 }

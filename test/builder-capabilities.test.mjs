@@ -1,6 +1,7 @@
 // Offline checks for builder capabilities mirrored from builderx_spa + the storefront renderer
 // (events, motion docs, wishlist/OTP/course blocks, structure validation, custom breakpoints,
 // the section template library). Run: npm test.
+import { toolsOf } from "./tools-of.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../dist/server.js";
@@ -15,7 +16,7 @@ import { BUILD_GUIDE } from "../dist/builder/guide.js";
 /** Stub api: per-method answers, anything else resolves to {}. */
 const stubApi = (answers = {}) => new Proxy({}, { get: (_, k) => answers[k] || (async () => ({})) });
 const call = async (server, name, args) => {
-  const r = await server._registeredTools[name].handler(args, {});
+  const r = await toolsOf(server)[name].handler(args, {});
   return { isError: !!r.isError, json: JSON.parse(r.content[0].text) };
 };
 

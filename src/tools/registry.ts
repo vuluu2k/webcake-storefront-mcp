@@ -18,14 +18,10 @@ import { registerSiteStyleTools } from "./site-style.js";
 import { registerAppTools } from "./apps.js";
 import { registerReviewTools } from "./reviews.js";
 import { registerAppointmentTools } from "./appointment.js";
-import { registerAffiliateTools } from "./affiliate.js";
-import { registerCatalogExtraTools } from "./catalog-extras.js";
 import { registerSiteConfigTools } from "./site-config.js";
 import { registerMarketingTools } from "./marketing.js";
 import { registerMultilingualTools } from "./multilingual.js";
-import { registerMediaTools } from "./media.js";
 import { registerAppsExtraTools } from "./apps-extra.js";
-import { registerSaleChannelTools } from "./sale-channels.js";
 import { registerPromotionTools } from "./promotions.js";
 import { registerComboTools } from "./combos.js";
 import { registerGlobalSourceTools } from "./global-sources.js";
@@ -38,25 +34,31 @@ import { registerBuilderExtraTools } from "./builder-extras.js";
 import { registerPageDraftTools } from "./page-draft.js";
 import { registerSitePlanTools } from "./site-plans.js";
 import { registerApiGatewayTools } from "./api-gateway.js";
+import { readFileSync } from "node:fs";
+
+/** Tool names folded into api_get / api_call → their route (invoke_tool points callers there). */
+const retired: Record<string, string> = (() => {
+  try {
+    return JSON.parse(readFileSync(new URL("./retired-tools.json", import.meta.url), "utf8"));
+  } catch {
+    return {};
+  }
+})();
 
 type RegisterFn = (server: any, api: WebcakeCmsApi, handle: Handle, opts: any) => void;
 
 /** Tool groups. `core` groups load natively; the rest are reached via search_tools + invoke_tool. */
 export const GROUPS: { name: string; title: string; desc: string; core?: boolean }[] = [
-  { name: "session", title: "Session & apps", core: true, desc: "Connection context, site switch, app install/list, result cache" },
-  { name: "web", title: "Page building", core: true, desc: "Pages, builder elements, sections, global sources/sections, styles, images, publish" },
+  { name: "session", title: "Session & apps", core: true, desc: "Connection context, site switch/create, apps, cached results, the backend API gateway (api_find / api_get / api_call)" },
+  { name: "web", title: "Page building", core: true, desc: "Pages, elements, drafts, global sources/sections, site code, themes, images, validate/build/publish" },
   { name: "store", title: "Store", core: true, desc: "Products, categories, collections, orders, promotions, combos" },
   { name: "content", title: "Content & customers", core: true, desc: "Blog articles, customers, CMS files / HTTP functions" },
-  { name: "catalog", title: "Catalog extras", desc: "Brands, suppliers, product tags, ribbons, materials, variations, measurement, price-contact" },
-  { name: "site_config", title: "Site configuration", desc: "Custom domains, SEO redirects, shipping, UTM links, fonts, site settings, API keys, publish history, site plans/subscriptions (gói cước), site counts" },
-  { name: "marketing", title: "Marketing & CRM", desc: "Email templates, contacts, subscribers, customer tags, employees, invitations, insight, notifications" },
-  { name: "i18n", title: "Multilingual", desc: "Enable languages and manage translations for products/categories/articles/etc." },
-  { name: "media", title: "Media & PWA", desc: "Media library folders/content, capacity, base64 upload, PWA manifest" },
-  { name: "appointment", title: "Appointment booking", desc: "Booking calendars, appointments, employees, addresses, classifies" },
-  { name: "affiliate", title: "Affiliate", desc: "Affiliate programs, products, orders, accounts, payouts, statistics" },
-  { name: "reviews", title: "Product reviews", desc: "List, create, reply, moderate, delete product reviews" },
-  { name: "apps_advanced", title: "Advanced apps", desc: "Product design, personal product design (PPD), course app" },
-  { name: "channels", title: "Sale channels", desc: "Sitemap sync, partner product feeds, Google merchants" },
+  { name: "site_config", title: "Site configuration", desc: "Site settings (merged safely), font groups, site plans/subscriptions (gói cước), site counts" },
+  { name: "marketing", title: "Marketing & CRM", desc: "Create contacts, customer tags and tag assignment" },
+  { name: "i18n", title: "Multilingual", desc: "Translations for products/categories/articles/etc. and their SEO" },
+  { name: "appointment", title: "Appointment booking", desc: "Create and update booking calendars (weekly hours, overrides)" },
+  { name: "reviews", title: "Product reviews", desc: "List, read and write product reviews" },
+  { name: "apps_advanced", title: "Advanced apps", desc: "Create a course (course app)" },
   { name: "automation", title: "Automation", desc: "Marketing automations and send-mail" },
   { name: "image_seo", title: "Image alt / SEO audit", desc: "Scan site images, read them, bulk-fill and set alt text" },
 ];
@@ -77,14 +79,10 @@ const MODULES: [string, RegisterFn][] = [
   ["session", registerAppTools],
   ["reviews", registerReviewTools],
   ["appointment", registerAppointmentTools],
-  ["affiliate", registerAffiliateTools],
-  ["catalog", registerCatalogExtraTools],
   ["site_config", registerSiteConfigTools],
   ["marketing", registerMarketingTools],
   ["i18n", registerMultilingualTools],
-  ["media", registerMediaTools],
   ["apps_advanced", registerAppsExtraTools],
-  ["channels", registerSaleChannelTools],
   ["store", registerPromotionTools],
   ["store", registerComboTools],
   ["web", registerGlobalSourceTools],
@@ -105,6 +103,12 @@ interface ToolEntry {
   description: string;
   shape: Record<string, any>;
   handler: (args: any, extra?: any) => Promise<McpResult> | McpResult;
+}
+
+/** Every collected tool of a server, by name — members of a family included (tests, gateway). */
+const ENTRIES = new WeakMap<object, Map<string, ToolEntry>>();
+export function toolEntries(server: object): Map<string, ToolEntry> {
+  return ENTRIES.get(server) ?? new Map();
 }
 
 /** Captures server.tool(...) calls into a registry instead of registering them. */
@@ -164,7 +168,8 @@ then invoke_read_tool(name, arguments) for read-only tools (list_/get_/search_�
 if the user's request touches an [on-demand] area (or you're unsure), search_tools BEFORE concluding.
 Tip: search_tools matches English tool names/descriptions — translate the user's intent into English keywords.
 
-${lines.join("\n")}`;
+${lines.join("\n")}
+Anything else the backend does (domains, redirects, shipping, UTM, brands/tags/ribbons, media library, PWA, affiliate, partner feeds, employees, email templates…) has no dedicated tool: api_find("keywords") → api_get / api_call.`;
 }
 
 /** Build the full registry, register native (core) tools, and add the search gateway.
@@ -188,6 +193,7 @@ export function installTools(
 
   // Register native (core/enabled) tools directly on the MCP server.
   let nativeCount = 0;
+  ENTRIES.set(server, registry);
   for (const e of collector.entries) {
     if (native.has(e.group)) {
       // .strict(): an argument the tool doesn't take is REFUSED with its name, not silently
@@ -294,6 +300,9 @@ courses, sale channels, automation…). Returns name, group, description and JSO
 
   const runTool = async (name: string, args: Record<string, unknown> | undefined, readOnlyOnly: boolean) => {
     const e = registry.get(name);
+    const route = retired[name];
+    if (!e && route)
+      return errorResult(`Error: "${name}" was folded into the API gateway — run ${route.startsWith("get:") ? "api_get" : "api_call"}({ id: "${route}", … }) (call sheet: api_find({ id: "${route}" })).`);
     if (!e) return errorResult(`Error: unknown tool "${name}". Use search_tools to find available tools.`);
     if (readOnlyOnly && !toolAnnotations(name).readOnlyHint) {
       return errorResult(`Error: "${name}" is not read-only — run it with invoke_tool.`);

@@ -252,9 +252,6 @@ export class WebcakeCmsApi {
   }
 
   // ── CMS Files ──
-  listCmsFiles() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/cms_files`);
-  }
   async createCmsFile(params: any) {
     await this.fetchCmsTokens();
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/cms_files`, {
@@ -276,9 +273,6 @@ export class WebcakeCmsApi {
       body: { ...params, ...this.getBundleParams() },
     });
   }
-  debugFunction(params: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/cms_files/debug`, { body: params });
-  }
   runFunction(functionName: string, method: string, params: any) {
     return this.request(method, `/api/v1/${this.siteId}/_functions/${functionName}`, { body: params });
   }
@@ -287,9 +281,6 @@ export class WebcakeCmsApi {
   }
   getFileVersions(query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/cms_files/version_file`, { query });
-  }
-  toggleDebugRender(params: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/cms_files/toggle_is_debug_render`, { body: params });
   }
 
   // ── Pages ──
@@ -336,9 +327,6 @@ export class WebcakeCmsApi {
   }
   deletePage(params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/delete_page`, { body: params });
-  }
-  getPageVersions(pageId: string) {
-    return this.request("GET", `/api/v1/site/${this.siteId}/page_versions/${pageId}`);
   }
   listPageContents(query?: any) {
     return this.request("GET", `/api/v1/site/${this.siteId}/page_contents`, { query });
@@ -626,10 +614,6 @@ export class WebcakeCmsApi {
       timeout: 60000,
     });
   }
-  /** Delete a single article. */
-  deleteArticle(id: string) {
-    return this.deleteArticles([id]);
-  }
   /** Create a blog/article category. Command-based: pass a `commands` array whose entries
    *  each carry a caller-generated `data.id` (the new category id). Response is generic. */
   createBlogCategory(commands: any[]) {
@@ -666,14 +650,8 @@ export class WebcakeCmsApi {
   getProduct(id: string) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/products/${id}`);
   }
-  searchProducts(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/products/search`, { query });
-  }
   listCategories() {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/categories/all`);
-  }
-  getProductsByCategory(categoryId: string) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/categories/products`, { query: { category_id: categoryId } });
   }
   /** Create a product. Body wraps fields in `product_params`; the backend generates the
    *  id/slug and sets is_published. Pass variations (price/stock per SKU) + categories. */
@@ -741,9 +719,6 @@ export class WebcakeCmsApi {
   }
   getOrder(orderId: string) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/orders/${orderId}`);
-  }
-  countOrdersByStatus() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/orders/count_by_status`);
   }
 
   // ── Site Style / Themes ──
@@ -893,14 +868,6 @@ export class WebcakeCmsApi {
   uninstallApp(id: string) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/applications/subcriptions/uninstall_app`, { body: { id } });
   }
-  /** Update an installed app's settings. `attrs` is merged onto the subscription (e.g. { settings: {...}, status }). */
-  updateApp(id: string, attrs: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/applications/subcriptions/update_app`, { body: { id, attrs } });
-  }
-  /** Update the product-review app's settings (shop_info, display options…). */
-  updateAppReview(id: string, settings: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/applications/subcriptions/update_app_review`, { body: { id, settings } });
-  }
 
   // ── Product reviews (product_review app) ──
   listReviews(query?: any) {
@@ -917,314 +884,31 @@ export class WebcakeCmsApi {
   createOrUpdateReview(body: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/applications/product_reviews/create_or_update`, { body });
   }
-  removeReviews(ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/applications/product_reviews/remove`, { body: { ids } });
-  }
-  /** Approve/hide reviews. `payload` typically { ids, permission } (permission 0=approved, 1=pending…). */
-  updateReviewStatus(payload: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/applications/product_reviews/update_status`, { body: payload });
-  }
 
   // ── Appointment app ──
-  listAppointmentCalendars(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/appointment/appointment_calendars`, { query });
-  }
   createAppointmentCalendar(appointment_calendar: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/appointment/create_appointment_calendar`, { body: { appointment_calendar } });
   }
   updateAppointmentCalendar(appointment_calendar: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/appointment/update_appointment_calendar`, { body: { appointment_calendar } });
   }
-  deleteAppointmentCalendars(ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/appointment/delete_appointment_calendars`, { body: { ids } });
-  }
-  duplicateAppointmentCalendars(ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/appointment/duplicate_appointment_calendars`, { body: { ids } });
-  }
-  listAppointments(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/appointment/appointments`, { query });
-  }
-  listAppointmentAddresses(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/appointment/appointment_addresses`, { query });
-  }
-  createAppointmentAddress(appointment_address: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/appointment/create_appointment_address`, { body: { appointment_address } });
-  }
-  updateAppointmentAddress(appointment_address: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/appointment/update_appointment_address`, { body: { appointment_address } });
-  }
-  deleteAppointmentAddresses(ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/appointment/delete_appointment_addresses`, { body: { ids } });
-  }
-  listAppointmentClassifies(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/appointment/appointment_classifies`, { query });
-  }
-  createAppointmentClassify(appointment_classify: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/appointment/create_appointment_classify`, { body: { appointment_classify } });
-  }
-  updateAppointmentClassify(appointment_classify: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/appointment/update_appointment_classify`, { body: { appointment_classify } });
-  }
-  deleteAppointmentClassifies(ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/appointment/delete_appointment_classifies`, { body: { ids } });
-  }
-  listAppointmentEmployees(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/appointment/appointment_employees`, { query });
-  }
-  createAppointmentEmployee(appointment_employee: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/appointment/create_appointment_employee`, { body: { appointment_employee } });
-  }
-  updateAppointmentEmployee(appointment_employee: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/appointment/update_appointment_employee`, { body: { appointment_employee } });
-  }
-  deleteAppointmentEmployees(ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/appointment/delete_appointment_employees`, { body: { ids } });
-  }
 
   // ── Affiliate app ──
-  getProgramAffiliates() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/affiliate/program_affiliates`);
-  }
-  getProductAffiliates(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/affiliate/product_affiliates`, { query });
-  }
-  getOrderAffiliates(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/affiliate/order_affiliates`, { query });
-  }
-  getAccountAffiliates(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/affiliate/account_affiliates`, { query });
-  }
-  getPayoutAffiliates(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/affiliate/payout_affiliates`, { query });
-  }
-  getAffiliateStatistic() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/affiliate/statistic`);
-  }
-  upsertOrderProgramAffiliate(payload: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/affiliate/upsert_order_program_affiliate`, { body: payload });
-  }
-  upsertProductProgramAffiliate(payload: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/affiliate/upsert_product_program_affiliate`, { body: payload });
-  }
-  upsertProductAffiliate(payload: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/affiliate/upsert_product_affiliate`, { body: payload });
-  }
-  deleteProductAffiliates(payload: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/affiliate/delete_product_affiliates`, { body: payload });
-  }
-  updatePayoutAffiliateStatus(payload: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/affiliate/update_status_payout_affiliate`, { body: payload });
-  }
-  deleteAccountAffiliates(payload: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/affiliate/delete_account_affiliates`, { body: payload });
-  }
-  updateAccountAffiliate(payload: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/affiliate/update_account_affiliate`, { body: payload });
-  }
 
   // ── Catalog extras (brands / suppliers / tags / ribbons / materials / variations) ──
-  listProductBrands() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/products/product_brands/all`);
-  }
-  upsertProductBrand(body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/products/product_brands/create_or_update`, { body });
-  }
-  listProductSuppliers() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/products/product_suppliers/all`);
-  }
-  upsertProductSupplier(body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/products/product_suppliers/create_or_update`, { body });
-  }
-  listProductTags(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/products/product_tags/all`, { query });
-  }
-  upsertProductTag(body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/products/product_tags/create_or_update`, { body });
-  }
-  listRibbons() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/products/ribbons/all`);
-  }
-  upsertRibbon(body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/products/ribbons/create_or_update`, { body });
-  }
-  listMaterials() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/products/materials/all`);
-  }
-  upsertMaterial(body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/products/materials/create_or_update`, { body });
-  }
-  getVariation(variationId: string) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/products/variation/${variationId}`);
-  }
-  getProductMeasurement() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/settings/product_measurement`);
-  }
-  updateProductMeasurement(product_measurement: any[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/settings/product_measurement/update`, { body: { product_measurement } });
-  }
-  listBlockPhoneNumbers(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/settings/block_phone_number/all`, { query });
-  }
-  upsertBlockPhoneCustomers(phone_numbers: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/settings/block_phone_number/upsert_block_phone_customers`, { body: { phone_numbers } });
-  }
-  removeAllBlockPhoneCustomers() {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/settings/block_phone_number/remove_all_block_phone_customers`, { body: {} });
-  }
-  getPriceContacts(type?: number) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/settings/price_contact/get`, { query: { type } });
-  }
-  updatePriceContact(body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/settings/price_contact/update`, { body });
-  }
-  getCategoryById(categoryId: string) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/categories/${categoryId}`);
-  }
 
   // ── Site config (domains / redirects / shipping / utms / logs / filters / settings / fonts) ──
-  listDomains(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/domains/all`, { query });
-  }
-  createDomain(body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/domains/create`, { body });
-  }
-  updateDomain(body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/domains/update`, { body });
-  }
-  verifyDomain(domain_id: string) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/domains/verify`, { body: { domain_id } });
-  }
-  deleteDomain(domain_id: string) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/domains/delete`, { body: { domain_id } });
-  }
-  checkDomain(domain: string) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/domains/check_domain`, { body: { domain } });
-  }
-  listRedirectUrls(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/seos/redirect_urls/all`, { query });
-  }
-  createRedirectUrl(redirect_url: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/seos/redirect_urls/create`, { body: { redirect_url } });
-  }
-  updateRedirectUrl(redirect_url: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/seos/redirect_urls/update`, { body: { redirect_url } });
-  }
-  deleteRedirectUrls(redirect_url_ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/seos/redirect_urls/delete`, { body: { redirect_url_ids } });
-  }
-  getShipping() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/settings/shipping`);
-  }
-  updateShipping(body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/settings/shipping/update`, { body });
-  }
-  listSiteUtms(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/site_utms/all`, { query });
-  }
-  createSiteUtm(site_utm: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/site_utms/create`, { body: { site_utm } });
-  }
-  updateSiteUtm(site_utm: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/site_utms/update`, { body: { site_utm } });
-  }
-  deleteSiteUtms(ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/site_utms/delete`, { body: { ids } });
-  }
-  listSystemLogs(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/system_logs/all`, { query });
-  }
-  listSavedFilters(table_key: string) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/saved_filters/`, { query: { table_key } });
-  }
-  createSavedFilter(saved_filter: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/saved_filters/create`, { body: { saved_filter } });
-  }
-  updateSavedFilter(id: string, saved_filter: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/saved_filters/${id}/update`, { body: { saved_filter } });
-  }
-  deleteSavedFilter(id: string) {
-    return this.request("DELETE", `/api/v1/dashboard/site/${this.siteId}/saved_filters/${id}`);
-  }
   /** Raw /update_site call. `body` top-level keys replace; a nested `settings` key is merged server-side. */
   updateSiteRaw(body: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/update_site`, { body });
   }
-  updateSiteName(name: string) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/update_site_name`, { body: { name } });
-  }
-  updateSiteSlug(slug: string) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/update_slug_name`, { body: { slug } });
-  }
-  loadFonts() {
-    return this.request("GET", `/api/v1/site/${this.siteId}/load_fonts`);
-  }
-  removeFont(id: string) {
-    return this.request("DELETE", `/api/v1/site/${this.siteId}/remove_font`, { body: { id } });
-  }
-  loadFontGroups() {
-    return this.request("GET", `/api/v1/site/${this.siteId}/load_font_groups`);
-  }
   createFontGroup(body: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/create_font_group`, { body: { ...body, site_id: this.siteId } });
   }
-  removeFontGroup(id: string) {
-    return this.request("DELETE", `/api/v1/site/${this.siteId}/remove_font_groups`, { body: { id, site_id: this.siteId } });
-  }
-  listApiKeys(query?: any) {
-    return this.request("GET", `/api/v1/site/${this.siteId}/api_keys/all`, { query });
-  }
-  listPublishHistories(query?: any) {
-    return this.request("GET", `/api/v1/site/${this.siteId}/publish_histories`, { query });
-  }
 
   // ── Marketing / CRM / team ──
-  getSendEmail() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/send_email/all`);
-  }
-  saveSendEmail(body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/send_email/save`, { body });
-  }
-  listContacts(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/contact/all`, { query });
-  }
   createContact(body: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/contact/create`, { body: { ...body, site_id: this.siteId } });
-  }
-  deleteContacts(ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/contact/delete`, { body: { ids } });
-  }
-  listSubscribers(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/subscriber/all`, { query });
-  }
-  createSubscriber(body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/subscriber/create`, { body });
-  }
-  deleteSubscribers(ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/subscriber/delete`, { body: { ids } });
-  }
-  listEmployees() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/settings/employee/all`);
-  }
-  inviteEmployee(email: string) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/settings/employee/invite`, { body: { email } });
-  }
-  updateEmployeePermissions(site_permission: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/settings/employee/change_permissions`, { body: { site_permission } });
-  }
-  deleteEmployees(site_permission_ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/settings/employee/delete_employees`, { body: { site_permission_ids } });
-  }
-  listInvitations() {
-    return this.request("GET", `/api/v1/dashboard/site/invitations/all`);
-  }
-  acceptInvitation(invitation_id: string) {
-    return this.request("POST", `/api/v1/dashboard/site/invitations/accept`, { body: { invitation_id } });
-  }
-  refuseInvitation(invitation_id: string) {
-    return this.request("POST", `/api/v1/dashboard/site/invitations/refuse`, { body: { invitation_id } });
-  }
-  listCustomerTags() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/customer/customer_tags`);
   }
   upsertCustomerTag(body: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/customer/upsert_customer_tag`, { body: { ...body, site_id: this.siteId } });
@@ -1232,129 +916,21 @@ export class WebcakeCmsApi {
   assignCustomerTags(body: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/customer/update_tags_for_multiple_customers`, { body: { ...body, site_id: this.siteId } });
   }
-  getInsightToday() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/insight/today`);
-  }
-  getInsight(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/insight/all`, { query });
-  }
-  listNotifications() {
-    return this.request("GET", `/api/v1/dashboard/site/notifications/all`);
-  }
-  markNotificationRead(notification_id: string) {
-    return this.request("POST", `/api/v1/dashboard/site/notifications/mark_as_read`, { body: { notification_id } });
-  }
 
   // ── Multilingual / translations ──
-  mlAddLanguages(languages: any[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/multilingual/add_multiple_language`, { body: { languages } });
-  }
-  mlChangeDefault(language_code: string) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/multilingual/change_language_default`, { body: { language_code } });
-  }
   mlGetTranslations(resource: string, query?: any) {
     return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/multilingual/${resource}`, { query });
   }
   mlSaveTranslations(action: string, body: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/multilingual/${action}`, { body });
   }
-  mlTranslateJson(body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/multilingual/translate_json`, { body });
-  }
 
   // ── Media library + PWA ──
-  listMediaFolders(query?: any) {
-    return this.request("GET", `/api/v1/site/${this.siteId}/media/folder`, { query });
-  }
-  listMediaContent(query?: any) {
-    return this.request("GET", `/api/v1/site/${this.siteId}/media/content`, { query });
-  }
-  listMediaAll(query?: any) {
-    return this.request("GET", `/api/v1/site/${this.siteId}/media/all`, { query });
-  }
-  getMediaCapacity() {
-    return this.request("GET", `/api/v1/site/${this.siteId}/media/capacity`);
-  }
-  emptyMediaTrash() {
-    return this.request("POST", `/api/v1/site/${this.siteId}/media/empty_trash`, { body: {} });
-  }
-  uploadBase64Media(base64: string) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/media/content/b64`, { body: { base64 }, timeout: 60000 });
-  }
-  updateMediaFolder(body: any) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/media/folder/update`, { body });
-  }
-  updateMediaContent(body: any) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/media/content/update`, { body });
-  }
-  getPwa() {
-    return this.request("GET", `/api/v1/site/${this.siteId}/pwa`);
-  }
-  upsertPwa(body: any) {
-    return this.request("POST", `/api/v1/site/${this.siteId}/pwa/upsert`, { body });
-  }
 
   // ── Apps: product design / personal product design / course ──
-  getDeviceTemplates() {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/applications/product_design/get_group_device_tempalte`);
-  }
-  createProductsByDeviceTemplate(groups: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/applications/product_design/create_product_by_device_template`, { body: { groups, site_id: this.siteId } });
-  }
-  getAllPpd(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/applications/personal_product_design/get_all_ppd`, { query });
-  }
-  upsertPpd(ppds: any[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/applications/personal_product_design/upsert_ppd`, { body: { ppds, site_id: this.siteId } });
-  }
-  removePpd(ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/applications/personal_product_design/remove_ppd`, { body: { ids, site_id: this.siteId } });
-  }
-  getProductVariationTemplate(product_id: string) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/applications/personal_product_design/get_product_variation_template`, { query: { product_id } });
-  }
-  listCourses(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/course-app`, { query });
-  }
-  getCourse(id: string) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/course-app/${id}`);
-  }
   createCourse(body: any) {
     return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/course-app`, { body: { ...body, site_id: this.siteId } });
   }
-  updateCourse(id: string, body: any) {
-    return this.request("PATCH", `/api/v1/dashboard/site/${this.siteId}/course-app/${id}`, { body });
-  }
-  deleteCourse(id: string) {
-    return this.request("DELETE", `/api/v1/dashboard/site/${this.siteId}/course-app/${id}`);
-  }
-  deleteManyCourses(ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/course-app/delete_many`, { body: { ids, site_id: this.siteId } });
-  }
-  getCourseMembers(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/course-app/members`, { query });
-  }
 
   // ── Sale channels: partner feeds + catalogs ──
-  listPartnerFeeds(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/sale_channels/partner_feeds/all`, { query });
-  }
-  createPartnerFeed(body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/sale_channels/partner_feeds/create`, { body });
-  }
-  updatePartnerFeed(partnerFeedId: string, body: any) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/sale_channels/partner_feeds/${partnerFeedId}/update`, { body });
-  }
-  deletePartnerFeeds(partner_feed_ids: string[]) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/sale_channels/partner_feeds/delete`, { body: { partner_feed_ids } });
-  }
-  listPartnerFeedProducts(partnerFeedId: string, query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/sale_channels/partner_feeds/${partnerFeedId}/products/all`, { query });
-  }
-  syncPartnerFeed(partnerFeedId: string) {
-    return this.request("POST", `/api/v1/dashboard/site/${this.siteId}/sale_channels/partner_feeds/${partnerFeedId}/products/sync`, { body: { partner_feed_id: partnerFeedId } });
-  }
-  listGoogleMerchants(query?: any) {
-    return this.request("GET", `/api/v1/dashboard/site/${this.siteId}/sale_channels/google/merchants`, { query });
-  }
 }

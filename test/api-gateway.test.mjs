@@ -1,3 +1,4 @@
+import { toolsOf } from "./tools-of.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../dist/server.js";
@@ -12,7 +13,7 @@ function setup(reply = () => [200, { data: [] }]) {
     const [status, body] = reply(u, init);
     return new Response(JSON.stringify(body), { status });
   };
-  const tools = createServer(new WebcakeCmsApi({ baseUrl: "http://x", token: "t", siteId: "S1" }))._registeredTools;
+  const tools = toolsOf(createServer(new WebcakeCmsApi({ baseUrl: "http://x", token: "t", siteId: "S1" })));
   const run = async (name, args) => {
     const r = await tools[name].handler(args, {});
     const text = r.content[0].text;
@@ -22,7 +23,7 @@ function setup(reply = () => [200, { data: [] }]) {
 }
 
 test("catalog phủ backend: hàng trăm route, gồm cả route chưa có tool riêng", () => {
-  assert.ok(API_OPS.length > 700, `${API_OPS.length}`);
+  assert.ok(API_OPS.length > 600, `${API_OPS.length}`);
   assert.ok(API_OPS.filter((o) => !o.tools).length > 400);
   const create = API_OPS.find((o) => o.id === "post:/api/v1/dashboard/site/:site_id/products/create");
   assert.deepEqual(create.required, ["product_params"]);
@@ -33,7 +34,8 @@ test("catalog phủ backend: hàng trăm route, gồm cả route chưa có tool 
 test("api_find: một dòng mỗi route; id → call sheet", async () => {
   const { run } = setup();
   const lines = (await run("api_find", { query: "product tag" })).json;
-  assert.ok(lines.some((l) => /^get:\/api\/v1\/dashboard\/site\/:site_id\/products\/product_tags\/all — ProductController\.get_all_product_tags( \([^)]*\))? ⇒ tool: list_product_tags$/.test(l)), lines.join("\n"));
+  // product tags have no dedicated tool any more: the route itself is the way.
+  assert.ok(lines.some((l) => /^get:\/api\/v1\/dashboard\/site\/:site_id\/products\/product_tags\/all — ProductController\.get_all_product_tags( \([^)]*\))?$/.test(l)), lines.join("\n"));
   const sheet = (await run("api_find", { id: "post:/api/v1/dashboard/site/:site_id/products/create" })).json;
   assert.deepEqual(sheet.path_params, ["site_id"]);
   assert.deepEqual(sheet.prefer_tool, ["create_product"]);

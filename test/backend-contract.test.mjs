@@ -1,5 +1,6 @@
 // Offline checks that the MCP talks to builderx_api / the storefront renderer the way they
 // actually work today (each case was a real mismatch). Run: npm test. No network: fetch is stubbed.
+import { toolsOf } from "./tools-of.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { WebcakeCmsApi } from "../dist/api.js";
@@ -54,7 +55,7 @@ test("removed backend routes have no tools (sitemap is built at render time)", (
 
 test("list_orders uses the backend status enum and names each status", async () => {
   const api = new Proxy({}, { get: (_, k) => async () => (k === "listOrders" ? { orders: { data: [{ id: "o1", status: 6 }], total_entries: 1 } } : {}) });
-  const t = createServer(api)._registeredTools.list_orders;
+  const t = toolsOf(createServer(api)).list_orders;
   const desc = t.inputSchema.shape.status.description;
   assert.match(desc, /6=canceled/);
   assert.match(desc, /-1 = all/);

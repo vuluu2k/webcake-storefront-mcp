@@ -55,10 +55,4 @@ export function registerOrderTools(server: McpServer, api: WebcakeCmsApi, handle
     ({ id }) => handle(() => api.getOrder(id))
   );
 
-  server.tool(
-    "count_orders_by_status",
-    "Get order count grouped by status. Useful for dashboard overview",
-    {},
-    () => handle(() => api.countOrdersByStatus())
-  );
 }

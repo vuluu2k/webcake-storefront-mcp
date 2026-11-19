@@ -147,9 +147,6 @@ function buildSchemas(collections: any): any[] {
 }
 
 export function registerCmsFileTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
-  server.tool("list_cms_files", "List all CMS files (HTTP functions, cron jobs, ...) for the site", {}, () =>
-    handle(() => api.listCmsFiles())
-  );
 
   server.tool(
     "create_cms_file",
@@ -301,18 +298,6 @@ Example: "get_Products" → function_name="Products", method="GET"`,
   );
 
   server.tool(
-    "debug_function",
-    "Run JS code in debug mode (without deploying). Returns execution result and console logs",
-    {
-      content: z.string().describe("JS code to debug"),
-      function_name: z.string().describe("Function name to run"),
-      params: z.record(z.any()).optional().describe("Test parameters"),
-    },
-    ({ content, function_name, params }) =>
-      handle(() => api.debugFunction({ content, functionName: function_name, params }))
-  );
-
-  server.tool(
     "save_file_version",
     "Save a version snapshot of a CMS file for rollback",
     {
@@ -326,18 +311,11 @@ Example: "get_Products" → function_name="Products", method="GET"`,
   );
 
   server.tool(
-    "get_file_versions",
-    "View version history of a CMS file. Each version includes its saved content — to restore, pass that content back to update_http_function (the http_function file) or update_cms_file, or use restore_file_version.",
-    { cms_file_id: z.string().describe("CMS file ID") },
-    ({ cms_file_id }) => handle(() => api.getFileVersions({ file_id: cms_file_id }))
-  );
-
-  server.tool(
     "restore_file_version",
     "Roll a CMS file back to a saved version in one step: reads the version's content and writes it back to the file. Omit version_id to restore the most recent snapshot. Tip: save_file_version on the current content first if you want an undo point.",
     {
       cms_file_id: z.string().describe("CMS file ID to restore"),
-      version_id: z.string().optional().describe("Which version to restore (from get_file_versions). Omit = latest snapshot."),
+      version_id: z.string().optional().describe("Which version to restore (api_find 'file versions' → api_get). Omit = latest snapshot."),
     },
     ({ cms_file_id, version_id }) =>
       handle(async () => {
@@ -347,7 +325,7 @@ Example: "get_Products" → function_name="Products", method="GET"`,
         if (!list.length) throw new Error("No saved versions for this file — nothing to restore.");
 
         const version = version_id ? list.find((v: any) => v.id === version_id) : list[0];
-        if (!version) throw new Error(`Version "${version_id}" not found. Use get_file_versions to list available versions.`);
+        if (!version) throw new Error(`Version "${version_id}" not found. List them with api_find("file versions") → api_get.`);
         const content = version.content;
         if (content == null) throw new Error("That version has no stored content; cannot restore.");
 
@@ -363,10 +341,4 @@ Example: "get_Products" → function_name="Products", method="GET"`,
       })
   );
 
-  server.tool(
-    "toggle_debug_render",
-    "Toggle debug render mode for a CMS file",
-    { cms_file_id: z.string().describe("CMS file ID") },
-    ({ cms_file_id }) => handle(() => api.toggleDebugRender({ cms_file_id }))
-  );
 }

@@ -3,6 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../dist/server.js";
+import { toolEntries } from "../dist/tools/registry.js";
 
 const stubApi = () => new Proxy({}, { get: () => async () => ({ data: {} }) });
 const build = (opts) => createServer(stubApi(), opts);
@@ -21,12 +22,12 @@ test("gateway meta-tools are always present", () => {
   }
 });
 
-test("core mode loads fewer tools than all mode, but all >= 250", () => {
+test("core mode loads fewer tools than all mode; the registry keeps every tool", () => {
   const core = toolNames(build()).length;
   const all = toolNames(build({ tools: "all" })).length;
   assert.ok(core < all, "core must be smaller than all");
-  assert.ok(core >= 40, `core too small: ${core}`);
-  assert.ok(all >= 250, `expected the full catalog, got ${all}`);
+  assert.ok(core <= 136, `core grew to ${core} native tools — move a group on-demand or fold it into the api gateway`);
+  assert.ok(toolEntries(build()).size >= 150, "the registry still holds every tool");
 });
 
 test("deferred tools are hidden in core but reachable via the registry", () => {
@@ -59,17 +60,10 @@ test("search_tools surfaces the right tool for representative queries", async ()
   const s = build();
   const cases = {
     "translation": "list_translations",
-    "shipping fee": "get_shipping",
-    "add domain ssl": "add_domain",
-    "block phone": "block_phone_customers",
-    "affiliate payout": "list_affiliate_payouts",
-    "email template": "get_email_templates",
-    "appointment calendar": "list_appointment_calendars",
-    "partner feed": "list_partner_feeds",
-    "pwa manifest": "get_pwa",
-    "product ribbon": "list_ribbons",
     "site subscription plan": "get_site_subscription",
     "count sites by plan": "count_my_sites",
+    "image alt": "set_image_alts",
+    "automation": "list_automations",
   };
   for (const [q, expected] of Object.entries(cases)) {
     const { json } = await callJson(s, "search_tools", { query: q, limit: 6 });
@@ -78,9 +72,30 @@ test("search_tools surfaces the right tool for representative queries", async ()
   }
 });
 
+test("topics of the folded CRUD tools are found by api_find (shipping, domain, ribbon, pwa, affiliate payout, partner feed)", async () => {
+  const s = build();
+  for (const [q, path] of Object.entries({
+    "shipping": "/settings/shipping",
+    "domain": "/domains",
+    "ribbon": "/ribbons",
+    "pwa": "pwa",
+    "affiliate payout": "affiliate",
+    "partner feed": "partner_feed",
+  })) {
+    const { json } = await callJson(s, "api_find", { query: q, limit: 10 });
+    assert.ok(json.some((l) => l.includes(path)), `api_find "${q}" → ${json.slice(0, 3)}`);
+  }
+});
+
+test("a folded tool name sent to invoke_tool points at its gateway route", async () => {
+  const r = await callJson(build(), "invoke_tool", { name: "list_ribbons", arguments: {} });
+  assert.equal(r.isError, true);
+  assert.match(r.text, /folded into the API gateway — run api_get\(\{ id: "get:\/api\/v1\/dashboard\/site\/:site_id\/products\/ribbons\/all"/);
+});
+
 test("search_tools returns a JSON input schema for each match", async () => {
   const s = build();
-  const { json } = await callJson(s, "search_tools", { query: "ribbon", limit: 3 });
+  const { json } = await callJson(s, "search_tools", { query: "translation", limit: 3 });
   assert.ok(json.length > 0, "should have results");
   for (const r of json) {
     assert.ok(r.input_schema && typeof r.input_schema === "object", "each result needs a JSON schema");
@@ -90,8 +105,8 @@ test("search_tools returns a JSON input schema for each match", async () => {
 
 test("invoke_tool validates arguments (missing required field)", async () => {
   const s = build();
-  const r = await callJson(s, "invoke_tool", { name: "upsert_ribbon", arguments: {} });
-  assert.equal(r.isError, true, "missing name/type must error");
+  const r = await callJson(s, "invoke_tool", { name: "create_contact", arguments: {} });
+  assert.equal(r.isError, true, "missing name must error");
   assert.match(r.text, /invalid arguments/i);
 });
 
@@ -104,9 +119,9 @@ test("invoke_tool rejects unknown tool names", async () => {
 
 test("invoke_tool dispatches to a real handler (reaches the stub api)", async () => {
   const s = build();
-  // list_ribbons is deferred in core; invoking it should run the handler against the stub api
+  // list_translations is deferred in core; invoking it should run the handler against the stub api
   // and return a (non-error) result rather than 'unknown tool'.
-  const r = await callJson(s, "invoke_tool", { name: "list_ribbons", arguments: {} });
+  const r = await callJson(s, "invoke_tool", { name: "list_translations", arguments: { resource: "product", language_code: "en" } });
   assert.equal(r.isError, false, `expected success, got: ${r.text}`);
 });
 

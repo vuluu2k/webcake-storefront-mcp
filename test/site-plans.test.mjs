@@ -1,5 +1,6 @@
 // Site plan tools: subscription summary, secret whitelist, filter validation, custom-domain detection,
 // and count_my_sites over a stubbed fetch. Run: npm test. No network.
+import { toolsOf } from "./tools-of.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { WebcakeCmsApi } from "../dist/api.js";
@@ -77,7 +78,7 @@ function stubFetch(reply) {
   return { calls, restore: () => (globalThis.fetch = real) };
 }
 const call = async (s, name, args) => {
-  const r = await s._registeredTools[name].handler(args ?? {}, {});
+  const r = await toolsOf(s)[name].handler(args ?? {}, {});
   return { isError: !!r.isError, text: r.content[0].text, json: (() => { try { return JSON.parse(r.content[0].text); } catch { return null; } })() };
 };
 

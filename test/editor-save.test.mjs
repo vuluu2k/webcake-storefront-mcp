@@ -1,5 +1,6 @@
 // Offline: page writes and publishes reach the backend the way the editor's PagePublish.vue sends
 // them (builderx_spa) — cart + popups in global_sources, a single /publish, global sections synced.
+import { toolsOf } from "./tools-of.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { WebcakeCmsApi } from "../dist/api.js";
@@ -86,7 +87,7 @@ test("preview_page shoots the SAVED draft through the editor's preview host, des
       return async () => ({});
     },
   });
-  const tools = createServer(api, { tools: "all" })._registeredTools;
+  const tools = toolsOf(createServer(api, { tools: "all" }));
   const out = await tools.preview_page.handler({ page_id: "A", widths: [1280, 420], full_page: true }, {});
   assert.equal(refreshed, 1);
   assert.deepEqual(shots, ["https://preview.webcake.biz/S/lien-he", "https://preview.webcake.biz/S/lien-he"]);

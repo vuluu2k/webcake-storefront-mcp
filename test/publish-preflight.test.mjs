@@ -1,5 +1,6 @@
 // Offline checks for the publish guard: preflight blocks what makes /publish fail or ship a broken
 // site, the live page is verified afterwards, and raw source writes get the full validator. Run: npm test.
+import { toolsOf } from "./tools-of.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../dist/server.js";
@@ -25,7 +26,7 @@ const site = ({ css = "", pages = [page()] } = {}) => {
       return async () => ({});
     },
   });
-  return { calls, tools: createServer(api, { tools: "all" })._registeredTools };
+  return { calls, tools: toolsOf(createServer(api, { tools: "all" })) };
 };
 const run = async (tools, name, args) => JSON.parse((await tools[name].handler(args, {})).content[0].text);
 
@@ -98,7 +99,7 @@ test("update_page_source refuses new structural errors but lets a broken page be
 });
 
 test("a crash-level popup blocks publish too", async () => {
-  const t = createServer(new Proxy({}, {
+  const t = toolsOf(createServer(new Proxy({}, {
     get: (_, k) => {
       if (k === "baseUrl") return "http://x";
       if (k === "getSiteSettings") return async () => ({});
@@ -106,7 +107,7 @@ test("a crash-level popup blocks publish too", async () => {
       if (k === "globalSourcesForSave") return async () => [{ id: "P", component: "popup", source: { id: "POPUP-1", type: "popup", specials: [] } }];
       return async () => ({});
     },
-  }), { tools: "all" })._registeredTools;
+  }), { tools: "all" }));
   const dry = await run(t, "publish_site", { dry_run: true });
   assert.equal(dry.preflight.ok, false);
   assert.match(dry.preflight.errors[0], /popup P: .*specials must be an object/);
