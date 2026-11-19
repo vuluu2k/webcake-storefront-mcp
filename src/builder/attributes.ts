@@ -18,6 +18,10 @@ type ObservedKeys = {
   types?: Record<string, string[]>;
   /** "specials.type" → the values seen, for code-like keys only (scripts/mine-element-keys.mjs). */
   values?: Record<string, string[]>;
+  /** Parent type → count on real pages ("(page)" = top level). */
+  parents?: Record<string, number>;
+  /** Child type → count on real pages. */
+  children?: Record<string, number>;
 };
 export let OBSERVED: Record<string, ObservedKeys> = {};
 try {

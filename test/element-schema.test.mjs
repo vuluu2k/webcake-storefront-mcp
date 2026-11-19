@@ -122,3 +122,22 @@ test("schema gộp renderer + editor: default, giá trị, key không tác dụn
   // style config of one part folds into one line
   assert.ok(keyReference("grid-product").config.some((l) => /^addToCart\{.*Color.*\}: style of the addToCart part$/.test(l)));
 });
+
+test("quan hệ element: cha bắt buộc từ trang thật, type không được render, ngữ cảnh form/product", async () => {
+  const { relationsOf } = await import("../dist/builder/element-schema.js");
+  const { validatePage } = await import("../dist/builder/page.js");
+  const { buildElement } = await import("../dist/builder/catalog.js");
+  assert.match(relationsOf("menu-item").join("\n"), /Must sit directly in menu/);
+  assert.match(relationsOf("product-overlay").join("\n"), /grid-product or slider-product/);
+  assert.match(relationsOf("input").join("\n"), /Look comes from the enclosing FORM/);
+  assert.match(relationsOf("form").join("\n"), /customer_data renders ONLY for a logged-in customer/);
+  assert.match(relationsOf("rating-input").join("\n"), /needs a current product/);
+  assert.match(relationsOf("collapse-item")[0], /NOT RENDERED/);
+  // a product-overlay dropped straight into a section → BAD_PARENT; collapse-item → NOT_RENDERED
+  const sec = buildElement("section", {});
+  sec.children = [buildElement("container", {})];
+  sec.children[0].children = [buildElement("product-overlay", {}), buildElement("collapse-item", {})];
+  const msgs = (validatePage({ sections: [sec] }).warnings || []).join("\n");
+  assert.match(msgs, /\[BAD_PARENT\].*product-overlay/);
+  assert.match(msgs, /\[NOT_RENDERED\].*collapse-item/);
+});

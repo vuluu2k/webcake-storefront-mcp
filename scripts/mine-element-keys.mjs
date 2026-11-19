@@ -4,6 +4,8 @@
 // adds, per key, the value TYPES seen and, for code-like keys, the VALUES seen (tag, type,
 // display…), which validate_page uses as the allowed set. Values are kept only when they look
 // like codes (identifier tokens, few distinct): no text, URLs, colours, ids or numbers.
+// Also counts, per type, the parent types it sits in and the child types it holds on real pages
+// (replaced each run, not merged) — the element relations validate_page / get_element use.
 //
 //   npm run build && node scripts/mine-element-keys.mjs [--sites 100] [--env prod]
 import { readFileSync, writeFileSync } from "node:fs";
@@ -25,6 +27,8 @@ const MAX_VALUES = 12;
 const CONTENT_KEY = /label|placeholder|text|title|name|content|desc|alt|message|msg|link|url|src|href|class|css|html|code|icon|note|caption|email|phone/i;
 const typeOf = (v) => (Array.isArray(v) ? "array" : v === null ? "null" : typeof v);
 const values = {}; // `${type}|${where}.${key}` → Set | null (null = not code-like)
+const parentsRun = {}; // type → parent type → count ("(page)" for a top-level section)
+const childrenRun = {}; // type → child type → count
 
 function entry(type) {
   return (db[type] ??= { seen: 0, specials: [], config: [], style: [], bindings: [], events: false });
@@ -49,10 +53,12 @@ function note(type, bucket, obj) {
   }
   e[bucket] = [...keys].sort();
 }
-function walk(n) {
+function walk(n, parent = "(page)") {
   if (!n || typeof n !== "object" || typeof n.type !== "string") return;
   const e = entry(n.type);
   e.seen++;
+  ((parentsRun[n.type] ??= {})[parent] = (parentsRun[n.type][parent] || 0) + 1);
+  if (parent !== "(page)") ((childrenRun[parent] ??= {})[n.type] = (childrenRun[parent][n.type] || 0) + 1);
   note(n.type, "specials", n.specials);
   for (const layer of Object.keys(n).filter((k) => k === "runtime" || /^bp\d+$/.test(k))) {
     note(n.type, "config", n[layer]?.config);
@@ -63,7 +69,7 @@ function walk(n) {
     if (typeof t === "string" && !e.bindings.includes(t)) e.bindings.push(t);
   }
   if (Array.isArray(n.events) && n.events.length) e.events = true;
-  for (const c of Array.isArray(n.children) ? n.children : []) walk(c);
+  for (const c of Array.isArray(n.children) ? n.children : []) walk(c, n.type);
 }
 
 const res = await api.listMySites({ filter: "all", page: 1, limit: MAX_SITES });
@@ -100,6 +106,9 @@ for (const [vk, set] of Object.entries(values)) {
   e.values ??= {};
   e.values[tk] = [...new Set([...(e.values[tk] || []), ...set])].sort();
 }
+const byCount = (o) => Object.fromEntries(Object.entries(o).sort((a, b) => b[1] - a[1]));
+for (const [type, ps] of Object.entries(parentsRun)) db[type].parents = byCount(ps);
+for (const [type, cs] of Object.entries(childrenRun)) db[type].children = byCount(cs);
 const sorted = Object.fromEntries(Object.keys(db).sort().map((k) => [k, db[k]]));
 // One element per line: compact, and a diff still reads per element.
 writeFileSync(FILE, `{\n${Object.entries(sorted).map(([k, v]) => `${JSON.stringify(k)}:${JSON.stringify(v)}`).join(",\n")}\n}\n`);

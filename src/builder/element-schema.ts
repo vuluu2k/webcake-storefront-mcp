@@ -27,8 +27,10 @@ const loadJson = (name: string): any => {
 type Bucket = "specials" | "config";
 interface RendererKey { default?: unknown; values?: string[] }
 interface EditorKey { label?: string; control?: string; options?: string[] }
-const RENDERER: { mentioned?: string[]; shared?: Record<Bucket, Record<string, RendererKey>>; types?: Record<string, Record<Bucket, Record<string, RendererKey>>> } = loadJson("./renderer-keys.generated.json");
+const RENDERER: { mentioned?: string[]; dispatched?: string[]; shared?: Record<Bucket, Record<string, RendererKey>>; types?: Record<string, Record<Bucket, Record<string, RendererKey>>> } = loadJson("./renderer-keys.generated.json");
 const MENTIONED = new Set<string>(RENDERER.mentioned || []);
+/** Types the published renderer has a branch for. A type outside it renders nothing. */
+const RENDERED_TYPES = new Set<string>(RENDERER.dispatched || []);
 const EDITOR: { types?: Record<string, Record<Bucket, Record<string, EditorKey>>> } = loadJson("./editor-keys.generated.json");
 
 // ── Findings: one shape, one string format ──────────────────────────────────────────────
@@ -90,11 +92,30 @@ export interface ElementSchema {
 }
 
 /** Where a node must sit to work. Kept to rules the renderer actually depends on. */
-const PARENTS: Record<string, string[]> = {
-  slide: ["swiper", "carousel"],
-  "collapse-item": ["collapse"],
-};
 export const FORM_FIELDS = new Set(["input", "email", "phone-number", "text-area", "select", "address", "password"]);
+/** Where a node must sit, from real pages: a type seen ≥50 times whose parents (≤3, none of them a
+ *  generic section/container) cover ≥99.5% of its uses — menu-item ⊂ menu, product-overlay ⊂
+ *  grid-product|slider-product, submit-button ⊂ form… Form fields are left to OUTSIDE_FORM. */
+const GENERIC_PARENTS = new Set(["(page)", "section", "container"]);
+const PARENTS: Record<string, string[]> = (() => {
+  const out: Record<string, string[]> = {};
+  for (const [type, o] of Object.entries(OBSERVED)) {
+    const ps = Object.entries(o.parents || {}).sort((a, b) => b[1] - a[1]);
+    const total = ps.reduce((n, [, c]) => n + c, 0);
+    if (total < 50 || FORM_FIELDS.has(type)) continue;
+    const allow: string[] = [];
+    let acc = 0;
+    for (const [p, c] of ps) {
+      allow.push(p);
+      acc += c;
+      if (acc / total >= 0.995) break;
+    }
+    if (allow.length <= 3 && !allow.some((p) => GENERIC_PARENTS.has(p))) out[type] = allow;
+  }
+  // The editor also nests slides in a carousel.
+  out.slide = [...new Set([...(out.slide || ["swiper"]), "carousel"])];
+  return out;
+})();
 
 // "Semantic tag: h1|h2|h3." / "on|off." → an enum. Lists with an ellipsis are open-ended.
 const ENUM_RE = /^(?:[^:|]*:\s*)?((?:[\w-]+)(?:\s*\|\s*[\w-]+)+)\.?$/;
@@ -285,6 +306,8 @@ export function checkElementKeys(node: any): Finding[] {
   const schema = node && typeof node.type === "string" ? elementSchema(node.type) : undefined;
   if (!schema) return out;
   const base = { id: node.id, type: node.type };
+  if (RENDERED_TYPES.size && !RENDERED_TYPES.has(node.type))
+    out.push({ ...base, code: "NOT_RENDERED", severity: "warning", message: `the published renderer has no branch for "${node.type}" — it renders nothing`, fix: `use another element (see relations in get_element("${node.type}"))` });
   const specialsKeys = Object.keys(schema.specials);
   const configKeys = Object.keys(schema.config);
 
@@ -359,6 +382,51 @@ export function valueRules(type: string): Record<string, string> | undefined {
       if (parts.length) out[`${where}.${k}`] = parts.join("; ");
     }
   return Object.keys(out).length ? out : undefined;
+}
+
+// Render-context facts no static read can see: found by rendering real output.
+const CURATED_RELATIONS: Record<string, string[]> = {
+  form: [
+    "specials.type decides who sees it: subscribe = contact/lead/newsletter; form_order = checkout (also the default when unset); customer_data renders ONLY for a logged-in customer (hidden for visitors).",
+  ],
+  text: ["Links inside specials.text are forced blue + underlined (.ql-editor a { … !important }). A menu/footer link that must keep its colour = a text with an open_link click event, not an <a>."],
+  collapse: ["Renders <details>: the title is specials.name, the body goes in ONE collapse-content child (a grid container)."],
+  section: ["style.background is written as-is on the section's background layer: a colour, a gradient, or url(…) with background-size / background-position-x|y / background-repeat."],
+};
+const CONTEXT_TEXT: Record<string, { provides?: string; reads?: string }> = {
+  form_element: { provides: "styles the fields inside it: their frame/background come from THIS form's style + config.backgroundInput (a field's own frame is ignored)" },
+  product: { provides: "sets the current product for its items (product::… bindings, product-overlay, rating, flash-sale)", reads: "needs a current product: put it in a grid-product/slider-product card or on a product page" },
+  product_countdown: { provides: "lets a countdown inside count this product's promotion", reads: "inside a product card it counts that product's promotion" },
+  product_promotions_override: { reads: "can follow a promotion override set by the product page" },
+};
+const pctList = (o: Record<string, number> = {}, top = 4) => {
+  const all = Object.entries(o).sort((a, b) => b[1] - a[1]);
+  const total = all.reduce((n, [, c]) => n + c, 0) || 1;
+  return all.slice(0, top).map(([k, c]) => `${k} ${Math.round((c / total) * 100)}%`).join(", ");
+};
+
+/** How a type relates to others: where it sits / what it holds on real pages, which render
+ *  context it takes from or gives to its neighbours, and the hard rules. For get_element. */
+export function relationsOf(type: string): string[] | undefined {
+  if (!isKnownType(type)) return undefined;
+  const o = OBSERVED[type];
+  const r: any = (RENDERER.types as any)?.[type]?.relations || {};
+  const out: string[] = [];
+  if (RENDERED_TYPES.size && !RENDERED_TYPES.has(type)) out.push("NOT RENDERED: the published renderer has no branch for this type — don't use it.");
+  if (PARENTS[type]) out.push(`Must sit directly in ${PARENTS[type].join(" or ")} (real pages: ${pctList(o?.parents)}).`);
+  else if (o?.parents) out.push(`Sits in: ${pctList(o.parents)} (real pages).`);
+  if (o?.children) out.push(`Holds: ${pctList(o.children, 6)} (real pages).`);
+  for (const p of r.parent || []) {
+    if (p.startsWith("form.")) {
+      if (!out.some((l) => l.startsWith("Look comes from"))) out.push("Look comes from the enclosing FORM: set border/radius/colour/font size on the form's style and the field background on its config.backgroundInput.");
+    } else if (p === "parent.style" || p === "parent.config") {
+      if (!out.some((l) => l.startsWith("Reads its parent"))) out.push("Reads its parent's style/config (the group it belongs to) when it renders.");
+    } else out.push(`Reads its parent's ${p.replace(/^parent\./, "")}.`);
+  }
+  for (const k of r.provides || []) if (CONTEXT_TEXT[k]?.provides) out.push(`Gives context: ${CONTEXT_TEXT[k].provides}.`);
+  for (const k of r.reads || []) if (CONTEXT_TEXT[k]?.reads) out.push(`Takes context: ${CONTEXT_TEXT[k].reads}.`);
+  out.push(...(CURATED_RELATIONS[type] || []));
+  return out.length ? out : undefined;
 }
 
 /** One line per meaningful key of a type — what get_element shows an agent:

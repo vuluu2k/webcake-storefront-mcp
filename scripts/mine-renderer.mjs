@@ -56,9 +56,11 @@ const resolve = (mod, call) => {
 
 // ── Dispatchers: case el["type"] do "x" -> build_x(...) ─────────────────────────────────
 const dispatch = {}; // type → [[mod, fn], ...]
+const dispatched = new Set(); // every type any build_element has a branch for (resolved or not)
 for (const [mod, m] of Object.entries(modules)) {
   const body = m.fns.build_element;
   if (!body) continue;
+  for (const c of body.matchAll(/^\s*"([a-z][a-z0-9-]*)"\s*->/gm)) dispatched.add(c[1]);
   for (const c of body.matchAll(/^\s*"([a-z][a-z0-9-]*)"\s*->\s*([\w.]+)\(/gm)) {
     const r = resolve(mod, c[2]);
     if (r) (dispatch[c[1]] ||= []).push(r);
@@ -147,6 +149,28 @@ const merge = (into, from) => {
     }
 };
 
+// Element ↔ element: render context passed through the process dictionary (Process.put by one
+// builder, Process.get by another) and what a builder reads from the node it sits in.
+const PLUMBING = new Set(["bp", "this", "json", "modules", "mark", "bp_value", "xevents", "global"]);
+function relationsOf(fns) {
+  const reads = new Set();
+  const provides = new Set();
+  const parent = new Set();
+  for (const [m, f] of fns) {
+    const body = modules[m].fns[f];
+    for (const x of body.matchAll(/Process\.get\(:(\w+)/g)) if (!PLUMBING.has(x[1])) reads.add(x[1]);
+    for (const x of body.matchAll(/Process\.put\(:(\w+)/g)) if (!PLUMBING.has(x[1])) provides.add(x[1]);
+    for (const x of body.matchAll(/\b(parent|form_element)\[(?:bp|k|"runtime")\]\["(style|config)"\]/g)) parent.add(`${x[1] === "form_element" ? "form" : "parent"}.${x[2]}`);
+    for (const x of body.matchAll(/\b(parent|form_element)\["specials"\]\["(\w+)"\]/g)) parent.add(`${x[1] === "form_element" ? "form" : "parent"}.specials.${x[2]}`);
+    for (const x of body.matchAll(/\bparent\["type"\]\s*(?:==|!=|in)\s*("[^"]+"|\[[^\]]+\])/g)) parent.add(`parent.type ${x[1].replace(/\s+/g, "")}`);
+  }
+  const out = {};
+  if (reads.size) out.reads = [...reads].sort();
+  if (provides.size) out.provides = [...provides].sort();
+  if (parent.size) out.parent = [...parent].sort();
+  return Object.keys(out).length ? out : undefined;
+}
+
 const types = {};
 const shared = { specials: {}, config: {} };
 for (const [type, fns] of Object.entries(reach)) {
@@ -155,6 +179,9 @@ for (const [type, fns] of Object.entries(reach)) {
     const keys = readKeys(modules[m].fns[f]);
     merge(fanIn[`${m}.${f}`] > GENERIC ? shared : t, keys);
   }
+  // Relations: only the type's own builders + helpers few types share (not common plumbing).
+  const rel = relationsOf(fns.filter(([m, f]) => fanIn[`${m}.${f}`] <= 40)); // build_input serves ~20 field types
+  if (rel) t.relations = rel;
   types[type] = t;
 }
 
@@ -183,7 +210,7 @@ try {
 } catch {}
 if (branch !== "master" && branch !== "?") console.warn(`! builderx_api is on "${branch}", not master`);
 const sortObj = (o) => Object.fromEntries(Object.entries(o).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, v && typeof v === "object" && !Array.isArray(v) ? sortObj(v) : v]));
-const out = { meta: { source: "builderx_api/lib/qwik + assets/render", branch, types: Object.keys(types).length }, shared: sortObj(shared), mentioned: [...mentioned].sort(), types: sortObj(types) };
+const out = { meta: { source: "builderx_api/lib/qwik + assets/render", branch, types: Object.keys(types).length }, shared: sortObj(shared), dispatched: [...dispatched].sort(), mentioned: [...mentioned].sort(), types: sortObj(types) };
 fs.writeFileSync(OUT, JSON.stringify(out, null, 1) + "\n");
 const nKeys = Object.values(types).reduce((n, t) => n + Object.keys(t.specials).length + Object.keys(t.config).length, 0);
 const nVals = Object.values(types).reduce((n, t) => n + [...Object.values(t.specials), ...Object.values(t.config)].filter((v) => v.values).length, 0);

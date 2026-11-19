@@ -52,7 +52,7 @@ export interface EventAction {
 export const EVENT_ACTIONS: EventAction[] = [
   // navigation
   { action: "open_page", trigger: "click", category: "navigation", summary: "Go to a page in this site.", required: ["open_page_id"], optional: ["scrollTarget", "scroll_to_id", "scroll_to_element_id", "scrollMore", "no_follow", "active_color", "popup_id", "popup_overlay", "close_all_other_popup", "open_category_id", "open_blog_category_id", "open_menu_id", "activeNotify"] },
-  { action: "open_link", trigger: "click", category: "navigation", summary: "Open an external URL.", required: ["link_target"], optional: ["link_target_url", "no_follow"] },
+  { action: "open_link", trigger: "click", category: "navigation", summary: "Open a URL. link_target = the URL itself; link_target_url = the window: \"_self\" (default) or \"_blank\" (the names are swapped in the renderer, common.ex).", required: ["link_target"], optional: ["link_target_url", "no_follow"] },
   { action: "open_category", trigger: "click", category: "navigation", summary: "Open a product category page.", required: ["open_category_id"], optional: ["no_follow"] },
   { action: "open_blog_category", trigger: "click", category: "navigation", summary: "Open a blog category page.", required: ["open_blog_category_id"], optional: ["no_follow"] },
   { action: "scroll_to", trigger: "click", category: "navigation", summary: "Smooth-scroll to a section/element on this page.", required: ["scroll_to_id"], optional: ["scroll_to_element_id", "scrollMore", "scrollTarget"], target_in_page: ["scroll_to_id", "scroll_to_element_id"] },

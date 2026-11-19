@@ -208,6 +208,146 @@
    "tiktok_event_type": {}
   }
  },
+ "dispatched": [
+  "address",
+  "agency",
+  "attr",
+  "auto-number",
+  "blog-overlay",
+  "bonus-items",
+  "breadcrumb",
+  "button",
+  "button-login-facebook",
+  "button-login-google",
+  "calendar",
+  "calendar-content",
+  "carousel",
+  "cart-droppable",
+  "cart-icon",
+  "cart-items",
+  "cart-items-empty",
+  "checkbox",
+  "checkbox-group",
+  "checkbox-item",
+  "collapse",
+  "collapse-content",
+  "color-group",
+  "container",
+  "countdown",
+  "country",
+  "coupon",
+  "current-password",
+  "custom-layout",
+  "customer-address",
+  "delivery-method",
+  "detect-address",
+  "dropdown",
+  "dropdown-content",
+  "email",
+  "embed",
+  "empty-product-layout",
+  "favorite-icon",
+  "flash-sale",
+  "form",
+  "gallery",
+  "googlemap",
+  "grid-blog",
+  "grid-category",
+  "grid-product",
+  "group-select",
+  "id-number",
+  "identity",
+  "image",
+  "image-dataset",
+  "input",
+  "input-date",
+  "input-file",
+  "input-number",
+  "input-product-note",
+  "input-search",
+  "language-menu",
+  "layout-dataset",
+  "lesson-items",
+  "lesson-sidebar",
+  "line",
+  "list-courses",
+  "list-lesson-droppable",
+  "list-ordered",
+  "lucky-wheel",
+  "masonry-review",
+  "member-bar",
+  "member-dropdown",
+  "menu",
+  "menu-anchor-item",
+  "menu-droppable",
+  "menu-item",
+  "next-lesson-droppable",
+  "notify",
+  "number-step",
+  "order-history",
+  "order-items",
+  "otp-input",
+  "otp-method",
+  "password",
+  "payment",
+  "paypal-button",
+  "phone-number",
+  "popup",
+  "post-list",
+  "post-overlay",
+  "postal-code",
+  "product-add-to-cart",
+  "product-gallery",
+  "product-image-carousel",
+  "product-overlay",
+  "product-review",
+  "promotions",
+  "promotions-short",
+  "purchase-history",
+  "quantity-input",
+  "question-container",
+  "radio",
+  "radio-group",
+  "random-number",
+  "rating-input",
+  "rectangle",
+  "rectangle-dataset",
+  "referral-code",
+  "retype-password",
+  "retype-phone-number",
+  "reward-point",
+  "search-droppable",
+  "search-form",
+  "section",
+  "select",
+  "slide",
+  "slider-blog",
+  "slider-category",
+  "slider-post",
+  "slider-product",
+  "submenu",
+  "submit-button",
+  "swiper",
+  "switch",
+  "table",
+  "tabs",
+  "tags",
+  "tee-form",
+  "text",
+  "text-area",
+  "text-dataset",
+  "textarea",
+  "two-point-range",
+  "user-point-log",
+  "video",
+  "video-dataset",
+  "warehouse",
+  "warehouse-dataset",
+  "wishlist",
+  "wishlist-container",
+  "wishlist-empty",
+  "wishlist-item"
+ ],
  "mentioned": [
   "absBottom",
   "absBottomCenterY",
@@ -1243,6 +1383,12 @@
      "default": 15
     }
    },
+   "relations": {
+    "parent": [
+     "parent.config",
+     "parent.style"
+    ]
+   },
    "specials": {
     "allow_search": {},
     "autoCatchWarehouse": {},
@@ -1819,6 +1965,16 @@
      "default": 200
     }
    },
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "defaultValue": {},
     "field_name": {},
@@ -2025,6 +2181,12 @@
      "default": 50
     }
    },
+   "relations": {
+    "reads": [
+     "product_countdown",
+     "product_promotions_override"
+    ]
+   },
    "specials": {
     "categoryOptions": {},
     "dailyEnd": {},
@@ -2099,6 +2261,12 @@
      "default": 15
     }
    },
+   "relations": {
+    "parent": [
+     "parent.config",
+     "parent.style"
+    ]
+   },
    "specials": {
     "countries": {},
     "defaultValue": {
@@ -2126,6 +2294,16 @@
     "HTML.Element.build_coupon"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "auto_fill_coupon": {},
     "label": {},
@@ -2140,6 +2318,16 @@
     "HTML.build_password"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "field_name": {},
     "label": {},
@@ -2168,6 +2356,14 @@
      "default": 0
     },
     "rows": {}
+   },
+   "relations": {
+    "provides": [
+     "product_countdown"
+    ],
+    "reads": [
+     "product"
+    ]
    },
    "specials": {}
   },
@@ -2198,6 +2394,16 @@
     "HTML.build_detect_address"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "field_name": {},
     "label": {},
@@ -2298,6 +2504,16 @@
     "HTML.build_email"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "field_name": {},
     "label": {},
@@ -2365,6 +2581,11 @@
     },
     "rows": {}
    },
+   "relations": {
+    "reads": [
+     "product"
+    ]
+   },
    "specials": {
     "promotion_advance_id": {}
    }
@@ -2376,6 +2597,12 @@
     "HTML.build_form"
    ],
    "config": {},
+   "relations": {
+    "provides": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "autoGetInfoCustomer": {
      "default": false
@@ -3071,6 +3298,15 @@
      "default": 14
     }
    },
+   "relations": {
+    "provides": [
+     "product",
+     "show_attrs_primary"
+    ],
+    "reads": [
+     "show_attrs_primary"
+    ]
+   },
    "specials": {
     "action_add_to_cart": {},
     "action_attachment_add_to_cart": {
@@ -3236,6 +3472,16 @@
     "HTML.build_id_number"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "field_name": {
      "default": "id_number"
@@ -3256,6 +3502,16 @@
     "HTML.Element.build_identity"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "field_name": {},
     "label": {},
@@ -3327,6 +3583,16 @@
     "HTML.build_input"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "field_name": {},
     "label": {},
@@ -3341,6 +3607,16 @@
     "HTML.Element.build_input_date"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "dateUnit": {
      "default": "day"
@@ -3391,6 +3667,12 @@
      "default": 15
     }
    },
+   "relations": {
+    "parent": [
+     "parent.config",
+     "parent.style"
+    ]
+   },
    "specials": {
     "allow_multiple": {},
     "allowed_file_types": {},
@@ -3410,6 +3692,16 @@
     "HTML.build_input_number"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "endNumber": {},
     "field_name": {},
@@ -4152,6 +4444,11 @@
      ]
     }
    },
+   "relations": {
+    "parent": [
+     "parent.specials.open_when_logged"
+    ]
+   },
    "specials": {
     "open_when_logged": {
      "default": "open_modal",
@@ -4315,6 +4612,12 @@
     },
     "widthFixed": {},
     "widthScreen": {}
+   },
+   "relations": {
+    "parent": [
+     "parent.specials.fullField",
+     "parent.specials.type"
+    ]
    },
    "specials": {
     "categoryId": {},
@@ -4947,6 +5250,16 @@
     "HTML.build_password"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "field_name": {},
     "label": {},
@@ -5026,6 +5339,16 @@
     "HTML.build_phone_number"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "field_name": {},
     "label": {},
@@ -5397,6 +5720,16 @@
     "HTML.build_postal_code"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "field_name": {},
     "label": {},
@@ -6155,6 +6488,16 @@
      "default": 200
     }
    },
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "defaultValue": {},
     "field_name": {},
@@ -6266,6 +6609,11 @@
      "default": "#808080"
     }
    },
+   "relations": {
+    "reads": [
+     "product"
+    ]
+   },
    "specials": {
     "activeStarIcon": {
      "default": ""
@@ -6347,6 +6695,16 @@
     "HTML.Element.build_referral_code"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "label": {},
     "placeholder": {},
@@ -6360,6 +6718,16 @@
     "HTML.build_retype_password"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "field_name": {},
     "label": {},
@@ -6377,6 +6745,16 @@
     "HTML.build_retype_phone_number"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "field_name": {},
     "label": {},
@@ -6391,6 +6769,16 @@
     "HTML.Element.build_reward_point"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "auto_fill_reward_point": {},
     "label": {},
@@ -6467,6 +6855,16 @@
     "HTML.build_input"
    ],
    "config": {},
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
+   },
    "specials": {
     "field_name": {},
     "label": {},
@@ -6539,6 +6937,11 @@
     "useStickyLayoutOther": {},
     "video_background": {}
    },
+   "relations": {
+    "provides": [
+     "section_id"
+    ]
+   },
    "specials": {
     "isStickyOfSection": {
      "default": false
@@ -6568,6 +6971,16 @@
     "textPadding": {
      "default": 15
     }
+   },
+   "relations": {
+    "parent": [
+     "form.config",
+     "form.style"
+    ],
+    "reads": [
+     "form_element",
+     "form_keys"
+    ]
    },
    "specials": {
     "datagrid_id": {},
@@ -7502,6 +7915,15 @@
      "default": "px"
     }
    },
+   "relations": {
+    "provides": [
+     "product",
+     "show_attrs_primary"
+    ],
+    "reads": [
+     "show_attrs_primary"
+    ]
+   },
    "specials": {
     "action_add_to_cart": {},
     "action_attachment_add_to_cart": {
@@ -8065,6 +8487,12 @@
     "textPadding": {
      "default": 15
     }
+   },
+   "relations": {
+    "parent": [
+     "parent.config",
+     "parent.style"
+    ]
    },
    "specials": {
     "field_name": {},
