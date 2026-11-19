@@ -6,7 +6,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
-import { CLONE_SCRIPT, captureInPage, snapshotToSource } from "../builder/clone.js";
+import { CLONE_SCRIPT, capturePage, snapshotToSource } from "../builder/clone.js";
 import { validatePage, walk } from "../builder/page.js";
 import { codeOf } from "../builder/element-schema.js";
 import { cachePut } from "./result-cache.js";
@@ -33,7 +33,7 @@ async function captureWithChrome(url: string, width: number): Promise<any> {
   try {
     const page = await browser.newPage({ viewport: { width, height: 900 } });
     await page.goto(url, { waitUntil: "networkidle", timeout: 45000 }).catch(() => undefined);
-    return await page.evaluate(captureInPage, {});
+    return await capturePage(page, width);
   } finally {
     await browser.close();
   }

@@ -159,7 +159,13 @@ export async function captureInPage(opts: any = {}): Promise<any> {
   };
 
   // Lay children out the way they SIT: bands of vertically overlapping boxes → rows.
-  const arrange = (kids: any[], r: any) => {
+  // Path of child indexes from <body>: names the same container at another viewport width.
+  const keyOf = (el: any) => {
+    const p: number[] = [];
+    for (let e = el; e && e !== document.body && e.parentElement; e = e.parentElement) p.unshift(arr(e.parentElement.children).indexOf(e));
+    return p.join("/");
+  };
+  const arrange = (kids: any[], r: any, key?: string) => {
     const sorted = [...kids].sort((a, b) => a.y - b.y || a.x - b.x);
     const bands: any[][] = [];
     for (const k of sorted) {
@@ -174,7 +180,7 @@ export async function captureInPage(opts: any = {}): Promise<any> {
       const gaps = b.slice(1).map((k, i) => k.x - (b[i].x + b[i].w));
       const x = Math.min(...b.map((k) => k.x));
       const y = Math.min(...b.map((k) => k.y));
-      return { k: "group", dir: "row", gap: Math.max(0, Math.round(gaps.reduce((n, g) => n + g, 0) / gaps.length)), x, y, w: Math.max(...b.map((k) => k.x + k.w)) - x, h: Math.max(...b.map((k) => k.y + k.h)) - y, kids: b };
+      return { k: "group", dir: "row", key, gap: Math.max(0, Math.round(gaps.reduce((n, g) => n + g, 0) / gaps.length)), x, y, w: Math.max(...b.map((k) => k.x + k.w)) - x, h: Math.max(...b.map((k) => k.y + k.h)) - y, kids: b };
     });
     if (rows.length === 1) return rows[0].k === "group" ? { ...rows[0], ...r } : rows[0];
     const vg = rows.slice(1).map((k, i) => k.y - (rows[i].y + rows[i].h));
@@ -220,6 +226,14 @@ export async function captureInPage(opts: any = {}): Promise<any> {
       return null;
     }
     if (t === "HR") return { k: "line", ...r, color: s.borderTopColor };
+    if (t === "DETAILS") {
+      const sum = el.querySelector(":scope > summary");
+      const kids = arr(el.children).filter((c) => c !== sum).map(node).filter(Boolean);
+      return {
+        k: "accordion", ...r, title: sum ? (sum.innerText || "").trim() : "", titleStyle: sum ? textStyle(cs(sum)) : undefined,
+        style: boxStyle(s), body: kids.length === 1 ? kids[0] : kids.length ? arrange(kids, r) : null,
+      };
+    }
     if (t === "FORM") return form(el, r, s);
     if (/^(INPUT|SELECT|TEXTAREA)$/.test(t)) {
       if (/^(submit|button)$/.test((el as any).type)) return { k: "button", ...r, text: (el as any).value, style: { ...boxStyle(s), ...textStyle(s) } };
@@ -246,7 +260,7 @@ export async function captureInPage(opts: any = {}): Promise<any> {
     const loose = arr(el.childNodes).filter((n) => n.nodeType === 3 && (n.textContent || "").trim()).map((n) => (n.textContent || "").trim()).join(" ");
     if (loose) kids.unshift({ k: "text", ...r, h: Math.max(16, px(s.lineHeight) || px(s.fontSize) * 1.4), tag: "p", html: esc(loose), text: loose, style: textStyle(s) });
     if (!kids.length) return painted(b) && r.h > 3 ? { k: "box", ...r, style: b, pad: pads(s) } : null;
-    const content = kids.length === 1 ? kids[0] : arrange(kids, r);
+    const content = kids.length === 1 ? kids[0] : arrange(kids, r, keyOf(el));
     return painted(b) ? { k: "box", ...r, style: b, pad: pads(s), content } : content;
   };
 
@@ -309,7 +323,7 @@ export async function captureInPage(opts: any = {}): Promise<any> {
     if (!content.length && !painted(boxStyle(s))) continue;
     const own = self ? {} : boxStyle(s);
     const style = own.bg || own.bgImage || own.gradient ? own : { ...(inherited.get(b) || {}), ...own };
-    sections.push({ k: "section", ...r, role, style, pad: pads(s), sticky: s.position === "sticky" || s.position === "fixed" || undefined, content: content.length === 1 ? content[0] : content.length ? arrange(content, r) : null });
+    sections.push({ k: "section", ...r, role, style, pad: pads(s), sticky: s.position === "sticky" || s.position === "fixed" || undefined, content: content.length === 1 ? content[0] : content.length ? arrange(content, r, keyOf(b)) : null });
   }
   // Thin bands with the same background as their neighbour (a section title above its grid)
   // belong to one section.
@@ -339,9 +353,53 @@ export async function captureInPage(opts: any = {}): Promise<any> {
 /** The capture as a script an agent can run in any browser tool (evaluate_script / javascript). */
 export const CLONE_SCRIPT = `(${captureInPage.toString()})({})`;
 
+/** In-page, at another viewport width: how many columns the first band of each keyed container
+ *  shows now (its children side by side at the top). Self-contained, like captureInPage. */
+export function probeColumns(keys: string[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const key of keys) {
+    let el: any = document.body;
+    for (const i of key.split("/").filter(Boolean)) el = el && el.children[+i];
+    if (!el) continue;
+    const rs = Array.from(el.children as any[]).map((c: any) => c.getBoundingClientRect()).filter((r: any) => r.width > 1 && r.height > 1);
+    if (!rs.length) continue;
+    // The first band = boxes that overlap the topmost one vertically (centred items included).
+    const first = rs.reduce((a: any, b: any) => (b.top < a.top ? b : a));
+    out[key] = rs.filter((r: any) => r.top < first.bottom - 4).length;
+  }
+  return out;
+}
+
+const PROBE_WIDTHS: Record<string, number> = { bp2: 1100, bp3: 768, bp4: 390 };
+
+/** Capture with a Playwright page: the 1440 snapshot plus, per breakpoint, the column count each
+ *  row really shows there (snap.columns) — the source's own responsive layout, not a guess. */
+export async function capturePage(page: any, width = 1440): Promise<any> {
+  await page.setViewportSize({ width, height: 900 });
+  const snap = await page.evaluate(captureInPage, {});
+  const keys = new Set<string>();
+  const walkKeys = (n: any) => {
+    if (!n || typeof n !== "object") return;
+    if (n.k === "group" && n.key) keys.add(n.key);
+    for (const k of n.kids || []) walkKeys(k);
+    walkKeys(n.content);
+  };
+  for (const s of snap.sections || []) walkKeys(s);
+  snap.columns = {};
+  for (const [bp, w] of Object.entries(PROBE_WIDTHS)) {
+    await page.setViewportSize({ width: w, height: 900 });
+    await page.waitForTimeout(250);
+    snap.columns[bp] = await page.evaluate(probeColumns, [...keys]);
+  }
+  await page.setViewportSize({ width, height: 900 });
+  return snap;
+}
+
 // ── 2. Snapshot → native page source ─────────────────────────────────────────────────────
 interface Ctx {
   pageBg?: string;
+  /** bp → container key → columns the source shows at that width. */
+  columns?: Record<string, Record<string, number>>;
   notes: Record<string, number>;
   text: number;
   fonts: Record<string, number>;
@@ -411,6 +469,20 @@ function alignIn(n: any, p?: Area): string | undefined {
 /** A narrower-than-its-area block keeps its share of the width. */
 const share = (n: any, p?: Area) => (p && n.w && n.w < p.w * 0.92 ? { widthUnit: "%", relWidth: Math.max(5, Math.round((n.w / p.w) * 100)) } : undefined);
 
+/** Small pictures (avatars, logos, icons) keep their pixel width when the row collapses;
+ *  larger ones keep their share of the column. */
+const small = (n: any, area?: Area) => !!n.w && n.w <= 240 && (!area || n.w < area.w * 0.6 || n.w >= area.w * 0.92);
+const fixedOrShare = (n: any, area?: Area) => (small(n, area) ? { widthUnit: "px" } : share(n, area));
+/** A fixed-width picture can't "fill": centre it when it filled its own column. */
+const placeOf = (n: any, area?: Area) => {
+  const a = alignIn(n, area);
+  return small(n, area) && a === "fill" ? "center" : a;
+};
+
+/** One-line labels stay on one line on desktop/laptop; on tablet/phone they may wrap (as the
+ *  source's own responsive CSS usually lets them) rather than push the page wider than the screen. */
+const WRAP_SMALL = { bp3: { style: { whiteSpace: "normal" } }, bp4: { style: { whiteSpace: "normal" } } };
+
 function spec(n: any, c: Ctx, area?: Area): any {
   if (!n) return null;
   switch (n.k) {
@@ -420,21 +492,22 @@ function spec(n: any, c: Ctx, area?: Area): any {
       const at = area && n.w < area.w * 0.7 ? alignIn(n, area) : undefined;
       // A short label on one line in the source stays on one line (fonts differ in width).
       const oneLine = n.style?.fontSize && n.h <= n.style.fontSize * (n.style.lineHeight || 1.4) * 1.3;
-      if (oneLine && String(n.text || "").length <= 40) style.whiteSpace = "nowrap";
+      const keepLine = oneLine && String(n.text || "").length <= 40;
+      if (keepLine) style.whiteSpace = "nowrap";
       if ((at === "right" || at === "center") && (!style.textAlign || style.textAlign === "left")) style.textAlign = at;
       if (/<a href/.test(n.html || "")) note(c, "links inside a sentence keep the storefront's link style (blue, underlined)");
       const events = link(n.href);
       if (events) style.cursor = "pointer";
-      return { type: "text", opts: { text: n.html || n.text, specials: { tag: n.tag || "p" }, style, ...(events ? { events } : {}) } };
+      return { type: "text", opts: { text: n.html || n.text, specials: { tag: n.tag || "p" }, style, ...(events ? { events } : {}), ...(keepLine ? { responsive: WRAP_SMALL } : {}) } };
     case "image":
       c.images.push(n.src);
-      return { type: "image", opts: { src: n.src, width: n.w, height: n.h, align: alignIn(n, area), config: share(n, area), specials: n.alt ? { image_alt: n.alt } : undefined, style: { ...(n.radius ? { borderRadius: `${n.radius}px` } : {}), ...(n.fit && n.fit !== "fill" ? { objectFit: n.fit } : {}) } } };
+      return { type: "image", opts: { src: n.src, width: n.w, height: n.h, align: placeOf(n, area), config: fixedOrShare(n, area), specials: n.alt ? { image_alt: n.alt } : undefined, style: { ...(n.radius ? { borderRadius: `${n.radius}px` } : {}), ...(n.fit && n.fit !== "fill" ? { objectFit: n.fit } : {}) } } };
     case "icon": {
       note(c, "svg icon → image (data URI; rehost_images uploads it as PNG)");
       const svg = /xmlns=/.test(n.svg) ? n.svg : n.svg.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
       const src = `data:image/svg+xml;base64,${Buffer.from(svg.replace(/currentColor/g, n.color || "#000")).toString("base64")}`;
       c.images.push(src);
-      return { type: "image", opts: { src, width: n.w, height: n.h, align: alignIn(n, area) ?? "left", config: share(n, area) } };
+      return { type: "image", opts: { src, width: n.w, height: n.h, align: placeOf(n, area) ?? "left", config: fixedOrShare(n, area) } };
     }
     case "button": {
       c.text += String(n.text || "").replace(/\s+/g, "").length;
@@ -445,6 +518,7 @@ function spec(n: any, c: Ctx, area?: Area): any {
         type: "button",
         opts: {
           text: n.text,
+          ...(String(n.text || "").length <= 40 ? { responsive: WRAP_SMALL } : {}),
           style: { ...bgStyle(st, c.pageBg), ...fontStyle(c, st), height: n.h, ...(String(n.text || "").length <= 40 ? { whiteSpace: "nowrap" } : {}), ...(st.padX ? { paddingLeft: `${st.padX}px`, paddingRight: `${st.padX}px` } : {}) },
           ...(events ? { events } : {}),
           align: alignIn(n, area) ?? "left",
@@ -453,6 +527,17 @@ function spec(n: any, c: Ctx, area?: Area): any {
     }
     case "line":
       return { type: "line", opts: { style: { borderColor: n.color } } };
+    case "accordion": {
+      // <details> = the storefront's collapse: <details> + summary from specials.name, body in a
+      // collapse-content grid (builderx_api build_collapse; the editor's collapse picker).
+      c.text += String(n.title || "").replace(/\s+/g, "").length;
+      const body = n.body ? spec(n.body, c, area) : null;
+      return {
+        type: "collapse",
+        opts: { specials: { name: n.title }, style: { ...fontStyle(c, n.titleStyle), ...bgStyle(n.style) } },
+        children: [{ type: "collapse-content", autoRows: true, opts: { config: { heightUnit: "auto" } }, children: body ? [body] : [] }],
+      };
+    }
     case "video":
       const place = { align: alignIn(n, area), config: share(n, area), style: { height: n.h } };
       if (n.provider === "youtube") return { type: "video", opts: { ...place, specials: { type: "youtube", id: n.id, src: `https://www.youtube.com/watch?v=${n.id}` } } };
@@ -492,7 +577,7 @@ function spec(n: any, c: Ctx, area?: Area): any {
       // A painted wrapper around one group → the group's own container gets the paint.
       const own = { align: alignIn(n, area), config: share(n, area) };
       if (inside.type === "container" && !inside.opts?.style?.background) return { ...inside, opts: { ...(inside.opts || {}), ...own, style: { ...(inside.opts?.style || {}), ...style } } };
-      return { type: "container", opts: { style, ...own }, children: [inside] };
+      return { type: "container", autoRows: true, opts: { style, ...own }, children: [inside] };
     }
     case "group": {
       if (n.dir === "row") {
@@ -508,23 +593,59 @@ function spec(n: any, c: Ctx, area?: Area): any {
           return { x: start, w: Math.max(1, end - start) };
         });
         const kids = ks.map((k: any, i: number) => spec(k, c, cols[i]));
-        const keep = kids.map((k, i) => [k, cols[i]] as const).filter(([k]) => k);
+        const keep = kids.map((k, i) => [k, cols[i], ks[i]] as const).filter(([k]) => k);
         if (!keep.length) return null;
         if (keep.length === 1) return keep[0][0];
-        const total = keep.reduce((s, [, a]) => s + a.w, 0) || 1;
-        const colWidths = keep.map(([, a]) => ({ unit: "fr", value: Math.max(1, Math.round((a.w / total) * 24)) }));
         const span = { x: left, w: right - left };
         // A row of small pieces (menu links, icons, footer bits) stays a row on phones; real
         // columns (cards, split hero) collapse 2 → 1 as usual.
-        const small = ks.every((k: any) => ["text", "button", "icon", "image"].includes(k.k) && k.w <= 240) && (span.w <= 900 || ks.length <= 4);
+        const piece = (k: any) => k.w <= 240 && (["text", "button", "icon", "image"].includes(k.k) || (k.k === "box" && k.content?.k === "text"));
+        const small = ks.every(piece) && (span.w <= 900 || ks.length <= 4);
+        // Hug only a cluster (pills, a menu): pieces spread apart (space-between) keep
+        // position-based columns, or the measured gap alone would overflow a phone.
+        const cluster = small && gap <= 48;
+        // Columns: a small piece or a cluster of them sizes to its content (max-c); real content
+        // shares the rest by its measured width (fr). With no fr column left, the column before the
+        // widest gap absorbs the free space — that is what space-between looked like.
+        const hugs = (k: any) => piece(k) || (k.k === "group" && k.dir === "row" && (k.kids || []).every(piece));
+        const total = keep.reduce((s, [, a]) => s + a.w, 0) || 1;
+        const colWidths: any[] = keep.map(([, a, k]) => (!cluster && hugs(k) ? { unit: "max-c" } : { unit: "fr", value: Math.max(1, Math.round((a.w / total) * 24)) }));
+        if (!cluster && colWidths.every((w) => w.unit === "max-c")) {
+          let at = 0;
+          let widest = -1;
+          for (let i = 0; i < keep.length - 1; i++) {
+            const g = keep[i + 1][2].x - (keep[i][2].x + keep[i][2].w);
+            if (g > widest) [widest, at] = [g, i];
+          }
+          colWidths[at] = { unit: "fr", value: 1 };
+        }
+        // In a content-sized column a text must size to its words (the factory default is 230px).
+        keep.forEach(([k], i) => {
+          if ((cluster || colWidths[i].unit === "max-c") && k.type === "text") k.opts = { ...k.opts, config: { ...(k.opts.config || {}), widthUnit: "auto" } };
+        });
         const n2 = keep.length;
-        return { type: "container", layout: "row", columnGap: gap, colWidths, ...(small ? { collapse: { bp3: n2, bp4: n2 } } : {}), children: keep.map(([k]) => k), opts: { align: alignIn(span, area), config: share(span, area) } };
+        // Measured: the columns the source really shows at laptop/tablet/phone width.
+        const measured: Record<string, number> = {};
+        for (const bp of ["bp2", "bp3", "bp4"]) {
+          const v = n.key ? c.columns?.[bp]?.[n.key] : undefined;
+          if (v) measured[bp] = Math.max(1, Math.min(n2, v));
+        }
+        const collapse = Object.keys(measured).length ? measured : small ? { bp3: n2, bp4: n2 } : undefined;
+        // Small pieces hug their content; their row keeps its desktop share only on desktop.
+        const rowShare = share(span, area);
+        const bp = (g: number) => ({ ...(small && rowShare ? { relWidth: 100 } : {}), ...(gap > g ? { columnGap: g } : {}) });
+        // A desktop gutter (space-between can measure 100px+) shrinks on tablet/phone.
+        const responsive = Object.keys(bp(24)).length ? { bp3: { config: bp(24) }, bp4: { config: bp(16) } } : undefined;
+        return {
+          type: "container", layout: "row", columnGap: gap, colWidths, ...(cluster ? { hug: true } : {}), ...(collapse ? { collapse } : {}),
+          children: keep.map(([k]) => k), opts: { align: alignIn(span, area), config: rowShare, ...(responsive ? { responsive } : {}) },
+        };
       }
       const box = { x: n.x, w: n.w };
       const kids = (n.kids || []).map((k: any) => spec(k, c, box)).filter(Boolean);
       if (!kids.length) return null;
       if (kids.length === 1) return kids[0];
-      return { type: "container", rowGap: Math.min(n.gap ?? 16, 160), children: kids };
+      return { type: "container", rowGap: Math.min(n.gap ?? 16, 160), autoRows: true, children: kids };
     }
     default:
       note(c, `unmapped ${n.k}`);
@@ -534,7 +655,7 @@ function spec(n: any, c: Ctx, area?: Area): any {
 
 /** A captured page → { sections } built with the builder's own layout helpers. */
 export function snapshotToSource(snap: any, opts: { skipChrome?: boolean } = {}) {
-  const c: Ctx = { pageBg: snap?.pageBg, notes: {}, text: 0, fonts: {}, images: [], W: snap?.viewport?.w || 1440 };
+  const c: Ctx = { pageBg: snap?.pageBg, columns: snap?.columns, notes: {}, text: 0, fonts: {}, images: [], W: snap?.viewport?.w || 1440 };
   const white = (col?: string) => !col || /^rgba?\(255, 255, 255(, 1)?\)$/.test(col);
   const sections: any[] = [];
   const roles: string[] = [];
@@ -557,6 +678,7 @@ export function snapshotToSource(snap: any, opts: { skipChrome?: boolean } = {})
       style: bgStyle(st, white(c.pageBg) ? undefined : c.pageBg),
       padY,
       rowGap: content?.k === "group" && content.dir === "col" ? Math.min(content.gap ?? 16, 160) : undefined,
+      autoRows: true,
     });
     if (s.sticky) note(c, "sticky/fixed header captured as a normal section — set it sticky in the editor if needed");
     sections.push(section);

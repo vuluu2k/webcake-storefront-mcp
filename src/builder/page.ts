@@ -120,6 +120,9 @@ interface StackOpts {
   contentColEnd?: number;
   /** Vertical gap (px) between stacked children (default 16). */
   rowGap?: number;
+  /** Rows sized by their content ("auto") instead of a px minimum from each child's height —
+   *  no gaps when a child renders shorter than the height it was measured at (fonts, mobile). */
+  autoRows?: boolean;
 }
 
 /**
@@ -169,6 +172,7 @@ export function stackChildren(container: any, children: any[], opts: StackOpts =
   const colEnd = opts.contentColEnd || 2;
 
   const rows = children.map((child: any) => {
+    if (opts.autoRows) return { unit: "auto" };
     const h = (child.runtime && child.runtime.style && child.runtime.style.height) || 50;
     return { unit: "min/max", min: { unit: "px", absValue: h }, max: { unit: "max-c" } };
   });
@@ -232,6 +236,8 @@ interface RowOpts {
   colWidths?: any[];
   /** Columns to show per breakpoint, e.g. { bp3: 2, bp4: 1 }. Merged over the default. */
   collapse?: Record<string, number>;
+  /** Content-sized columns (max-content) at every breakpoint — menus, pills, button groups. */
+  hug?: boolean;
 }
 
 /**
@@ -244,14 +250,15 @@ interface RowOpts {
  */
 export function rowChildren(container: any, children: any[], opts: RowOpts = {}) {
   const cols = children.length || 1;
-  const colWidths =
-    opts.colWidths && opts.colWidths.length === cols
-      ? opts.colWidths
-      : Array.from({ length: cols }, () => ({ unit: "fr", value: 1 }));
+  const colWidths = opts.hug
+    ? Array.from({ length: cols }, () => ({ unit: "max-c" }))
+    : opts.colWidths && opts.colWidths.length === cols
+    ? opts.colWidths
+    : Array.from({ length: cols }, () => ({ unit: "fr", value: 1 }));
   const collapse = { ...ROW_COLLAPSE_DEFAULT, ...(opts.collapse || {}) };
   const columnGap = opts.columnGap ?? 24;
   const rowGap = opts.rowGap ?? 24;
-  const meta = { cols, count: children.length, collapse, columnGap, rowGap };
+  const meta = { cols, count: children.length, collapse, columnGap, rowGap, ...(opts.hug ? { hug: true } : {}) };
 
   container.runtime = container.runtime || {};
   container.runtime.config = {
@@ -317,6 +324,7 @@ export function buildSection(childSpecs: any[] = [], sectionOpts: any = {}) {
     contentColStart: SECTION_CONTENT_COL_START,
     contentColEnd: SECTION_CONTENT_COL_END,
     rowGap: sectionOpts.rowGap,
+    autoRows: sectionOpts.autoRows,
   });
   // Section vertical padding the TEMPLATE-NATIVE way: a fixed-height spacer GRID ROW at the
   // top and bottom, content rows in between (real templates do exactly this — the storefront
@@ -357,9 +365,10 @@ export function buildFromSpec(spec: any) {
         rowGap: spec.rowGap,
         colWidths: spec.colWidths,
         collapse: spec.collapse,
+        hug: spec.hug,
       });
     } else {
-      stackChildren(node, kids, { rowGap: spec.rowGap });
+      stackChildren(node, kids, { rowGap: spec.rowGap, autoRows: spec.autoRows });
     }
   }
   return node;
@@ -801,7 +810,7 @@ function expandNodeToBreakpoints(node: any, site: Record<string, [number, number
         config.columns =
           k === rowMeta.cols && Array.isArray(baseConfig.columns) && baseConfig.columns.length === k
             ? clone(baseConfig.columns)
-            : Array.from({ length: k }, () => ({ unit: "fr", value: 1 }));
+            : Array.from({ length: k }, () => (rowMeta.hug ? { unit: "max-c" } : { unit: "fr", value: 1 }));
         config.rows = Array.from({ length: nrows }, () => ROW_PLACEHOLDER_ROW());
         config.grid = `${k}x${nrows}`;
         config.heightUnit = config.heightUnit || "auto";

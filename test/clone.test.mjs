@@ -103,3 +103,23 @@ test("clone_page tool: snapshot → source_ref; build_page đọc được cache
   const script = JSON.parse((await t.get_clone_script.handler({}, {})).content[0].text);
   assert.ok(script.script.startsWith("(async function captureInPage") && script.script === CLONE_SCRIPT);
 });
+
+test("clone: số cột đo từ trang gốc theo breakpoint; cụm nhỏ co theo nội dung; <details> → collapse; ảnh nhỏ giữ px", () => {
+  const pills = { k: "group", dir: "row", key: "2/1", gap: 12, x: 48, y: 10, w: 400, h: 36, kids: ["Tất cả", "Trong nhà", "Ngoài trời", "Chậu"].map((t, i) => ({ k: "box", x: 48 + i * 100, y: 10, w: 88, h: 36, style: { border: "1px solid rgb(209, 213, 219)", radius: 999 }, pad: { t: 8, r: 16, b: 8, l: 16 }, content: T(64 + i * 100, 18, 56, 20, t) })) };
+  const grid = { k: "group", dir: "row", key: "3", gap: 24, x: 48, y: 80, w: 1344, h: 300, kids: [0, 1, 2, 3].map((i) => ({ k: "image", x: 48 + i * 342, y: 80, w: 318, h: 300, src: `https://img/${i}.jpg` })) };
+  const faq = { k: "accordion", x: 48, y: 400, w: 700, h: 80, title: "Có giao hàng không?", titleStyle: { fontSize: 16, fontWeight: "700" }, style: {}, body: T(48, 440, 700, 24, "Có, trước 11 giờ.") };
+  const quote = { k: "group", dir: "row", key: "4", gap: 24, x: 48, y: 500, w: 700, h: 96, kids: [{ k: "image", x: 48, y: 500, w: 96, h: 96, src: "https://img/a.jpg" }, T(168, 530, 580, 24, "Bánh ngon nhất.")] };
+  const snap = { ...SNAP, sections: [{ k: "section", x: 0, y: 0, w: 1440, h: 700, style: {}, pad: {}, content: { k: "group", dir: "col", gap: 20, x: 48, y: 10, w: 1344, h: 690, kids: [pills, grid, faq, quote] } }], columns: { bp2: { "2/1": 4, 3: 4, 4: 2 }, bp3: { "2/1": 4, 3: 2, 4: 1 }, bp4: { "2/1": 3, 3: 2, 4: 1 } } };
+  const [p, g, f, q] = snapshotToSource(snap).source.sections[0].children;
+  assert.deepEqual(p.runtime.config.__row.collapse, { bp1: null, bp2: 4, bp3: 4, bp4: 3 });
+  assert.equal(p.runtime.config.__row.hug, true);
+  assert.ok(p.runtime.config.columns.every((col) => col.unit === "max-c"));
+  assert.deepEqual([g.runtime.config.__row.collapse.bp3, g.runtime.config.__row.collapse.bp4], [2, 2]);
+  assert.equal(f.type, "collapse");
+  assert.equal(f.specials.name, "Có giao hàng không?");
+  assert.deepEqual(f.children.map((c) => c.type), ["collapse-content"]);
+  const avatar = q.children[0];
+  assert.equal(avatar.runtime.config.widthUnit, "px");
+  assert.deepEqual(avatar.runtime.config.constraintX, ["centerLeft"]);
+  assert.equal(validatePage(snapshotToSource(snap).source).valid, true);
+});
