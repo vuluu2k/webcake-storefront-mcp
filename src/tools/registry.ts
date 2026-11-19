@@ -35,6 +35,7 @@ import { registerPageDraftTools } from "./page-draft.js";
 import { registerSitePlanTools } from "./site-plans.js";
 import { registerApiGatewayTools } from "./api-gateway.js";
 import { readFileSync } from "node:fs";
+import { FAMILIES, familyTool } from "./families.js";
 
 /** Tool names folded into api_get / api_call → their route (invoke_tool points callers there). */
 const retired: Record<string, string> = (() => {
@@ -191,11 +192,23 @@ export function installTools(
 
   const native = resolveNativeGroups(opts.tools ?? process.env.WEBCAKE_TOOLS);
 
-  // Register native (core/enabled) tools directly on the MCP server.
+  // Register native (core/enabled) tools directly on the MCP server. Tools of a family are
+  // exposed once, as that family's actions (see families.ts).
   let nativeCount = 0;
+  const folded = new Map<string, string>(); // member → family
+  for (const [fam, [purpose, names]] of Object.entries(FAMILIES)) {
+    const members = names.map((n) => registry.get(n)).filter((e): e is ToolEntry => !!e && native.has(e.group));
+    if (members.length < 2) continue;
+    members.forEach((m) => folded.set(m.name, fam));
+    const t = familyTool(fam, purpose, members);
+    const ann = members.map((m) => toolAnnotations(m.name));
+    const annotations = ann.every((a) => a.readOnlyHint) ? { readOnlyHint: true } : ann.some((a) => a.destructiveHint) ? { readOnlyHint: false, destructiveHint: true } : { readOnlyHint: false };
+    server.registerTool(fam, { description: t.description, inputSchema: z.object(t.shape).strict(), annotations }, t.handler as any);
+    nativeCount++;
+  }
   ENTRIES.set(server, registry);
   for (const e of collector.entries) {
-    if (native.has(e.group)) {
+    if (native.has(e.group) && !folded.has(e.name)) {
       // .strict(): an argument the tool doesn't take is REFUSED with its name, not silently
       // dropped (a dropped page_id/site_id made a call act on the wrong page).
       server.registerTool(e.name, { description: e.description, inputSchema: z.object(e.shape).strict(), annotations: toolAnnotations(e.name) }, e.handler as any);
@@ -293,6 +306,7 @@ courses, sale channels, automation…). Returns name, group, description and JSO
           native: native.has(e.group),
           annotations: toolAnnotations(e.name),
           description: e.description,
+          ...(folded.has(e.name) ? { call_as: `${folded.get(e.name)}({ action: "${e.name}", … })` } : {}),
           input_schema: jsonSchema(e),
         }));
       })

@@ -66,7 +66,7 @@ src/                — TypeScript source (strict); compiles to dist/
     catalog.ts      — Auto-built type→factory registry + curated category/summary metadata
     page.ts         — Page skeleton, grid-layout composition (stackChildren/buildSection), re-id, validatePage
     guide.ts        — BUILD_GUIDE: the grid model, breakpoints, forms/data, build workflow
-  tools/            — one register*Tools(server, api, handle) per file (~280 tools total):
+  tools/            — one register*Tools(server, api, handle) per file (~155 tools, exposed as 40 — see families.ts):
     cms-files, pages, collections, articles, customers, automation, products, orders,
     site-style, apps, promotions, combos, global-sources, images, context,
     builder (get_build_guide, list_elements, new_section, build_page…), builder-extras
@@ -78,7 +78,9 @@ src/                — TypeScript source (strict); compiles to dist/
     registry.ts     — tool-group manifest + search gateway. Captures every register*Tools
                       via a collector, registers only CORE groups natively, exposes the rest
                       through list_tool_groups / search_tools / invoke_tool (progressive
-                      disclosure so clients don't load all ~280 schemas at once).
+                      disclosure). families.ts folds each domain's tools into ONE native tool
+                      whose `action` = the old tool name (page, product, compose, builder_ref…);
+                      retired-tools.json maps tools folded into the API gateway → their route.
 scripts/copy-assets.mjs — post-tsc: chmod +x dist/index.js
 ```
 
@@ -95,6 +97,7 @@ A page's content is `{ sections: [ <node>, ... ] }`. A node is `{ id, type, spec
 - **API client**: `WebcakeCmsApi` uses native `fetch` with a 15-second timeout (`AbortController`). Every request sends `Authorization: Bearer <token>` and `x-session-id: <sessionId>`. CMS-file/HTTP-function mutations also lazily call `fetchCmsTokens()` and bundle the admin token + CMS API key into the body.
 - **Native first**: `src/builder/native-first.ts` holds the policy every custom-code path shares: the need → element table and ladder (injected into `BUILD_GUIDE`, `CUSTOM_CODE_GUIDE` and block messages) and the budgets. `update_site_custom_code` / `append_site_custom_code` / `update_page_source.custom_code` go through `checkSiteCode` + `codeGuard` (over budget or UI/data in code → refused unless `native_gap` names the gap; shrinking always passes). Page and global-source writers go through `checkNativeContent` (placeholder JSON, `custom_css` + embed volume). A new tool that writes code or page source must call one of these. A special feature = CMS app: collection + HTTP function + native UI + a small glue script.
 - **Element schema + validation**: `src/builder/element-schema.ts` builds each element's schema from real data — keys/value types/code-like values mined from published pages (`element-keys.generated.json`, regenerate with `npm run build && npm run mine-elements`, read-only with the `login` token), the curated tables in `attributes.ts`, and the factory skeleton. `validatePage` reports every problem as `[CODE] #id (type) where: problem → fix` (errors block saves; warnings collapsed per code, `summary.by_code`). UNKNOWN_KEY fires only for a key NO element carries (invented/misspelled); enums are enforced only where the curated list and real pages agree. Native tools use `z.object(shape).strict()`: unknown tool arguments are refused.
+- **Fewer, bigger tools (sbuilder-style)**: no per-entity CRUD tools. A one-call CRUD wrapper is NOT a tool — that route is reached through `api_find` / `api_get` / `api_call`. A tool exists only for a flow or an invariant the raw route can't give (validation, merge, secrets whitelist, native-first, CMS tokens). A new tool of an existing domain goes into its family in `families.ts` (test: core ≤ 45 native tools).
 - **API gateway** (`tools/api-gateway.ts`, core group): `api_find` / `api_get` / `api_call` reach every builderx_api route the storefront JWT can call, from `src/api-catalog.generated.json` — regenerate with `npm run gen-api` (static read of the Phoenix routers + controllers, one call hop for params; `BUILDERX_API_DIR` defaults to `../builderx_api`). Hybrid by design: a non-GET to a route a dedicated tool covers is REFUSED and names the tool (the tool holds the guards); writes default to `dry_run`; site delete / owner transfer are denied. New logic-bearing flows still get a dedicated tool; thin one-call wrappers can retire in favour of the gateway.
 - **Remote = multi-user, multi-instance**: `http.ts` runs each MCP session inside `runWithConfigScope` (db.ts, AsyncLocalStorage), so `getConfig`/`setConfig` there read/write that session's account prefs (`persistence/prefs.ts`: site/confirm mode, Postgres → Redis → memory, written only after `/@me` accepts the token) — never the server's config file. Unknown `mcp-session-id` → 404 so clients re-initialize. Token expiry: `api.onAuthExpired` (stdio: browser Connect with a cross-process lock; remote: `markJwtDead` → Redis flag + OAuth tokens revoked in the store → next request 401s into Connect).
 - **Guide injection**: `get_http_function` and `get_site_custom_code` tools return embedded guides alongside data, teaching the AI agent the WebCake coding conventions (function naming, SDK usage, available globals).

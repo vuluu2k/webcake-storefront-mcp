@@ -38,7 +38,7 @@ test("api_find: một dòng mỗi route; id → call sheet", async () => {
   assert.ok(lines.some((l) => /^get:\/api\/v1\/dashboard\/site\/:site_id\/products\/product_tags\/all — ProductController\.get_all_product_tags( \([^)]*\))?$/.test(l)), lines.join("\n"));
   const sheet = (await run("api_find", { id: "post:/api/v1/dashboard/site/:site_id/products/create" })).json;
   assert.deepEqual(sheet.path_params, ["site_id"]);
-  assert.deepEqual(sheet.prefer_tool, ["create_product"]);
+  assert.deepEqual(sheet.prefer_tool, ['product{action:"create_product"}']);
   assert.ok(sheet.body.product_params);
   assert.equal((await run("api_find", { id: "nope" })).isError, true);
 });
@@ -70,7 +70,7 @@ test("api_call: ghi mặc định dry_run; route có tool riêng / thao tác kh�
   const missing = await run("api_call", { id: free.id, body: {}, dry_run: false });
   assert.match(missing.text, /Missing required body keys/);
   const owned = await run("api_call", { id: "post:/api/v1/dashboard/site/:site_id/products/create", body: { product_params: {} }, dry_run: false });
-  assert.match(owned.text, /Refused: .*create_product/);
+  assert.match(owned.text, /Refused: .*product\{action:"create_product"\}/);
   assert.match((await run("api_call", { id: "post:/api/v1/dashboard/site/delete", dry_run: false })).text, /Refused: deleting a site/);
   assert.equal(calls.length, 1);
 });

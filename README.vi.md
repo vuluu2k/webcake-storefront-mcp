@@ -82,7 +82,7 @@ WebCake/StoreCake (BuilderX)** và kết nối tới backend. AI tạo nguồn t
 `build_page` tạo + lưu trang, `publish_site` đưa cả site lên live.
 
 Ngoài dựng trang, nó mở ra cả store thật: trang & custom code, sản phẩm, đơn hàng, collection,
-bài blog, khuyến mãi, combo, theme, khách hàng, automation — **~280 tool** tổng cộng.
+bài blog, khuyến mãi, combo, theme, khách hàng, automation — **40 tool** nạp sẵn (tool theo domain chọn việc bằng `action`), cộng `api_find` / `api_call` cho **775 route backend** không có tool riêng.
 
 | Cách | Hợp cho | Auth |
 |--------|----------|------|
@@ -181,7 +181,7 @@ trong chat bằng `update_auth` và `switch_site` — lưu vào file cấu hình
 
 ## 🧰 Bộ công cụ tổng quan
 
-~280 tool. Nhóm chủ lực **dựng trang**; phần còn lại đọc và sửa store thật của bạn.
+40 tool (phần lớn là nhóm chọn việc bằng `action`) + gateway API cho 775 route backend. Nhóm chủ lực **dựng trang**; phần còn lại đọc và sửa store thật của bạn.
 
 | Nhóm | Tool | Cần |
 |-------|-------|-------|

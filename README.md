@@ -82,7 +82,7 @@ An MCP (Model Context Protocol) server that teaches AI agents the **WebCake/Stor
 page source; `build_page` creates the page and saves it, and `publish_site` makes the whole site live.
 
 Beyond page authoring, it exposes your real store: pages & custom code, products, orders, collections,
-blog articles, promotions, combos, themes, customers, and automation — **~280 tools** in total.
+blog articles, promotions, combos, themes, customers, and automation — **40 tools** loaded (domain tools take an `action`), plus `api_find` / `api_call` for the **775 backend routes** no tool covers.
 
 | Method | Best for | Auth |
 |--------|----------|------|
@@ -183,7 +183,7 @@ in chat via `update_auth` and `switch_site` — saved to a local config file at 
 
 ## 🧰 The tools at a glance
 
-~280 tools. The headline group **builds pages**; the rest read and edit your live store.
+40 tools (most are families that pick the operation with `action`) + an API gateway over 775 backend routes. The headline group **builds pages**; the rest read and edit your live store.
 
 | Group | Tools | Needs |
 |-------|-------|-------|

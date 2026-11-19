@@ -89,11 +89,15 @@ test("tool từ chối tham số không có trong schema (cả qua invoke_tool)"
   await server.connect(a);
   const c = new Client({ name: "t", version: "1" });
   await c.connect(b);
-  const bad = await c.callTool({ name: "get_element", arguments: { type: "text", page_id: "P1" } });
+  const bad = await c.callTool({ name: "builder_ref", arguments: { action: "get_element", type: "text", page_id: "P1" } });
   assert.equal(bad.isError, true);
   assert.match(bad.content[0].text, /page_id/);
-  const ok = JSON.parse((await c.callTool({ name: "get_element", arguments: { type: "swiper" } })).content[0].text);
+  const wrongAction = await c.callTool({ name: "builder_ref", arguments: { action: "get_element", resource: "x" } });
+  assert.equal(wrongAction.isError, true);
+  const ok = JSON.parse((await c.callTool({ name: "builder_ref", arguments: { action: "get_element", type: "swiper" } })).content[0].text);
   assert.ok(ok.value_rules["specials.autoplay"]);
+  const help = JSON.parse((await c.callTool({ name: "builder_ref", arguments: { action: "get_element", help: true } })).content[0].text);
+  assert.ok(help.description && help.input_schema.properties.type);
   const gw = await c.callTool({ name: "invoke_read_tool", arguments: { name: "get_element", arguments: { type: "text", bogus: 1 } } });
   assert.match(gw.content[0].text, /bogus/);
   await c.close();

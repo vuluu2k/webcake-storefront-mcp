@@ -4,6 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../dist/server.js";
 import { toolEntries } from "../dist/tools/registry.js";
+import { FAMILIES, FAMILY_OF } from "../dist/tools/families.js";
 
 const stubApi = () => new Proxy({}, { get: () => async () => ({ data: {} }) });
 const build = (opts) => createServer(stubApi(), opts);
@@ -22,11 +23,11 @@ test("gateway meta-tools are always present", () => {
   }
 });
 
-test("core mode loads fewer tools than all mode; the registry keeps every tool", () => {
+test("core is compact (families + a few standalone tools); all mode adds the on-demand groups", () => {
   const core = toolNames(build()).length;
   const all = toolNames(build({ tools: "all" })).length;
   assert.ok(core < all, "core must be smaller than all");
-  assert.ok(core <= 136, `core grew to ${core} native tools — move a group on-demand or fold it into the api gateway`);
+  assert.ok(core <= 45, `core grew to ${core} native tools — fold the new tool into a family or the api gateway`);
   assert.ok(toolEntries(build()).size >= 150, "the registry still holds every tool");
 });
 
@@ -70,6 +71,10 @@ test("search_tools surfaces the right tool for representative queries", async ()
     const names = json.map((x) => x.name);
     assert.ok(names.includes(expected), `query "${q}" should surface ${expected}, got: ${names.join(", ")}`);
   }
+  // A family member says how to call it.
+  const { json } = await callJson(s, "search_tools", { query: "create product", limit: 3 });
+  const hit = json.find((x) => x.name === "create_product");
+  assert.match(hit.call_as, /^product\(\{ action: "create_product"/);
 });
 
 test("topics of the folded CRUD tools are found by api_find (shipping, domain, ribbon, pwa, affiliate payout, partner feed)", async () => {
@@ -140,7 +145,10 @@ test("registry and native registration agree on the full catalog", async () => {
   const s = build({ tools: "all" });
   const groups = (await callJson(s, "list_tool_groups")).json;
   const inRegistry = groups.reduce((n, g) => n + g.tool_count, 0);
-  assert.equal(inRegistry, toolNames(s).length - 4, "every registry tool must register natively in all mode (no silent overwrite)");
+  const registered = new Set(toolNames(s));
+  const reachable = [...toolEntries(s).keys()].filter((n) => registered.has(n) || (FAMILY_OF[n] && registered.has(FAMILY_OF[n])));
+  assert.equal(reachable.length, inRegistry, "every registry tool is native or an action of a native family (no silent overwrite)");
+  for (const f of Object.keys(FAMILIES)) assert.ok(registered.has(f), `family ${f} missing`);
   assert.ok(groups.every((g) => g.tool_count > 0), `empty group: ${groups.filter((g) => !g.tool_count).map((g) => g.name)}`);
 });
 

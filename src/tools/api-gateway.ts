@@ -8,7 +8,10 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
+import { FAMILY_OF } from "./families.js";
 
+/** How to call a dedicated tool: family members run as an action. */
+const callName = (t: string) => (FAMILY_OF[t] ? `${FAMILY_OF[t]}{action:"${t}"}` : t);
 
 export interface ApiOp {
   id: string;
@@ -46,7 +49,7 @@ const words = (s: string) =>
 export function opLine(o: ApiOp): string {
   const keys = o.params ? Object.keys(o.params) : [];
   const shown = keys.slice(0, 6).map((k) => (o.required?.includes(k) ? `${k}*` : k));
-  return `${o.id} — ${o.handler}${shown.length ? ` (${shown.join(", ")}${keys.length > 6 ? ", …" : ""})` : ""}${o.tools ? ` ⇒ tool: ${o.tools.slice(0, 3).join(", ")}` : ""}`;
+  return `${o.id} — ${o.handler}${shown.length ? ` (${shown.join(", ")}${keys.length > 6 ? ", …" : ""})` : ""}${o.tools ? ` ⇒ tool: ${o.tools.slice(0, 3).map(callName).join(", ")}` : ""}`;
 }
 
 export function searchOps(query: string, limit = 15, method?: string): ApiOp[] {
@@ -84,7 +87,7 @@ export function describeOp(o: ApiOp) {
     ...(o.required ? { required: o.required } : {}),
     ...(o.perms ? { needs_permission: o.perms } : {}),
     ...(o.tools
-      ? { prefer_tool: o.tools, note: o.method === "GET" ? "A dedicated tool covers this route and returns a cleaner result." : "Writes to this route go through the dedicated tool (it carries the guards); api_call refuses them." }
+      ? { prefer_tool: o.tools.map(callName), note: o.method === "GET" ? "A dedicated tool covers this route and returns a cleaner result." : "Writes to this route go through the dedicated tool (it carries the guards); api_call refuses them." }
       : {}),
     ...(DENY[o.id] ? { refused: DENY[o.id] } : {}),
   };
@@ -157,7 +160,7 @@ export function registerApiGatewayTools(server: McpServer, api: WebcakeCmsApi, h
     if (!o) throw new Error(`Unknown operation${args.id ? ` "${args.id}"` : ""}. Find it with api_find({ query }) and pass its id.`);
     if (readOnly && o.method !== "GET") throw new Error(`${o.id} is a ${o.method} — run it with api_call.`);
     if (DENY[o.id]) throw new Error(`Refused: ${DENY[o.id]}.`);
-    if (o.method !== "GET" && o.tools) throw new Error(`Refused: ${o.id} is written through ${o.tools.join(" / ")} — that tool validates and guards this write. Use it instead.`);
+    if (o.method !== "GET" && o.tools) throw new Error(`Refused: ${o.id} is written through ${o.tools.map(callName).join(" / ")} — that tool validates and guards this write. Use it instead.`);
 
     const params: Record<string, string> = { ...(args.path_params || {}) };
     if (params.site_id == null && pathParams(o.path).includes("site_id")) {
