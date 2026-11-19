@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.8.0] - 2026-11-19
+
+### Added
+- `validate_page` nay cảnh báo với mã mới `EMPTY_RENDER` khi một element sẽ publish ra thành một khối rỗng vì thiếu dữ liệu mà renderer cần: `flash-sale` không có `specials.promotion_advance_id`, `text-dataset`/`video-dataset`/`layout-dataset` không có `bindings`, `notify` không có `specials.datagrid_id`, `agency` không có `specials.datagrid_id` hay `specials.agencies`, và `rating-input` nằm ngoài trang sản phẩm mà `specials.auto_hide_without_star` không được đặt là `false`.
+
 ## [2.7.0] - 2026-11-19
 
 ### Added

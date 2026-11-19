@@ -5,6 +5,11 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.8.0] - 2026-11-19
+
+### Added
+- `validate_page` now warns with new code `EMPTY_RENDER` when an element will publish as an empty box because data the renderer needs is missing: a `flash-sale` with no `specials.promotion_advance_id`, a `text-dataset`/`video-dataset`/`layout-dataset` with no `bindings`, a `notify` with no `specials.datagrid_id`, an `agency` with no `specials.datagrid_id` or `specials.agencies`, and a `rating-input` off a product page with `specials.auto_hide_without_star` not set to `false`.
+
 ## [2.7.0] - 2026-11-19
 
 ### Added
