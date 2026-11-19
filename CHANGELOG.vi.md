@@ -5,6 +5,19 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.5.0] - 2026-11-19
+
+### Added
+- `build_page`, `new_section`, `update_page_element`, `update_page_elements`, `update_page_source`, page draft, và các lượt ghi global section/source nay chạy một bước tự sửa trước khi validate, sửa ngay tại chỗ các lỗi AI điển hình có đúng một đáp án và báo lại qua trường `fixed` mới: type bịa ra nhưng rõ nghĩa (`heading`, `div`, `img`, v.v.) được đổi sang `text`/`container`/`image`, type `row` không render được đổi sang `container`, `id` thiếu hoặc trùng được cấp mới, key style kebab-case được đổi sang camelCase, các property CSS bị ghi nhầm vào `runtime.config` được chuyển sang `runtime.style`, boolean/number bị ghi dưới dạng string (`"true"`, `"12"`) được đổi về đúng kiểu, và action sự kiện bịa ra (`navigate`, `open_url`, `scroll`, `popup`, `call`) được đổi sang action thật (`open_link`, `scroll_to`, `open_popup`, `phone_call`) cùng tên field tương ứng.
+- `validate_page` nay xem trước đúng bước tự sửa mà một lần lưu sẽ áp dụng, trả về trường `fixed` cùng với các phát hiện khác, để agent thấy được điều gì sẽ tự được sửa trước khi lưu.
+- `validate_page` nay chặn lưu với các mã lỗi mới: `IMAGE_HOST` khi ảnh hoặc ảnh nền lấy từ host nằm ngoài danh sách cho phép `img-src` (Content-Security-Policy) của storefront, action sự kiện mà cả catalog tool và renderer đã publish đều không biết, và event thiếu field đích bắt buộc (như `popup_id`, `toggle_id`, hay `scroll_to_id`) khiến click không làm gì cả.
+- `validate_page` nay cảnh báo với các mã mới: `GRID_RANGE` khi một con được đặt vượt quá số cột/hàng grid của cha, `LINK_STYLE` khi một link trong rich text sẽ render thành màu xanh có gạch chân, `PLACEHOLDER` khi element `text` còn giữ nội dung mẫu như "lorem ipsum" hay "your heading here", và khi một property CSS bị ghi vào `runtime.config` thay vì `runtime.style`.
+
+### Changed
+- Các mã `UNKNOWN_TYPE`, `BAD_VALUE`, `NOT_RENDERED`, `OUTSIDE_FORM` của `validate_page`, cùng với dataset hoặc target binding không xác định, nay là lỗi chặn lưu thay vì chỉ cảnh báo, vì mỗi lỗi này chắc chắn hỏng trên trang đã publish.
+- `new_section` nay chỉ chặn lưu vì lỗi do chính section mới thêm vào gây ra, thay vì chặn vì lỗi đã có từ trước ở nơi khác trên trang, và báo riêng các lỗi cũ đó.
+- Gợi ý lưu của `clone_page` nay nêu rõ khi `IMAGE_HOST` chặn lần lưu và đề xuất chạy lại với `rehost_images:true`.
+
 ## [2.4.0] - 2026-11-19
 
 ### Added

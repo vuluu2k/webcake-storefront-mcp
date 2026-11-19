@@ -5,6 +5,19 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.5.0] - 2026-11-19
+
+### Added
+- `build_page`, `new_section`, `update_page_element`, `update_page_elements`, `update_page_source`, page drafts, and global section/source writes now run an automatic repair pass before validating, fixing one-answer AI mistakes in place and reporting them in a new `fixed` array: an invented type name with an obvious meaning (`heading`, `div`, `img`, and similar) mapped to `text`/`container`/`image`, the unrendered type `row` swapped for `container`, missing or duplicate `id`s minted fresh, kebab-case style keys converted to camelCase, CSS properties written into `runtime.config` moved to `runtime.style`, stringified booleans and numbers (`"true"`, `"12"`) converted to their real type, and invented event actions (`navigate`, `open_url`, `scroll`, `popup`, `call`) mapped to the real action (`open_link`, `scroll_to`, `open_popup`, `phone_call`) with their fields renamed to match.
+- `validate_page` now previews the same repair pass a save would apply and returns the resulting `fixed` array alongside its findings, so an agent can see what will be auto-corrected before it saves.
+- `validate_page` now blocks on new error codes `IMAGE_HOST` for an image or background image hosted outside the storefront's Content-Security-Policy `img-src` allow-list, an event action unknown to both the tool catalog and the published renderer, and an event missing a required target field (such as `popup_id`, `toggle_id`, or `scroll_to_id`) that would otherwise do nothing on click.
+- `validate_page` now warns with new codes `GRID_RANGE` when a child is placed past its parent's grid column or row range, `LINK_STYLE` when a link inside rich text would render blue and underlined, `PLACEHOLDER` when a `text` element still holds sample copy like "lorem ipsum" or "your heading here", and when a CSS property is written into `runtime.config` instead of `runtime.style`.
+
+### Changed
+- `validate_page`'s `UNKNOWN_TYPE`, `BAD_VALUE`, `NOT_RENDERED`, and `OUTSIDE_FORM` codes, and an unrecognized binding dataset or target, are now blocking errors instead of warnings, since each one is surely broken on the published page.
+- `new_section` now only blocks a save on errors the new section itself introduces, instead of failing because of pre-existing defects elsewhere on the page, and reports those pre-existing issues separately.
+- `clone_page`'s save hint now calls out when `IMAGE_HOST` blocked the save and suggests re-running with `rehost_images:true`.
+
 ## [2.4.0] - 2026-11-19
 
 ### Added
