@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "../dist/server.js";
 import { WebcakeCmsApi } from "../dist/api.js";
-import { API_OPS, searchOps, trimResult } from "../dist/tools/api-gateway.js";
+import { API_OPS, searchOps, trimResult, redactSecrets } from "../dist/tools/api-gateway.js";
 
 function setup(reply = () => [200, { data: [] }]) {
   const calls = [];
@@ -84,4 +84,14 @@ test("api_call: 403 nói rõ quyền cần có", async () => {
 test("searchOps xếp route site-scoped lên trước; trimResult giữ nguyên object không phải list", () => {
   assert.ok(searchOps("shipping").length > 0);
   assert.deepEqual(trimResult({ a: 1, b: 2 }, ["a"]), { a: 1 });
+});
+
+test("gateway không bao giờ trả secret (token, api key, mật khẩu, qr thanh toán…)", async () => {
+  assert.deepEqual(
+    redactSecrets({ data: [{ id: 1, api_key: "k", nested: { client_secret: "s", password: "p" }, qr_data: "QR", is_secret: true, name: "ok" }] }),
+    { data: [{ id: 1, api_key: "[redacted]", nested: { client_secret: "[redacted]", password: "[redacted]" }, qr_data: "[redacted]", is_secret: true, name: "ok" }] }
+  );
+  const { run } = setup(() => [200, { data: { key: "ADMIN-KEY", token: "SECRET-TOKEN" } }]);
+  const r = await run("api_get", { id: "get:/api/v1/dashboard/site/:site_id/db_collections/token" });
+  assert.ok(!r.text.includes("SECRET-TOKEN") && !r.text.includes("ADMIN-KEY"), r.text);
 });

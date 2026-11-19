@@ -9,6 +9,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
 
+
 export interface ApiOp {
   id: string;
   method: string;
@@ -87,6 +88,22 @@ export function describeOp(o: ApiOp) {
       : {}),
     ...(DENY[o.id] ? { refused: DENY[o.id] } : {}),
   };
+}
+
+// Never hand a secret to the model: values under these keys are replaced in every result
+// (a dedicated tool used to whitelist them; the generic gateway has to do it itself).
+const SECRET_KEY = /secret|passw|token|api_?key|private_?key|access_?key|hash_?key|checksum|signature|credential|webhook_key|qr_data/i;
+/** On a route that hands out credentials (…/token, …/api_key), a bare `key` is the secret too. */
+const SECRET_ROUTE = /token|api_key|secret|credential/i;
+export function redactSecrets(v: any, secretRoute = false, depth = 0): any {
+  if (depth > 12 || v === null || typeof v !== "object") return v;
+  if (Array.isArray(v)) return v.map((x) => redactSecrets(x, secretRoute, depth + 1));
+  const out: Record<string, any> = {};
+  for (const [k, x] of Object.entries(v)) {
+    const secret = SECRET_KEY.test(k) || (secretRoute && /^(key|value)$/.test(k));
+    out[k] = secret && x !== null && x !== "" && typeof x !== "boolean" && typeof x !== "object" ? "[redacted]" : redactSecrets(x, secretRoute, depth + 1);
+  }
+  return out;
 }
 
 const LIST_KEYS = ["data", "items", "products", "orders", "customers", "articles", "results", "list", "records", "entries"];
@@ -171,7 +188,7 @@ export function registerApiGatewayTools(server: McpServer, api: WebcakeCmsApi, h
       const msg = e?.message || String(e);
       throw new Error(/API 403/.test(msg) && o.perms ? `${msg} — needs site permission ${o.perms.join(" / ")}.` : msg);
     }
-    const out = trimResult(res, args.pick, args.max_items ?? 50);
+    const out = trimResult(redactSecrets(res, SECRET_ROUTE.test(o.path)), args.pick, args.max_items ?? 50);
     const text = JSON.stringify(out);
     return {
       ...(unknown.length ? { unknown_keys: unknown } : {}),
