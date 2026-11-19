@@ -37,6 +37,7 @@ import { registerBuilderTools } from "./builder.js";
 import { registerBuilderExtraTools } from "./builder-extras.js";
 import { registerPageDraftTools } from "./page-draft.js";
 import { registerSitePlanTools } from "./site-plans.js";
+import { registerApiGatewayTools } from "./api-gateway.js";
 
 type RegisterFn = (server: any, api: WebcakeCmsApi, handle: Handle, opts: any) => void;
 
@@ -95,6 +96,7 @@ const MODULES: [string, RegisterFn][] = [
   ["web", registerBuilderExtraTools],
   ["web", registerPageDraftTools],
   ["site_config", registerSitePlanTools],
+  ["session", registerApiGatewayTools],
 ];
 
 interface ToolEntry {
@@ -142,7 +144,7 @@ const READ_ONLY = /^(list|get|search|read|query|find|count|semantic|check|valida
 const DESTRUCTIVE = /^(delete|remove|uninstall|empty|clear|block|unblock|refuse)_/;
 const ADDITIVE = /^(create|add|upload|install|invite|duplicate|save)_/;
 export function toolAnnotations(name: string): { readOnlyHint?: boolean; destructiveHint?: boolean } {
-  if (READ_ONLY.test(name)) return { readOnlyHint: true };
+  if (READ_ONLY.test(name) || name === "api_find" || name === "api_get") return { readOnlyHint: true };
   if (DESTRUCTIVE.test(name)) return { readOnlyHint: false, destructiveHint: true };
   if (ADDITIVE.test(name)) return { readOnlyHint: false, destructiveHint: false };
   return { readOnlyHint: false };

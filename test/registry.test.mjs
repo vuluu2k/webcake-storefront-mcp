@@ -143,5 +143,6 @@ test("every tool with arguments yields a real JSON schema via search_tools", asy
 test("core tool budget: image alt/SEO stays on-demand", () => {
   const names = toolNames(build());
   assert.ok(!names.includes("set_image_alts"), "image_seo group must not load natively");
-  assert.ok(names.length <= 133, `core grew to ${names.length} tools — move a group on-demand or raise this deliberately`);
+  // 136 = 133 + api_find/api_get/api_call: 3 tools that reach the ~550 routes no dedicated tool covers.
+  assert.ok(names.length <= 136, `core grew to ${names.length} tools — move a group on-demand or raise this deliberately`);
 });
