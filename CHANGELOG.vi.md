@@ -5,6 +5,17 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.1.0] - 2026-11-19
+
+### Added
+- Hai tool mới `get_page_custom_code` và `update_page_custom_code` (nhóm `site_code`) đọc và ghi custom code cho MỘT trang — `code_custom_css`, `code_custom_javascript`, `code_before_head`, `code_before_body` trong `page.settings.custom_code` — trả về `#id` và `custom_class` của các element trên trang để code nhắm trúng, kèm mức dùng so với ngân sách riêng của trang.
+- `build_page` nay nhận thêm tham số `custom_code` và `native_gap` để lưu custom code riêng của trang ngay khi tạo, được kiểm tra theo `sections` của trang mới trước khi trang được tạo.
+- Lượt ghi custom code cho từng trang nay compile thử JS bằng `vm.Script` để bắt lỗi cú pháp trước khi lưu, kiểm ngoặc CSS, cảnh báo khi `#id` được tham chiếu không có trên trang, bỏ `<script>` bọc thừa quanh JS, và chặn lượt ghi làm code hiện có co lại hơn một nửa trừ khi truyền `allow_shrink`.
+
+### Changed
+- Tham số `custom_code` của `update_page_source` nay ghi JS vào `page.settings.custom_code` (được storefront render) thay vì trường `page_source.custom_code` cũ không bao giờ được render; được kiểm tra và chặn theo cùng quy tắc với `update_page_custom_code`.
+- `get_page_source` nay trả `custom_code` từ `page.settings` thay vì `page.source.custom_code`, và thêm gợi ý `legacy_devmode_code` khi trang vẫn còn `page_source.custom_code` cũ chưa render, để chuyển sang bằng `update_page_custom_code`.
+
 ## [2.0.0] - 2026-11-19
 
 ### Added

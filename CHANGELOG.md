@@ -5,6 +5,17 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.1.0] - 2026-11-19
+
+### Added
+- New `get_page_custom_code` and `update_page_custom_code` tools (family `site_code`) read and write custom code for ONE page — `code_custom_css`, `code_custom_javascript`, `code_before_head`, `code_before_body` in `page.settings.custom_code` — reporting the page's element `#id`s and `custom_class`es so code can target them, plus budget usage against a per-page ceiling.
+- `build_page` now accepts `custom_code` and `native_gap` parameters to save per-page custom code at creation time, checked against the new page's `sections` before the page is created.
+- Per-page custom code writes compile JS with `vm.Script` to catch syntax errors before saving, check CSS brace balance, warn when a referenced `#id` isn't on the page, strip a redundant `<script>` wrapper around JS, and block a write that shrinks existing code by more than half unless `allow_shrink` is set.
+
+### Changed
+- `update_page_source`'s `custom_code` parameter now writes JS into `page.settings.custom_code` (rendered on the storefront) instead of the never-rendered `page_source.custom_code` field; it is validated and guarded the same way as `update_page_custom_code`.
+- `get_page_source` now returns `custom_code` from `page.settings` instead of `page.source.custom_code`, and adds a `legacy_devmode_code` hint when a page still has old, unrendered `page_source.custom_code` so it can be moved over with `update_page_custom_code`.
+
 ## [2.0.0] - 2026-11-19
 
 ### Added
