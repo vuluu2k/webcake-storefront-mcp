@@ -35,7 +35,8 @@ test("bắt các lỗi agent hay mắc, kèm cách sửa", () => {
   form.specials = { ...form.specials, type: "contact_form" };
   const slide = buildElement("slide", {});
   sec.children = [text, button, form, slide, { ...buildElement("text", {}), type: "txt" }];
-  const w = validatePage({ sections: [sec] }).warnings.join("\n");
+  const r = validatePage({ sections: [sec] });
+  const w = [...(r.errors || []), ...(r.warnings || [])].join("\n"); // BAD_VALUE / UNKNOWN_TYPE block now
   assert.match(w, /\[UNKNOWN_KEY\] #TEXT-\S+ \(text\) specials\.content: .* → put the text\/HTML in specials\.text/);
   assert.match(w, /runtime\.config\.backgroundColor: belongs in style/);
   assert.match(w, /\[STYLE_KEY\].*font-size.*rename to "fontSize"/);
@@ -43,7 +44,7 @@ test("bắt các lỗi agent hay mắc, kèm cách sửa", () => {
   assert.match(w, /specials\.href: .*open_link/);
   assert.match(w, /\[BAD_VALUE\].*"contact_form" is not one of .*form_order/);
   assert.match(w, /\[BAD_PARENT\] #SLIDE-\S+ \(slide\) must be a direct child of swiper or carousel/);
-  assert.match(w, /\[UNKNOWN_TYPE\].*"txt" → did you mean "text"\?/);
+  assert.match(w, /\[UNKNOWN_TYPE\].*"txt".*did you mean "text"\?/);
 });
 
 test("key thật của element khác không bị báo nhầm; boolean-chuỗi được chỉ ra", () => {
@@ -137,7 +138,8 @@ test("quan hệ element: cha bắt buộc từ trang thật, type không đượ
   const sec = buildElement("section", {});
   sec.children = [buildElement("container", {})];
   sec.children[0].children = [buildElement("product-overlay", {}), buildElement("collapse-item", {})];
-  const msgs = (validatePage({ sections: [sec] }).warnings || []).join("\n");
+  const r = validatePage({ sections: [sec] });
+  const msgs = [...(r.errors || []), ...(r.warnings || [])].join("\n");
   assert.match(msgs, /\[BAD_PARENT\].*product-overlay/);
   assert.match(msgs, /\[NOT_RENDERED\].*collapse-item/);
 });

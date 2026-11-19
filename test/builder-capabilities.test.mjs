@@ -58,7 +58,8 @@ test("structure warnings: top level, non-container children, orphan submit, wish
   const bad = buildSection([{ type: "submit-button", opts: { text: "x" } }, { type: "text-dataset", opts: { bindings: [{ target: "wishlist_item::product_name" }] } }]);
   const loose = buildElement("text", {});
   loose.children = [buildElement("button", {})];
-  const w = validatePage({ sections: [bad, loose] }).warnings.join("\n");
+  const r = validatePage({ sections: [bad, loose] });
+  const w = [...(r.errors || []), ...(r.warnings || [])].join("\n"); // an orphan submit is an error now
   for (const re of [/not inside a form/, /outside a wishlist-item/, /Top-level node .* is a text/, /not a container/]) assert.match(w, re);
 });
 

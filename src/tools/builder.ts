@@ -9,6 +9,7 @@ import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
 import { BUILD_GUIDE } from "../builder/guide.js";
 import { getCached } from "./result-cache.js";
+import { repairSource } from "../builder/repair.js";
 import { PAGE_SCHEMA } from "../builder/page-schema.js";
 import { listElements, getElement, buildElement } from "../builder/catalog.js";
 import { describeEventsCatalog } from "../builder/events.js";
@@ -18,6 +19,7 @@ import {
   buildRow,
   newPageSkeleton,
   validatePage,
+  addedErrors,
   finalizeForRender,
   walk,
   reassignIds,
@@ -319,8 +321,10 @@ Example children: [{ "type":"container", "children":[{"type":"image","opts":{...
     },
     ({ source }) =>
       handle(async () => {
-        const parsed = parseSource(source);
-        return validatePage(parsed);
+        // Judge what a save would store: saves repair the one-answer mistakes first (fixed).
+        const parsed = structuredClone(parseSource(source));
+        const fixed = repairSource(parsed);
+        return { ...validatePage(parsed), ...(fixed.length ? { fixed, fixed_note: "applied automatically by every save" } : {}) };
       })
   );
 
@@ -358,6 +362,7 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
     ({ name, slug, source, type, is_homepage, seo, custom_code, native_gap, dry_run }) =>
       handle(async () => {
         const parsed = parseSource(source);
+        const fixed = repairSource(parsed);
         const validation: any = validatePage(parsed);
         // Per-page code is judged against THIS source before anything is created.
         const pageCode = custom_code ? (Object.fromEntries(Object.entries(custom_code).filter(([, v]) => v !== undefined)) as PageCode) : undefined;
@@ -381,6 +386,7 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
           return {
             dry_run: true,
             ...(conflict ? { blocked: true, conflict } : {}),
+            ...(fixed.length ? { fixed } : {}),
             validation,
             ...(pageCode ? { custom_code: { errors: codeCheck!.errors, warnings: codeCheck!.warnings, ...(codeBlock ? { blocked: codeBlock } : {}) } } : {}),
             request: { name, slug: cleanSlug ?? null, type: kind ?? null, page_type_num: typeNum ?? null, is_homepage, sections: (parsed && parsed.sections || []).length },
@@ -439,6 +445,7 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
           page_type: kind ?? null,
           ...(feature ? { data_source: { flag: feature.flag, newly_enabled: feature.changed } } : {}),
           stats: validation.stats,
+          ...(fixed.length ? { fixed } : {}),
           ...(codeSaved ? { custom_code: codeSaved } : {}),
           ...(metaWarning ? { warning: metaWarning } : {}),
         };
@@ -525,14 +532,21 @@ Two-step safety: dry_run=true (default) previews; dry_run=false saves.`,
           return { error: "Provided 'section' is not a section node (type must be 'section')." };
         }
 
+        const fixed = repairSource({ sections: [sectionNode] });
         source.sections.push(sectionNode);
-        const validation: any = validatePage(source, { sections: source.sections.slice(0, -1) });
+        const before = { sections: source.sections.slice(0, -1) };
+        const validation: any = validatePage(source, before);
+        // Only what THIS section adds blocks: an old defect elsewhere must not stop an append.
+        const added = addedErrors(source, before);
+        validation.valid = added.length === 0;
+        if (added.length) validation.added_errors = added;
 
         if (dry_run) {
           return {
             dry_run: true,
             page_id,
             section_id: sectionNode.id,
+            ...(fixed.length ? { fixed } : {}),
             validation,
             total_sections: source.sections.length,
             hint: validation.valid ? "Call again with dry_run=false to save." : "Fix errors before saving.",
@@ -550,6 +564,7 @@ Two-step safety: dry_run=true (default) previews; dry_run=false saves.`,
           page_id,
           section_id: sectionNode.id,
           total_sections: source.sections.length,
+          ...(fixed.length ? { fixed } : {}),
           page_source_id: saved && saved.data && saved.data.id,
         };
       })

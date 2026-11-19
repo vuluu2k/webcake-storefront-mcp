@@ -18,7 +18,7 @@ const SNAP = {
         T(64, 16, 80, 28, "Brand", { tag: "p" }),
         { k: "group", dir: "row", gap: 24, x: 1200, y: 18, w: 176, h: 24, kids: [T(1200, 18, 40, 24, "About", { href: "https://example.com/about" }), T(1264, 18, 40, 24, "Shop", { href: "https://example.com/shop" }), T(1328, 18, 48, 24, "Call", { href: "tel:0900" })] },
       ] } },
-    { k: "section", x: 0, y: 60, w: 1440, h: 420, style: { bg: "rgb(15, 23, 42)", bgImage: "https://img.example.com/hero.jpg" }, pad: { t: 120, r: 64, b: 120, l: 64 },
+    { k: "section", x: 0, y: 60, w: 1440, h: 420, style: { bg: "rgb(15, 23, 42)", bgImage: "https://content.pancake.vn/test/hero.jpg" }, pad: { t: 120, r: 64, b: 120, l: 64 },
       content: { k: "group", dir: "col", gap: 16, x: 64, y: 180, w: 1312, h: 180, kids: [
         T(470, 180, 500, 64, "Big headline", { tag: "h1", style: { fontSize: 56, fontWeight: "700", color: "rgb(255, 255, 255)", textAlign: "center" } }),
         { k: "button", x: 660, y: 300, w: 120, h: 46, text: "Buy now", href: "https://example.com/buy", style: { bg: "rgb(249, 115, 22)", radius: 8, color: "rgb(255, 255, 255)", fontSize: 16, fontWeight: "600", padX: 28 } },
@@ -27,7 +27,7 @@ const SNAP = {
       content: { k: "group", dir: "row", gap: 32, x: 170, y: 576, w: 1100, h: 300, kids: [0, 1, 2].map((i) => ({
         k: "box", x: 170 + i * 378, y: 576, w: 346, h: 300, style: { bg: "rgb(248, 250, 252)", radius: 16 }, pad: { t: 24, r: 24, b: 24, l: 24 },
         content: { k: "group", dir: "col", gap: 12, x: 194 + i * 378, y: 600, w: 298, h: 250, kids: [
-          { k: "image", x: 194 + i * 378, y: 600, w: 298, h: 180, src: `https://img.example.com/${i}.jpg`, alt: "card" },
+          { k: "image", x: 194 + i * 378, y: 600, w: 298, h: 180, src: `https://content.pancake.vn/test/${i}.jpg`, alt: "card" },
           T(194 + i * 378, 792, 298, 24, `Card ${i}`, { tag: "h3" }),
         ] },
       })) } },
@@ -75,7 +75,7 @@ test("clone: link cả khối → text + open_link (giữ màu), tel: → phone_
 test("clone: hàng giữ tỉ lệ cột + căn vị trí; nền màu nằm dưới ảnh; hàng nhỏ không gãy trên mobile", () => {
   const src = snapshotToSource(SNAP).source;
   const hero = src.sections[1];
-  assert.match(hero.runtime.style.background, /^url\(https:\/\/img\.example\.com\/hero\.jpg\) rgb\(15, 23, 42\)$/);
+  assert.match(hero.runtime.style.background, /^url\(https:\/\/content\.pancake\.vn\/test\/hero\.jpg\) rgb\(15, 23, 42\)$/);
   const button = nodes(src).find((n) => n.type === "button");
   assert.deepEqual(button.runtime.config.constraintX, ["centerLeft"]);
   const cards = src.sections[2].children[0];
@@ -106,9 +106,9 @@ test("clone_page tool: snapshot → source_ref; build_page đọc được cache
 
 test("clone: số cột đo từ trang gốc theo breakpoint; cụm nhỏ co theo nội dung; <details> → collapse; ảnh nhỏ giữ px", () => {
   const pills = { k: "group", dir: "row", key: "2/1", gap: 12, x: 48, y: 10, w: 400, h: 36, kids: ["Tất cả", "Trong nhà", "Ngoài trời", "Chậu"].map((t, i) => ({ k: "box", x: 48 + i * 100, y: 10, w: 88, h: 36, style: { border: "1px solid rgb(209, 213, 219)", radius: 999 }, pad: { t: 8, r: 16, b: 8, l: 16 }, content: T(64 + i * 100, 18, 56, 20, t) })) };
-  const grid = { k: "group", dir: "row", key: "3", gap: 24, x: 48, y: 80, w: 1344, h: 300, kids: [0, 1, 2, 3].map((i) => ({ k: "image", x: 48 + i * 342, y: 80, w: 318, h: 300, src: `https://img/${i}.jpg` })) };
+  const grid = { k: "group", dir: "row", key: "3", gap: 24, x: 48, y: 80, w: 1344, h: 300, kids: [0, 1, 2, 3].map((i) => ({ k: "image", x: 48 + i * 342, y: 80, w: 318, h: 300, src: `https://content.pancake.vn/test/${i}.jpg` })) };
   const faq = { k: "accordion", x: 48, y: 400, w: 700, h: 80, title: "Có giao hàng không?", titleStyle: { fontSize: 16, fontWeight: "700" }, style: {}, body: T(48, 440, 700, 24, "Có, trước 11 giờ.") };
-  const quote = { k: "group", dir: "row", key: "4", gap: 24, x: 48, y: 500, w: 700, h: 96, kids: [{ k: "image", x: 48, y: 500, w: 96, h: 96, src: "https://img/a.jpg" }, T(168, 530, 580, 24, "Bánh ngon nhất.")] };
+  const quote = { k: "group", dir: "row", key: "4", gap: 24, x: 48, y: 500, w: 700, h: 96, kids: [{ k: "image", x: 48, y: 500, w: 96, h: 96, src: "https://content.pancake.vn/test/a.jpg" }, T(168, 530, 580, 24, "Bánh ngon nhất.")] };
   const snap = { ...SNAP, sections: [{ k: "section", x: 0, y: 0, w: 1440, h: 700, style: {}, pad: {}, content: { k: "group", dir: "col", gap: 20, x: 48, y: 10, w: 1344, h: 690, kids: [pills, grid, faq, quote] } }], columns: { bp2: { "2/1": 4, 3: 4, 4: 2 }, bp3: { "2/1": 4, 3: 2, 4: 1 }, bp4: { "2/1": 3, 3: 2, 4: 1 } } };
   const [p, g, f, q] = snapshotToSource(snap).source.sections[0].children;
   assert.deepEqual(p.runtime.config.__row.collapse, { bp1: null, bp2: 4, bp3: 4, bp4: 3 });

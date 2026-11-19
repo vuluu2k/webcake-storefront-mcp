@@ -125,7 +125,7 @@ export function registerCloneTools(server: McpServer, api: WebcakeCmsApi, handle
           ...(images ? { images: { hosted: images.hosted, ...(images.failed.length ? { failed: images.failed.slice(0, 10) } : {}) } } : { images: { external: out.images.length, note: out.images.length ? "Not on the CDN yet — the storefront won't show them. Re-run with rehost_images:true for a page you keep." : undefined } }),
           validation: { valid: v.valid, errors: (v.errors || []).slice(0, 8), warnings_by_code: byCode },
           source_ref: `cache:${ref}`,
-          next: `build_page({ name, slug, source: "cache:${ref}", dry_run: true }) then dry_run:false. Set the site fonts to ${out.fonts.slice(0, 2).join(" / ") || "the source's"} if they differ; rewrite the copy for the user's brand. The ref expires in 10 min (read it with read_cached_result).`,
+          next: `${(v.errors || []).some((e: string) => e.startsWith("[IMAGE_HOST]")) ? "Images are not on the WebCake CDN yet (IMAGE_HOST blocks the save): run clone_page again with rehost_images:true. Then " : ""}build_page({ name, slug, source: "cache:${ref}", dry_run: true }) then dry_run:false. Set the site fonts to ${out.fonts.slice(0, 2).join(" / ") || "the source's"} if they differ; rewrite the copy for the user's brand. The ref expires in 10 min (read it with read_cached_result).`,
         };
       })
   );

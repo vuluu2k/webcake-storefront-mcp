@@ -13,6 +13,21 @@
 // TEACH the AI the exact trigger/action/field names (no invented keys).
 
 import { randomString } from "./factory.js";
+import { readFileSync } from "node:fs";
+
+/** Actions the published page can run (scripts/mine-renderer.mjs: events.js cases + common.ex). */
+let RENDER_ACTIONS: Set<string> | null = null;
+const renderActions = () => {
+  if (RENDER_ACTIONS) return RENDER_ACTIONS;
+  try {
+    RENDER_ACTIONS = new Set(JSON.parse(readFileSync(new URL("./renderer-keys.generated.json", import.meta.url), "utf8")).event_actions || []);
+  } catch {
+    RENDER_ACTIONS = new Set();
+  }
+  return RENDER_ACTIONS;
+};
+/** Fields that name what the action acts on: without them the click does nothing. */
+const TARGET_FIELDS = new Set(["popup_id", "toggle_id", "scroll_to_id", "link_target", "open_page_id", "phone_call_number", "open_category_id", "open_blog_category_id", "open_menu_id", "change_tab_id"]);
 
 // ── Triggers (eventName) ─────────────────────────────────────────────────────
 export interface EventTrigger {
@@ -208,11 +223,15 @@ export function validateEvents(node: any, allIds: Set<string>): { errors: string
     }
     const def = ACTION_BY_NAME[ev.action];
     if (!def) {
-      warnings.push(`Event on "${where}" has unknown action "${ev.action}" (see list_events).`);
+      // Unknown to the catalog AND to the renderer's dispatcher = a click that does nothing.
+      if (renderActions().size && !renderActions().has(ev.action))
+        errors.push(`Event on "${where}" has unknown action "${ev.action}" — the storefront has no handler for it → pick an action from list_events (open_link, scroll_to, open_popup, toggle, add_to_cart…).`);
+      else warnings.push(`Event on "${where}" has action "${ev.action}" the catalog doesn't describe (the renderer knows it) — check its fields.`);
       continue;
     }
     for (const f of def.required || []) {
-      if (ev[f] == null || ev[f] === "") warnings.push(`Event "${ev.action}" on "${where}" is missing required field "${f}".`);
+      if (ev[f] == null || ev[f] === "")
+        (TARGET_FIELDS.has(f) ? errors : warnings).push(`Event "${ev.action}" on "${where}" is missing required field "${f}"${TARGET_FIELDS.has(f) ? " — it has nothing to act on" : ""} → set ${f} (see list_events).`);
     }
     for (const f of def.target_in_page || []) {
       for (const v of [].concat(ev[f] ?? [])) // a field may hold one id or a list (filter's filters)

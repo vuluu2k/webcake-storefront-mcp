@@ -14,8 +14,9 @@ const pageWith = (type) => {
 
 test("every factory element passes the shape checks", () => {
   for (const t of Array.isArray(ELEMENT_TYPES) ? ELEMENT_TYPES : Object.keys(ELEMENT_TYPES)) {
-    const v = validatePage(pageWith(t));
-    assert.equal(v.errors, undefined, `${t}: ${v.errors}`);
+    // Alone in a section a field is OUTSIDE_FORM and an unrendered type NOT_RENDERED — by design.
+    const errs = (validatePage(pageWith(t)).errors || []).filter((e) => !/^\[(OUTSIDE_FORM|NOT_RENDERED)\]/.test(e));
+    assert.deepEqual(errs, [], `${t}: ${errs}`);
   }
 });
 
@@ -69,7 +70,7 @@ test("legit variants stay valid: grid-product column count, missing widthUnit, t
   // the editor's "no default" sentinel for a select, and an imported id: warnings, not blockers
   const sel = pageWith("select");
   sel.sections[0].children[0].specials = { ...sel.sections[0].children[0].specials, options: [{ id: "a" }], defaultValue: "none" };
-  assert.equal(validatePage(sel).valid, true);
+  assert.deepEqual((validatePage(sel).errors || []).filter((e) => !/^\[OUTSIDE_FORM\]/.test(e)), []);
   el.id = "1-imported";
   assert.equal(validatePage(p).valid, true);
 });

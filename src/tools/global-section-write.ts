@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { repairSource } from "../builder/repair.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -84,6 +85,7 @@ Two-step safety: dry_run=true (default) previews which pages change; dry_run=fal
         // Mark it as a global section and expand runtime → bp1..bp4 (renderer reads bpN).
         node.specials = { ...(node.specials || {}), global: type };
         const wrap = { sections: [node] };
+        const fixed = repairSource(wrap);
         const validation: any = validatePage(wrap);
         if (!validation.valid) return { error: "Section failed validation.", validation };
         finalizeForRender(wrap, await api.getSiteBreakpoints(), await api.getSiteDefaultGrid());
@@ -116,6 +118,7 @@ Two-step safety: dry_run=true (default) previews which pages change; dry_run=fal
           return {
             dry_run: true,
             section_id: finalNode.id,
+            ...(fixed.length ? { fixed } : {}),
             type,
             name,
             embeds_into_pages: targets.map((p) => ({ id: p.id, name: p.name })),
@@ -130,6 +133,7 @@ Two-step safety: dry_run=true (default) previews which pages change; dry_run=fal
         return {
           success: ok,
           section_id: finalNode.id,
+          ...(fixed.length ? { fixed } : {}),
           type,
           name,
           embedded_pages: targetIds.length,

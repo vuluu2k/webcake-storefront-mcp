@@ -5,7 +5,7 @@
 // child's runtime.config (columnStart/End, rowStart/End, constraintX/Y). The helpers here
 // produce that structure the same way the builder does, so generated pages render.
 
-import { checkElementKeys, checkParent, collapseByCode, countByCode, formatFinding, FORM_FIELDS, suggestType, withCode, type Finding } from "./element-schema.js";
+import { blockedImageHost, checkElementKeys, checkParent, collapseByCode, countByCode, formatFinding, FORM_FIELDS, suggestType, withCode, type Finding } from "./element-schema.js";
 import { buildElement, isKnownType, ELEMENT_TYPES } from "./catalog.js";
 import { randomString } from "./factory.js";
 import { validateEvents, normalizeEvents } from "./events.js";
@@ -499,7 +499,7 @@ export function validatePage(source: any, previous?: any) {
     if (!node.type) add({ code: "MISSING_TYPE", severity: "error", id: node.id || "?", message: "node has no type" });
     else if (!isKnownType(node.type)) {
       const guess = suggestType(node.type);
-      add({ code: "UNKNOWN_TYPE", severity: "warning", id: node.id, type: node.type, message: `Unknown element type "${node.type}"`, fix: guess ? `did you mean "${guess}"?` : "see list_elements" });
+      add({ code: "UNKNOWN_TYPE", severity: "error", id: node.id, type: node.type, message: `Unknown element type "${node.type}" — it renders nothing`, fix: guess ? `did you mean "${guess}"?` : "see list_elements" });
     }
 
     // Form fields should carry a field_name so submissions map to data.
@@ -507,6 +507,32 @@ export function validatePage(source: any, previous?: any) {
       add({ code: "FIELD_NAME", severity: "warning", id: node.id, type: node.type, at: "specials.field_name", message: `Form field has no specials.field_name — its value is not submitted`, fix: "set e.g. full_name / email / phone_number" });
 
     for (const f of checkElementKeys(node)) add(f);
+
+    // Images from a host the storefront's CSP doesn't allow never load on the published page.
+    const layers = ["runtime", ...Object.keys(node).filter((k) => /^bp\d+$/.test(k))].map((k) => node[k]).filter((l) => l && typeof l === "object");
+    // Pictures only: a video/audio src is not under img-src.
+    const isPicture = /image|gallery|logo|icon/.test(String(node.type));
+    const srcs = new Set<string>(isPicture ? [node.specials?.src, ...layers.map((l: any) => l.config?.src)].filter((s) => typeof s === "string") : []);
+    for (const s of srcs) {
+      const host = blockedImageHost(s);
+      if (host) add({ code: "IMAGE_HOST", severity: "error", id: node.id, type, at: "src", message: `image from ${host} is blocked by the storefront (CSP img-src) — it shows broken`, fix: "upload it first: upload_images (or clone_page rehost_images:true) and use the CDN url" });
+    }
+    for (const l of layers) {
+      const bg = l.style?.background ?? l.style?.backgroundImage;
+      for (const m of typeof bg === "string" ? bg.matchAll(/url\(\s*["']?([^"')]+)/g) : []) {
+        const host = blockedImageHost(m[1]);
+        if (host) add({ code: "IMAGE_HOST", severity: "error", id: node.id, type, at: "style.background", message: `background image from ${host} is blocked by the storefront (CSP img-src)`, fix: "upload it with upload_images and use the CDN url" });
+      }
+    }
+    // text renders specials.tag as the HTML tag itself: an invented one is broken markup.
+    const tag = node.specials?.tag;
+    if (type === "text" && typeof tag === "string" && tag && !/^(h[1-6]|p|span|div|a|li|ul|ol|blockquote|strong|em|small|label|pre|code|section|article|header|footer|nav)$/i.test(tag))
+      add({ code: "BAD_VALUE", severity: "error", id: node.id, type, at: "specials.tag", message: `"${tag}" is not an HTML tag the text renders`, fix: "use h1|h2|h3|h4|h5|h6|p (or span)" });
+    const text = typeof node.specials?.text === "string" ? node.specials.text : "";
+    if (/<a\s[^>]*href/i.test(text) && type === "text")
+      add({ code: "LINK_STYLE", severity: "warning", id: node.id, type, at: "specials.text", message: "a link inside text renders blue + underlined (.ql-editor a !important)", fix: "fine inside a sentence; for a menu/footer link use plain text + an open_link click event" });
+    if (/lorem ipsum|dolor sit amet|^add a heading$|your (text|title|heading) here|placeholder text|sample text/i.test(text.replace(/<[^>]+>/g, "").trim()))
+      add({ code: "PLACEHOLDER", severity: "warning", id: node.id, type, at: "specials.text", message: `placeholder copy "${text.replace(/<[^>]+>/g, "").slice(0, 40)}"`, fix: "write the real text (ask the user for it)" });
   });
 
   // Second pass: events + bindings against the authoritative catalogs (unknown
@@ -525,10 +551,10 @@ export function validatePage(source: any, previous?: any) {
     }
   });
 
-  // Third pass (needs ancestry): structures the renderer silently mishandles. Warnings only.
+  // Third pass (needs ancestry): structures the renderer mishandles (errors where nothing works).
   // Child check uses LEAF_TYPES, not "factory has no children": swiper, grid-product, post-list,
   // member-bar… render children even though their factories create none.
-  const checkTree = (node: any, ancestors: string[]) => {
+  const checkTree = (node: any, ancestors: string[], parentNode?: any) => {
     if (!node || typeof node !== "object") return;
     const type = node.type;
     const kids: any[] = Array.isArray(node.children) ? node.children : [];
@@ -537,22 +563,36 @@ export function validatePage(source: any, previous?: any) {
       w("TOP_LEVEL", `Top-level node "${node.id}" is a ${type}: pages render only sections at the top level`, "wrap it in a section");
     if (kids.length && LEAF_TYPES.has(type))
       w("LEAF_CHILDREN", `"${node.id}" (${type}) has ${kids.length} child node(s), but ${type} is not a container — they won't render`, "move them into a container");
+    const e = (code: string, message: string, fix?: string) => add({ code, severity: "error", id: node.id, type, message, fix });
     if (type === "submit-button" && !ancestors.some((t) => /form/.test(t)))
-      w("OUTSIDE_FORM", `Submit button "${node.id}" is not inside a form — it has nothing to submit`, "put it inside the form");
+      e("OUTSIDE_FORM", `Submit button "${node.id}" is not inside a form — it has nothing to submit`, "put it inside the form");
     else if (FORM_FIELDS.has(type) && ancestors.length && !ancestors.some((t) => /form/.test(t)))
-      w("OUTSIDE_FORM", "form field is not inside a form — nothing submits it", "put it inside a form");
+      e("OUTSIDE_FORM", "form field is not inside a form — nothing submits it", "put it inside a form");
+    // A child placed past its parent's last column/row lands in an implicit track (off-layout).
+    if (parentNode) {
+      const pc = parentNode.runtime?.config || parentNode.bp1?.config || {};
+      const cc = node.runtime?.config || node.bp1?.config || {};
+      const [gc, gr] = typeof pc.grid === "string" ? pc.grid.split("x").map(Number) : [];
+      const cols = Array.isArray(pc.columns) ? pc.columns.length : gc;
+      const rows = Array.isArray(pc.rows) ? pc.rows.length : gr;
+      if (cols && (cc.columnEnd > cols + 1 || cc.columnStart > cols))
+        w("GRID_RANGE", `placed in column ${cc.columnStart}–${cc.columnEnd} but its ${parentNode.type} has ${cols} column(s) — it falls outside the layout`, "use new_section / new_row layouts, or fix columnStart/columnEnd");
+      else if (rows && (cc.rowEnd > rows + 1 || cc.rowStart > rows))
+        w("GRID_RANGE", `placed in row ${cc.rowStart}–${cc.rowEnd} but its ${parentNode.type} has ${rows} row(s)`, "use new_section / new_row layouts, or fix rowStart/rowEnd");
+    }
     if ((node.bindings || []).some((b: any) => b?.name === "wishlist_item") && !ancestors.includes("wishlist-item"))
       w("BINDING_SCOPE", `"${node.id}" binds wishlist_item::… outside a wishlist-item — those fields only resolve per saved product`);
     const parent = ancestors.length ? checkParent(node, ancestors) : undefined;
     if (parent) add(parent);
-    for (const c of kids) checkTree(c, [...ancestors, type]);
+    for (const c of kids) checkTree(c, [...ancestors, type], node);
   };
   for (const s of source.sections) checkTree(s, []);
 
   // Crash-level shapes for the renderer and the editor (null children, non-object specials/bp,
   // bad widthUnit/constraints/grid…). See shape.ts.
   const shape = checkShape(source);
-  errors.push(...shape.errors.map((m) => withCode("SHAPE", m)));
+  const shapeFix = (m: string) => (m.includes("→") ? m : `${m} → rebuild that node with new_element / new_section instead of hand-writing it`);
+  errors.push(...shape.errors.map((m) => withCode("SHAPE", shapeFix(m))));
   warnings.push(...shape.warnings.map((m) => withCode("SHAPE", m)));
 
   const code = checkNativeContent(source, previous);

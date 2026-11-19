@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { repairSource } from "../builder/repair.js";
 import { getConfirmMode } from "./context.js";
 import { STYLE_DESC, CONFIG_DESC } from "./pages.js";
 import { addedErrors, applyNodeUpdates, computeNodeDiff, checkContentPlaceholders, checkElementPatch, finalizeForRender } from "../builder/page.js";
@@ -593,6 +594,7 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
     ({ component, source, type }) =>
       handle(async () => {
         const obj = typeof source === "string" ? JSON.parse(source) : source;
+        repairSource(asPageShape(obj)); // one-answer mistakes, in place (asPageShape keeps node refs)
         // runtime-shaped nodes (new_element output) → per-breakpoint keys, in place (asPageShape keeps node refs)
         finalizeForRender(asPageShape(obj), await api.getSiteBreakpoints(), await api.getSiteDefaultGrid());
         const errors = addedErrors(asPageShape(obj));
@@ -628,6 +630,7 @@ Safeguarded: blocks if new source is <50% of existing size. For element-level ch
 
         // Ensure source is an object (not string) — backend does Jason.encode! so we must send object
         const newSourceObj = typeof newSourceInput === "string" ? JSON.parse(newSourceInput) : newSourceInput;
+        repairSource(asPageShape(newSourceObj));
         finalizeForRender(asPageShape(newSourceObj), await api.getSiteBreakpoints(), await api.getSiteDefaultGrid());
         const newLen = JSON.stringify(newSourceObj).length;
         const errors = addedErrors(asPageShape(newSourceObj), existingSource ? asPageShape(existingSource) : undefined);

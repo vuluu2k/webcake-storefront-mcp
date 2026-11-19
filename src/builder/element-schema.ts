@@ -27,10 +27,30 @@ const loadJson = (name: string): any => {
 type Bucket = "specials" | "config";
 interface RendererKey { default?: unknown; values?: string[] }
 interface EditorKey { label?: string; control?: string; options?: string[] }
-const RENDERER: { mentioned?: string[]; dispatched?: string[]; shared?: Record<Bucket, Record<string, RendererKey>>; types?: Record<string, Record<Bucket, Record<string, RendererKey>>> } = loadJson("./renderer-keys.generated.json");
+const RENDERER: { mentioned?: string[]; dispatched?: string[]; event_actions?: string[]; img_hosts?: string[]; shared?: Record<Bucket, Record<string, RendererKey>>; types?: Record<string, Record<Bucket, Record<string, RendererKey>>> } = loadJson("./renderer-keys.generated.json");
 const MENTIONED = new Set<string>(RENDERER.mentioned || []);
 /** Types the published renderer has a branch for. A type outside it renders nothing. */
 const RENDERED_TYPES = new Set<string>(RENDERER.dispatched || []);
+/** Event actions the published page runs (events.js cases + names common.ex compares). */
+export const RENDERER_EVENT_ACTIONS = new Set<string>(RENDERER.event_actions || []);
+/** Binding targets / datasets real pages use (the binding catalog misses some). */
+export const OBSERVED_BINDINGS = new Set<string>(Object.values(OBSERVED).flatMap((o) => o.bindings || []));
+
+// Image hosts the storefront's Content-Security-Policy lets load (img-src). Anything else shows
+// as a broken image on the published page.
+const IMG_HOSTS = (RENDERER.img_hosts || []).filter((h) => /^https:\/\//.test(h)).map((h) => h.replace(/^https:\/\//, ""));
+/** "" when the URL may load on a published page; otherwise its host. Relative/data/blob are fine. */
+export function blockedImageHost(url: unknown): string {
+  if (typeof url !== "string" || !/^https?:\/\//i.test(url.trim()) || !IMG_HOSTS.length) return "";
+  let host = "";
+  try {
+    host = new URL(url.trim()).hostname;
+  } catch {
+    return "";
+  }
+  const ok = IMG_HOSTS.some((h) => (h.startsWith("*.") ? host.endsWith(h.slice(1)) || host === h.slice(2) : host === h));
+  return ok ? "" : host;
+}
 const EDITOR: { types?: Record<string, Record<Bucket, Record<string, EditorKey>>> } = loadJson("./editor-keys.generated.json");
 
 // ── Findings: one shape, one string format ──────────────────────────────────────────────
@@ -102,7 +122,7 @@ const PARENTS: Record<string, string[]> = (() => {
   for (const [type, o] of Object.entries(OBSERVED)) {
     const ps = Object.entries(o.parents || {}).sort((a, b) => b[1] - a[1]);
     const total = ps.reduce((n, [, c]) => n + c, 0);
-    if (total < 50 || FORM_FIELDS.has(type)) continue;
+    if (total < 50 || FORM_FIELDS.has(type) || type === "submit-button") continue; // OUTSIDE_FORM covers these
     const allow: string[] = [];
     let acc = 0;
     for (const [p, c] of ps) {
@@ -217,7 +237,7 @@ export function elementSchema(type: string): ElementSchema | undefined {
 // ── CSS property names (style keys) ─────────────────────────────────────────────────────
 // Mined style keys + standard CSS properties, camelCase. ponytail: a fixed list; add a
 // property here if a real one gets flagged.
-const CSS_PROPS = new Set(
+export const CSS_PROPS = new Set(
   `alignContent alignItems alignSelf animation animationDelay animationDuration animationName aspectRatio
 backdropFilter backfaceVisibility background backgroundAttachment backgroundBlendMode backgroundClip backgroundColor
 backgroundImage backgroundOrigin backgroundPosition backgroundRepeat backgroundSize border borderBottom borderBottomColor
@@ -296,7 +316,7 @@ function checkValue(spec: KeySpec | undefined, v: any, f: Omit<Finding, "message
   }
   if (spec.enum && typeof v === "string" && !spec.enum.includes(v)) {
     const guess = didYouMean(v, spec.enum);
-    out.push({ ...f, code: "BAD_VALUE", severity: "warning", message: `"${v}" is not one of ${spec.enum.join("|")}`, fix: guess ? `use "${guess}"` : undefined });
+    out.push({ ...f, code: "BAD_VALUE", severity: "error", message: `"${v}" is not one of ${spec.enum.join("|")} — the renderer falls back to its default`, fix: guess ? `use "${guess}"` : `pick one of ${spec.enum.join("|")}` });
   }
 }
 
@@ -307,7 +327,7 @@ export function checkElementKeys(node: any): Finding[] {
   if (!schema) return out;
   const base = { id: node.id, type: node.type };
   if (RENDERED_TYPES.size && !RENDERED_TYPES.has(node.type))
-    out.push({ ...base, code: "NOT_RENDERED", severity: "warning", message: `the published renderer has no branch for "${node.type}" — it renders nothing`, fix: `use another element (see relations in get_element("${node.type}"))` });
+    out.push({ ...base, code: "NOT_RENDERED", severity: "error", message: `the published renderer has no branch for "${node.type}" — it renders nothing`, fix: `use another element (see relations in get_element("${node.type}"))` });
   const specialsKeys = Object.keys(schema.specials);
   const configKeys = Object.keys(schema.config);
 
@@ -320,6 +340,11 @@ export function checkElementKeys(node: any): Finding[] {
         checkValue(specs[k], v, { ...base, at }, out);
         if (specs[k].rendered === false && v !== undefined && v !== null && v !== "")
           out.push({ ...base, at, code: "NO_EFFECT", severity: "warning", message: `no render code reads ${where.split(".").pop()}.${k} — stored, changes nothing on the published page`, fix: `drop it; see keys in get_element("${node.type}")` });
+        continue;
+      }
+      // A CSS property in config that THIS type doesn't read there is a style meant for runtime.style.
+      if (where.endsWith("config") && CSS_PROPS.has(k) && !GENERIC_CONFIG.has(k)) {
+        out.push({ ...base, at, code: "UNKNOWN_KEY", severity: "warning", message: `belongs in style: "${k}" is CSS and ${node.type} doesn't read it from config`, fix: "move it to style (saves do this for you)" });
         continue;
       }
       const anywhere = where === "specials" ? ANY_SPECIALS : ANY_CONFIG;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { repairSource } from "../builder/repair.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -97,11 +98,13 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
           return { error: "Provided 'section' is not a section node (type must be 'section')." };
         }
 
+        const fixed = repairSource({ sections: [sectionNode] });
         const validation: any = validatePage({ sections: [sectionNode] });
         const updated = await appendDraftSection(draft_id, sectionNode);
         return {
           draft_id,
           section_id: sectionNode.id,
+          ...(fixed.length ? { fixed } : {}),
           total_sections: updated ? updated.sections.length : draft.sections.length,
           validation,
         };
@@ -152,6 +155,7 @@ RESUMABLE: if a request fails mid-commit, the draft keeps its page_id + committe
         if (!draft) return DRAFT_EXPIRED;
 
         const full = { sections: draft.sections };
+        repairSource(full); // sections were repaired as they were added; this catches older drafts
         const validation: any = validatePage(full);
         const total = draft.sections.length;
 

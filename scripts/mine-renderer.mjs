@@ -204,13 +204,32 @@ const mentioned = new Set();
 for (const file of [...files, ...renderJs])
   for (const m of fs.readFileSync(file, "utf8").matchAll(/[A-Za-z_][\w]*/g)) if (universe.has(m[0])) mentioned.add(m[0]);
 
+// Event actions the published page can run: the PascalCase cases of assets/render/events.js
+// (snake_cased, as stored in events[].action) + the action names common.ex compares against.
+const eventActions = new Set();
+const snake = (s) => s.replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/([A-Z])([A-Z][a-z])/g, "$1_$2").toLowerCase();
+const eventsJs = path.join(API, "assets/render/events.js");
+if (fs.existsSync(eventsJs)) for (const m of fs.readFileSync(eventsJs, "utf8").matchAll(/case\s+['"]([A-Z][A-Za-z]+)['"]/g)) eventActions.add(snake(m[1]));
+for (const file of files.filter((f) => /common\.ex$/.test(f)))
+  for (const m of fs.readFileSync(file, "utf8").matchAll(/action\s*(?:==|!=)\s*"([a-z_]+)"|action\s+in\s+\[([^\]]+)\]/g))
+    for (const x of (m[1] ? [m[1]] : [...m[2].matchAll(/"([a-z_]+)"/g)].map((y) => y[1]))) eventActions.add(x);
+
+// Image hosts the published page may load (Content-Security-Policy img-src in page_controller.ex):
+// an <img>/background from anywhere else is blocked by the browser.
+const imgHosts = [];
+const pc = path.join(API, "lib/builderx_api_web/controllers/v1/pages/page_controller.ex");
+if (fs.existsSync(pc)) {
+  const m = /img_policy\s*=\s*\[([\s\S]*?)\]/.exec(fs.readFileSync(pc, "utf8"));
+  if (m) for (const h of m[1].matchAll(/"([^"]+)"/g)) imgHosts.push(h[1]);
+}
+
 let branch = "?";
 try {
   branch = execSync("git rev-parse --abbrev-ref HEAD", { cwd: API }).toString().trim();
 } catch {}
 if (branch !== "master" && branch !== "?") console.warn(`! builderx_api is on "${branch}", not master`);
 const sortObj = (o) => Object.fromEntries(Object.entries(o).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, v && typeof v === "object" && !Array.isArray(v) ? sortObj(v) : v]));
-const out = { meta: { source: "builderx_api/lib/qwik + assets/render", branch, types: Object.keys(types).length }, shared: sortObj(shared), dispatched: [...dispatched].sort(), mentioned: [...mentioned].sort(), types: sortObj(types) };
+const out = { meta: { source: "builderx_api/lib/qwik + assets/render", branch, types: Object.keys(types).length }, shared: sortObj(shared), dispatched: [...dispatched].sort(), event_actions: [...eventActions].sort(), img_hosts: imgHosts, mentioned: [...mentioned].sort(), types: sortObj(types) };
 fs.writeFileSync(OUT, JSON.stringify(out, null, 1) + "\n");
 const nKeys = Object.values(types).reduce((n, t) => n + Object.keys(t.specials).length + Object.keys(t.config).length, 0);
 const nVals = Object.values(types).reduce((n, t) => n + [...Object.values(t.specials), ...Object.values(t.config)].filter((v) => v.values).length, 0);

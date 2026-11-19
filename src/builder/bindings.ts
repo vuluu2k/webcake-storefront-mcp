@@ -13,6 +13,11 @@
 // This module mirrors that so the MCP can MINT, VALIDATE and TEACH valid bindings.
 
 import { randomString } from "./factory.js";
+import { OBSERVED } from "./attributes.js";
+
+/** Targets real pages bind to — the catalog misses some (product_item::…, bonus_item::…). */
+let REAL: Set<string> | null = null;
+const realTargets = () => (REAL ??= new Set(Object.values(OBSERVED).flatMap((o: any) => o.bindings || [])));
 
 export interface BindingDataset {
   name: string;
@@ -289,13 +294,15 @@ export function validateBindings(node: any): { errors: string[]; warnings: strin
     if (!b.name) {
       warnings.push(`Binding on "${where}" has no name (dataset).`);
     } else if (!isKnownBindingName(b.name)) {
-      warnings.push(`Binding on "${where}" has unknown dataset "${b.name}" (see list_bindings).`);
+      // An element id here is a binding to that element (real pages do it), not a dataset.
+      const real = /^[A-Z]+(-[A-Z]+)*-[A-Za-z0-9]{6,}$/.test(b.name) || [...realTargets()].some((t) => t.startsWith(`${b.name}::`));
+      (real ? warnings : errors).push(`Binding on "${where}" has unknown dataset "${b.name}" → pick a dataset from list_bindings.`);
     }
     if (b.target) {
       if (!/^[a-z_-]+::.+/i.test(b.target)) {
         warnings.push(`Binding on "${where}" target "${b.target}" is not "name::field" shaped.`);
-      } else if (!isKnownBindingTarget(b.target)) {
-        warnings.push(`Binding on "${where}" target "${b.target}" is not a known field (see list_bindings).`);
+      } else if (!isKnownBindingTarget(b.target) && !realTargets().has(b.target)) {
+        errors.push(`Binding on "${where}" target "${b.target}" is not a field the storefront fills — it renders empty → pick a target from list_bindings (e.g. product::product_price).`);
       }
     }
   }

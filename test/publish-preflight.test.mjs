@@ -87,10 +87,17 @@ test("live check flags bps = [] and passes a real breakpoint list", async () => 
 
 test("update_page_source refuses new structural errors but lets a broken page be edited", async () => {
   const p = page();
+  // A duplicated section is repaired (fresh ids), not refused…
   const dup = structuredClone(p);
   dup.sections.push(structuredClone(p.sections[0]));
   const clean = site({ pages: [p] });
-  assert.match((await run(clean.tools, "update_page_source", { page_id: "P0", source: dup })).errors[0], /Duplicate/);
+  const repaired = await run(clean.tools, "update_page_source", { page_id: "P0", source: dup });
+  assert.equal(repaired.error, undefined);
+  assert.match(repaired.fixed.join("\n"), /duplicate id/);
+  // …a crash-level shape the repair can't decide is refused.
+  const bad = structuredClone(p);
+  bad.sections[0].children[0].bp1.config.widthUnit = "em";
+  assert.match((await run(site({ pages: [p] }).tools, "update_page_source", { page_id: "P0", source: bad })).errors[0], /widthUnit/);
   const legacy = site({ pages: [dup] });
   const edited = structuredClone(dup);
   edited.sections[0].children[0].specials.text = "new";

@@ -3,6 +3,7 @@ import { writePageCode } from "./page-code.js";
 import { readPageCode } from "../builder/page-code.js";
 import { CUSTOM_CODE_GUIDE } from "../guides.js";
 import { getConfirmMode } from "./context.js";
+import { repairSource } from "../builder/repair.js";
 import { addedErrors, applyNodeUpdates, computeNodeDiff, checkContentPlaceholders, checkElementPatch, finalizeForRender } from "../builder/page.js";
 import { SITE_CODE_FIELDS, checkSiteCode, codeGuard, codeUsage } from "../builder/native-first.js";
 import { PAGE_TYPE_NUM, PAGE_KINDS, applyPageMeta, normalizeSlug, checkPageCreateConflict } from "./builder.js";
@@ -609,6 +610,7 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
 
         const beforeNode = JSON.parse(JSON.stringify(node));
         applyNodeUpdates(node, updates);
+        const fixed = repairSource({ sections: [node] }); // only the patched node
         const codeErrors = checkElementPatch(source, node, beforeNode, updates.specials);
         if (codeErrors.length) return { error: "BLOCKED: not saving.", element_id, errors: codeErrors };
         // A patch can break the renderer too (style value as an object, widthUnit "em"…).
@@ -623,6 +625,7 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
             dry_run: true,
             element_id,
             diff,
+            ...(fixed.length ? { fixed } : {}),
             hint: "Review the changes above. Call again with dry_run=false to apply.",
           };
         }
@@ -645,7 +648,7 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
         const saved = res && res.data;
         if (!saved) return { error: "Backend returned empty response — update may not have persisted", sent_length: newLen };
 
-        return { success: true, element_id, diff, page_source_id: saved.id, source_length: newLen };
+        return { success: true, element_id, diff, ...(fixed.length ? { fixed } : {}), page_source_id: saved.id, source_length: newLen };
       })
   );
 
@@ -690,10 +693,11 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
           const beforeNode = JSON.parse(JSON.stringify(node));
           const { element_id, ...updates } = upd;
           applyNodeUpdates(node, updates);
+          const fixed = repairSource({ sections: [node] });
           const codeErrors = checkElementPatch(source, node, beforeNode, updates.specials);
           if (codeErrors.length) return { error: "BLOCKED: not saving any of this batch.", element_id, errors: codeErrors };
           const diff = computeNodeDiff(beforeNode, node);
-          results.push({ element_id, diff: diff || "no changes" });
+          results.push({ element_id, diff: diff || "no changes", ...(fixed.length ? { fixed } : {}) });
         }
         const shapeErrors = addedErrors(source, saved0);
         if (shapeErrors.length) return { error: "BLOCKED: not saving any of this batch.", errors: shapeErrors };
@@ -746,9 +750,12 @@ Safeguarded: blocks if new source is <50% of existing size.`,
     ({ page_id, source, custom_code, native_gap, allow_shrink }) =>
       handle(async () => {
         const body: Record<string, any> = {};
+        let fixedSource: string[] = [];
         if (source != null) {
           // Ensure source is an object — backend does Jason.encode! so we must send object, not string
           body.source = typeof source === "string" ? JSON.parse(source) : source;
+          // One-answer mistakes are fixed before anything is judged or expanded (reported as fixed).
+          fixedSource = repairSource(body.source);
           // Nodes still in builder shape (runtime, e.g. straight from new_element) get their
           // per-breakpoint keys like every other writer; nodes already in bp shape are untouched.
           finalizeForRender(body.source, await api.getSiteBreakpoints(), await api.getSiteDefaultGrid());
@@ -795,6 +802,7 @@ Safeguarded: blocks if new source is <50% of existing size.`,
           page_source_id: saved.id,
           page_id: saved.page_id,
           source_length: (saved.source || "").length,
+          ...(fixedSource.length ? { fixed: fixedSource } : {}),
           ...(pageCode ? { custom_code: pageCode } : {}),
         };
       })

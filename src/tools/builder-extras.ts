@@ -29,8 +29,10 @@ export async function preflightSite(api: WebcakeCmsApi) {
     const shape = checkShape(src);
     // validatePage tags shape errors "[SHAPE] …"; compare in that form.
     const crash = shape.errors.filter((e) => !shape.editorOnly.includes(e)).map((e) => withCode("SHAPE", e)); // the live site blanks
-    const fatal = (v.errors || []).filter((e: string) => crash.includes(e));
-    const rest = (v.errors || []).filter((e: string) => !crash.includes(e));
+    // validatePage may append a "→ fix" to a shape error: match on the message itself.
+    const isCrash = (e: string) => crash.some((c) => e === c || e.startsWith(`${c} →`));
+    const fatal = (v.errors || []).filter(isCrash);
+    const rest = (v.errors || []).filter((e: string) => !isCrash(e));
     errors.push(...fatal.slice(0, 10).map((e: string) => `${name}: ${e}`));
     if (fatal.length > 10) errors.push(`${name}: …and ${fatal.length - 10} more (run validate_page on this page).`);
     warnings.push(...rest.slice(0, 5).map((e: string) => `${name}: ${e}`));
