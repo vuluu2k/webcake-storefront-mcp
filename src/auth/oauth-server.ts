@@ -101,6 +101,7 @@ interface OAuthStore {
   takeRefresh(t: string): Promise<RefreshToken | undefined>; // get + delete (rotated)
 
   revoke(t: string): Promise<void>; // best-effort: drop an access AND/OR refresh token
+  revokeJwt(jwt: string): Promise<string[]>; // drop every token wrapping this JWT; returns the access tokens dropped
 }
 
 // ---- In-memory store (default; no DATABASE_URL) ----------------------------
@@ -150,6 +151,12 @@ class MemoryStore implements OAuthStore {
     return r && r.expiresAt >= now() ? r : undefined;
   }
   async revoke(t: string) { this.access.delete(t); this.refresh.delete(t); }
+  async revokeJwt(jwt: string) {
+    const dropped: string[] = [];
+    for (const [k, v] of this.access) if (v.cred.jwt === jwt) { this.access.delete(k); dropped.push(k); }
+    for (const [k, v] of this.refresh) if (v.cred.jwt === jwt) this.refresh.delete(k);
+    return dropped;
+  }
 }
 
 // ---- Postgres store (when DATABASE_URL is set) -----------------------------
@@ -275,6 +282,12 @@ class PgStore implements OAuthStore {
   async revoke(t: string) {
     await this.pool.query(`DELETE FROM oauth_access_tokens WHERE token=$1`, [t]);
     await this.pool.query(`DELETE FROM oauth_refresh_tokens WHERE token=$1`, [t]);
+  }
+  // ponytail: no index on jwt — a seq scan, but this only runs when a JWT dies.
+  async revokeJwt(jwt: string) {
+    const { rows } = await this.pool.query(`DELETE FROM oauth_access_tokens WHERE jwt=$1 RETURNING token`, [jwt]);
+    await this.pool.query(`DELETE FROM oauth_refresh_tokens WHERE jwt=$1`, [jwt]);
+    return rows.map((r) => r.token as string);
   }
 }
 
@@ -447,13 +460,62 @@ export async function completeAuthorize(
 // The OAuth tokens outlive the WebCake JWT they wrap. Once that JWT is expired (or the
 // backend rejected it), refreshing would just re-issue the dead JWT; refusing it makes the
 // client restart the full flow, i.e. open the Connect page again.
-// ponytail: in-memory set, per process; share it via Redis if the server is ever scaled out.
-const deadJwts = new Set<string>();
-export function markJwtDead(jwt: string | undefined | null): void {
-  if (jwt) deadJwts.add(jwt);
+// Shared across instances: markJwtDead revokes every OAuth token wrapping the JWT in the
+// store (Postgres = source of truth) and flags it in Redis for raw ?token= callers.
+// Only a sha256 of the JWT is kept, never the token itself.
+const DEAD_PREFIX = "wc:sf:deadjwt:";
+const DEAD_MAX_TTL = 30 * 24 * 60 * 60 * 1000;
+const deadLocal = new Map<string, number>(); // hash → expiresAt (ms)
+
+const jwtHash = (jwt: string) => createHash("sha256").update(jwt).digest("hex");
+
+function deadTtl(jwt: string): number {
+  try {
+    const exp = JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString()).exp;
+    if (typeof exp === "number") return Math.min(Math.max(exp * 1000 - now(), 60_000), DEAD_MAX_TTL);
+  } catch { /* opaque token */ }
+  return DEAD_MAX_TTL;
 }
-export function isDeadJwt(jwt: string | undefined | null): boolean {
-  return !!jwt && (deadJwts.has(jwt) || jwtExpired(jwt));
+
+function rememberDeadLocally(hash: string, ttl: number): void {
+  if (deadLocal.size > 10_000) for (const [k, exp] of deadLocal) if (exp < now()) deadLocal.delete(k);
+  if (deadLocal.size > 10_000) deadLocal.delete(deadLocal.keys().next().value!); // still full: drop oldest
+  deadLocal.set(hash, now() + ttl);
+}
+
+/** Expired, or already marked dead here — no I/O. */
+function isDeadLocally(jwt: string): boolean {
+  if (jwtExpired(jwt)) return true;
+  const exp = deadLocal.get(jwtHash(jwt));
+  return exp !== undefined && exp >= now();
+}
+
+/** The backend rejected this JWT: make every instance treat it as dead. Never throws. */
+export async function markJwtDead(jwt: string | undefined | null): Promise<void> {
+  if (!jwt) return;
+  const hash = jwtHash(jwt);
+  const ttl = deadTtl(jwt);
+  rememberDeadLocally(hash, ttl);
+  const redis = getRedis();
+  try {
+    if (redis) await redis.set(DEAD_PREFIX + hash, "1", "PX", ttl);
+    const dropped = await (await getStore()).revokeJwt(jwt);
+    if (redis) for (const t of dropped) redisCacheDel(redis, t);
+  } catch (e) {
+    console.error("[oauth] markJwtDead:", (e as Error)?.message ?? e);
+  }
+}
+
+/** True when the JWT is expired or any instance marked it dead. */
+export async function isDeadJwt(jwt: string | undefined | null): Promise<boolean> {
+  if (!jwt) return false;
+  if (isDeadLocally(jwt)) return true;
+  const redis = getRedis();
+  if (!redis) return false;
+  const hash = jwtHash(jwt);
+  const hit = await redis.get(DEAD_PREFIX + hash).catch(() => null);
+  if (hit) rememberDeadLocally(hash, deadTtl(jwt));
+  return !!hit;
 }
 
 // ---- Token endpoint --------------------------------------------------------
@@ -516,7 +578,7 @@ export async function exchangeToken(p: TokenParams): Promise<TokenResult> {
     if (!r) {
       return { ok: false, status: 400, error: "invalid_grant", error_description: "Unknown or expired refresh token." };
     }
-    if (isDeadJwt(r.cred.jwt)) {
+    if (await isDeadJwt(r.cred.jwt)) {
       return { ok: false, status: 400, error: "invalid_grant", error_description: "WebCake session expired — sign in again (Connect)." };
     }
     return { ok: true, body: await issueTokens(store, r.cred, r.client_id, r.scope) };
@@ -539,12 +601,12 @@ export async function resolveAccessToken(accessToken: string | undefined | null)
   const redis = getRedis();
   if (redis) {
     const cached = await redisCacheGet(redis, accessToken);
-    if (cached) return isDeadJwt(cached.jwt) ? undefined : cached;
+    if (cached) return isDeadLocally(cached.jwt) ? undefined : cached;
   }
 
   // 2. Fall through to the store (Postgres or memory).
   const a = await (await getStore()).getAccess(accessToken);
-  if (!a || isDeadJwt(a.cred.jwt)) return undefined;
+  if (!a || isDeadLocally(a.cred.jwt)) return undefined;
 
   // Backfill the Redis cache for next time.
   if (redis) redisCachePut(redis, accessToken, a.cred);

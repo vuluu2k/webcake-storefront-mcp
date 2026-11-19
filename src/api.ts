@@ -69,10 +69,10 @@ export class WebcakeCmsApi {
   private _siteBps: Promise<any> | null = null; // cached site.settings (breakpoints, defaultGrid)
   /** Called when the session JWT is expired or the backend rejects it. Stdio: reopens the browser
    *  Connect page and returns the new credentials (request is retried once). Remote: marks it dead. */
-  onAuthExpired?: () => Promise<RenewedAuth>;
+  onAuthExpired?: (staleToken: string) => Promise<RenewedAuth>;
 
   private async renewAuth(): Promise<boolean> {
-    const fresh = this.onAuthExpired ? await this.onAuthExpired() : null;
+    const fresh = this.onAuthExpired ? await this.onAuthExpired(this.token) : null;
     if (!fresh?.token) return false;
     this.switchToken(fresh.token);
     if (fresh.sessionId) this.switchSession(fresh.sessionId);

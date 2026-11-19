@@ -6,9 +6,10 @@ import { join } from "node:path";
 
 process.env.WEBCAKE_CONFIG_DIR = mkdtempSync(join(tmpdir(), "wc-auth-"));
 const { WebcakeCmsApi, jwtExpired } = await import("../dist/api.js");
-const { isDeadJwt, markJwtDead } = await import("../dist/auth/oauth-server.js");
+const oauth = await import("../dist/auth/oauth-server.js");
+const { isDeadJwt, markJwtDead } = oauth;
 const { resolveSettings } = await import("../dist/config.js");
-const { setConfig } = await import("../dist/db.js");
+const { setConfig, getConfig, runWithConfigScope } = await import("../dist/db.js");
 
 const jwt = (expSec) => `h.${Buffer.from(JSON.stringify({ exp: expSec })).toString("base64url")}.s`;
 const OLD = jwt(Math.floor(Date.now() / 1000) - 3600);
@@ -65,11 +66,40 @@ test("401 của call dùng admin token riêng không mở Connect", async () => 
   assert.equal(calls, 0);
 });
 
-test("OAuth: JWT hết hạn hoặc bị backend từ chối là token chết", () => {
-  assert.equal(isDeadJwt(OLD), true);
-  assert.equal(isDeadJwt(NEW), false);
-  markJwtDead("revoked");
-  assert.equal(isDeadJwt("revoked"), true);
+test("OAuth: JWT hết hạn hoặc bị backend từ chối là token chết", async () => {
+  assert.equal(await isDeadJwt(OLD), true);
+  assert.equal(await isDeadJwt(NEW), false);
+  await markJwtDead("revoked");
+  assert.equal(await isDeadJwt("revoked"), true);
+});
+
+test("token chết → thu hồi luôn access/refresh OAuth bọc nó (mọi instance thấy qua store)", async () => {
+  const live = jwt(Math.floor(Date.now() / 1000) + 7200);
+  const { client } = await oauth.registerClient({ redirect_uris: ["http://localhost:9/cb"] });
+  const verifier = "v".repeat(43);
+  const st = await oauth.startAuthorize({
+    client_id: client.client_id, redirect_uri: "http://localhost:9/cb", response_type: "code",
+    code_challenge: oauth.s256(verifier), code_challenge_method: "S256", state: "x",
+  });
+  const done = await oauth.completeAuthorize(st.internalState, live, "w");
+  const tok = await oauth.exchangeToken({ grant_type: "authorization_code", code: done.code, client_id: client.client_id, redirect_uri: "http://localhost:9/cb", code_verifier: verifier });
+  assert.equal((await oauth.resolveAccessToken(tok.body.access_token))?.jwt, live);
+  await markJwtDead(live);
+  assert.equal(await oauth.resolveAccessToken(tok.body.access_token), undefined);
+  const again = await oauth.exchangeToken({ grant_type: "refresh_token", refresh_token: tok.body.refresh_token, client_id: client.client_id });
+  assert.equal(again.ok, false); // client phải mở lại Connect
+});
+
+test("remote: mỗi session đọc/ghi cấu hình riêng, không đụng file chung của server", () => {
+  setConfig("site_id", "server-site");
+  const a = { values: { site_id: "site-A" } };
+  const b = { values: {} };
+  runWithConfigScope(a, () => setConfig("confirm_mode", "auto_apply"));
+  assert.equal(runWithConfigScope(a, () => getConfig("site_id")), "site-A");
+  assert.equal(runWithConfigScope(b, () => getConfig("site_id")), null);
+  assert.equal(runWithConfigScope(b, () => getConfig("confirm_mode")), null);
+  assert.equal(getConfig("confirm_mode"), null);
+  assert.equal(getConfig("site_id"), "server-site");
 });
 
 test("token env hết hạn nhường token mới đã lưu sau khi gia hạn", () => {

@@ -11,6 +11,8 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createServer } from "./server.js";
 import type { WebcakeCmsApi } from "./api.js";
+import { runWithConfigScope, type ConfigScope } from "./db.js";
+import { accountOf, loadPrefs, savePref } from "./persistence/prefs.js";
 import { makeApi, resolveEnv, ENVIRONMENTS, DEFAULT_ENV } from "./config.js";
 import { landingHtml, faviconSvg, ogImageSvg, normalizeLang, ICON_PNG } from "./web-guide.js";
 import { privacyHtml, termsHtml } from "./legal.js";
@@ -300,8 +302,8 @@ async function handleOAuth(req: IncomingMessage, res: ServerResponse, path: stri
 }
 
 export async function startHttpServer(port: number): Promise<void> {
-  const transports = new Map<string, StreamableHTTPServerTransport>();
-  const apis = new Map<string, WebcakeCmsApi>();
+  type Session = { transport: StreamableHTTPServerTransport; api: WebcakeCmsApi; scope: ConfigScope };
+  const sessions = new Map<string, Session>();
 
   const httpServer = createHttpServer(async (req, res) => {
     const path = (req.url ?? "").split("?")[0];
@@ -381,17 +383,25 @@ export async function startHttpServer(port: number): Promise<void> {
 
     const sidHeader = header(req, "mcp-session-id");
     const jwt = header(req, "x-webcake-jwt");
+    const session = sidHeader ? sessions.get(sidHeader) : undefined;
+
+    // Unknown session (server restarted, or the request landed on another instance): the
+    // spec says 404 so the client silently re-initializes — a 400 leaves it stuck.
+    if (sidHeader && !session) {
+      rpcError(res, 404, "Session not found (expired or server restarted) — send a new initialize request.");
+      return;
+    }
+
     // An open session picks up a renewed credential in place (no re-initialize needed).
-    const sessionApi = sidHeader ? apis.get(sidHeader) : undefined;
-    if (sessionApi && jwt && jwt !== sessionApi.token && !isDeadJwt(jwt)) {
-      sessionApi.switchToken(jwt);
+    if (session && jwt && jwt !== session.api.token && !(await isDeadJwt(jwt))) {
+      session.api.switchToken(jwt);
       const wsid = header(req, "x-webcake-session-id");
-      if (wsid) sessionApi.switchSession(wsid);
+      if (wsid) session.api.switchSession(wsid);
     }
 
     // Enforce OAuth when enabled: no credential, or an expired/rejected WebCake token, gets
     // 401 + WWW-Authenticate so the client (re)opens the Connect page by itself.
-    const dead = isDeadJwt(sessionApi ? sessionApi.token : jwt);
+    const dead = await isDeadJwt(session ? session.api.token : jwt);
     if (OAUTH_ENFORCED && (jwt == null || dead)) {
       res.writeHead(401, {
         "www-authenticate": `Bearer error="invalid_token", resource_metadata="${publicBase(req)}${WELL_KNOWN_PR}"`,
@@ -402,49 +412,65 @@ export async function startHttpServer(port: number): Promise<void> {
       return;
     }
 
-
     try {
-      // Reuse an existing session.
-      if (sidHeader && transports.has(sidHeader)) {
-        const transport = transports.get(sidHeader)!;
+      if (session) {
         const body = req.method === "POST" ? await readBody(req) : undefined;
-        await transport.handleRequest(req, res, body);
+        await runWithConfigScope(session.scope, () => session.transport.handleRequest(req, res, body));
         return;
       }
 
       // New session: must be an initialize POST.
       if (req.method === "POST") {
         const body = await readBody(req);
-        if (!sidHeader && isInitializeRequest(body)) {
-          const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: () => randomUUID(),
-            onsessioninitialized: (id: string) => {
-              transports.set(id, transport);
-              apis.set(id, api);
+        if (isInitializeRequest(body)) {
+          // This session's config = its account's saved choices (site, confirm mode), shared
+          // by every instance; never the server's own config file.
+          const account = accountOf(jwt);
+          let api: WebcakeCmsApi | undefined;
+          // Writes go to account_id only after /@me accepted the token (AuthPlug checks the
+          // signature), so a forged JWT can't write into someone else's preferences.
+          let verified: { token: string; ok: Promise<boolean> } | undefined;
+          const scope: ConfigScope = {
+            values: account ? await loadPrefs(account) : {},
+            persist: (key, value) => {
+              const a = api;
+              if (!account || !a) return;
+              if (verified?.token !== a.token) {
+                const t = a.token;
+                verified = { token: t, ok: a.getMe().then(() => accountOf(t) === account, () => false) };
+              }
+              void verified.ok.then((ok) => ok && savePref(account, key, value));
             },
+          };
+          await runWithConfigScope(scope, async () => {
+            const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
+              sessionIdGenerator: () => randomUUID(),
+              onsessioninitialized: (id: string) => {
+                sessions.set(id, { transport, api: api!, scope });
+              },
+            });
+            transport.onclose = () => {
+              if (transport.sessionId) sessions.delete(transport.sessionId);
+            };
+            const sessionApi = apiFromRequest(req);
+            api = sessionApi;
+            // Backend rejected the token → mark it dead on every instance, so the next
+            // request 401s into Connect.
+            sessionApi.onAuthExpired = async () => {
+              await markJwtDead(sessionApi.token);
+              return null;
+            };
+            const server = createServer(sessionApi, { allowLocalFiles: false, tools: header(req, "x-webcake-tools") }); // remote: never read server-side files
+            await server.connect(transport);
+            await transport.handleRequest(req, res, body);
           });
-          transport.onclose = () => {
-            if (transport.sessionId) {
-              transports.delete(transport.sessionId);
-              apis.delete(transport.sessionId);
-            }
-          };
-          const api = apiFromRequest(req);
-          // Backend rejected the token → remember it, so the next request 401s into Connect.
-          api.onAuthExpired = async () => {
-            markJwtDead(api.token);
-            return null;
-          };
-          const server = createServer(api, { allowLocalFiles: false, tools: header(req, "x-webcake-tools") }); // remote: never read server-side files
-          await server.connect(transport);
-          await transport.handleRequest(req, res, body);
           return;
         }
         rpcError(res, 400, "Bad Request: send an initialize request first (no valid mcp-session-id).");
         return;
       }
 
-      rpcError(res, 400, "Bad Request: missing or unknown mcp-session-id.");
+      rpcError(res, 400, "Bad Request: missing mcp-session-id.");
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (!res.headersSent) rpcError(res, 500, msg);

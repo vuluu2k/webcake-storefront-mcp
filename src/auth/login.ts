@@ -5,8 +5,10 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { randomBytes } from "node:crypto";
 import { spawn, execFile } from "node:child_process";
 import { DEFAULT_ENV, resolveSettings } from "../config.js";
-import { getConfig, setConfig } from "../db.js";
-import type { RenewedAuth } from "../api.js";
+import { closeSync, openSync, statSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
+import { CONFIG_DIR, getConfig, reloadConfig, setConfig } from "../db.js";
+import { jwtExpired, type RenewedAuth } from "../api.js";
 
 interface LoginOpts {
   port?: number;
@@ -215,17 +217,67 @@ export async function runLogin(argv: string[]): Promise<void> {
   });
 }
 
-// One browser Connect at a time; after a failed/abandoned one, wait before reopening so a
-// looping agent doesn't spam tabs. ponytail: process-wide, fine for one stdio user.
+// One browser Connect at a time — across every stdio process on this machine (several IDE
+// windows share ~/.webcake-storefront-mcp): the first takes a lock file and opens the
+// browser, the others wait for the token it saves. After a failed/abandoned Connect, wait
+// before reopening so a looping agent doesn't spam tabs.
+const LOCK = join(CONFIG_DIR, "renew.lock");
+const LOGIN_WAIT_MS = 185_000; // runLogin times out at 180s
 let renewing: Promise<RenewedAuth> | null = null;
 let lastFail = 0;
 
-/** Token expired mid-session (stdio): reopen the Connect page and hand back the new credentials. */
-export function renewInBrowser(): Promise<RenewedAuth> {
-  if (!renewing && Date.now() - lastFail > 120_000) {
+/** A token in the config file newer than `stale` and not expired (another process renewed it). */
+function savedFresh(stale: string): RenewedAuth {
+  reloadConfig();
+  const token = getConfig("token") || "";
+  return token && token !== stale && !jwtExpired(token) ? { token, sessionId: getConfig("session_id") || "" } : null;
+}
+
+function takeLock(): boolean {
+  try {
+    closeSync(openSync(LOCK, "wx"));
+    return true;
+  } catch {
+    try {
+      if (Date.now() - statSync(LOCK).mtimeMs > LOGIN_WAIT_MS) {
+        unlinkSync(LOCK); // left behind by a crashed process
+        return takeLock();
+      }
+    } catch { /* raced with its owner releasing it */ }
+    return false;
+  }
+}
+
+async function renew(stale: string): Promise<RenewedAuth> {
+  const done = savedFresh(stale);
+  if (done) return done;
+  if (!takeLock()) {
+    // Someone else has the browser open — wait for the token they save.
+    for (const until = Date.now() + LOGIN_WAIT_MS; Date.now() < until; ) {
+      await new Promise((r) => setTimeout(r, 1000));
+      const t = savedFresh(stale);
+      if (t) return t;
+      try { statSync(LOCK); } catch { return savedFresh(stale); } // released without a token
+    }
+    return null;
+  }
+  try {
     console.error("[webcake-storefront] Token hết hạn — mở trình duyệt để Kết nối lại…");
-    renewing = runLogin([])
-      .then(() => ({ token: getConfig("token") || "", sessionId: getConfig("session_id") || "" }))
+    await runLogin([]);
+    return { token: getConfig("token") || "", sessionId: getConfig("session_id") || "" };
+  } finally {
+    try { unlinkSync(LOCK); } catch { /* already gone */ }
+  }
+}
+
+/** Token expired mid-session (stdio): reopen the Connect page and hand back the new credentials. */
+export function renewInBrowser(staleToken = ""): Promise<RenewedAuth> {
+  if (!renewing && Date.now() - lastFail > 120_000) {
+    renewing = renew(staleToken)
+      .then((r) => {
+        if (!r) lastFail = Date.now();
+        return r;
+      })
       .catch((e) => {
         lastFail = Date.now();
         console.error("[webcake-storefront] gia hạn token thất bại:", e?.message || e);
