@@ -5,6 +5,24 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.6.0] - 2026-11-19
+
+### Added
+- `validate_page` now accepts `page_id` or `page_kind` to judge a page source the same way a save would, loading that page's kind and the ids of the site's global sources (popups, cart drawer).
+- `validate_page`, `build_page`, `new_section`, `update_page_element`, `update_page_elements`, and `update_page_source` now raise an error, instead of a warning, when an event's target id (or an `open_popup`/`close_popup`'s `popup_id`) is found on no page section, popup, or global source, and raise a new `BINDING_SCOPE` error when a `product`/`post`/`blog`/`order` record binding sits outside its repeater on a page of another kind.
+- `list_events` now documents six renderer-only actions (`open_product`, `open_webcake_page`, `buy_it_now`, `search_keyword`, `auto_fill_value_promotion`, `none`) and six tracking actions (`fb_tracking`, `fb_custom_tracking`, `tiktok_tracking`, `gg_conversion_tracking`, `gg_custom_event_tracking`, `chat_gpt_tracking`) that the renderer adds itself from an element's tracking `specials`; `validate_page` now warns when one of those six tracking actions is placed directly in `events` instead.
+- `list_bindings` now documents the `product_item` dataset (a card's own product inside a `custom-layout` or `product-overlay` repeater, as opposed to the page's `product`) and the `warehouse` dataset (a stock row in a warehouse list), plus 11 additional fields the renderer reads on the `blog`, `cart_item`, `customer`, `order`, `product`, and `promotion_item` datasets.
+- `new_element` and `build_page` can now create the `id-number` element type (a CCCD / citizen ID field), which is also now treated as a form field that must sit inside a `form`.
+- `get_element` now returns a real one-line summary, read from the published renderer and editor code, for 92 element types that previously only showed a generic placeholder.
+
+### Changed
+- `get_element`'s `keys[].rendered`/`no_effect` now checks whether the requested element type's own code reads a key, instead of whether any type anywhere reads it, cutting keys with an unclear effect from 17.1% down to 0.7% of all keys.
+
+### Fixed
+- A `post-overlay` or `blog-overlay` element built by `new_element`/`build_page` now defaults `specials.type` to `"post-overlay"`/`"blog-overlay"` instead of `"regular"`; a post/blog grid or slider only renders the overlay carrying that exact type, so a freshly built overlay previously never appeared.
+- A `flash-sale` element now writes its settings to `specials` instead of `runtime.specials`, matching the field the published renderer actually reads.
+- `get_element` documentation was corrected for several element types: `random-number`'s fields (`startNumber`/`endNumber`/`jumpNumber`, not `min`/`max`), `auto-number`'s stepped (not smooth) count, `lucky-wheel`'s real fields (`datagrid_id`, `spinCounter`, `popup_id_end`, `popup_id_turn`), `question-container`'s cloned-template behavior, `grid-blog`/`slider-blog` listing categories rather than articles, `video-dataset`'s `product::video_lesson`/`product::video_file_download` bindings, `product-overlay`'s `discount`/`regular`/`quick-view` modes, and `radio-group` acting only as a filter, not a submitted form field.
+
 ## [2.5.0] - 2026-11-19
 
 ### Added

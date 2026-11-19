@@ -5,6 +5,24 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.6.0] - 2026-11-19
+
+### Added
+- `validate_page` nay nhận thêm `page_id` hoặc `page_kind` để chấm một page source đúng như khi lưu, nạp loại trang đó cùng id của mọi global source của site (popup, giỏ hàng).
+- `validate_page`, `build_page`, `new_section`, `update_page_element`, `update_page_elements`, và `update_page_source` nay báo lỗi chặn lưu thay vì chỉ cảnh báo khi id đích của một event (hoặc `popup_id` của `open_popup`/`close_popup`) không có ở bất kỳ section, popup, hay global source nào, và báo lỗi mới `BINDING_SCOPE` khi một binding bản ghi `product`/`post`/`blog`/`order` nằm ngoài khối lặp của nó trên một trang thuộc loại khác.
+- `list_events` nay mô tả thêm sáu action chỉ renderer xử lý (`open_product`, `open_webcake_page`, `buy_it_now`, `search_keyword`, `auto_fill_value_promotion`, `none`) và sáu action tracking (`fb_tracking`, `fb_custom_tracking`, `tiktok_tracking`, `gg_conversion_tracking`, `gg_custom_event_tracking`, `chat_gpt_tracking`) mà renderer tự thêm từ các `specials` tracking của element; `validate_page` nay cảnh báo khi một trong sáu action tracking đó được đặt trực tiếp vào `events` thay vì qua specials.
+- `list_bindings` nay mô tả thêm dataset `product_item` (sản phẩm của chính thẻ đó trong khối lặp `custom-layout` hoặc `product-overlay`, khác với `product` của cả trang) và dataset `warehouse` (một dòng kho trong danh sách warehouse), cùng 11 field mà renderer đọc thêm trên các dataset `blog`, `cart_item`, `customer`, `order`, `product`, và `promotion_item`.
+- `new_element` và `build_page` nay tạo được type `id-number` (ô CCCD), và type này cũng được coi là một field của form, phải nằm trong `form`.
+- `get_element` nay trả về một dòng tóm tắt thật, đọc từ renderer và editor đã publish, cho 92 type element mà trước đây chỉ hiện một câu chung.
+
+### Changed
+- Trường `keys[].rendered`/`no_effect` của `get_element` nay kiểm tra việc chính type được hỏi có đọc key đó không, thay vì bất kỳ type nào trên site có đọc hay không, giảm tỷ lệ key "chưa rõ tác dụng" từ 17,1% xuống 0,7% trên tổng số key.
+
+### Fixed
+- Element `post-overlay` hoặc `blog-overlay` dựng bằng `new_element`/`build_page` nay mặc định `specials.type` là `"post-overlay"`/`"blog-overlay"` thay vì `"regular"`; một danh sách bài viết/blog chỉ render đúng overlay mang type đó, nên trước đây một overlay vừa dựng xong không bao giờ hiện ra.
+- Element `flash-sale` nay ghi các thiết lập vào `specials` thay vì `runtime.specials`, đúng với field mà renderer đã publish thực sự đọc.
+- Sửa lại tài liệu của `get_element` cho nhiều type: field thật của `random-number` (`startNumber`/`endNumber`/`jumpNumber`, không phải `min`/`max`), `auto-number` tăng theo bước nhảy ngẫu nhiên (không phải đếm mượt), field thật của `lucky-wheel` (`datagrid_id`, `spinCounter`, `popup_id_end`, `popup_id_turn`), cách `question-container` nhân bản template, `grid-blog`/`slider-blog` liệt kê danh mục chứ không phải bài viết, binding `product::video_lesson`/`product::video_file_download` của `video-dataset`, các chế độ `discount`/`regular`/`quick-view` của `product-overlay`, và `radio-group` chỉ đóng vai trò bộ lọc, không phải field form được submit.
+
 ## [2.5.0] - 2026-11-19
 
 ### Added
