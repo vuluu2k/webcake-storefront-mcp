@@ -95,10 +95,30 @@ test("tool từ chối tham số không có trong schema (cả qua invoke_tool)"
   const wrongAction = await c.callTool({ name: "builder_ref", arguments: { action: "get_element", resource: "x" } });
   assert.equal(wrongAction.isError, true);
   const ok = JSON.parse((await c.callTool({ name: "builder_ref", arguments: { action: "get_element", type: "swiper" } })).content[0].text);
-  assert.ok(ok.value_rules["specials.autoplay"]);
+  assert.ok(ok.keys.specials.some((l) => l.startsWith("autoplay")));
   const help = JSON.parse((await c.callTool({ name: "builder_ref", arguments: { action: "get_element", help: true } })).content[0].text);
   assert.ok(help.description && help.input_schema.properties.type);
   const gw = await c.callTool({ name: "invoke_read_tool", arguments: { name: "get_element", arguments: { type: "text", bogus: 1 } } });
   assert.match(gw.content[0].text, /bogus/);
   await c.close();
+});
+
+test("schema gộp renderer + editor: default, giá trị, key không tác dụng, gom style", async () => {
+  const { keyReference } = await import("../dist/builder/element-schema.js");
+  const cd = keyReference("countdown").specials;
+  assert.ok(cd.some((l) => l.startsWith("positionTitle:") && l.includes('default "top"') && l.includes("bottom")));
+  assert.ok(cd.some((l) => l.startsWith("showDay:") && l.includes("default true")));
+  // numeric options from another panel are dropped when the renderer branches on words
+  const effect = keyReference("popup").specials.find((l) => l.startsWith("effect:"));
+  assert.ok(effect.includes("zoom-in") && !/\b11\b/.test(effect), effect);
+  // a key only the renderer reads is real (no UNKNOWN_KEY)
+  assert.deepEqual(checkElementKeys({ id: "G1", type: "grid-product", specials: { max_show_categories: 3 } }).filter((f) => f.code === "UNKNOWN_KEY"), []);
+  // a key no render code mentions is flagged
+  const dead = keyReference("button").no_effect;
+  assert.ok(dead?.length);
+  const [where, key] = dead[0].split(".");
+  const node = where === "config" ? { id: "B1", type: "button", runtime: { config: { [key]: "x" } } } : { id: "B1", type: "button", specials: { [key]: "x" } };
+  assert.ok(checkElementKeys(node).some((f) => f.code === "NO_EFFECT"));
+  // style config of one part folds into one line
+  assert.ok(keyReference("grid-product").config.some((l) => /^addToCart\{.*Color.*\}: style of the addToCart part$/.test(l)));
 });

@@ -5,12 +5,31 @@
 //   - keys mined from 329 published pages (element-keys.generated.json),
 //   - the curated tables in attributes.ts (meanings, enums like "h1|h2|…|p"),
 //   - the factory skeleton (also the source of each key's value TYPE),
-//   - the generic grid config + shared specials every node may carry.
+//   - the generic grid config + shared specials every node may carry,
+//   - the published-page renderer (renderer-keys.generated.json, scripts/mine-renderer.mjs):
+//     which keys each type's HTML/CSS builder READS, their fallback default, compared values,
+//   - the editor panels (editor-keys.generated.json, scripts/mine-editor.mjs): the label the
+//     user sees, the control, the options a select offers.
 // The renderer ignores a specials/config key it doesn't know (a dead key), so an unknown key is
 // a WARNING with a did-you-mean. Style is different: the renderer emits every style key as CSS
 // (camelCase → kebab), so style keys are checked as CSS properties, not per type.
 import { OBSERVED, ELEMENT_ATTRS, SHARED_SPECIALS, SHARED_KEY_DICT, GENERIC_CONFIG } from "./attributes.js";
 import { buildElement, describeType, isKnownType, ELEMENT_TYPES } from "./catalog.js";
+import { readFileSync } from "node:fs";
+
+const loadJson = (name: string): any => {
+  try {
+    return JSON.parse(readFileSync(new URL(name, import.meta.url), "utf8"));
+  } catch {
+    return {};
+  }
+};
+type Bucket = "specials" | "config";
+interface RendererKey { default?: unknown; values?: string[] }
+interface EditorKey { label?: string; control?: string; options?: string[] }
+const RENDERER: { mentioned?: string[]; shared?: Record<Bucket, Record<string, RendererKey>>; types?: Record<string, Record<Bucket, Record<string, RendererKey>>> } = loadJson("./renderer-keys.generated.json");
+const MENTIONED = new Set<string>(RENDERER.mentioned || []);
+const EDITOR: { types?: Record<string, Record<Bucket, Record<string, EditorKey>>> } = loadJson("./editor-keys.generated.json");
 
 // ── Findings: one shape, one string format ──────────────────────────────────────────────
 export type Severity = "error" | "warning";
@@ -47,6 +66,14 @@ export interface KeySpec {
   /** Values seen on real pages (informative when there is no curated list). */
   seen?: string[];
   desc?: string;
+  /** Label of the editor control that sets it. */
+  label?: string;
+  /** What the renderer falls back to when the key is absent. */
+  default?: unknown;
+  /** Values the editor offers / the renderer branches on (informative unless in enum). */
+  values?: string[];
+  /** true: the published-page renderer reads it for this type; false: stored only (no effect). */
+  rendered?: boolean;
 }
 export interface ElementSchema {
   type: string;
@@ -94,6 +121,10 @@ for (const a of Object.values(ELEMENT_ATTRS)) {
   Object.keys(a.specials || {}).forEach((k) => ANY_SPECIALS.add(k));
   Object.keys(a.config || {}).forEach((k) => ANY_CONFIG.add(k));
 }
+for (const src of [RENDERER.shared, ...Object.values(RENDERER.types || {}), ...Object.values(EDITOR.types || {})]) {
+  Object.keys(src?.specials || {}).forEach((k) => ANY_SPECIALS.add(k));
+  Object.keys(src?.config || {}).forEach((k) => ANY_CONFIG.add(k));
+}
 const KEY_TYPES = new Set<string>(["string", "number", "boolean", "array", "object"]);
 
 export function elementSchema(type: string): ElementSchema | undefined {
@@ -103,21 +134,42 @@ export function elementSchema(type: string): ElementSchema | undefined {
   const skeleton: any = buildElement(type, {});
   const obs = OBSERVED[type] || { specials: [], config: [], style: [], bindings: [], events: false };
   const cur = ELEMENT_ATTRS[type] || {};
-  const bucket = (where: "specials" | "config", keys: Iterable<string>, defaults: any, curated: Record<string, string> | undefined, shared: Record<string, string>) => {
+  const rend = RENDERER.types?.[type];
+  const edit = EDITOR.types?.[type];
+  const bucket = (where: Bucket, keys: Iterable<string>, defaults: any, curated: Record<string, string> | undefined, shared: Record<string, string>) => {
     const out: Record<string, KeySpec> = {};
-    for (const k of [...keys].sort()) {
+    const r = rend?.[where] || {};
+    const rs = RENDERER.shared?.[where] || {};
+    const e = edit?.[where] || {};
+    for (const k of [...new Set([...keys, ...Object.keys(r), ...Object.keys(e)])].sort()) {
       const desc = curated?.[k] ?? shared[k] ?? SHARED_KEY_DICT[k];
       const spec: KeySpec = {};
+      const rk = r[k] ?? rs[k];
+      const ek = e[k];
       const types = new Set((obs.types?.[`${where}.${k}`] || []).filter((t) => KEY_TYPES.has(t)) as KeyType[]);
-      const t = typeOf(defaults?.[k]);
+      const t = typeOf(defaults?.[k]) ?? typeOf(rk?.default);
       if (t) types.add(t);
       if (types.size) spec.types = [...types].sort();
       const seen = obs.values?.[`${where}.${k}`];
       const curatedEnum = enumOf(curated?.[k]);
+      // Numeric editor options next to word values (renderer/real pages) come from another panel.
+      const words = [...(rk?.values || []), ...(seen || [])].some((v) => !/^\d+$/.test(v));
+      const opts = (ek?.options || []).filter((o) => !(words && /^\d+$/.test(o)));
+      const offered = [...new Set([...opts, ...(rk?.values || [])])];
       // Enforced only when both the editor's list and real pages agree it is closed.
       if (curatedEnum && seen) spec.enum = [...new Set([...curatedEnum, ...seen])];
+      else if (opts.length && seen?.length && seen.every((v) => opts.includes(v))) spec.enum = [...new Set([...opts, ...(rk?.values || [])])];
       else if (seen) spec.seen = seen;
+      if (!spec.enum && offered.length) spec.values = offered;
       if (desc) spec.desc = desc;
+      if (ek?.label) spec.label = ek.label;
+      if (rk?.default !== undefined) spec.default = rk.default;
+      // Grid/position config and shared specials are read by generic plumbing — no per-type flag.
+      // false only when nothing on the render side (Elixir or client JS) mentions the key at all.
+      if (rend && !(where === "config" ? GENERIC_CONFIG.has(k) : k in SHARED_SPECIALS)) {
+        if (rk) spec.rendered = true;
+        else if (!MENTIONED.has(k)) spec.rendered = false;
+      }
       out[k] = spec;
     }
     return out;
@@ -243,6 +295,8 @@ export function checkElementKeys(node: any): Finding[] {
       const at = `${where}.${k}`;
       if (k in specs) {
         checkValue(specs[k], v, { ...base, at }, out);
+        if (specs[k].rendered === false && v !== undefined && v !== null && v !== "")
+          out.push({ ...base, at, code: "NO_EFFECT", severity: "warning", message: `no render code reads ${where.split(".").pop()}.${k} — stored, changes nothing on the published page`, fix: `drop it; see keys in get_element("${node.type}")` });
         continue;
       }
       const anywhere = where === "specials" ? ANY_SPECIALS : ANY_CONFIG;
@@ -305,6 +359,70 @@ export function valueRules(type: string): Record<string, string> | undefined {
       if (parts.length) out[`${where}.${k}`] = parts.join("; ");
     }
   return Object.keys(out).length ? out : undefined;
+}
+
+/** One line per meaningful key of a type — what get_element shows an agent:
+ *  `key: meaning · type · one of a|b · default x`. Keys the renderer reads come first; keys no
+ *  render code mentions go to no_effect (stored, change nothing on the published page). */
+export function keyReference(type: string) {
+  const schema = elementSchema(type);
+  if (!schema) return undefined;
+  const fmt = (v: unknown) => (typeof v === "string" ? JSON.stringify(v) : String(v));
+  const out: { specials: string[]; config: string[]; no_effect?: string[] } = { specials: [], config: [] };
+  const dead: string[] = [];
+  for (const where of ["specials", "config"] as const) {
+    const rows = Object.entries(schema[where]).filter(
+      ([k]) => !NOISE.has(k) && !(where === "config" ? GENERIC_CONFIG.has(k) : k in SHARED_SPECIALS)
+    );
+    rows.sort(([, a], [, b]) => Number(!!b.rendered) - Number(!!a.rendered));
+    for (const [k, s] of rows) {
+      if (s.rendered === false) {
+        dead.push(`${where}.${k}`);
+        continue;
+      }
+      const parts: string[] = [];
+      const meaning = s.desc ?? (s.label ? `"${s.label}"` : undefined);
+      if (meaning) parts.push(meaning);
+      if (s.types && !(s.types.length === 1 && s.types[0] === "string" && (s.enum || s.values))) parts.push(s.types.join("|"));
+      if (s.enum) parts.push(`one of ${s.enum.join("|")}`);
+      else if (s.values || s.seen) parts.push(`e.g. ${[...new Set([...(s.values || []), ...(s.seen || [])])].slice(0, 12).join("|")}`);
+      if (s.default !== undefined && s.default !== "") parts.push(`default ${fmt(s.default)}`);
+      out[where].push(parts.length ? `${k}: ${parts.join(" · ")}` : k);
+    }
+  }
+  out.config = groupPlain(out.config);
+  if (dead.length) out.no_effect = dead;
+  return out;
+}
+
+/** Style config of one part (addToCartColor, addToCartFontSize…) folded into one line per part:
+ *  `addToCart{Color,FontSize,…}: style of the addToCart part` (defaults kept inline). */
+const STYLE_SUFFIX = /(Background(?:Hover)?|Border(?:Color|Radius|Width|Style)?|BoxShadow|Color(?:Hover)?|Decoration|Font(?:Size|Style|Weight|Theme|Family)?|TextAlign|LetterSpacing|LineHeight|Padding[XY]?|Margin[XY]?|Radius|Width|Height|Size|Gap|Opacity|Shadow)$/;
+function groupPlain(lines: string[]): string[] {
+  const parse = (l: string) => {
+    const i = l.indexOf(":");
+    const k = i < 0 ? l : l.slice(0, i);
+    const m = STYLE_SUFFIX.exec(k);
+    const enumish = / · (one of|e\.g\.) /.test(l);
+    const dflt = / · default (.+)$/.exec(l)?.[1];
+    return { k, part: m && m.index > 1 && !enumish ? k.slice(0, m.index) : undefined, suffix: m?.[1], dflt };
+  };
+  const rows = lines.map((l) => ({ l, ...parse(l) }));
+  const count = new Map<string, number>();
+  for (const r of rows) if (r.part) count.set(r.part, (count.get(r.part) || 0) + 1);
+  const done = new Set<string>();
+  const out: string[] = [];
+  for (const r of rows) {
+    if (!r.part || count.get(r.part)! < 3) {
+      out.push(r.l);
+      continue;
+    }
+    if (done.has(r.part)) continue;
+    done.add(r.part);
+    const members = rows.filter((x) => x.part === r.part).map((x) => `${x.suffix}${x.dflt ? `=${x.dflt}` : ""}`);
+    out.push(`${r.part}{${members.join(",")}}: style of the ${r.part} part`);
+  }
+  return out;
 }
 
 /** Did-you-mean for an unknown element type. */

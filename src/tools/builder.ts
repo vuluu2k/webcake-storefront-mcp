@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { checkSiteCode, codeGuard } from "../builder/native-first.js";
 import { PAGE_CODE_ARG, writePageCode } from "./page-code.js";
 import { PAGE_CODE_BUDGET, codeTargets, lintPageCode, mergePageCode, type PageCode } from "../builder/page-code.js";
-import { elementSchema, suggestType, valueRules } from "../builder/element-schema.js";
+import { elementSchema, suggestType, keyReference } from "../builder/element-schema.js";
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
@@ -211,7 +211,7 @@ export function registerBuilderTools(server: McpServer, api: WebcakeCmsApi, hand
 
   server.tool(
     "get_element",
-    "Get the full detail of an element type: category, container flag, summary, an ATTRIBUTES reference (the meaningful specials/config keys + their purpose, events, and dataset binding targets), VALUE_RULES (per key: allowed values `one of …` that validate_page enforces, values `seen` on real pages, and non-string value types), PARENTS when it must sit inside a given container, and a live skeleton node (the authoritative default shape) you can copy and edit. Read this before authoring/editing an element so you set the right keys.",
+    "Get the full detail of an element type: category, container flag, summary, KEYS — one line per specials/config key the published renderer reads (`key: meaning · type · one of a|b (enforced) / e.g. a|b · default x`; style config of one part folded as `part{Color,FontSize=14,…}`), no_effect = keys no render code reads (don't set them), ATTRIBUTES (events, dataset binding targets, notes), PARENTS when it must sit inside a given container, and a live skeleton node (the authoritative default shape) you can copy and edit. Read this before authoring/editing an element so you set the right keys.",
     {
       type: z.string().describe("Element type, e.g. 'text', 'button', 'grid-product'"),
     },
@@ -223,7 +223,9 @@ export function registerBuilderTools(server: McpServer, api: WebcakeCmsApi, hand
           return guess ? { ...el, did_you_mean: guess } : el;
         }
         const parents = elementSchema(type)?.parents;
-        return { ...el, ...(parents ? { parents } : {}), value_rules: valueRules(type) };
+        // attributes.specials/config/more_* are folded into `keys` (one line per key).
+        const { specials: _s, more_specials: _ms, config: _c, more_config: _mc, ...attributes } = el.attributes || {};
+        return { ...el, attributes, ...(parents ? { parents } : {}), keys: keyReference(type) };
       })
   );
 

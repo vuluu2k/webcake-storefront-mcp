@@ -34,7 +34,9 @@
     "gen-api": "node scripts/gen-api-catalog.mjs",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build && npm run smoke",
-    "test": "node --test \"test/*.test.mjs\""
+    "test": "node --test \"test/*.test.mjs\"",
+    "mine-renderer": "node scripts/mine-renderer.mjs",
+    "mine-editor": "node scripts/mine-editor.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
