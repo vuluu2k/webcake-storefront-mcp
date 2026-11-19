@@ -5,6 +5,20 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.3.0] - 2026-11-19
+
+### Added
+- Tool mới `clone_page` (nhóm `clone`) chuyển một trang web đã render thành các section BuilderX native — text, image, button, form, video, và container dạng row — không sinh embed hay custom code, dựng layout từ các box thật đã đo được của trang thay vì từ CSS (các box cạnh nhau thành một row với độ rộng cột đo được, co lại trên tablet/mobile; các box xếp chồng thành một column).
+- Tool mới `get_clone_script` trả về script capture mà `clone_page` cần khi không tự mở được trang nguồn (server remote, không có Chrome local, trang yêu cầu đăng nhập), để agent chạy bằng trình duyệt của chính nó rồi truyền lại qua `snapshot`.
+- `clone_page` nhận thêm tham số `rehost_images:true` để tải mọi ảnh (và icon SVG, chuyển sang PNG) lên CDN của WebCake trước khi giữ lại bản clone, vì storefront chỉ hiển thị ảnh lưu trên CDN.
+- `clone_page` trả về `source_ref` (`cache:clone-N`) thay vì toàn bộ page source, và tham số `source` của `build_page` nay cũng nhận trực tiếp tham chiếu đó.
+
+### Changed
+- Mô tả của `ingest_html` nay hướng sang `clone_page` khi cần sao chép đúng y một trang đang hoạt động, còn `ingest_html` chỉ dùng để chuyển HTML tham khảo (ví dụ export từ Google Stitch/Figma/Codex) thành một blueprint cấu trúc.
+
+### Fixed
+- `validate_page` không còn báo nhầm cảnh báo `UNKNOWN_KEY` cho các marker layout nội bộ `__row`/`__cell` mà các section do `clone_page` tạo ra sử dụng.
+
 ## [2.2.0] - 2026-11-19
 
 ### Added

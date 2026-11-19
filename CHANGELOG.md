@@ -5,6 +5,20 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.3.0] - 2026-11-19
+
+### Added
+- New `clone_page` tool (family `clone`) turns a rendered web page into native BuilderX sections — text, image, button, form, video, and container rows — with no embed or custom code, deriving layout from the page's real measured boxes instead of its CSS (side-by-side boxes become a row with measured column widths that collapse on tablet/mobile, stacked boxes become a column).
+- New `get_clone_script` tool returns the capture script `clone_page` needs when it can't open the source page itself (remote server, no local Chrome, a page behind login), for the agent to run in its own browser tool and pass back as `snapshot`.
+- `clone_page` accepts `rehost_images:true` to upload every image (and SVG icons, converted to PNG) to the WebCake CDN before the clone is kept, since the storefront only renders CDN-hosted images.
+- `clone_page` returns a `source_ref` (`cache:clone-N`) instead of the full page source, and `build_page`'s `source` parameter now also accepts that reference directly.
+
+### Changed
+- `ingest_html`'s description now points to `clone_page` for a faithful copy of a live page, reserving `ingest_html` for turning reference HTML (e.g. a Google Stitch/Figma/Codex export) into a structural blueprint.
+
+### Fixed
+- `validate_page` no longer raises a false `UNKNOWN_KEY` warning for the internal `__row`/`__cell` layout markers that `clone_page`-produced sections use.
+
 ## [2.2.0] - 2026-11-19
 
 ### Added
