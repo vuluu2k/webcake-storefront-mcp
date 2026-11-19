@@ -27,6 +27,9 @@ export const FAMILIES: Record<string, [string, string[]]> = {
   builder_ref: ["Reference for composing pages: elements, attributes, events, bindings, schema, guides, section templates", [
     "get_build_guide", "get_intake_guide", "list_elements", "get_element", "list_events", "list_bindings", "get_page_schema", "list_section_templates",
   ]],
+  clone: ["Copy an existing web page as native sections (clone_page), or read a page's text/images as a blueprint (ingest_*)", [
+    "clone_page", "get_clone_script", "ingest_url", "ingest_html",
+  ]],
   compose: ["Create element nodes from the factory (never hand-write nodes)", [
     "new_element", "new_section", "new_row", "new_page_skeleton",
   ]],

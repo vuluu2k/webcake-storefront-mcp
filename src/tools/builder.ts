@@ -8,6 +8,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
 import { BUILD_GUIDE } from "../builder/guide.js";
+import { getCached } from "./result-cache.js";
 import { PAGE_SCHEMA } from "../builder/page-schema.js";
 import { listElements, getElement, buildElement } from "../builder/catalog.js";
 import { describeEventsCatalog } from "../builder/events.js";
@@ -34,8 +35,14 @@ const elementSpec = z.object({
   collapse: z.record(z.number()).optional().describe("layout:'row' only — columns to show per breakpoint, e.g. {bp3:2,bp4:1}. Default: tablet 2, mobile 1."),
 });
 
+/** A source object, its JSON, or "cache:<id>" — a source parked by clone_page. */
 function parseSource(src: any): any {
   if (src == null) return null;
+  if (typeof src === "string" && src.startsWith("cache:")) {
+    const hit = getCached(src.slice(6));
+    if (!hit) throw new Error(`${src} expired or unknown — run clone_page again.`);
+    return JSON.parse(hit.text);
+  }
   return typeof src === "string" ? JSON.parse(src) : src;
 }
 
@@ -321,7 +328,7 @@ ONE page per site for type main (homepage) / error / maintain, and slugs are uni
     {
       name: z.string().describe("Page name"),
       slug: z.string().describe("URL slug WITHOUT a leading slash, e.g. 'about', 'collections', 'cart'. A leading '/' is stripped automatically (the storefront matches the bare path segment, so '/cart' would 404). Store pages MUST use the conventional slugs: category='collections', product detail='products', cart='cart', checkout='checkout', thank-you='complete'. The homepage needs no slug (pass is_homepage:true)."),
-      source: z.any().describe("Full page source { sections: [...] } (object or JSON string)"),
+      source: z.any().describe("Full page source { sections: [...] } (object or JSON string), or the source_ref \"cache:clone-N\" from clone_page"),
       type: z
         .enum(PAGE_KINDS)
         .optional()

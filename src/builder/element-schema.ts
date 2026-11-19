@@ -291,7 +291,7 @@ export function checkElementKeys(node: any): Finding[] {
   const keysIn = (obj: any, where: string, specs: Record<string, KeySpec>, known: string[], other?: { name: string; specs: Record<string, KeySpec> }) => {
     if (!obj || typeof obj !== "object" || Array.isArray(obj)) return;
     for (const [k, v] of Object.entries(obj)) {
-      if (NOISE.has(k)) continue;
+      if (NOISE.has(k) || k.startsWith("__")) continue; // __row/__cell: layout markers finalizeForRender consumes
       const at = `${where}.${k}`;
       if (k in specs) {
         checkValue(specs[k], v, { ...base, at }, out);

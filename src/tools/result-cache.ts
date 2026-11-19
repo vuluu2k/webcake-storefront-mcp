@@ -50,6 +50,15 @@ export function cacheLarge(label: string, data: any, threshold = DEFAULT_THRESHO
   };
 }
 
+/** Store a payload under a fresh id (e.g. a cloned page source handed to build_page as "cache:<id>"). */
+export function cachePut(label: string, text: string, prefix = "clone"): string {
+  const now = Date.now();
+  prune(now);
+  const id = `${prefix}-${++_seq}`;
+  _cache.set(id, { text, label, created: now });
+  return id;
+}
+
 /** Direct accessor for other modules (e.g. to peek a cached entry). */
 export function getCached(id: string): Entry | undefined {
   return _cache.get(id);

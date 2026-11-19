@@ -51,6 +51,7 @@
   },
   "optionalDependencies": {
     "ioredis": "^5.11.1",
-    "pg": "^8.21.0"
+    "pg": "^8.21.0",
+    "playwright-core": "^1.65.1"
   }
 }

@@ -1,0 +1,576 @@
+// Clone a rendered web page into native BuilderX sections.
+//
+// 1. captureInPage() runs INSIDE the source page (Playwright page.evaluate, or the agent's own
+//    browser via the script from get_clone_script): computed styles + real boxes, reduced to a
+//    small tree — section → group(row|col) / box → text | image | button | form | video | …
+//    Layout is read from geometry (who sits beside whom), not from flex/grid/float CSS, so it
+//    works the same for any framework.
+// 2. snapshotToSource() maps that tree onto the builder's own layout helpers (buildSection,
+//    rowChildren/stackChildren via buildFromSpec): a row → `layout:"row"` container with
+//    column widths from the measured boxes (collapses on tablet/mobile), a column → stack.
+//    Nothing becomes custom code; what can't be mapped is counted in `notes`.
+import { buildSection } from "./page.js";
+
+// Browser globals for captureInPage (the project compiles without the DOM lib).
+declare const window: any, document: any, location: any, CSS: any;
+declare function getComputedStyle(el: any): any;
+
+// ── 1. In-page capture (self-contained: it is serialized with Function#toString) ──────────
+export async function captureInPage(opts: any = {}): Promise<any> {
+  const arr = (x: any): any[] => Array.from(x);
+  const MAX = opts.maxNodes || 2500;
+  const W = window.innerWidth;
+  let count = 0;
+  const skipped: Record<string, number> = {};
+  const skip = (r: string) => {
+    skipped[r] = (skipped[r] || 0) + 1;
+  };
+  // Lazy content: walk the page once so images/sections that load on scroll exist.
+  if (opts.scroll !== false) {
+    const step = Math.max(400, window.innerHeight * 0.8);
+    for (let y = 0; y < document.body.scrollHeight && y < 40000; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 120));
+    }
+    window.scrollTo(0, 0);
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  document.querySelectorAll("details").forEach((d: any) => (d.open = true));
+
+  const cs = (el: any) => getComputedStyle(el);
+  const box = (el: any) => {
+    const r = el.getBoundingClientRect();
+    return { x: Math.round(r.left + window.scrollX), y: Math.round(r.top + window.scrollY), w: Math.round(r.width), h: Math.round(r.height) };
+  };
+  const visible = (el: any) => {
+    const s = cs(el);
+    if (s.display === "none" || s.visibility === "hidden" || Number(s.opacity) === 0) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 1 && r.height > 1;
+  };
+  const clear = (c: string) => !c || c === "transparent" || /rgba\([^)]*,\s*0\)$/.test(c);
+  const abs = (u: string) => {
+    try {
+      return new URL(u, location.href).href;
+    } catch {
+      return u;
+    }
+  };
+  const px = (v: string) => Math.round(parseFloat(v) || 0);
+  const bgUrl = (s: any) => {
+    const m = /url\(["']?([^"')]+)["']?\)/.exec(s.backgroundImage || "");
+    return m ? abs(m[1]) : undefined;
+  };
+  const textStyle = (s: any) => {
+    const o: any = { fontSize: px(s.fontSize), fontWeight: s.fontWeight, color: s.color, textAlign: s.textAlign };
+    if (s.lineHeight !== "normal") o.lineHeight = +(parseFloat(s.lineHeight) / parseFloat(s.fontSize)).toFixed(2);
+    if (s.letterSpacing !== "normal") o.letterSpacing = s.letterSpacing;
+    if (s.textTransform !== "none") o.textTransform = s.textTransform;
+    if (s.fontStyle !== "normal") o.fontStyle = s.fontStyle;
+    o.fontFamily = s.fontFamily.split(",")[0].replace(/["']/g, "").trim();
+    return o;
+  };
+  const boxStyle = (s: any) => {
+    const o: any = {};
+    if (!clear(s.backgroundColor)) o.bg = s.backgroundColor;
+    const u = bgUrl(s);
+    if (u) o.bgImage = u;
+    if (/gradient\(/.test(s.backgroundImage)) o.gradient = s.backgroundImage.replace(/,?\s*url\([^)]*\)/g, "");
+    if (px(s.borderTopWidth) > 0 && s.borderTopStyle !== "none" && !clear(s.borderTopColor)) o.border = `${px(s.borderTopWidth)}px ${s.borderTopStyle} ${s.borderTopColor}`;
+    if (px(s.borderTopLeftRadius) > 0) o.radius = px(s.borderTopLeftRadius);
+    if (s.boxShadow && s.boxShadow !== "none") o.shadow = s.boxShadow;
+    return o;
+  };
+  const painted = (b: any) => !!(b.bg || b.bgImage || b.gradient || b.border || b.shadow);
+  /** Pinned widgets (chat bubble, cookie bar, back-to-top) — not a pinned full-width header. */
+  const overlay = (s: any, r: any) => s.position === "fixed" && r.h < window.innerHeight * 0.9 && !(r.w >= W * 0.9 && r.y - window.scrollY <= 8);
+  const pads = (s: any) => ({ t: px(s.paddingTop), r: px(s.paddingRight), b: px(s.paddingBottom), l: px(s.paddingLeft) });
+  const INLINE = new Set(["A", "SPAN", "STRONG", "B", "EM", "I", "U", "SMALL", "BR", "SUP", "SUB", "MARK", "CODE", "S", "DEL", "LABEL", "ABBR", "TIME", "FONT", "Q", "CITE"]);
+  // Text-only subtree laid out inline. A flex/grid row of spans, or a painted inline-block
+  // (a pill button inside a line), is layout, not text.
+  const textLeaf = (el: any): boolean => {
+    if (/flex|grid/.test(cs(el).display) && el.children.length > 1) return false;
+    const links = arr(el.children).filter((c) => c.tagName === "A");
+    if (links.length >= 2 && links.length === el.children.length && !arr(el.childNodes).some((n) => n.nodeType === 3 && /[^\s|·•/-]/.test(n.textContent || ""))) return false;
+    for (const c of arr(el.children)) {
+      const d = cs(c).display;
+      if (!INLINE.has(c.tagName) || /block|flex|grid|table/.test(d) && (d !== "inline-block" || painted(boxStyle(cs(c)))) || !textLeaf(c)) return false;
+    }
+    return ((el as any).innerText || "").trim().length > 0;
+  };
+  const esc = (t: string) => t.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" } as any)[c]);
+  const richText = (el: any) => {
+    const walk = (n: any): string => {
+      if (n.nodeType === 3) return esc(n.textContent || "");
+      if (n.nodeType !== 1) return "";
+      const e = n as any;
+      const inner = arr(e.childNodes).map(walk).join("");
+      const t = e.tagName;
+      if (t === "BR") return "<br>";
+      if (t === "B" || t === "STRONG" || (t === "SPAN" && +cs(e).fontWeight >= 600 && +cs(el).fontWeight < 600)) return `<b>${inner}</b>`;
+      if (t === "I" || t === "EM") return `<i>${inner}</i>`;
+      if (t === "U") return `<u>${inner}</u>`;
+      if (t === "A" && e.getAttribute("href")) return `<a href="${abs(e.getAttribute("href")!).replace(/"/g, "&quot;")}">${inner}</a>`;
+      return inner;
+    };
+    return arr(el.childNodes).map(walk).join("").replace(/\s+/g, " ").trim();
+  };
+  const headingOf = (el: any) => {
+    if (/^H[1-6]$/.test(el.tagName)) return el.tagName.toLowerCase();
+    const h = el.closest("h1,h2,h3,h4,h5,h6");
+    return h ? h.tagName.toLowerCase() : "p";
+  };
+  const isButton = (el: any, s: any) => {
+    const t = (el.innerText || (el as any).value || "").trim();
+    if (!t || t.length > 60 || t.includes("\n")) return false;
+    if (el.tagName === "BUTTON" || el.getAttribute("role") === "button") return true;
+    const b = boxStyle(s);
+    return el.tagName === "A" && (!!b.bg || !!b.gradient || !!b.border) && px(s.paddingLeft) + px(s.paddingRight) >= 12;
+  };
+
+  const form = (el: any, r: any, s: any) => {
+    const fields: any[] = [];
+    let submit = "";
+    let submitStyle: any;
+    for (const f of arr(el.querySelectorAll("input,select,textarea,button")) as any[]) {
+      if (!visible(f)) continue;
+      const type = String(f.type || "").toLowerCase();
+      if (f.tagName === "BUTTON" || type === "submit") {
+        if (!submit) {
+          submit = (f.innerText || f.value || "").trim();
+          const fs = cs(f);
+          submitStyle = { ...boxStyle(fs), ...textStyle(fs), h: box(f).h };
+        }
+        continue;
+      }
+      if (type === "hidden") continue;
+      if (type === "checkbox" || type === "radio") {
+        skip(`form ${type}`);
+        continue;
+      }
+      const lab = (f.id && (document.querySelector(`label[for="${CSS.escape(f.id)}"]`) as any)?.innerText) || (f.closest("label") as any)?.innerText || f.getAttribute("aria-label") || "";
+      fields.push({
+        tag: f.tagName.toLowerCase(), type, name: f.name || "", label: lab.trim(), placeholder: f.placeholder || "", required: !!f.required, h: box(f).h,
+        style: { ...boxStyle(cs(f)), color: cs(f).color, fontSize: px(cs(f).fontSize) },
+        ...(f.tagName === "SELECT" ? { options: arr(f.options).map((o: any) => o.text).slice(0, 30) } : {}),
+      });
+    }
+    return { k: "form", ...r, fields, submit: submit || "Submit", submitStyle, style: boxStyle(s) };
+  };
+
+  // Lay children out the way they SIT: bands of vertically overlapping boxes → rows.
+  const arrange = (kids: any[], r: any) => {
+    const sorted = [...kids].sort((a, b) => a.y - b.y || a.x - b.x);
+    const bands: any[][] = [];
+    for (const k of sorted) {
+      const band = bands[bands.length - 1];
+      const bottom = band ? Math.max(...band.map((b) => b.y + b.h)) : -1;
+      if (band && k.y < bottom - 4 && !band.some((b) => k.x < b.x + b.w - 4 && b.x < k.x + k.w - 4)) band.push(k);
+      else bands.push([k]);
+    }
+    const rows = bands.map((b) => {
+      if (b.length === 1) return b[0];
+      b.sort((p, q) => p.x - q.x);
+      const gaps = b.slice(1).map((k, i) => k.x - (b[i].x + b[i].w));
+      const x = Math.min(...b.map((k) => k.x));
+      const y = Math.min(...b.map((k) => k.y));
+      return { k: "group", dir: "row", gap: Math.max(0, Math.round(gaps.reduce((n, g) => n + g, 0) / gaps.length)), x, y, w: Math.max(...b.map((k) => k.x + k.w)) - x, h: Math.max(...b.map((k) => k.y + k.h)) - y, kids: b };
+    });
+    if (rows.length === 1) return rows[0].k === "group" ? { ...rows[0], ...r } : rows[0];
+    const vg = rows.slice(1).map((k, i) => k.y - (rows[i].y + rows[i].h));
+    return { k: "group", dir: "col", gap: Math.max(0, Math.round(vg.reduce((n, g) => n + g, 0) / vg.length)), ...r, kids: rows };
+  };
+
+  const node = (el: any): any => {
+    if (++count > MAX) {
+      skip("node limit");
+      return null;
+    }
+    const t = el.tagName.toUpperCase();
+    if (/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|LINK|META|HEAD)$/.test(t) || !visible(el)) return null;
+    const s = cs(el);
+    const r = box(el);
+    if (overlay(s, r)) {
+      skip("fixed overlay (chat widget, cookie bar, sticky button)");
+      return null;
+    }
+    const he = el as any;
+    if (t === "IMG" || t === "PICTURE") {
+      const img: any = t === "IMG" ? el : el.querySelector("img");
+      const src = img && (img.currentSrc || img.src);
+      if (!src) return (skip("image without src"), null);
+      return { k: "image", ...r, src: abs(src), alt: img.alt || "", radius: px(s.borderTopLeftRadius) || undefined, fit: s.objectFit };
+    }
+    if (t === "SVG") {
+      const html = el.outerHTML;
+      if (html.length > 12000) return (skip("large svg"), null);
+      return { k: "icon", ...r, svg: html, color: s.color };
+    }
+    if (t === "VIDEO") {
+      const v: any = el;
+      const src = v.currentSrc || (el.querySelector("source") as any)?.src;
+      return src ? { k: "video", ...r, src: abs(src), poster: v.poster || undefined } : (skip("video without src"), null);
+    }
+    if (t === "IFRAME") {
+      const src = (el as any).src || "";
+      const yt = /youtube(?:-nocookie)?\.com\/embed\/([\w-]{6,})|youtu\.be\/([\w-]{6,})/.exec(src);
+      if (yt) return { k: "video", ...r, provider: "youtube", id: yt[1] || yt[2] };
+      if (/google\.[^/]+\/maps|maps\.google\./.test(src)) return { k: "map", ...r, src };
+      skip("iframe (third-party widget)");
+      return null;
+    }
+    if (t === "HR") return { k: "line", ...r, color: s.borderTopColor };
+    if (t === "FORM") return form(el, r, s);
+    if (/^(INPUT|SELECT|TEXTAREA)$/.test(t)) {
+      if (/^(submit|button)$/.test((el as any).type)) return { k: "button", ...r, text: (el as any).value, style: { ...boxStyle(s), ...textStyle(s) } };
+      skip("field outside a form");
+      return null;
+    }
+    if ((t === "A" || t === "BUTTON" || el.getAttribute("role") === "button") && isButton(he, s)) {
+      const href = el.getAttribute("href");
+      return { k: "button", ...r, text: he.innerText.trim(), href: href ? abs(href) : undefined, style: { ...boxStyle(s), ...textStyle(s), padX: px(s.paddingLeft) } };
+    }
+    const b = boxStyle(s);
+    if (textLeaf(el)) {
+      const href = t === "A" ? el.getAttribute("href") : null;
+      // A whole-text link (menu item, footer link) → plain text + a click event, so it keeps
+      // its own colour (rich-text <a> is forced blue/underlined by the storefront's .ql-editor a).
+      const n = { k: "text", ...r, tag: headingOf(el), html: richText(el), text: he.innerText.trim(), href: href ? abs(href) : undefined, style: textStyle(s) };
+      return painted(b) ? { k: "box", ...r, style: b, pad: pads(s), content: n } : n;
+    }
+    const kids: any[] = [];
+    for (const c of arr(el.children)) {
+      const n = node(c);
+      if (n) kids.push(n);
+    }
+    const loose = arr(el.childNodes).filter((n) => n.nodeType === 3 && (n.textContent || "").trim()).map((n) => (n.textContent || "").trim()).join(" ");
+    if (loose) kids.unshift({ k: "text", ...r, h: Math.max(16, px(s.lineHeight) || px(s.fontSize) * 1.4), tag: "p", html: esc(loose), text: loose, style: textStyle(s) });
+    if (!kids.length) return painted(b) && r.h > 3 ? { k: "box", ...r, style: b, pad: pads(s) } : null;
+    const content = kids.length === 1 ? kids[0] : arrange(kids, r);
+    return painted(b) ? { k: "box", ...r, style: b, pad: pads(s), content } : content;
+  };
+
+  // Sections: split the page into its vertical bands. A tall block whose children sit one
+  // under the other (app root, <main>, a page wrapper) is replaced by those children; a
+  // painted wrapper hands its background down to the bands that have none.
+  const inherited = new Map<any, any>();
+  const stacked = (kids: any[]) => {
+    const rs = kids.map((k) => k.getBoundingClientRect()).sort((a: any, b: any) => a.top - b.top);
+    return rs.every((r: any, i: number) => i === 0 || r.top >= rs[i - 1].bottom - 4);
+  };
+  // A zero-height wrapper (often around a fixed header) is see-through: take its children.
+  const expand = (k: any, d = 0): any[] => {
+    const h = k.getBoundingClientRect().height;
+    if (h >= 8) return visible(k) ? [k] : [];
+    return d < 4 && cs(k).display !== "none" ? arr(k.children).flatMap((c) => expand(c, d + 1)) : [];
+  };
+  let blocks = arr(document.body.children).flatMap((k) => expand(k));
+  for (let i = 0; i < 12; i++) {
+    let changed = false;
+    const next: any[] = [];
+    for (const b of blocks) {
+      const rb = b.getBoundingClientRect();
+      // Rails: empty decorative strips (gutter lines, borders) — not content, not layout.
+      const rail = (k: any) => !(k.innerText || "").trim() && !k.querySelector("img,svg,video,iframe,picture") && k.getBoundingClientRect().width < rb.width * 0.1;
+      const kids = arr(b.children).flatMap((k) => expand(k)).filter((k) => !rail(k));
+      const bs = boxStyle(cs(b));
+      const leaf = /^(IMG|PICTURE|SVG|VIDEO|IFRAME|FORM|HR)$/i.test(b.tagName) || textLeaf(b);
+      // Fixed bars (a pinned header) overlap the flow: they are their own band, not layout.
+      const flow = kids.filter((k) => cs(k).position !== "fixed");
+      const wrapper = !leaf && (kids.length === 1 ? !painted(bs) || rb.height > window.innerHeight * 1.5 : kids.length > 1 && rb.height > window.innerHeight * 1.2 && stacked(flow));
+      if (wrapper) {
+        const bg = painted(bs) ? bs : inherited.get(b);
+        for (const k of kids) if (bg && !inherited.has(k)) inherited.set(k, bg);
+        next.push(...kids);
+        changed = true;
+      } else next.push(b);
+    }
+    blocks = next;
+    if (!changed) break;
+  }
+  const sections: any[] = [];
+  for (const b of blocks) {
+    const s = cs(b);
+    const r = box(b);
+    if (r.h < 8) continue;
+    if (overlay(s, r)) {
+      skip("fixed overlay (chat widget, cookie bar, sticky button)");
+      continue;
+    }
+    const kids: any[] = [];
+    const self = /^(IMG|PICTURE|SVG|VIDEO|IFRAME|FORM|HR)$/i.test(b.tagName) || textLeaf(b);
+    if (self) kids.push(node(b));
+    else for (const c of arr(b.children)) {
+      const n = node(c);
+      if (n) kids.push(n);
+    }
+    const role = b.tagName === "HEADER" || b.querySelector(":scope > nav, header") || (s.position === "fixed" && r.y <= 8) ? "header" : b.tagName === "FOOTER" ? "footer" : b.tagName === "NAV" ? "nav" : undefined;
+    const content = kids.filter(Boolean);
+    if (!content.length && !painted(boxStyle(s))) continue;
+    const own = self ? {} : boxStyle(s);
+    const style = own.bg || own.bgImage || own.gradient ? own : { ...(inherited.get(b) || {}), ...own };
+    sections.push({ k: "section", ...r, role, style, pad: pads(s), sticky: s.position === "sticky" || s.position === "fixed" || undefined, content: content.length === 1 ? content[0] : content.length ? arrange(content, r) : null });
+  }
+  // Thin bands with the same background as their neighbour (a section title above its grid)
+  // belong to one section.
+  const merged: any[] = [];
+  for (const s of sections) {
+    const prev = merged[merged.length - 1];
+    if (prev && !prev.role && !s.role && JSON.stringify(prev.style) === JSON.stringify(s.style) && (s.h < 240 || prev.h < 240) && s.content && prev.content) {
+      const kids = [...(prev.content.k === "group" && prev.content.dir === "col" ? prev.content.kids : [prev.content]), s.content];
+      const y = prev.y;
+      const h = s.y + s.h - prev.y;
+      Object.assign(prev, { h, w: Math.max(prev.w, s.w), content: { k: "group", dir: "col", gap: Math.max(0, s.y - (prev.y + prev.h)) || 16, x: Math.min(prev.x, s.x), y, w: Math.max(prev.w, s.w), h, kids } });
+    } else merged.push(s);
+  }
+  sections.length = 0;
+  sections.push(...merged);
+  const textTotal = (document.body.innerText || "").replace(/\s+/g, "").length;
+  // The page colour: body/html, else the colour most of the page's height is painted with
+  // (an app root wrapper), so translucent bars and unpainted bands sit on the right colour.
+  const weight: Record<string, number> = {};
+  for (const s of sections) if (s.style?.bg && !/rgba\([^)]*,\s*0?\.\d+\)$/.test(s.style.bg)) weight[s.style.bg] = (weight[s.style.bg] || 0) + s.h;
+  const dominant = Object.entries(weight).sort((a, b) => b[1] - a[1])[0];
+  const pageBg = [document.body, document.documentElement].map((e) => cs(e).backgroundColor).find((c) => !clear(c))
+    || (dominant && dominant[1] > sections.reduce((n, s) => n + s.h, 0) * 0.5 ? dominant[0] : "rgb(255, 255, 255)");
+  return { url: location.href, title: document.title, viewport: { w: W, h: window.innerHeight }, pageBg, sections, skipped, textTotal };
+}
+
+/** The capture as a script an agent can run in any browser tool (evaluate_script / javascript). */
+export const CLONE_SCRIPT = `(${captureInPage.toString()})({})`;
+
+// ── 2. Snapshot → native page source ─────────────────────────────────────────────────────
+interface Ctx {
+  pageBg?: string;
+  notes: Record<string, number>;
+  text: number;
+  fonts: Record<string, number>;
+  images: string[];
+  W: number;
+}
+const note = (c: Ctx, k: string) => (c.notes[k] = (c.notes[k] || 0) + 1);
+
+/** rgba(…, a<1) can't be shown over the storefront's white page: lay it over `base` instead. */
+const over = (color: string, base?: string) => (base && /rgba\([^)]*,\s*0?\.\d+\)$/.test(color) ? `linear-gradient(${color}, ${color}), ${base}` : color);
+
+const bgStyle = (st: any = {}, base?: string) => {
+  const o: any = {};
+  if (st.bgImage) {
+    // The colour stays under the image: if the image can't load the text keeps its contrast.
+    o.background = `${st.gradient ? `${st.gradient}, ` : ""}url(${st.bgImage})${st.bg ? ` ${st.bg}` : ""}`;
+    o["background-size"] = "cover";
+    o["background-position-x"] = "center";
+    o["background-position-y"] = "center";
+    o["background-repeat"] = "no-repeat";
+  } else if (st.gradient) o.background = base ? `${st.gradient}, ${base}` : st.gradient;
+  else if (st.bg) o.background = over(st.bg, base);
+  // Split keys: element CSS reads borderWidth/borderStyle/borderColor (real pages use them).
+  const b = st.border && /^(\d+)px (\w+) (.+)$/.exec(st.border);
+  if (b) Object.assign(o, { borderWidth: `${b[1]}px`, borderStyle: b[2], borderColor: b[3] });
+  if (st.radius) o.borderRadius = `${st.radius}px`;
+  if (st.shadow) o.boxShadow = st.shadow;
+  return o;
+};
+
+const fontStyle = (c: Ctx, st: any = {}) => {
+  const o: any = {};
+  if (st.fontSize) o.fontSize = `${st.fontSize}px`;
+  if (st.fontWeight && st.fontWeight !== "400") o.fontWeight = String(st.fontWeight);
+  if (st.color) o.color = st.color;
+  if (st.lineHeight) o.lineHeight = String(st.lineHeight);
+  if (st.textAlign && st.textAlign !== "start") o.textAlign = st.textAlign === "end" ? "right" : st.textAlign;
+  if (st.letterSpacing) o.letterSpacing = st.letterSpacing;
+  if (st.textTransform) o.textTransform = st.textTransform;
+  if (st.fontStyle) o.fontStyle = st.fontStyle;
+  if (st.fontFamily) c.fonts[st.fontFamily] = (c.fonts[st.fontFamily] || 0) + 1;
+  return o;
+};
+
+const painted = (st: any = {}) => !!(st.bg || st.bgImage || st.gradient || st.border || st.shadow);
+
+const link = (href?: string) => {
+  if (!href || /^javascript:/i.test(href)) return undefined;
+  if (/^tel:/i.test(href)) return [{ action: "phone_call", trigger: "click", phone_call_number: href.slice(4) }];
+  return [{ action: "open_link", trigger: "click", link_target: href, link_target_url: "_self" }];
+};
+
+const FIELD: Record<string, string> = { email: "email", tel: "phone-number", textarea: "text-area", select: "select", date: "input-date", number: "input-number" };
+
+/** The area a node sits in (its column / its parent's content box). */
+type Area = { x: number; w: number };
+const inner = (n: any): Area => ({ x: n.x + (n.pad?.l || 0), w: Math.max(1, n.w - (n.pad?.l || 0) - (n.pad?.r || 0)) });
+/** Where a box sits inside its area: fill | center | right | left. */
+function alignIn(n: any, p?: Area): string | undefined {
+  if (!p || !n.w) return undefined;
+  if (n.w >= p.w * 0.92) return "fill";
+  const off = n.x + n.w / 2 - (p.x + p.w / 2);
+  if (Math.abs(off) <= p.w * 0.06) return "center";
+  if (n.x + n.w >= p.x + p.w * 0.94 && n.x - p.x > p.w * 0.2) return "right";
+  return "left";
+}
+/** A narrower-than-its-area block keeps its share of the width. */
+const share = (n: any, p?: Area) => (p && n.w && n.w < p.w * 0.92 ? { widthUnit: "%", relWidth: Math.max(5, Math.round((n.w / p.w) * 100)) } : undefined);
+
+function spec(n: any, c: Ctx, area?: Area): any {
+  if (!n) return null;
+  switch (n.k) {
+    case "text":
+      c.text += String(n.text || "").replace(/\s+/g, "").length;
+      const style = { ...fontStyle(c, n.style), height: n.h };
+      const at = area && n.w < area.w * 0.7 ? alignIn(n, area) : undefined;
+      // A short label on one line in the source stays on one line (fonts differ in width).
+      const oneLine = n.style?.fontSize && n.h <= n.style.fontSize * (n.style.lineHeight || 1.4) * 1.3;
+      if (oneLine && String(n.text || "").length <= 40) style.whiteSpace = "nowrap";
+      if ((at === "right" || at === "center") && (!style.textAlign || style.textAlign === "left")) style.textAlign = at;
+      if (/<a href/.test(n.html || "")) note(c, "links inside a sentence keep the storefront's link style (blue, underlined)");
+      const events = link(n.href);
+      if (events) style.cursor = "pointer";
+      return { type: "text", opts: { text: n.html || n.text, specials: { tag: n.tag || "p" }, style, ...(events ? { events } : {}) } };
+    case "image":
+      c.images.push(n.src);
+      return { type: "image", opts: { src: n.src, width: n.w, height: n.h, align: alignIn(n, area), config: share(n, area), specials: n.alt ? { image_alt: n.alt } : undefined, style: { ...(n.radius ? { borderRadius: `${n.radius}px` } : {}), ...(n.fit && n.fit !== "fill" ? { objectFit: n.fit } : {}) } } };
+    case "icon": {
+      note(c, "svg icon → image (data URI; rehost_images uploads it as PNG)");
+      const svg = /xmlns=/.test(n.svg) ? n.svg : n.svg.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
+      const src = `data:image/svg+xml;base64,${Buffer.from(svg.replace(/currentColor/g, n.color || "#000")).toString("base64")}`;
+      c.images.push(src);
+      return { type: "image", opts: { src, width: n.w, height: n.h, align: alignIn(n, area) ?? "left", config: share(n, area) } };
+    }
+    case "button": {
+      c.text += String(n.text || "").replace(/\s+/g, "").length;
+      const st = n.style || {};
+      const events = link(n.href);
+      if (n.href && /#/.test(n.href) && n.href.split("#")[0] === "") note(c, "anchor link kept as a URL — retarget it with scroll_to");
+      return {
+        type: "button",
+        opts: {
+          text: n.text,
+          style: { ...bgStyle(st, c.pageBg), ...fontStyle(c, st), height: n.h, ...(String(n.text || "").length <= 40 ? { whiteSpace: "nowrap" } : {}), ...(st.padX ? { paddingLeft: `${st.padX}px`, paddingRight: `${st.padX}px` } : {}) },
+          ...(events ? { events } : {}),
+          align: alignIn(n, area) ?? "left",
+        },
+      };
+    }
+    case "line":
+      return { type: "line", opts: { style: { borderColor: n.color } } };
+    case "video":
+      const place = { align: alignIn(n, area), config: share(n, area), style: { height: n.h } };
+      if (n.provider === "youtube") return { type: "video", opts: { ...place, specials: { type: "youtube", id: n.id, src: `https://www.youtube.com/watch?v=${n.id}` } } };
+      return { type: "video", opts: { ...place, src: n.src, thumbnail: n.poster } };
+    case "map":
+      note(c, "google map: embed iframe kept — set the address in the googlemap element if it differs");
+      return { type: "googlemap", opts: { iframe: `<iframe src="${n.src}" width="100%" height="${n.h}" style="border:0" loading="lazy"></iframe>`, width: n.w, height: n.h } };
+    case "form": {
+      note(c, "form rebuilt natively as a subscribe (lead) form — check its type and field names before going live");
+      const children = (n.fields || []).map((f: any) => {
+        const type = FIELD[f.tag === "input" ? f.type : f.tag] || "input";
+        const label = f.label || f.placeholder || f.name;
+        const fs = f.style || {};
+        return { type, opts: { specials: { field_name: f.name || label, label, placeholder: f.placeholder || label, required: !!f.required, show_label: !!f.label }, style: { height: f.h } } };
+      });
+      const sst = n.submitStyle || {};
+      children.push({ type: "submit-button", opts: { specials: { text: n.submit }, style: { ...bgStyle(sst), ...fontStyle(c, sst), ...(sst.h ? { height: sst.h } : {}) } } });
+      c.text += String(n.submit || "").length;
+      // A lead/contact/newsletter form = "subscribe" (customer_data is a logged-in profile form,
+      // hidden for visitors; form_order is a checkout).
+      // The renderer styles every field from the FORM's style (+ config.backgroundInput), so the
+      // first field's frame goes on the form.
+      const f0 = (n.fields || [])[0]?.style || {};
+      const { background, ...frame } = bgStyle(f0);
+      if (painted(n.style)) note(c, "form box background/border dropped (the form's style styles its fields)");
+      return {
+        type: "form",
+        opts: { specials: { type: "subscribe" }, style: { ...frame, ...(f0.color ? { color: f0.color } : {}), ...(f0.fontSize ? { fontSize: `${f0.fontSize}px` } : {}) }, ...(background ? { config: { backgroundInput: background } } : {}) },
+        children, rowGap: 12,
+      };
+    }
+    case "box": {
+      const inside = n.content ? spec(n.content, c, inner(n)) : null;
+      const pad = n.pad || {};
+      const style = { ...bgStyle(n.style), ...(pad.t || pad.l ? { padding: `${pad.t}px ${pad.r}px ${pad.b}px ${pad.l}px` } : {}), height: n.h };
+      if (!inside) return { type: "rectangle", opts: { style: { ...bgStyle(n.style), height: n.h, width: n.w } } };
+      // A painted wrapper around one group → the group's own container gets the paint.
+      const own = { align: alignIn(n, area), config: share(n, area) };
+      if (inside.type === "container" && !inside.opts?.style?.background) return { ...inside, opts: { ...(inside.opts || {}), ...own, style: { ...(inside.opts?.style || {}), ...style } } };
+      return { type: "container", opts: { style, ...own }, children: [inside] };
+    }
+    case "group": {
+      if (n.dir === "row") {
+        // Each column runs from its child's left edge to the next child's (the last one to the
+        // row's right edge), so space-between / offsets survive; the child is aligned inside it.
+        const ks = [...(n.kids || [])].sort((a: any, b: any) => a.x - b.x);
+        const gap = Math.max(0, Math.min(n.gap ?? 24, 120));
+        const left = ks[0].x;
+        const right = Math.max(...ks.map((k: any) => k.x + k.w));
+        const cols: Area[] = ks.map((k: any, i: number) => {
+          const start = i === 0 ? left : k.x;
+          const end = i < ks.length - 1 ? ks[i + 1].x - gap : right;
+          return { x: start, w: Math.max(1, end - start) };
+        });
+        const kids = ks.map((k: any, i: number) => spec(k, c, cols[i]));
+        const keep = kids.map((k, i) => [k, cols[i]] as const).filter(([k]) => k);
+        if (!keep.length) return null;
+        if (keep.length === 1) return keep[0][0];
+        const total = keep.reduce((s, [, a]) => s + a.w, 0) || 1;
+        const colWidths = keep.map(([, a]) => ({ unit: "fr", value: Math.max(1, Math.round((a.w / total) * 24)) }));
+        const span = { x: left, w: right - left };
+        // A row of small pieces (menu links, icons, footer bits) stays a row on phones; real
+        // columns (cards, split hero) collapse 2 → 1 as usual.
+        const small = ks.every((k: any) => ["text", "button", "icon", "image"].includes(k.k) && k.w <= 240) && (span.w <= 900 || ks.length <= 4);
+        const n2 = keep.length;
+        return { type: "container", layout: "row", columnGap: gap, colWidths, ...(small ? { collapse: { bp3: n2, bp4: n2 } } : {}), children: keep.map(([k]) => k), opts: { align: alignIn(span, area), config: share(span, area) } };
+      }
+      const box = { x: n.x, w: n.w };
+      const kids = (n.kids || []).map((k: any) => spec(k, c, box)).filter(Boolean);
+      if (!kids.length) return null;
+      if (kids.length === 1) return kids[0];
+      return { type: "container", rowGap: Math.min(n.gap ?? 16, 160), children: kids };
+    }
+    default:
+      note(c, `unmapped ${n.k}`);
+      return null;
+  }
+}
+
+/** A captured page → { sections } built with the builder's own layout helpers. */
+export function snapshotToSource(snap: any, opts: { skipChrome?: boolean } = {}) {
+  const c: Ctx = { pageBg: snap?.pageBg, notes: {}, text: 0, fonts: {}, images: [], W: snap?.viewport?.w || 1440 };
+  const white = (col?: string) => !col || /^rgba?\(255, 255, 255(, 1)?\)$/.test(col);
+  const sections: any[] = [];
+  const roles: string[] = [];
+  for (const s of snap?.sections || []) {
+    if (opts.skipChrome && (s.role === "header" || s.role === "footer" || s.role === "nav")) {
+      note(c, `${s.role} skipped (the site's own global header/footer is used)`);
+      continue;
+    }
+    const content = s.content;
+    // The section's children: a column group stacks; anything else is one child.
+    const childNodes = content?.k === "group" && content.dir === "col" ? content.kids : content ? [content] : [];
+    const children = childNodes.map((n: any) => spec(n, c, inner(s))).filter(Boolean);
+    const pad = s.pad || {};
+    const firstY = childNodes.length ? Math.min(...childNodes.map((n: any) => n.y)) : s.y;
+    const lastY = childNodes.length ? Math.max(...childNodes.map((n: any) => n.y + n.h)) : s.y + s.h;
+    const padY = Math.max(0, Math.min(160, Math.round(((firstY - s.y) + (s.y + s.h - lastY)) / 2) || pad.t || 0));
+    // A section with no paint of its own shows the source page's background (dark sites).
+    const st = s.style?.bg || s.style?.bgImage || s.style?.gradient || white(c.pageBg) ? s.style : { ...s.style, bg: c.pageBg };
+    const section = buildSection(children, {
+      style: bgStyle(st, white(c.pageBg) ? undefined : c.pageBg),
+      padY,
+      rowGap: content?.k === "group" && content.dir === "col" ? Math.min(content.gap ?? 16, 160) : undefined,
+    });
+    if (s.sticky) note(c, "sticky/fixed header captured as a normal section — set it sticky in the editor if needed");
+    sections.push(section);
+    roles.push(s.role || "content");
+  }
+  for (const [k, n] of Object.entries(snap?.skipped || {})) c.notes[`skipped: ${k}`] = n as number;
+  const coverage = snap?.textTotal ? Math.min(100, Math.round((c.text / snap.textTotal) * 100)) : undefined;
+  const fonts = Object.entries(c.fonts).sort((a, b) => b[1] - a[1]).map(([f]) => f).slice(0, 4);
+  return {
+    source: { sections },
+    roles,
+    stats: { sections: sections.length, text_coverage_pct: coverage, images: c.images.length },
+    fonts,
+    images: c.images,
+    notes: Object.entries(c.notes).map(([k, n]) => `${k}${n > 1 ? ` ×${n}` : ""}`),
+  };
+}

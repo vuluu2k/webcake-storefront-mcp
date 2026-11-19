@@ -154,6 +154,8 @@ async function fetchBuffer(url: string, maxBytes = 15 * 1024 * 1024) {
 async function toAllowedImage(buf: Buffer, contentType: string) {
   if (ALLOWED_IMG.test(contentType)) return { buf, contentType };
   const sharp = (await import("sharp")).default;
+  // Vector icons keep their transparency (PNG at 2x); everything else → JPEG.
+  if (/svg/.test(contentType)) return { buf: await sharp(buf, { density: 192 }).png().toBuffer(), contentType: "image/png" };
   const out = await sharp(buf).jpeg({ quality: 85 }).toBuffer();
   return { buf: out, contentType: "image/jpeg" };
 }
@@ -162,7 +164,7 @@ async function toAllowedImage(buf: Buffer, contentType: string) {
  *  per-site cache so the same source is never uploaded twice. Returns the hosted URL.
  *  The storefront only renders whitelisted (WebCake CDN) image domains, so every image
  *  used on a page/product MUST go through this — external URLs (Pexels, etc.) won't show. */
-async function cdnUpload(api: WebcakeCmsApi, source: string): Promise<string> {
+export async function cdnUpload(api: WebcakeCmsApi, source: string): Promise<string> {
   const cached = await getCachedUpload(api.siteId, source);
   if (cached) return cached;
   let buf: Buffer, contentType: string;
@@ -494,7 +496,7 @@ RENDER_SCREENSHOT_BASE to avoid that).`,
 
   server.tool(
     "ingest_html",
-    "Parse reference HTML (e.g. a Google Stitch / Figma / Codex export) into a structural blueprint (title, headings, paragraphs, images, buttons, colour palette) you can rebuild as native BuilderX sections with new_section. Not a 1:1 clone. Rebuild every part native elements can do; use an embed only for a piece no element can (third-party widget, custom animation) — never paste the whole HTML into one (sandboxed iframe: no SEO, broken links, dead forms; rejected on save).",
+    "For a faithful copy of a live page use clone_page (native sections from the rendered layout). This one: parse reference HTML (e.g. a Google Stitch / Figma / Codex export) into a structural blueprint (title, headings, paragraphs, images, buttons, colour palette) you can rebuild as native BuilderX sections with new_section. Not a 1:1 clone. Rebuild every part native elements can do; use an embed only for a piece no element can (third-party widget, custom animation) — never paste the whole HTML into one (sandboxed iframe: no SEO, broken links, dead forms; rejected on save).",
     {
       html: z.string().describe("Raw HTML to analyse"),
     },
