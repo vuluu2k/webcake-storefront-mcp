@@ -5,6 +5,21 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.6.1] - 2026-11-19
+
+### Added
+- `validate_page` nay báo lỗi chặn lưu `PAGE_CRASH` cho `checkbox-group` không có `specials.options` hoặc `number-step` có `runtime.config.buttons_in_row` bằng 0 hay thiếu, và lỗi `INVISIBLE` cho element `text` không có `style.fontSize` cũng không có `style.font` của theme, vì mỗi lỗi này làm trắng cả trang hoặc khiến element vô hình trên trang đã publish.
+- `validate_page` nay báo lỗi `NOT_RENDERED` cho `custom-layout` nằm trong `grid-product`/`slider-product` mà `specials.plugins` thiếu `store_show_extra_info`, và cảnh báo với mã mới `WRONG_SOURCE` khi `cart-droppable` bị đặt trong một section của trang thay vì trong global source giỏ hàng của site.
+- `validate_page` nay cảnh báo với mã `LEAF_CHILDREN` khi `calendar-content` được gán con, vì renderer của nó không bao giờ render các con đó.
+
+### Changed
+- Kiểm tra `NOT_RENDERED` dùng bởi `validate_page` và `get_element` nay chỉ coi một type là có render khi có một nhánh HTML builder thật sự tạo ra markup (hoặc được một builder cha gọi tên), thay vì chỉ cần có nhánh renderer bất kỳ, nên một type chỉ có CSS như `warehouse-dataset` nay được báo đúng là `NOT_RENDERED`.
+
+### Fixed
+- `new_element`, `build_page`, và bước tự sửa lúc lưu nay mặc định `style.fontSize` của element `text` là `16px`, `runtime.config.buttons_in_row` của `number-step` là `3`, `specials.svg` của `wishlist` là icon trái tim mặc định, và `specials.options` của `checkbox-group` là `[]`, vì để trống bất kỳ field nào trong số này trước đây khiến element vô hình hoặc làm trắng cả trang đã publish.
+- `new_element` và `build_page` nay ghi các thiết lập mà khoảng 25 type element (`tabs`, `menu`, `breadcrumb`, `tags`, `coupon`, `number-step`, và tương tự) truyền vào đúng chỗ `specials` thay vì `runtime.specials`, nơi một lượt lưu trang trước đây làm mất chúng.
+- Bước tự sửa lúc lưu nay tự thêm plugin `store_show_extra_info` vào `grid-product`/`slider-product` có chứa con `custom-layout`, vì con đó trước đây không bao giờ render được nếu thiếu plugin này.
+
 ## [2.6.0] - 2026-11-19
 
 ### Added

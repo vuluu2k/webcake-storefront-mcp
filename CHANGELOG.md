@@ -5,6 +5,21 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.6.1] - 2026-11-19
+
+### Added
+- `validate_page` now raises error code `PAGE_CRASH` for a `checkbox-group` without `specials.options` or a `number-step` with `runtime.config.buttons_in_row` 0 or missing, and error code `INVISIBLE` for a `text` element with no `style.fontSize` and no theme `style.font`, since each of these blanks the whole published page or renders invisible.
+- `validate_page` now raises `NOT_RENDERED` for a `custom-layout` placed inside a `grid-product`/`slider-product` whose `specials.plugins` is missing `store_show_extra_info`, and warns with new code `WRONG_SOURCE` when `cart-droppable` is placed in a page section instead of the site's cart global source.
+- `validate_page` now warns with code `LEAF_CHILDREN` when `calendar-content` is given children, since its renderer never renders them.
+
+### Changed
+- The `NOT_RENDERED` check used by `validate_page` and `get_element` now counts a type as rendered only when an HTML builder branch (or a parent builder naming it) actually produces markup, instead of any renderer branch, so a CSS-only type such as `warehouse-dataset` now correctly reports `NOT_RENDERED`.
+
+### Fixed
+- `new_element`, `build_page`, and the save-time repair pass now default a `text` element's `style.fontSize` to `16px`, a `number-step`'s `runtime.config.buttons_in_row` to `3`, a `wishlist`'s `specials.svg` to a default heart icon, and a `checkbox-group`'s `specials.options` to `[]`, since leaving any of these unset previously rendered the element invisible or blanked the whole published page.
+- `new_element` and `build_page` now write the settings that roughly 25 element types (`tabs`, `menu`, `breadcrumb`, `tags`, `coupon`, `number-step`, and similar) pass through into `specials` instead of `runtime.specials`, where a page save previously discarded them.
+- The save-time repair pass now adds the `store_show_extra_info` plugin to a `grid-product`/`slider-product` that contains a `custom-layout` child, since that child previously never rendered without it.
+
 ## [2.6.0] - 2026-11-19
 
 ### Added
