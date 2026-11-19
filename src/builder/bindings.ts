@@ -223,6 +223,38 @@ export const BINDING_META_KEYS: Record<string, string> = {
   show_video_demo: "Show the product video demo (boolean).",
 };
 
+// Datasets + fields the published renderer fills (lib/qwik/html/element.ex text-dataset ancestors,
+// common.ex, assets/render/*-binding.js) that the editor's binding lists don't show. Every one
+// below is used on real pages AND read by renderer code.
+BINDING_DATASETS.product_item = {
+  name: "product_item",
+  page_type: "any",
+  repeater_parents: ["custom-layout", "product-overlay"],
+  summary: "The product of THIS card inside a product grid/slider card layout (custom-layout / product-overlay) — use it for card text instead of product:: (which is the page's product).",
+  fields: [
+    "product_item::product_name", "product_item::product_url", "product_item::product_original_price",
+    "product_item::product_retail_price", "product_item::percent_discount", "product_item::product_total_sold",
+    "product_item::short_description",
+  ],
+};
+BINDING_DATASETS.warehouse = {
+  name: "warehouse",
+  page_type: "store",
+  repeater_parents: ["warehouse"],
+  summary: "A store/warehouse row inside a warehouse list (stock per branch on a product page).",
+  fields: ["warehouse::name", "warehouse::address", "warehouse::quantity", "warehouse::status"],
+};
+const RENDERER_FIELDS: Record<string, string[]> = {
+  blog: ["blog::total_post"],
+  cart_item: ["cart_item::cart_item_tag_bonus", "cart_item::course_video_quantity", "cart_item::discount_customer_level", "cart_item::preorder_text"],
+  customer: ["customer::pos_accumulated_value"],
+  order: ["order::subtotal_before_discount"],
+  product: ["product::provisional_invoice_value", "product::selected_total_price", "product::variation_remain_quantity"],
+  promotion_item: ["promotion_item::promotion_value"],
+};
+for (const [ds, fields] of Object.entries(RENDERER_FIELDS))
+  if (BINDING_DATASETS[ds]) BINDING_DATASETS[ds].fields = [...new Set([...BINDING_DATASETS[ds].fields, ...fields])];
+
 // Build fast lookups.
 const ALL_TARGETS = new Set<string>();
 const NAME_SET = new Set<string>();

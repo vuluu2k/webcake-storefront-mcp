@@ -75,3 +75,13 @@ test("chặn kèm cách sửa: mỗi lỗi chặn có → fix", () => {
     assert.match(r.detail, /→|see |\(see /, `${name}: ${r.detail}`);
   }
 });
+
+test("catalog bổ sung: action renderer có (open_product, buy_it_now…) và binding product_item/warehouse được nhận; tracking trong events[] bị nhắc", async () => {
+  const { isKnownBindingTarget } = await import("../dist/builder/bindings.js");
+  assert.ok(isKnownBindingTarget("product_item::product_name") && isKnownBindingTarget("warehouse::quantity") && isKnownBindingTarget("order::subtotal_before_discount"));
+  const ok = outcome([B("button", { text: "Xem", events: [{ trigger: "click", action: "open_product", open_product: "products/ao" }] })]);
+  assert.notEqual(ok.verdict, "BLOCK", ok.detail);
+  const tr = outcome([B("button", { text: "Mua", events: [{ trigger: "click", action: "fb_tracking" }] })]);
+  assert.equal(tr.verdict, "WARN");
+  assert.match(tr.detail, /tracking specials/);
+});

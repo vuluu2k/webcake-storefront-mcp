@@ -61,7 +61,7 @@ export interface EventAction {
   required?: string[]; // fields the action needs to work
   optional?: string[];
   target_in_page?: string[]; // fields referencing an element id on the same page
-  category: "navigation" | "ui" | "cart" | "form" | "contact" | "content" | "media" | "hover" | "account" | "misc";
+  category: "navigation" | "ui" | "cart" | "form" | "contact" | "content" | "media" | "hover" | "account" | "misc" | "tracking";
 }
 
 export const EVENT_ACTIONS: EventAction[] = [
@@ -150,6 +150,22 @@ export const EVENT_ACTIONS: EventAction[] = [
   { action: "close_search_droppable", trigger: "onenter", category: "ui", summary: "Close the search suggestions dropdown when Enter is pressed in the search box." },
   { action: "bold", trigger: "hover", category: "hover", summary: "Make the text bold on hover (common.ex)." },
   { action: "create_article", trigger: "submit", category: "form", summary: "Form submit creates a blog article from the form fields — user-submitted posts (form.js)." },
+  // Handled by the published page (assets/render/events.js) though the editor's list doesn't show them.
+  { action: "open_product", trigger: "click", category: "navigation", summary: "Open a product page: open_product = the product's path (slug), e.g. \"products/ao-thun\" (an empty one lands on a 404).", required: ["open_product"] },
+  { action: "open_webcake_page", trigger: "click", category: "navigation", summary: "Open a site page by path: /pages/<open_page><prefix>.", required: ["open_page"], optional: ["prefix"] },
+  { action: "buy_it_now", trigger: "click", category: "cart", summary: "Buy-it-now on a product page (adds the selected variation and goes to checkout); productNoteElId = an input-product-note to send along.", optional: ["open_page", "productNoteElId"] },
+  { action: "search_keyword", trigger: "click", category: "ui", summary: "Put this element's data-value into every input-search on the page and search (keyword chips under a search box)." },
+  { action: "auto_fill_value_promotion", trigger: "click", category: "cart", summary: "Copy this promotion item's code into the page's form_discount input (inside a promotions list)." },
+  { action: "none", trigger: "click", category: "ui", summary: "Does nothing (placeholder the editor stores)." },
+  // Tracking actions are ADDED BY THE RENDERER from the element's own specials — never put them in
+  // events[]: set fb_event_type / fb_custom_tracking / tiktok_event_type / ggc_id+ggc_label /
+  // event_name_custom / chatgpt_event_type on the element instead.
+  { action: "fb_tracking", trigger: "click", category: "tracking", summary: "AUTO from specials.fb_event_type (+ fb_conversion_value, fb_tracking_currency). Set the specials, not this event." },
+  { action: "fb_custom_tracking", trigger: "click", category: "tracking", summary: "AUTO from specials.fb_custom_tracking (custom pixel code). Set the special, not this event." },
+  { action: "tiktok_tracking", trigger: "click", category: "tracking", summary: "AUTO from specials.tiktok_event_type (+ tiktok_conversion_value / currency). Set the specials." },
+  { action: "gg_conversion_tracking", trigger: "click", category: "tracking", summary: "AUTO from specials.ggc_id + ggc_label (ggc_mode, ggc_use_pmax). Set the specials." },
+  { action: "gg_custom_event_tracking", trigger: "click", category: "tracking", summary: "AUTO from specials.event_name_custom. Set the special." },
+  { action: "chat_gpt_tracking", trigger: "click", category: "tracking", summary: "AUTO from specials.chatgpt_event_type. Set the special." },
 ];
 
 const ACTION_BY_NAME: Record<string, EventAction> = {};
@@ -234,6 +250,10 @@ export function validateEvents(node: any, allIds: Set<string>, ctx: EventContext
       if (renderActions().size && !renderActions().has(ev.action))
         errors.push(`Event on "${where}" has unknown action "${ev.action}" — the storefront has no handler for it → pick an action from list_events (open_link, scroll_to, open_popup, toggle, add_to_cart…).`);
       else warnings.push(`Event on "${where}" has action "${ev.action}" the catalog doesn't describe (the renderer knows it) — check its fields.`);
+      continue;
+    }
+    if (def.category === "tracking") {
+      warnings.push(`Event "${ev.action}" on "${where}" is added by the renderer itself → remove it and set the element's tracking specials instead (${def.summary.replace(/^AUTO from /, "")}).`);
       continue;
     }
     for (const f of def.required || []) {
