@@ -5,6 +5,18 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.42.0] - 2026-11-19
+
+### Added
+- Tool mới `api_find`, `api_get`, và `api_call` mở ra toàn bộ API backend WebCake mà token storefront có thể gọi (775 route), trong đó 552 route trước đây chưa có tool riêng; `api_find` tìm theo từ khoá và trả về "call sheet" (thông tin cần để gọi), `api_get` chạy một route chỉ đọc, còn `api_call` chạy được mọi route, với lượt ghi mặc định chạy dry run để xem trước nội dung sẽ gửi.
+- `get_element` nay trả về thêm `value_rules` (giá trị hợp lệ mà `validate_page` áp dụng, các giá trị đã thấy trên trang thật, và kiểu dữ liệu không phải string của từng key) và `parents` (các container mà element đó phải nằm trong), kèm gợi ý `did_you_mean` khi tên type gõ sai.
+
+### Changed
+- `validate_page` nay kiểm tra từng element theo một schema dựng từ dữ liệu trang đã publish thật, bắt được các key bịa ra hoặc gõ sai kèm gợi ý sửa (ví dụ `content` → `specials.text`, `href` → event `open_link`, `colour` → `color`), CSS bị để nhầm vào `runtime.config`, thuộc tính style không viết kebab-case, sai kiểu giá trị, giá trị ngoài danh sách cho phép, slide nằm ngoài `swiper`, ô form nằm ngoài `form`, và tên type gõ sai.
+- Lỗi và warning của `validate_page` nay có định dạng `[CODE] #id (type) where: problem → fix`, các warning trùng mã được gom lại, và kết quả có thêm số đếm `summary.by_code`.
+- Mọi tool native, và `invoke_tool`, nay từ chối tham số không có trong schema của tool đó thay vì âm thầm bỏ qua.
+- `api_call` từ chối lượt ghi vào route đã có tool riêng đảm nhiệm (và nêu tên tool đó), từ chối các thao tác không thể hoàn tác ở cấp tài khoản như xoá site hay chuyển quyền chủ, và báo rõ quyền WebCake nào đang thiếu khi gặp lỗi 403.
+
 ## [1.41.0] - 2026-11-19
 
 ### Changed

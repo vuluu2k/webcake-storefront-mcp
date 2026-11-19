@@ -5,6 +5,18 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.42.0] - 2026-11-19
+
+### Added
+- New `api_find`, `api_get`, and `api_call` tools expose the full WebCake backend API that the storefront token can reach (775 operations), including 552 routes that previously had no dedicated tool; `api_find` searches by keyword and returns a call sheet, `api_get` runs a read-only operation, and `api_call` runs any operation with writes defaulting to a dry run that shows what would be sent.
+- `get_element` now returns `value_rules` (the allowed values `validate_page` enforces, values seen on real pages, and non-string value types for each key) and `parents` (the containers an element must sit inside), plus a `did_you_mean` suggestion when the requested type is misspelled.
+
+### Changed
+- `validate_page` now checks every element against a schema built from real published pages, catching invented or misspelled keys with fix suggestions (for example `content` → `specials.text`, `href` → the `open_link` event, `colour` → `color`), CSS misplaced in `runtime.config`, non-kebab-case style properties, wrong value types, values outside the allowed list, swiper slides placed outside a `swiper`, form fields placed outside a `form`, and misspelled element type names.
+- `validate_page`'s errors and warnings are now formatted as `[CODE] #id (type) where: problem → fix`, repeated warnings are collapsed per code, and the result adds a `summary.by_code` count.
+- Every native tool, and `invoke_tool`, now refuses an argument that isn't part of the tool's own schema instead of silently dropping it.
+- `api_call` refuses a write to a route already covered by a dedicated tool, naming that tool, refuses irreversible account operations such as deleting a site or transferring ownership, and reports which WebCake permission a 403 response is missing.
+
 ## [1.41.0] - 2026-11-19
 
 ### Changed
