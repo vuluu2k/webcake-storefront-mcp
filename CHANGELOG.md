@@ -5,6 +5,16 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.41.0] - 2026-11-19
+
+### Changed
+- When a session token expires in stdio mode, multiple IDE windows/processes on the same machine now coordinate through a shared lock so only one opens the browser Connect page; the others wait and pick up the token it saves instead of each opening their own tab.
+- The remote server now marks an expired or rejected WebCake token dead across every running instance (Redis flag plus revoking its wrapping OAuth tokens in the shared store) instead of only in the process that saw the rejection, so all instances consistently send the client back to Connect.
+- The remote server's saved site and confirm-mode preference are now stored per account (Postgres, falling back to Redis or in-memory) instead of in the server's own local config file, so concurrent users of the same remote instance no longer share or overwrite each other's selected site and confirm mode.
+
+### Fixed
+- The remote server now responds with 404 instead of a generic 400 error when a request carries an unknown or expired `mcp-session-id`, so MCP clients re-initialize automatically instead of getting stuck.
+
 ## [1.40.0] - 2026-11-19
 
 ### Added

@@ -5,6 +5,16 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.41.0] - 2026-11-19
+
+### Changed
+- Khi token phiên hết hạn ở chế độ stdio, nhiều cửa sổ/process IDE trên cùng một máy nay phối hợp qua một khóa dùng chung để chỉ một process mở trang Connect trên trình duyệt; các process khác chờ và dùng lại token mà process đó lưu, thay vì mỗi process tự mở một tab riêng.
+- Server remote nay đánh dấu một token WebCake hết hạn hoặc bị từ chối là "chết" trên mọi instance đang chạy (cờ trong Redis cùng với thu hồi các token OAuth bọc nó trong store dùng chung) thay vì chỉ ở process vừa gặp lỗi, nhờ đó mọi instance đều nhất quán đưa client trở lại Connect.
+- Site đã chọn và chế độ confirm của server remote nay được lưu theo từng tài khoản (Postgres, dự phòng bằng Redis hoặc bộ nhớ trong) thay vì lưu trong file cấu hình riêng của server, nhờ đó nhiều người dùng cùng lúc trên một instance remote không còn thấy hoặc ghi đè lựa chọn site và chế độ confirm của nhau.
+
+### Fixed
+- Server remote nay trả về 404 thay vì lỗi 400 chung khi một request mang `mcp-session-id` không tồn tại hoặc đã hết hạn, nhờ đó client MCP tự khởi tạo lại phiên thay vì bị kẹt.
+
 ## [1.40.0] - 2026-11-19
 
 ### Added
