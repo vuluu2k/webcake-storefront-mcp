@@ -188,7 +188,9 @@ export function installTools(
   let nativeCount = 0;
   for (const e of collector.entries) {
     if (native.has(e.group)) {
-      server.tool(e.name, e.description, e.shape, toolAnnotations(e.name), e.handler as any);
+      // .strict(): an argument the tool doesn't take is REFUSED with its name, not silently
+      // dropped (a dropped page_id/site_id made a call act on the wrong page).
+      server.registerTool(e.name, { description: e.description, inputSchema: z.object(e.shape).strict(), annotations: toolAnnotations(e.name) }, e.handler as any);
       nativeCount++;
     }
   }
@@ -294,7 +296,7 @@ courses, sale channels, automation…). Returns name, group, description and JSO
     if (readOnlyOnly && !toolAnnotations(name).readOnlyHint) {
       return errorResult(`Error: "${name}" is not read-only — run it with invoke_tool.`);
     }
-    const parsed = z.object(e.shape).safeParse(args ?? {});
+    const parsed = z.object(e.shape).strict().safeParse(args ?? {});
     if (!parsed.success) {
       const issues = parsed.error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`).join("; ");
       return errorResult(`Error: invalid arguments for "${name}": ${issues}`);

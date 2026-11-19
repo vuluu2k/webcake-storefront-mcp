@@ -12,8 +12,14 @@ import { readFileSync } from "node:fs";
 // sites + factory defaults (scripts produce src/builder/element-keys.generated.json,
 // mirrored into dist by copy-assets). Gives the FULL real key surface of every element;
 // the curated tables below add human meaning on top. Best-effort load (empty if absent).
-type ObservedKeys = { seen?: number; specials: string[]; config: string[]; style: string[]; bindings: string[]; events: boolean };
-let OBSERVED: Record<string, ObservedKeys> = {};
+type ObservedKeys = {
+  seen?: number; specials: string[]; config: string[]; style: string[]; bindings: string[]; events: boolean;
+  /** "specials.tag" → value types seen on real pages. */
+  types?: Record<string, string[]>;
+  /** "specials.type" → the values seen, for code-like keys only (scripts/mine-element-keys.mjs). */
+  values?: Record<string, string[]>;
+};
+export let OBSERVED: Record<string, ObservedKeys> = {};
 try {
   OBSERVED = JSON.parse(readFileSync(new URL("./element-keys.generated.json", import.meta.url), "utf8"));
 } catch {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { withCode } from "../builder/element-schema.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
@@ -26,7 +27,8 @@ export async function preflightSite(api: WebcakeCmsApi) {
   // write (missing/duplicate id, native-first volume…) already publishes today, so it only warns.
   const judge = (name: string, src: any, v: any) => {
     const shape = checkShape(src);
-    const crash = shape.errors.filter((e) => !shape.editorOnly.includes(e)); // the live site blanks
+    // validatePage tags shape errors "[SHAPE] …"; compare in that form.
+    const crash = shape.errors.filter((e) => !shape.editorOnly.includes(e)).map((e) => withCode("SHAPE", e)); // the live site blanks
     const fatal = (v.errors || []).filter((e: string) => crash.includes(e));
     const rest = (v.errors || []).filter((e: string) => !crash.includes(e));
     errors.push(...fatal.slice(0, 10).map((e: string) => `${name}: ${e}`));

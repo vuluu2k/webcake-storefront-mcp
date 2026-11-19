@@ -5,6 +5,7 @@
 // child's runtime.config (columnStart/End, rowStart/End, constraintX/Y). The helpers here
 // produce that structure the same way the builder does, so generated pages render.
 
+import { checkElementKeys, checkParent, collapseByCode, countByCode, formatFinding, FORM_FIELDS, suggestType, withCode, type Finding } from "./element-schema.js";
 import { buildElement, isKnownType, ELEMENT_TYPES } from "./catalog.js";
 import { randomString } from "./factory.js";
 import { validateEvents, normalizeEvents } from "./events.js";
@@ -459,6 +460,7 @@ export function checkContentPlaceholders(content: any, previous?: any): string[]
 export function validatePage(source: any, previous?: any) {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const add = (f: Finding) => (f.severity === "error" ? errors : warnings).push(formatFinding(f));
 
   // editor_v2 pages ({ nodes, root_node_id, schema_version }) are a different model this server
   // doesn't author; judging them by v1 rules would block publishing every V2 site.
@@ -466,7 +468,7 @@ export function validatePage(source: any, previous?: any) {
     return { valid: true, skipped: "editor_v2 source (nodes/root_node_id): not checked by the v1 validator" };
   }
   if (!source || typeof source !== "object" || !Array.isArray(source.sections)) {
-    return { valid: false, errors: ["Source must be an object shaped { sections: [...] }."] };
+    return { valid: false, errors: ["[BAD_SOURCE] Source must be an object shaped { sections: [...] }."] };
   }
 
   const ids = new Set<string>();
@@ -474,40 +476,43 @@ export function validatePage(source: any, previous?: any) {
   let total = 0;
   const typeCounts: Record<string, number> = {};
 
-  // First pass: collect ids + flag duplicates / unknown types / missing fields.
+  // First pass: collect ids + flag duplicates / unknown types / missing fields / unknown keys.
   walk(source, (node) => {
     total++;
     const type = node.type || "(missing)";
     typeCounts[type] = (typeCounts[type] || 0) + 1;
 
-    if (!node.id) errors.push(`A ${type} node is missing an id.`);
-    else if (ids.has(node.id)) errors.push(`Duplicate element id "${node.id}".`);
+    if (!node.id) add({ code: "MISSING_ID", severity: "error", type, message: "node has no id", fix: "build it with new_element" });
+    else if (ids.has(node.id)) add({ code: "DUP_ID", severity: "error", id: node.id, type, message: `Duplicate element id "${node.id}"`, fix: "re-id the copy (new_element mints fresh ids)" });
     else ids.add(node.id);
     if (node.id) allIds.add(node.id);
 
-    if (!node.type) errors.push(`A node (id ${node.id || "?"}) is missing a type.`);
-    else if (!isKnownType(node.type)) warnings.push(`Unknown element type "${node.type}" (id ${node.id}).`);
+    if (!node.type) add({ code: "MISSING_TYPE", severity: "error", id: node.id || "?", message: "node has no type" });
+    else if (!isKnownType(node.type)) {
+      const guess = suggestType(node.type);
+      add({ code: "UNKNOWN_TYPE", severity: "warning", id: node.id, type: node.type, message: `Unknown element type "${node.type}"`, fix: guess ? `did you mean "${guess}"?` : "see list_elements" });
+    }
 
     // Form fields should carry a field_name so submissions map to data.
-    if (/^(input|email|phone-number|text-area|select|address|password)$/.test(node.type || "")) {
-      const fn = node.specials && node.specials.field_name;
-      if (!fn) warnings.push(`Form field "${node.id}" (${node.type}) has no specials.field_name.`);
-    }
+    if (FORM_FIELDS.has(node.type || "") && !(node.specials && node.specials.field_name))
+      add({ code: "FIELD_NAME", severity: "warning", id: node.id, type: node.type, at: "specials.field_name", message: `Form field has no specials.field_name — its value is not submitted`, fix: "set e.g. full_name / email / phone_number" });
+
+    for (const f of checkElementKeys(node)) add(f);
   });
 
   // Second pass: events + bindings against the authoritative catalogs (unknown
   // trigger/action/dataset, missing required fields, dangling in-page event targets,
-  // unknown binding fields). These are warnings — they don't block a save.
+  // unknown binding fields).
   walk(source, (node) => {
     if (node.events && node.events.length) {
       const r = validateEvents(node, allIds);
-      errors.push(...r.errors);
-      warnings.push(...r.warnings);
+      errors.push(...r.errors.map((m) => withCode("EVENT", m)));
+      warnings.push(...r.warnings.map((m) => withCode("EVENT", m)));
     }
     if (node.bindings && node.bindings.length) {
       const r = validateBindings(node);
-      errors.push(...r.errors);
-      warnings.push(...r.warnings);
+      errors.push(...r.errors.map((m) => withCode("BINDING", m)));
+      warnings.push(...r.warnings.map((m) => withCode("BINDING", m)));
     }
   });
 
@@ -518,14 +523,19 @@ export function validatePage(source: any, previous?: any) {
     if (!node || typeof node !== "object") return;
     const type = node.type;
     const kids: any[] = Array.isArray(node.children) ? node.children : [];
+    const w = (code: string, message: string, fix?: string) => add({ code, severity: "warning", id: node.id, type, message, fix });
     if (!ancestors.length && type && type !== "section" && type !== "popup")
-      warnings.push(`Top-level node "${node.id}" is a ${type}: pages render only sections at the top level — wrap it in a section.`);
+      w("TOP_LEVEL", `Top-level node "${node.id}" is a ${type}: pages render only sections at the top level`, "wrap it in a section");
     if (kids.length && LEAF_TYPES.has(type))
-      warnings.push(`"${node.id}" (${type}) has ${kids.length} child node(s), but ${type} is not a container — they won't render.`);
+      w("LEAF_CHILDREN", `"${node.id}" (${type}) has ${kids.length} child node(s), but ${type} is not a container — they won't render`, "move them into a container");
     if (type === "submit-button" && !ancestors.some((t) => /form/.test(t)))
-      warnings.push(`Submit button "${node.id}" is not inside a form — it has nothing to submit.`);
+      w("OUTSIDE_FORM", `Submit button "${node.id}" is not inside a form — it has nothing to submit`, "put it inside the form");
+    else if (FORM_FIELDS.has(type) && ancestors.length && !ancestors.some((t) => /form/.test(t)))
+      w("OUTSIDE_FORM", "form field is not inside a form — nothing submits it", "put it inside a form");
     if ((node.bindings || []).some((b: any) => b?.name === "wishlist_item") && !ancestors.includes("wishlist-item"))
-      warnings.push(`"${node.id}" binds wishlist_item::… outside a wishlist-item — those fields only resolve per saved product.`);
+      w("BINDING_SCOPE", `"${node.id}" binds wishlist_item::… outside a wishlist-item — those fields only resolve per saved product`);
+    const parent = ancestors.length ? checkParent(node, ancestors) : undefined;
+    if (parent) add(parent);
     for (const c of kids) checkTree(c, [...ancestors, type]);
   };
   for (const s of source.sections) checkTree(s, []);
@@ -533,17 +543,20 @@ export function validatePage(source: any, previous?: any) {
   // Crash-level shapes for the renderer and the editor (null children, non-object specials/bp,
   // bad widthUnit/constraints/grid…). See shape.ts.
   const shape = checkShape(source);
-  errors.push(...shape.errors);
-  warnings.push(...shape.warnings);
+  errors.push(...shape.errors.map((m) => withCode("SHAPE", m)));
+  warnings.push(...shape.warnings.map((m) => withCode("SHAPE", m)));
 
   const code = checkNativeContent(source, previous);
-  errors.push(...code.errors);
-  warnings.push(...code.warnings);
+  errors.push(...code.errors.map((m) => withCode("NATIVE", m)));
+  warnings.push(...code.warnings.map((m) => withCode("NATIVE", m)));
 
   return {
     valid: errors.length === 0,
     ...(errors.length ? { errors } : {}),
-    ...(warnings.length ? { warnings } : {}),
+    ...(warnings.length ? { warnings: collapseByCode(warnings) } : {}),
+    ...(errors.length || warnings.length
+      ? { summary: { errors: errors.length, warnings: warnings.length, by_code: countByCode([...errors, ...warnings]), read: "[CODE] #id (type) where: problem → fix. Errors block the save; warnings render wrong." } }
+      : {}),
     stats: { sections: source.sections.length, total_elements: total, element_types: typeCounts },
   };
 }

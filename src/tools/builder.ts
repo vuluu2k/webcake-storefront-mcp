@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { elementSchema, suggestType, valueRules } from "../builder/element-schema.js";
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
@@ -207,11 +208,20 @@ export function registerBuilderTools(server: McpServer, api: WebcakeCmsApi, hand
 
   server.tool(
     "get_element",
-    "Get the full detail of an element type: category, container flag, summary, an ATTRIBUTES reference (the meaningful specials/config keys + their purpose/allowed values, events, and dataset binding targets), and a live skeleton node (the authoritative default shape) you can copy and edit. Read this before authoring/editing an element so you set the right keys.",
+    "Get the full detail of an element type: category, container flag, summary, an ATTRIBUTES reference (the meaningful specials/config keys + their purpose, events, and dataset binding targets), VALUE_RULES (per key: allowed values `one of …` that validate_page enforces, values `seen` on real pages, and non-string value types), PARENTS when it must sit inside a given container, and a live skeleton node (the authoritative default shape) you can copy and edit. Read this before authoring/editing an element so you set the right keys.",
     {
       type: z.string().describe("Element type, e.g. 'text', 'button', 'grid-product'"),
     },
-    ({ type }) => handle(async () => getElement(type))
+    ({ type }) =>
+      handle(async () => {
+        const el: any = getElement(type);
+        if (el.error) {
+          const guess = suggestType(type);
+          return guess ? { ...el, did_you_mean: guess } : el;
+        }
+        const parents = elementSchema(type)?.parents;
+        return { ...el, ...(parents ? { parents } : {}), value_rules: valueRules(type) };
+      })
   );
 
   server.tool(
@@ -286,7 +296,7 @@ Example children: [{ "type":"container", "children":[{"type":"image","opts":{...
 
   server.tool(
     "validate_page",
-    "Validate a page source ({ sections: [...] }). Returns errors (block saving: duplicate/missing ids, missing types) and warnings (unknown types, form fields without field_name, dangling event targets) plus stats. Always run this before build_page.",
+    "Validate a page source ({ sections: [...] }) against every element's schema. Each message reads `[CODE] #id (type) where: problem → fix`. errors block saving (duplicate/missing ids, renderer-crash shapes…); warnings render wrong (UNKNOWN_KEY invented/misspelled key, STYLE_KEY not a CSS property, TYPE_MISMATCH, BAD_VALUE outside the allowed values, BAD_PARENT, OUTSIDE_FORM, FIELD_NAME, EVENT/BINDING problems…). Repeated warnings are collapsed per code; summary.by_code counts all. Always run this before build_page and fix by code.",
     {
       source: z.any().describe("Page source object or JSON string"),
     },

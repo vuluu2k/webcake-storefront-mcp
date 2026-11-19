@@ -145,7 +145,7 @@ const SUMMARY: Record<string, string> = {
   breadcrumb: "Breadcrumb navigation trail.",
 };
 
-function describeType(type: string) {
+export function describeType(type: string) {
   return {
     type,
     category: CATEGORY_BY_TYPE[type] || "other",
