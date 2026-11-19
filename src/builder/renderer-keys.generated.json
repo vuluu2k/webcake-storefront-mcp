@@ -1473,6 +1473,17 @@
     "CSS.STATIC.build_address",
     "HTML.build_address"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "autoCatchWarehouse",
+     "country",
+     "form_type",
+     "useNewAddress"
+    ]
+   },
    "config": {
     "backgroundInput": {
      "default": "#ffffff00"
@@ -1490,6 +1501,60 @@
     "textPadding": {
      "default": 15
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnGap",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "isHidden",
+     "labelColor",
+     "labelMarginBottom",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "autoCatchWarehouse",
+     "communeName",
+     "country",
+     "default_province",
+     "districtName",
+     "field_name",
+     "form_type",
+     "hiddenCommune",
+     "isColumn",
+     "label",
+     "provinceName",
+     "required_commune",
+     "required_districts",
+     "required_province",
+     "show_label",
+     "useNewAddress"
+    ]
    },
    "relations": {
     "parent": [
@@ -1539,6 +1604,17 @@
     "CSS.DYNAMIC.build_agency",
     "HTML.Element.build_agency"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": [
+     "agencies",
+     "googleTarget"
+    ]
+   },
    "config": {
     "activeColor": {
      "default": "#E6F9F6"
@@ -1551,6 +1627,48 @@
      "default": "#E6F9F6"
     },
     "rows": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "activeColor",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "distanceAgency",
+     "heightUnit",
+     "hoverColor",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "rows",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "agencies",
+     "custom_css",
+     "datagrid_id",
+     "googleTarget"
+    ]
    },
    "specials": {
     "agencies": {},
@@ -1566,6 +1684,16 @@
     "CSS.STATIC.build_attr",
     "HTML.build_attr"
    ],
+   "client": {
+    "config": [
+     "loaded",
+     "type"
+    ],
+    "specials": [
+     "attrName",
+     "layout"
+    ]
+   },
    "config": {
     "arrowSize": {
      "default": 16
@@ -1619,6 +1747,62 @@
      "default": "#fff"
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundSelected",
+     "borderColorHover",
+     "borderColorSelected",
+     "borderWidthHover",
+     "borderWidthSelected",
+     "colorSelected",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "distanceBottom",
+     "distanceLeft",
+     "distanceRight",
+     "heightUnit",
+     "imagePadding",
+     "isHidden",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "selectedType",
+     "sizeImage",
+     "tooltipBackground",
+     "tooltipColor",
+     "type",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "attrName",
+     "attrPrimary",
+     "autoNamePriority",
+     "defaultSelected",
+     "layout",
+     "placeholder",
+     "tooltip"
+    ]
+   },
    "specials": {
     "arrowIcon": {
      "default": ""
@@ -1652,7 +1836,53 @@
     "CSS.DYNAMIC.build_auto_number",
     "HTML.Element.build_auto_number"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "duration"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "duration",
+     "endNumber",
+     "jumpNumber",
+     "startNumber"
+    ]
+   },
    "specials": {
     "duration": {
      "default": 1
@@ -1673,9 +1903,55 @@
     "CSS.DYNAMIC.build_bonus_items",
     "HTML.Element.build_bonus_items"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "columns": {},
     "rows": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "rows",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "isShowRow",
+     "selectDefault",
+     "typeBonus"
+    ]
    },
    "specials": {
     "isShowRow": {
@@ -1700,10 +1976,57 @@
     "CSS.DYNAMIC.build_breadcrumb",
     "HTML.Element.build_breadcrumb"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "icon",
+     "options"
+    ]
+   },
    "config": {
     "hoverColor": {
      "default": "#00C1A2"
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "hoverColor",
+     "isHidden",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "icon",
+     "options"
+    ]
    },
    "specials": {
     "icon": {
@@ -1717,8 +2040,81 @@
     "CSS.DYNAMIC.build_button",
     "HTML.build_button"
    ],
+   "client": {
+    "config": [
+     "loaded",
+     "position"
+    ],
+    "specials": [
+     "event_name_custom",
+     "fb_conversion_value",
+     "fb_custom_tracking",
+     "fb_event_type",
+     "ggc_id",
+     "ggc_label",
+     "product_id_priority",
+     "tabIndex",
+     "text",
+     "tiktok_conversion_value",
+     "tiktok_event_type"
+    ]
+   },
    "config": {
     "borderEdges": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "animation",
+     "borderEdges",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "fixedPosition",
+     "fixedRight",
+     "heightUnit",
+     "isHidden",
+     "leftUnit",
+     "maxWidth",
+     "maxWidthUnit",
+     "position",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightCenterXUnit",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "stickyBottom",
+     "stickyPosition",
+     "topUnit",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "event_name_custom",
+     "fb_custom_tracking",
+     "fb_event_type",
+     "ggc_id",
+     "ggc_label",
+     "text",
+     "tiktok_event_type"
+    ]
    },
    "specials": {
     "chatgpt_event_type": {},
@@ -1741,8 +2137,48 @@
     "CSS.DYNAMIC.build_button",
     "HTML.build_button_login"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "text"
+    ]
+   },
    "config": {
     "borderEdges": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "text"
+    ]
    },
    "specials": {
     "text": {}
@@ -1753,8 +2189,49 @@
     "CSS.DYNAMIC.build_button",
     "HTML.build_button_login"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "text"
+    ]
+   },
    "config": {
     "borderEdges": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "isHidden",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "text"
+    ]
    },
    "specials": {
     "text": {}
@@ -1792,6 +2269,29 @@
     "CSS.STATIC.build_carousel",
     "HTML.build_carousel"
    ],
+   "client": {
+    "config": [
+     "columnGap",
+     "columns",
+     "grid",
+     "loaded",
+     "paginateCount",
+     "paginateMode",
+     "relSlideWidth",
+     "showPaginate",
+     "slideItems",
+     "slideWidth",
+     "src",
+     "widthUnit"
+    ],
+    "specials": [
+     "autoplay",
+     "autoplay_time",
+     "src",
+     "tabIndex",
+     "type"
+    ]
+   },
    "config": {
     "arrowHeight": {
      "default": 40
@@ -1887,6 +2387,71 @@
      "default": "px"
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "arrowHeight",
+     "arrowWidth",
+     "arrowX",
+     "barDotSize",
+     "barHeight",
+     "barWidth",
+     "barWidthUnit",
+     "columnEnd",
+     "columnGap",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "gapBar",
+     "heightUnit",
+     "isHidden",
+     "itemWidth",
+     "leftUnit",
+     "navColor",
+     "navSecondaryColor",
+     "paginateCount",
+     "paginateMode",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relSlideWidth",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "rows",
+     "showPaginate",
+     "slideItems",
+     "slideWidth",
+     "slideWidthUnit",
+     "transition_time",
+     "transition_type",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "arrowColor",
+     "arrowIcon",
+     "autoplay",
+     "autoplay_time",
+     "custom_class",
+     "custom_css",
+     "type"
+    ]
+   },
    "specials": {
     "arrowColor": {
      "default": "#FFFFFF"
@@ -1972,6 +2537,14 @@
     "CSS.STATIC.build_cart_icon",
     "HTML.build_cart_icon"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "svg"
+    ]
+   },
    "config": {
     "itemBackgroundColor": {},
     "itemCountBorderRadius": {
@@ -1996,6 +2569,49 @@
      "default": ""
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "isHidden",
+     "itemBackgroundColor",
+     "itemCountBorderRadius",
+     "itemCountColor",
+     "itemCountFontFamily",
+     "itemCountFontSize",
+     "itemCountFontWeight",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "svg"
+    ]
+   },
    "specials": {
     "svg": {}
    }
@@ -2005,9 +2621,55 @@
     "CSS.DYNAMIC.build_cart_items",
     "HTML.build_cart_items"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "columns": {},
     "rows": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnGap",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "rows",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class"
+    ]
    },
    "specials": {}
   },
@@ -2017,6 +2679,18 @@
     "CSS.STATIC.build_checkbox",
     "HTML.build_checkbox"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "defaultValue",
+     "field_name",
+     "isRetrieve",
+     "options",
+     "required"
+    ]
+   },
    "config": {
     "backgroundInput": {
      "default": "#ffffff00"
@@ -2073,6 +2747,53 @@
      "default": 200
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "isStyleInputChecked",
+     "leftUnit",
+     "optionBorderColor",
+     "optionBorderRadius",
+     "optionBorderStyle",
+     "optionBorderWidth",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "defaultValue",
+     "field_name",
+     "icon_color",
+     "options",
+     "required"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -2099,6 +2820,16 @@
     "CSS.STATIC.build_checkbox_group",
     "HTML.build_checkbox_group"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "count",
+     "filter_elements",
+     "options"
+    ]
+   },
    "config": {
     "borderRadiusInput": {
      "default": 0
@@ -2115,6 +2846,51 @@
     "spaceButtonText": {
      "default": 16
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "borderRadiusInput",
+     "column",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "leftUnit",
+     "radioButtonSize",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "spaceButtonText",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "filter_elements",
+     "icon_color",
+     "is_attribute_by_category",
+     "is_auto_child_categories",
+     "options",
+     "use_button_filter",
+     "use_filter_or"
+    ]
    },
    "specials": {
     "auto_category_type": {
@@ -2158,7 +2934,45 @@
     "CSS.STATIC.build_checkbox_item",
     "HTML.Element.build_checkbox_item"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "topUnit",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": []
+   },
    "specials": {}
   },
   "collapse": {
@@ -2196,6 +3010,16 @@
     "CSS.STATIC.build_color_group",
     "HTML.Element.build_color_group"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "count",
+     "filter_elements",
+     "options"
+    ]
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -2208,6 +3032,51 @@
     "rows": {},
     "widthUnit": {}
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "colorBorderColor",
+     "colorBorderColorActive",
+     "colorBorderRadius",
+     "colorGap",
+     "colorHeight",
+     "colorWidth",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "hiddenText",
+     "itemGap",
+     "itemHeight",
+     "itemWidth",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPosition",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "filter_elements",
+     "options",
+     "selectionMode"
+    ]
+   },
    "specials": {}
   },
   "container": {
@@ -2216,6 +3085,27 @@
     "CSS.STATIC.build_container",
     "HTML.build_container"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded",
+     "origin",
+     "position",
+     "src",
+     "type",
+     "undefined"
+    ],
+    "specials": [
+     "event_name_custom",
+     "fb_event_type",
+     "src",
+     "tabIndex",
+     "text",
+     "tiktok_event_type",
+     "type"
+    ]
+   },
    "config": {
     "borderEdges": {},
     "initMaxHeight": {},
@@ -2235,6 +3125,78 @@
       "none"
      ]
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "animation",
+     "borderEdges",
+     "bottomCenterYUnit",
+     "bottomUnit",
+     "columnEnd",
+     "columnGap",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "fixedBottom",
+     "fixedLeft",
+     "fixedPosition",
+     "fixedRight",
+     "fixedTop",
+     "heightUnit",
+     "initMaxHeight",
+     "isHidden",
+     "isUseInitMaxHeight",
+     "leftCenterXUnit",
+     "leftUnit",
+     "maxHeight",
+     "maxHeightUnit",
+     "maxWidth",
+     "maxWidthUnit",
+     "pinnedPoint",
+     "position",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relMaxHeight",
+     "relMaxWidth",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightCenterXUnit",
+     "rightUnit",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "rows",
+     "stickyBottom",
+     "stickyPosition",
+     "stickyTop",
+     "topUnit",
+     "type",
+     "unpinnedPoint",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "event_name_custom",
+     "fb_event_type",
+     "tiktok_event_type",
+     "type"
+    ]
    },
    "specials": {
     "chatgpt_event_type": {},
@@ -2257,6 +3219,19 @@
     "CSS.STATIC.build_countdown",
     "HTML.build_countdown"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "duration",
+     "height",
+     "repeat",
+     "type",
+     "typeShow",
+     "width"
+    ]
+   },
    "config": {
     "bgBottom": {},
     "bgTop": {},
@@ -2288,6 +3263,76 @@
     "widthFigure": {
      "default": 50
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "bgBottom",
+     "bgTop",
+     "colorText",
+     "colorTime",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "fontSizeText",
+     "fontSizeTime",
+     "heightFigure",
+     "heightUnit",
+     "isHidden",
+     "leftUnit",
+     "radiusFigure",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "row_gap_dot",
+     "sizeDot",
+     "spacingTitle",
+     "vhHeight",
+     "vwHeight",
+     "widthFigure",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "dailyEnd",
+     "dailyStart",
+     "duration",
+     "durationEnd",
+     "durationStart",
+     "fontSizeTime",
+     "height",
+     "isPromotion",
+     "positionTitle",
+     "promotionId",
+     "repeat",
+     "row_gap_dot",
+     "showDay",
+     "showHours",
+     "showMinute",
+     "showSecond",
+     "showText",
+     "sizeDot",
+     "type",
+     "typeShow",
+     "width"
+    ]
    },
    "relations": {
     "reads": [
@@ -2354,6 +3399,15 @@
     "CSS.STATIC.build_country",
     "HTML.Element.build_country"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "defaultValue",
+     "required"
+    ]
+   },
    "config": {
     "backgroundInput": {
      "default": "#ffffff00"
@@ -2368,6 +3422,47 @@
     "textPadding": {
      "default": 15
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelMarginBottom",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "countries",
+     "defaultValue",
+     "field_name",
+     "label",
+     "placeholder",
+     "required",
+     "show_label"
+    ]
    },
    "relations": {
     "parent": [
@@ -2401,7 +3496,57 @@
     "CSS.DYNAMIC.build_input",
     "HTML.Element.build_coupon"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "required",
+     "title"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelMarginBottom",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "auto_fill_coupon",
+     "label",
+     "placeholder",
+     "required",
+     "show_label"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -2425,7 +3570,59 @@
     "CSS.DYNAMIC.build_input",
     "HTML.build_password"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "field_name",
+     "required",
+     "validate"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelMarginBottom",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "custom_class",
+     "field_name",
+     "label",
+     "placeholder",
+     "required",
+     "show_label",
+     "validate",
+     "validate_password"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -2455,6 +3652,15 @@
     "CSS.STATIC.build_custom_layout",
     "HTML.Element.build_custom_layout"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded",
+     "undefined"
+    ],
+    "specials": []
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -2464,6 +3670,16 @@
      "default": 0
     },
     "rows": {}
+   },
+   "mentions": {
+    "config": [
+     "columns",
+     "rowGap",
+     "rows"
+    ],
+    "specials": [
+     "custom_class"
+    ]
    },
    "relations": {
     "provides": [
@@ -2480,9 +3696,54 @@
     "CSS.DYNAMIC.build_customer_address",
     "HTML.build_customer_address"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": [
+     "tabIndex"
+    ]
+   },
    "config": {
     "columns": {},
     "rows": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnGap",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "rows",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": []
    },
    "specials": {}
   },
@@ -2501,7 +3762,56 @@
     "CSS.DYNAMIC.build_input",
     "HTML.build_detect_address"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "required"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "isHidden",
+     "labelMarginBottom",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "custom_css",
+     "field_name",
+     "label",
+     "placeholder",
+     "required",
+     "show_label"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -2528,6 +3838,20 @@
     "CSS.STATIC.build_dropdown",
     "HTML.build_dropdown"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "count",
+     "filter_elements",
+     "is_default_select",
+     "optionTargetId",
+     "options",
+     "placeholder",
+     "use_button_filter"
+    ]
+   },
    "config": {
     "arrowColor": {
      "default": "#000"
@@ -2535,6 +3859,56 @@
     "arrowSize": {
      "default": 16
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "arrowColor",
+     "arrowSize",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "isHidden",
+     "leftCenterXUnit",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "arrowIcon",
+     "custom_class",
+     "custom_css",
+     "filter_elements",
+     "is_default_select",
+     "optionTargetId",
+     "options",
+     "placeholder",
+     "redirect_id",
+     "redirect_type",
+     "use_button_filter",
+     "use_filter_or"
+    ]
    },
    "specials": {
     "arrowIcon": {
@@ -2554,6 +3928,14 @@
     "CSS.DYNAMIC.build_dropdown_content",
     "HTML.build_dropdown_content"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -2604,6 +3986,22 @@
      ]
     }
    },
+   "mentions": {
+    "config": [
+     "columns",
+     "heightUnit",
+     "is_use_width_outer_parent",
+     "leftUnit",
+     "relHeight",
+     "relLeft",
+     "relTop",
+     "relWidth",
+     "rows",
+     "topUnit",
+     "widthUnit"
+    ],
+    "specials": []
+   },
    "specials": {}
   },
   "email": {
@@ -2611,7 +4009,66 @@
     "CSS.DYNAMIC.build_input",
     "HTML.build_email"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "field_name",
+     "required",
+     "validate"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnGap",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelColor",
+     "labelMarginBottom",
+     "placeholder",
+     "placeholderColor",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "field_name",
+     "label",
+     "placeholder",
+     "required",
+     "show_label",
+     "validate",
+     "validate_email"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -2638,7 +4095,51 @@
     "CSS.STATIC.build_embed",
     "HTML.build_embed"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "tabIndex",
+     "type"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "htmlCode",
+     "type"
+    ]
+   },
    "specials": {
     "htmlCode": {},
     "htmlUrl": {},
@@ -2650,6 +4151,14 @@
    "builders": [
     "CSS.DYNAMIC.build_empty_product_layout"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -2662,6 +4171,17 @@
     "rows": {},
     "widthUnit": {}
    },
+   "mentions": {
+    "config": [
+     "columns",
+     "heightUnit",
+     "relHeight",
+     "relWidth",
+     "rows",
+     "widthUnit"
+    ],
+    "specials": []
+   },
    "specials": {}
   },
   "favorite-icon": {
@@ -2670,7 +4190,47 @@
     "CSS.STATIC.build_favorite_icon",
     "HTML.build_favorite_icon"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class"
+    ]
+   },
    "specials": {}
   },
   "flash-sale": {
@@ -2689,6 +4249,12 @@
     },
     "rows": {}
    },
+   "mentions": {
+    "config": [],
+    "specials": [
+     "promotion_advance_id"
+    ]
+   },
    "relations": {
     "reads": [
      "product"
@@ -2704,7 +4270,83 @@
     "CSS.STATIC.build_form",
     "HTML.build_form"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": [
+     "agencyTarget",
+     "event_name_custom",
+     "fb_conversion_value",
+     "fb_event_type",
+     "fb_tracking_currency",
+     "field_name",
+     "formParent",
+     "multiForms",
+     "partner_id",
+     "postal_code",
+     "required",
+     "tabIndex",
+     "text",
+     "tiktok_conversion_value",
+     "tiktok_event_type",
+     "time_otp",
+     "type"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnGap",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "leftCenterXUnit",
+     "leftUnit",
+     "maxWidth",
+     "maxWidthUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "rows",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "autoGetInfoCustomer",
+     "custom_class",
+     "custom_css",
+     "event_name_custom",
+     "fb_event_type",
+     "icon_color",
+     "required",
+     "tiktok_event_type",
+     "type"
+    ]
+   },
    "relations": {
     "provides": [
      "form_element",
@@ -2743,6 +4385,16 @@
     "CSS.STATIC.build_gallery",
     "HTML.build_gallery"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "autoplay",
+     "infinity",
+     "media"
+    ]
+   },
    "config": {
     "arrowHeight": {
      "default": 40
@@ -2851,6 +4503,64 @@
      "default": "contain"
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "arrowHeight",
+     "arrowWidth",
+     "arrowX",
+     "barHeight",
+     "barWidth",
+     "barWidthUnit",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "distanceAmong",
+     "distanceToGallery",
+     "heightUnit",
+     "image_ratio",
+     "img_object_fit",
+     "isHidden",
+     "navColor",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "showNavigation",
+     "showPaginate",
+     "thumbnailHeight",
+     "thumbnailPosition",
+     "thumbnailWidth",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "arrowColor",
+     "autoplay",
+     "autoplay_time",
+     "custom_class",
+     "infinity",
+     "media",
+     "showNavigation",
+     "thumbnailPosition",
+     "zoom_type"
+    ]
+   },
    "specials": {
     "arrowColor": {
      "default": "#FFFFFF"
@@ -2880,7 +4590,55 @@
     "CSS.STATIC.build_google_map",
     "HTML.build_googlemap"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "https",
+     "type"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "leftUnit",
+     "maxHeight",
+     "maxHeightUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "https",
+     "iframe",
+     "type"
+    ]
+   },
    "specials": {
     "https": {},
     "iframe": {},
@@ -2898,6 +4656,12 @@
     "CSS.STATIC.build_grid_blog",
     "HTML.Elements.GridBlog.build"
    ],
+   "client": {
+    "config": [],
+    "specials": [
+     "order"
+    ]
+   },
    "config": {
     "backgroundItem": {
      "default": "rgba(255, 255, 255, 0)"
@@ -2983,6 +4747,33 @@
     },
     "sizeThumbnail": {}
    },
+   "mentions": {
+    "config": [
+     "blogBackgroundColor",
+     "blogBorder",
+     "blogBorderColor",
+     "blogBorderRadius",
+     "blogCategoryColor",
+     "blogCategoryFontSize",
+     "blogCategoryPaddingY",
+     "descriptionFontSize",
+     "descriptionPaddingY",
+     "gap_column",
+     "gap_row",
+     "imageBorderRadius",
+     "image_ratio",
+     "minimum_card_width",
+     "responsive",
+     "showBlogCategory",
+     "showDescription",
+     "showImage",
+     "sizeThumbnail"
+    ],
+    "specials": [
+     "order",
+     "showBlogs"
+    ]
+   },
    "specials": {
     "autoCatchTagIds": {},
     "isAutoCatchBlogCategoryByTag": {
@@ -3019,6 +4810,15 @@
     "CSS.STATIC.build_grid_category",
     "HTML.Element.build_grid_category"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "loaded"
+    ],
+    "specials": [
+     "type"
+    ]
+   },
    "config": {
     "borderEdges": {},
     "card_width_unit": {
@@ -3081,6 +4881,54 @@
     },
     "sizeThumbnail": {}
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "cardBackground",
+     "cardBorderRadius",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "gap_column",
+     "gap_row",
+     "heightUnit",
+     "imageBorderRadius",
+     "image_ratio",
+     "minimum_card_width",
+     "name_padding_y",
+     "on_hover",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "responsive",
+     "rowEnd",
+     "rowStart",
+     "sizeThumbnail",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "isAutoCatchMenuLevelFirst",
+     "showCategories",
+     "type"
+    ]
+   },
    "specials": {
     "isAutoCatchMenuLevelFirst": {
      "default": false
@@ -3096,6 +4944,27 @@
     "CSS.DYNAMIC.build_grid_product",
     "HTML.Element.build_grid_product"
    ],
+   "client": {
+    "config": [
+     "background",
+     "columns",
+     "loaded"
+    ],
+    "specials": [
+     "animate_load",
+     "category_id",
+     "disable_filter",
+     "disable_search",
+     "max_show_categories",
+     "plugins",
+     "promotion_id",
+     "scroll_more",
+     "scroll_to_element",
+     "scroll_type",
+     "tabIndex",
+     "type_view_more"
+    ]
+   },
    "config": {
     "activePaginationColor": {},
     "addToCartBackground": {},
@@ -3406,6 +5275,221 @@
      "default": 14
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "activePaginationColor",
+     "addToCartBackground",
+     "addToCartBackgroundHover",
+     "addToCartBorderColor",
+     "addToCartBorderRadius",
+     "addToCartBorderWidth",
+     "addToCartColor",
+     "addToCartColorHover",
+     "addToCartFont",
+     "addToCartFontSize",
+     "addToCartFontStyle",
+     "addToCartFontWeight",
+     "addToCartPaddingX",
+     "addToCartPaddingY",
+     "background",
+     "button_margin",
+     "cardBackground",
+     "cardBackgroundHover",
+     "cardBorderColor",
+     "cardBorderRadius",
+     "cardBorderWidth",
+     "cardBoxShadow",
+     "categoriesPaddingY",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "customRibbonStyle",
+     "discountBackground",
+     "discountColor",
+     "discountPaddingX",
+     "discountPaddingY",
+     "discountRadius",
+     "distanceLoadViewEvent",
+     "dividerBorderWidth",
+     "dividerWidth",
+     "gap_column",
+     "gap_row",
+     "heightUnit",
+     "hoverPaginationColor",
+     "image_border_radius",
+     "image_padding",
+     "image_placement",
+     "image_ratio",
+     "image_width",
+     "img_object_fit",
+     "isHidden",
+     "item_show",
+     "layout_advanced_grids",
+     "leftUnit",
+     "loadMoreBackground",
+     "loadMoreBorderRadius",
+     "loadMoreColor",
+     "loadMoreFont",
+     "loadMoreFontSize",
+     "loadMoreFontStyle",
+     "loadMoreFontWeight",
+     "maxWidth",
+     "maxWidthUnit",
+     "minLineProductName",
+     "minimum_card_width",
+     "nameLineClamp",
+     "origin_price_margin_x",
+     "paginationColor",
+     "paginationLocation",
+     "paginationSize",
+     "price_padding_x",
+     "price_padding_y",
+     "productCategoryColor",
+     "productCategoryFont",
+     "productCategoryFontSize",
+     "productCategoryFontStyle",
+     "productCategoryFontTheme",
+     "productCategoryFontWeight",
+     "productNameColor",
+     "productNameDecoration",
+     "productNameFont",
+     "productNameFontSize",
+     "productNameFontStyle",
+     "productNameFontTheme",
+     "productNameFontWeight",
+     "productNameHover",
+     "productNamePaddingY",
+     "productNameTextTransform",
+     "productOriginalPriceColor",
+     "productOriginalPriceFont",
+     "productOriginalPriceFontSize",
+     "productOriginalPriceFontStyle",
+     "productOriginalPriceFontTheme",
+     "productOriginalPriceFontWeight",
+     "productPriceColor",
+     "productPriceFont",
+     "productPriceFontSize",
+     "productPriceFontStyle",
+     "productPriceFontTheme",
+     "productPriceFontWeight",
+     "productPriceHover",
+     "productTotalSoldColor",
+     "productTotalSoldFontSize",
+     "productTotalSoldFontStyle",
+     "productWholesalePriceColor",
+     "productWholesalePriceFont",
+     "productWholesalePriceFontSize",
+     "productWholesalePriceFontWeight",
+     "product_image_direction",
+     "product_info_alignment",
+     "product_info_alignment_y",
+     "product_info_padding_x",
+     "product_info_padding_y",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "responsive",
+     "ribbonBackground",
+     "ribbonBorderRadius",
+     "ribbonBorderWidth",
+     "ribbonColor",
+     "ribbonDisplay",
+     "ribbonFont",
+     "ribbonFontSize",
+     "ribbonFontStyle",
+     "ribbonFontWeight",
+     "ribbonPadding",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "scoreColor",
+     "scoreFont",
+     "scoreFontSize",
+     "scoreFontStyle",
+     "scoreFontTheme",
+     "scoreFontWeight",
+     "sizeThumbnail",
+     "starColor",
+     "starColorActive",
+     "starSize",
+     "store_show_attribute_template_1",
+     "store_show_extra_info",
+     "store_show_product_gallery",
+     "store_show_sale_info",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "action_add_to_cart",
+     "action_attachment_add_to_cart",
+     "action_product_card",
+     "animate_load",
+     "auto_hide_without_star",
+     "category_id",
+     "custom_class",
+     "dateRange",
+     "disable_filter",
+     "disable_search",
+     "display_grid_product_init",
+     "filledStarIcon",
+     "filter_color_course_purchased",
+     "format_discount_on_price",
+     "is_scroll_to_top",
+     "load_rating",
+     "max_show_categories",
+     "on_hover",
+     "original_price_position",
+     "plugins",
+     "productNameTag",
+     "products_per_load",
+     "promotion_id",
+     "rating_number_type",
+     "scroll_more",
+     "scroll_to_element",
+     "scroll_type",
+     "show_button",
+     "show_button_on_hover",
+     "show_categories",
+     "show_detail_price",
+     "show_discount_on_price",
+     "show_divider",
+     "show_original_price",
+     "show_product_name",
+     "show_product_price",
+     "show_quantity",
+     "show_quick_view",
+     "show_rating",
+     "show_ribbon",
+     "show_text",
+     "show_total_sold",
+     "show_video_demo",
+     "show_wholesale_price",
+     "show_wholesale_quantity",
+     "store_show_attribute_template_1",
+     "textQuickBtn",
+     "text_load_more",
+     "typeLinkCategory",
+     "type_view_more",
+     "unfilledStarIcon",
+     "wholesale_price_position"
+    ]
+   },
    "relations": {
     "provides": [
      "product",
@@ -3609,7 +5693,58 @@
     "CSS.DYNAMIC.build_input",
     "HTML.Element.build_identity"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "field_name",
+     "required",
+     "validate"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelMarginBottom",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "field_name",
+     "label",
+     "placeholder",
+     "required",
+     "show_label",
+     "validate",
+     "validate_country"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -3641,6 +5776,22 @@
     "CSS.STATIC.build_image",
     "HTML.build_image"
    ],
+   "client": {
+    "config": [
+     "loaded",
+     "origin",
+     "position",
+     "src",
+     "undefined"
+    ],
+    "specials": [
+     "event_name_custom",
+     "ggc_mode",
+     "src",
+     "tabIndex",
+     "type"
+    ]
+   },
    "config": {
     "heightUnit": {
      "values": [
@@ -3649,6 +5800,61 @@
     },
     "ratio": {},
     "src": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "animation",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "fixedPosition",
+     "heightUnit",
+     "isHidden",
+     "leftCenterXUnit",
+     "leftUnit",
+     "maxWidth",
+     "maxWidthUnit",
+     "position",
+     "ratio",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relMaxWidth",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightCenterXUnit",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "rows",
+     "src",
+     "topCenterYUnit",
+     "topUnit",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "event_name_custom",
+     "ggc_mode",
+     "image_alt",
+     "src",
+     "type"
+    ]
    },
    "specials": {
     "chatgpt_event_type": {},
@@ -3678,10 +5884,60 @@
     "CSS.DYNAMIC.build_image_dataset",
     "HTML.Element.build_image_dataset"
    ],
+   "client": {
+    "config": [
+     "loaded",
+     "origin",
+     "ratio",
+     "src"
+    ],
+    "specials": [
+     "tabIndex"
+    ]
+   },
    "config": {
     "img_object_fit": {
      "default": "cover"
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "img_object_fit",
+     "isHidden",
+     "leftUnit",
+     "maxWidth",
+     "maxWidthUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css"
+    ]
    },
    "specials": {}
   },
@@ -3690,7 +5946,64 @@
     "CSS.DYNAMIC.build_input",
     "HTML.build_input"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "field_name",
+     "required",
+     "validate"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnGap",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelColor",
+     "labelMarginBottom",
+     "placeholder",
+     "placeholderColor",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "field_name",
+     "label",
+     "placeholder",
+     "required",
+     "show_label"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -3714,7 +6027,59 @@
     "CSS.DYNAMIC.build_input",
     "HTML.Element.build_input_date"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "field_name",
+     "placeholder",
+     "required",
+     "type"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelMarginBottom",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "field_connect_pos",
+     "field_name",
+     "label",
+     "placeholder",
+     "required",
+     "show_label",
+     "type"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -3760,6 +6125,15 @@
     "CSS.STATIC.build_input_file",
     "HTML.build_input_file"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "placeholder",
+     "required"
+    ]
+   },
    "config": {
     "backgroundInput": {
      "default": "#ffffff00"
@@ -3774,6 +6148,47 @@
     "textPadding": {
      "default": 15
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelMarginBottom",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "custom_class",
+     "field_name",
+     "isTransferImage",
+     "label",
+     "placeholder",
+     "required",
+     "show_label"
+    ]
    },
    "relations": {
     "parent": [
@@ -3799,7 +6214,55 @@
     "CSS.DYNAMIC.build_input",
     "HTML.build_input_number"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "field_name",
+     "required"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelMarginBottom",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "field_name",
+     "label",
+     "placeholder",
+     "required",
+     "show_label"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -3841,6 +6304,18 @@
     "CSS.STATIC.build_input_search",
     "HTML.build_input_search"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "isResetFilter",
+     "isSearchBlogCategory",
+     "isSearchInBlogPage",
+     "isSearchInCategoryPage",
+     "isSearchProductCategory"
+    ]
+   },
    "config": {
     "colorIconClear": {
      "default": "#00000073"
@@ -3926,6 +6401,82 @@
      "default": "left"
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "colorIconClear",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "iconAlign",
+     "iconClearPadding",
+     "iconColor",
+     "iconColorFocus",
+     "iconColorHover",
+     "iconPadding",
+     "iconSize",
+     "iconSizeClear",
+     "inputBackground",
+     "inputBackgroundFocus",
+     "inputBackgroundHover",
+     "inputBorderColor",
+     "inputBorderColorFocus",
+     "inputBorderColorHover",
+     "inputBorderRadius",
+     "inputBorderType",
+     "inputBorderTypeFocus",
+     "inputBorderTypeHover",
+     "inputBorderWidth",
+     "inputBorderWidthFocus",
+     "inputPadding",
+     "isHidden",
+     "leftUnit",
+     "maxWidth",
+     "maxWidthUnit",
+     "placeholderColor",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "textAlign",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "clearIcon",
+     "custom_class",
+     "default_search_page",
+     "iconPadding",
+     "inputPadding",
+     "isResetFilter",
+     "isSearchBlogCategory",
+     "isSearchInBlogPage",
+     "isSearchInCategoryPage",
+     "isSearchProductCategory",
+     "placeholder",
+     "searchIcon",
+     "showIcon",
+     "showModalSearch",
+     "view_keep_keywords"
+    ]
+   },
    "specials": {
     "clearIcon": {},
     "default_search_page": {
@@ -3971,6 +6522,18 @@
     "CSS.STATIC.build_language_menu",
     "HTML.Element.build_language_menu"
    ],
+   "client": {
+    "config": [
+     "background",
+     "color",
+     "display",
+     "font",
+     "loaded"
+    ],
+    "specials": [
+     "type"
+    ]
+   },
    "config": {
     "background": {},
     "backgroundDropdown": {
@@ -4020,6 +6583,62 @@
     "fontTheme": {},
     "fontWeight": {}
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "background",
+     "backgroundDropdown",
+     "backgroundHover",
+     "backgroundSelected",
+     "backgroundSeparator",
+     "borderColor",
+     "borderRadius",
+     "borderWidth",
+     "color",
+     "colorHover",
+     "colorSelected",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "display",
+     "dropdown_icon_size",
+     "flagSize",
+     "font",
+     "fontSize",
+     "fontStyle",
+     "fontWeight",
+     "heightUnit",
+     "isHidden",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "show_flag",
+     "type"
+    ]
+   },
    "specials": {
     "show_flag": {},
     "type": {
@@ -4035,9 +6654,54 @@
     "CSS.DYNAMIC.build_layout_dataset",
     "HTML.build_layout_dataset"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded",
+     "src"
+    ],
+    "specials": [
+     "src",
+     "tabIndex"
+    ]
+   },
    "config": {
     "columns": {},
     "rows": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "rows",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": []
    },
    "specials": {}
   },
@@ -4047,6 +6711,14 @@
     "CSS.STATIC.build_lesson_items",
     "HTML.Element.build_lesson_items"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -4059,6 +6731,38 @@
      "default": 0
     },
     "rows": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "rows",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": []
    },
    "specials": {
     "link": {
@@ -4074,6 +6778,12 @@
     "CSS.DYNAMIC.build_lesson_sidebar",
     "HTML.Element.build_lesson_sidebar"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "backgroundLesson": {
      "default": "#ffffff"
@@ -4114,6 +6824,49 @@
     "styleTextLesson": {},
     "styleTextModule": {}
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundLesson",
+     "backgroundModule",
+     "borderRadius",
+     "borderWidth",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "iconSize",
+     "paddingXLesson",
+     "paddingXModule",
+     "paddingYLesson",
+     "paddingYModule",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "styleTextLesson",
+     "styleTextModule",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "submit_status"
+    ]
+   },
    "specials": {
     "submit_status": {
      "default": "none",
@@ -4130,7 +6883,54 @@
     "CSS.STATIC.build_line",
     "HTML.build_line"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "tabIndex",
+     "type"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "isHidden",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "rows",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "type"
+    ]
+   },
    "specials": {
     "type": {
      "default": "horizontal",
@@ -4286,6 +7086,13 @@
     "CSS.DYNAMIC.build_list_lesson_droppable",
     "CSS.STATIC.build_list_lesson_droppable"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -4299,6 +7106,17 @@
     },
     "rows": {}
    },
+   "mentions": {
+    "config": [
+     "columns",
+     "heightUnit",
+     "relHeight",
+     "relWidth",
+     "rows",
+     "widthUnit"
+    ],
+    "specials": []
+   },
    "specials": {}
   },
   "list-ordered": {
@@ -4307,6 +7125,17 @@
     "CSS.STATIC.build_list_ordered",
     "HTML.build_list_ordered"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "is_scroll_to_top",
+     "items_per_load",
+     "tableItems",
+     "type_view_more"
+    ]
+   },
    "config": {
     "activePaginationColor": {
      "default": "#00C1A2"
@@ -4343,6 +7172,44 @@
     "paginationSize": {
      "default": 30
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "activePaginationColor",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "hoverPaginationColor",
+     "paginationSize",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "is_scroll_to_top",
+     "items_per_load",
+     "tableItems",
+     "type_view_more"
+    ]
    },
    "specials": {
     "is_scroll_to_top": {},
@@ -4388,6 +7255,12 @@
     "CSS.STATIC.build_masonry_review",
     "HTML.Element.build_masonry_review"
    ],
+   "client": {
+    "config": [],
+    "specials": [
+     "text"
+    ]
+   },
    "config": {
     "bodyColor": {
      "default": "rgba(0, 0, 0, 1)"
@@ -4426,6 +7299,12 @@
     "titleFontTheme": {},
     "titleFontWeight": {}
    },
+   "mentions": {
+    "config": [],
+    "specials": [
+     "reviews_pre_load"
+    ]
+   },
    "specials": {
     "reviews_pre_load": {
      "default": 20
@@ -4441,6 +7320,15 @@
     "CSS.STATIC.build_member_bar",
     "HTML.build_member_bar"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "showLoginOneTab",
+     "text"
+    ]
+   },
    "config": {
     "arrowSize": {
      "default": 24
@@ -4475,6 +7363,70 @@
     "show_text": {
      "default": false
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "arrowSize",
+     "avatarSize",
+     "bgLoginBar",
+     "borderColor",
+     "borderRadiusBar",
+     "borderWidthAvatar",
+     "borderWidthBar",
+     "colorIcon",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "isHidden",
+     "justifyBar",
+     "leftUnit",
+     "memberColorHover",
+     "paddingRightBar",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "show_icon",
+     "show_signup",
+     "show_text",
+     "textAlign",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "arrowShape",
+     "custom_class",
+     "event_type",
+     "layoutShow",
+     "loginPage",
+     "login_icon",
+     "login_popup",
+     "open_when_logged",
+     "register_popup",
+     "showLoginOneTab",
+     "signupPage",
+     "signup_icon",
+     "textLogin",
+     "textSignup"
+    ]
    },
    "specials": {
     "arrowShape": {
@@ -4529,6 +7481,16 @@
     "CSS.STATIC.build_member_drodown",
     "HTML.build_member_dropdown"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": [
+     "children"
+    ]
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -4552,6 +7514,22 @@
      ]
     }
    },
+   "mentions": {
+    "config": [
+     "columns",
+     "heightUnit",
+     "relHeight",
+     "relWidth",
+     "rowGap",
+     "rows",
+     "vhHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "children",
+     "dropdown_position"
+    ]
+   },
    "relations": {
     "parent": [
      "parent.specials.open_when_logged"
@@ -4572,6 +7550,20 @@
     "CSS.STATIC.build_menu",
     "HTML.build_menu"
    ],
+   "client": {
+    "config": [
+     "leftUnit",
+     "loaded"
+    ],
+    "specials": [
+     "isPostList",
+     "sync",
+     "tabIndex",
+     "text",
+     "type",
+     "url"
+    ]
+   },
    "config": {
     "arrowColor": {},
     "arrowSize": {},
@@ -4612,6 +7604,73 @@
     "showArrow": {},
     "textDecorationHover": {}
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "activeColor",
+     "activeLink",
+     "arrowColor",
+     "arrowSize",
+     "backgroundHover",
+     "borderActiveHover",
+     "borderColorHover",
+     "borderRadiusHover",
+     "borderRegular",
+     "borderStyleHover",
+     "borderWidthHover",
+     "colorHover",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "fontWeight",
+     "fontWeightHover",
+     "gapGrid",
+     "heightUnit",
+     "isHidden",
+     "justifyContent",
+     "leftUnit",
+     "mask",
+     "maxHeight",
+     "maxHeightUnit",
+     "maxWidth",
+     "maxWidthUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relMaxHeight",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowGrid",
+     "rowStart",
+     "showArrow",
+     "textDecorationHover",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "expandType",
+     "isPostList",
+     "shapeType",
+     "type",
+     "url"
+    ]
+   },
    "specials": {
     "anchorHeadings": {},
     "expandType": {
@@ -4644,7 +7703,22 @@
     "CSS.STATIC.build_menu_anchor_item",
     "HTML.build_menu_anchor_item"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "name"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [],
+    "specials": [
+     "anchor",
+     "name"
+    ]
+   },
    "specials": {
     "anchor": {
      "default": ""
@@ -4658,6 +7732,17 @@
     "CSS.STATIC.build_menu_droppable",
     "HTML.build_menu_droppable"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded",
+     "position"
+    ],
+    "specials": [
+     "text"
+    ]
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -4693,6 +7778,24 @@
      ]
     }
    },
+   "mentions": {
+    "config": [
+     "columns",
+     "heightUnit",
+     "position",
+     "relHeight",
+     "relWidth",
+     "rowGap",
+     "rows",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "effect",
+     "time_anim"
+    ]
+   },
    "specials": {
     "effect": {
      "default": "none",
@@ -4711,6 +7814,16 @@
     "CSS.STATIC.build_menu_item",
     "HTML.build_menu_item"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "link",
+     "name",
+     "type"
+    ]
+   },
    "config": {
     "leftUnit": {
      "default": "px"
@@ -4720,6 +7833,25 @@
     },
     "widthFixed": {},
     "widthScreen": {}
+   },
+   "mentions": {
+    "config": [
+     "animation"
+    ],
+    "specials": [
+     "categoryId",
+     "eventDefault",
+     "isCustom",
+     "link",
+     "linkBlogCategory",
+     "linkCategoryTarget",
+     "linkPageTarget",
+     "linkTarget",
+     "linkType",
+     "name",
+     "pageId",
+     "type"
+    ]
    },
    "relations": {
     "parent": [
@@ -4774,6 +7906,13 @@
     "CSS.DYNAMIC.build_next_lesson_droppable",
     "CSS.STATIC.build_next_lesson_droppable"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -4786,6 +7925,26 @@
      "default": 0
     },
     "rows": {}
+   },
+   "mentions": {
+    "config": [
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "columns",
+     "constraintX",
+     "heightUnit",
+     "leftUnit",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relWidth",
+     "rows",
+     "widthUnit"
+    ],
+    "specials": []
    },
    "specials": {}
   },
@@ -4842,6 +8001,18 @@
     "CSS.STATIC.build_number_step",
     "HTML.Element.build_number_step"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "count",
+     "filter",
+     "maxValue",
+     "minValue",
+     "use_button_filter"
+    ]
+   },
    "config": {
     "active_background": {
      "default": "#ffffff"
@@ -4864,6 +8035,48 @@
     "text_input_color": {
      "default": "#000000"
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "buttons_in_row",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "inner_background",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "count",
+     "filter",
+     "maxValue",
+     "minValue",
+     "numberUnit",
+     "shortened",
+     "use_button_filter"
+    ]
    },
    "specials": {
     "count": {},
@@ -4893,6 +8106,21 @@
     "CSS.STATIC.build_order_history",
     "HTML.Element.build_order_history"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": [
+     "countdown_time",
+     "default_filter",
+     "is_scroll_to_top",
+     "items_per_load",
+     "tabIndex",
+     "type_view_more"
+    ]
+   },
    "config": {
     "activePaginationColor": {
      "default": "#00C1A2"
@@ -5186,6 +8414,117 @@
      "default": 8
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "activePaginationColor",
+     "cancelOrderBackground",
+     "cancelOrderBorderRadius",
+     "cancelOrderColor",
+     "cancelOrderFont",
+     "cancelOrderFontSize",
+     "cancelOrderFontStyle",
+     "cancelOrderFontWeight",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "countdownNumberFont",
+     "countdownTextColor",
+     "countdownTextFont",
+     "countdownTextFontSize",
+     "footerFontColor",
+     "footerFontFamily",
+     "footerFontSize",
+     "footerTotalPriceColor",
+     "footerTotalPriceFontFamily",
+     "footerTotalPriceFontTheme",
+     "footerTotalPriceSize",
+     "headerBg",
+     "headerFontColor",
+     "headerFontFamily",
+     "headerFontSize",
+     "headerOrderIDColor",
+     "headerOrderIDFontFamily",
+     "headerOrderIDSize",
+     "heightUnit",
+     "hoverPaginationColor",
+     "imagePadding",
+     "imageSize",
+     "image_border_radius",
+     "image_ratio",
+     "img_object_fit",
+     "itemBg",
+     "itemGap",
+     "itemPaddingX",
+     "itemPaddingY",
+     "loadMoreMargin",
+     "orderPendingPaymentBackground",
+     "orderPendingPaymentBorderRadius",
+     "orderPendingPaymentColor",
+     "orderPendingPaymentFont",
+     "orderPendingPaymentFontSize",
+     "paddingX",
+     "paginationColor",
+     "paymentOrderBackground",
+     "paymentOrderBorderRadius",
+     "paymentOrderColor",
+     "paymentOrderFont",
+     "paymentOrderFontSize",
+     "paymentOrderFontStyle",
+     "paymentOrderFontWeight",
+     "priceColor",
+     "priceFontFamily",
+     "priceFontSize",
+     "productNameClamp",
+     "productNameColor",
+     "productNameFontFamily",
+     "productNameFontSize",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "rows",
+     "showSeparatorA",
+     "showSeparatorB",
+     "show_cancel_order_button",
+     "show_footer",
+     "show_header",
+     "show_order_pending_payment",
+     "show_payment_order_button",
+     "show_variation",
+     "show_variation_detail",
+     "summaryBg",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "cancel_text",
+     "countdown_time",
+     "default_filter",
+     "is_scroll_to_top",
+     "item_attr_text",
+     "items_per_load",
+     "order_id_text",
+     "payment_text",
+     "total_price_text",
+     "type_view_more"
+    ]
+   },
    "specials": {
     "cancel_text": {
      "default": "Cancel Order"
@@ -5248,9 +8587,50 @@
     "CSS.STATIC.build_order_items",
     "HTML.build_order_items"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "columns": {},
     "rows": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "rows",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": []
    },
    "specials": {}
   },
@@ -5357,7 +8737,60 @@
     "CSS.DYNAMIC.build_input",
     "HTML.build_password"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "field_name",
+     "required",
+     "validate"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelMarginBottom",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "custom_class",
+     "field_name",
+     "label",
+     "placeholder",
+     "required",
+     "showHidePassword",
+     "show_label",
+     "validate",
+     "validate_password"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -5387,6 +8820,16 @@
     "CSS.STATIC.build_payment",
     "HTML.build_payment"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "custom_link_redirect",
+     "defaultValue",
+     "options"
+    ]
+   },
    "config": {
     "activeColor": {
      "default": "#2f5acf"
@@ -5403,6 +8846,51 @@
     "paddingItemY": {
      "default": 8
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "activeColor",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "gap",
+     "heightUnit",
+     "leftUnit",
+     "paddingItemX",
+     "paddingItemY",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_css",
+     "custom_link_redirect",
+     "defaultValue",
+     "icon_color",
+     "options",
+     "qrCodeImage",
+     "runNow",
+     "storecake_page_faild_id"
+    ]
    },
    "specials": {
     "custom_link_redirect": {
@@ -5446,7 +8934,67 @@
     "CSS.DYNAMIC.build_input",
     "HTML.build_phone_number"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "field_name",
+     "required",
+     "validate"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnGap",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "isHidden",
+     "labelColor",
+     "labelMarginBottom",
+     "placeholder",
+     "placeholderColor",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "field_name",
+     "label",
+     "placeholder",
+     "required",
+     "show_label",
+     "validate",
+     "validate_country"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -5527,6 +9075,16 @@
      "default": "px"
     }
    },
+   "mentions": {
+    "config": [
+     "popupHorizontalPosition",
+     "popupVerticalPosition"
+    ],
+    "specials": [
+     "effect",
+     "timeAnim"
+    ]
+   },
    "specials": {
     "countOpenPopup": {},
     "detachedProductPage": {},
@@ -5565,6 +9123,16 @@
     "CSS.DYNAMIC.build_post_list",
     "HTML.Element.build_post_list"
    ],
+   "client": {
+    "config": [
+     "layout",
+     "loaded"
+    ],
+    "specials": [
+     "category_id",
+     "tabIndex"
+    ]
+   },
    "config": {
     "background_area": {},
     "background_post": {
@@ -5756,6 +9324,126 @@
      "default": 0
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "background_area",
+     "background_post",
+     "button_align",
+     "cardBorderColor",
+     "cardBorderRadius",
+     "cardBorderWidth",
+     "categoriesPaddingY",
+     "categoryColor",
+     "categoryDescriptionColor",
+     "categoryDescriptionFont",
+     "categoryDescriptionFontSize",
+     "categoryDescriptionFontWeight",
+     "categoryDescriptionPaddingY",
+     "categoryFont",
+     "categoryFontSize",
+     "categoryFontWeight",
+     "categoryPosition",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "dateColor",
+     "dateFont",
+     "dateFontSize",
+     "dateFontStyle",
+     "dateFontWeight",
+     "datePaddingY",
+     "descriptionColor",
+     "descriptionFont",
+     "descriptionFontSize",
+     "descriptionFontStyle",
+     "descriptionFontWeight",
+     "descriptionPaddingY",
+     "expirationTimeColor",
+     "expirationTimeFont",
+     "expirationTimeFontSize",
+     "expirationTimePaddingY",
+     "heightUnit",
+     "imageBorderRadius",
+     "image_align",
+     "image_proportions",
+     "image_ratio",
+     "isHidden",
+     "layout",
+     "layout_advanced_grids",
+     "leftUnit",
+     "minimum_card_width",
+     "number_of_line_description",
+     "number_of_line_title",
+     "objectFit",
+     "post_info_alignment_y",
+     "posts_per_row",
+     "readButtonBackground",
+     "readButtonBorderRadius",
+     "readButtonColor",
+     "readButtonDecoration",
+     "readButtonFont",
+     "readButtonFontSize",
+     "readButtonFontStyle",
+     "readButtonFontWeight",
+     "readButtonHeight",
+     "readButtonWidth",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "responsive",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "showCategory",
+     "showCategoryDescription",
+     "showDescription",
+     "showExpirationTime",
+     "showImage",
+     "showPostTitle",
+     "showPublishDate",
+     "showReadButton",
+     "spacing_between_posts",
+     "text_align",
+     "text_padding",
+     "text_padding_y",
+     "titleColor",
+     "titleFont",
+     "titleFontSize",
+     "titleFontStyle",
+     "titleFontWeight",
+     "titlePaddingY",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "category_id",
+     "custom_class",
+     "numbers_posts_to_show",
+     "numbers_posts_to_show_per_page",
+     "on_hover",
+     "posts_display_by",
+     "readButtonText",
+     "tagCategory",
+     "tagDatePublished",
+     "tagDescription",
+     "tagTitle"
+    ]
+   },
    "specials": {
     "category_id": {
      "values": [
@@ -5811,6 +9499,16 @@
     "CSS.STATIC.build_post_overlay",
     "HTML.build_post_overlay"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": [
+     "type"
+    ]
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -5820,6 +9518,12 @@
      "default": 0
     }
    },
+   "mentions": {
+    "config": [
+     "columns"
+    ],
+    "specials": []
+   },
    "specials": {}
   },
   "postal-code": {
@@ -5827,7 +9531,58 @@
     "CSS.DYNAMIC.build_input",
     "HTML.build_postal_code"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "field_name",
+     "required",
+     "validate"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelMarginBottom",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "field_name",
+     "label",
+     "placeholder",
+     "postal_code",
+     "required",
+     "show_label",
+     "validate"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -5862,6 +9617,28 @@
     "CSS.DYNAMIC.build_product_gallery",
     "HTML.Element.build_product_gallery"
    ],
+   "client": {
+    "config": [
+     "column",
+     "is_pin_video",
+     "itemWidth",
+     "loaded",
+     "paginateCount",
+     "thumbnailHeight",
+     "thumbnailWidth"
+    ],
+    "specials": [
+     "auto_resize_height",
+     "autoplay",
+     "autoplay_video",
+     "image_preview_ratio",
+     "infinity",
+     "on_hover",
+     "scale_ratio",
+     "scrollbar_thumbnail",
+     "type_split_video"
+    ]
+   },
    "config": {
     "arrowHeight": {
      "default": 40
@@ -6040,6 +9817,96 @@
      "default": "contain"
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "arrowHeight",
+     "arrowPosition",
+     "arrowWidth",
+     "arrowX",
+     "barDotSize",
+     "barWidth",
+     "barWidthUnit",
+     "column",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "customRibbonStyle",
+     "distanceAmong",
+     "distanceToGallery",
+     "gap",
+     "gapBar",
+     "heightUnit",
+     "image_ratio",
+     "img_object_fit",
+     "isHidden",
+     "is_pin_video",
+     "itemWidth",
+     "leftUnit",
+     "max_show_items",
+     "navColor",
+     "navSecondaryColor",
+     "paginateCount",
+     "paginateMode",
+     "paginateRadius",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "ribbonBackground",
+     "ribbonBorderRadius",
+     "ribbonColor",
+     "ribbonDisplay",
+     "ribbonFont",
+     "ribbonFontWeight",
+     "ribbonPadding",
+     "rowEnd",
+     "rowStart",
+     "scrollDirection",
+     "showPaginate",
+     "sizeThumbnail",
+     "thumbnailHeight",
+     "thumbnailPosition",
+     "thumbnailWidth",
+     "thumbnailsDimension",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit",
+     "zoom_img_object_fit"
+    ],
+    "specials": [
+     "arrowColor",
+     "arrowIcon",
+     "auto_resize_height",
+     "autoplay",
+     "autoplay_time",
+     "autoplay_video",
+     "custom_class",
+     "image_preview_ratio",
+     "infinity",
+     "on_hover",
+     "scale_ratio",
+     "scrollbar_thumbnail",
+     "showNavigation",
+     "show_ribbon",
+     "thumbnailPosition",
+     "type_split_video",
+     "use_image_in_front_video",
+     "zoom_type"
+    ]
+   },
    "specials": {
     "arrowColor": {
      "default": "#FFFFFF"
@@ -6138,6 +10005,16 @@
     "CSS.STATIC.build_product_overlay",
     "HTML.build_product_overlay"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": [
+     "type"
+    ]
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -6146,6 +10023,15 @@
     "rowGap": {
      "default": 0
     }
+   },
+   "mentions": {
+    "config": [
+     "columns"
+    ],
+    "specials": [
+     "custom_class",
+     "type"
+    ]
    },
    "specials": {
     "type": {
@@ -6162,6 +10048,19 @@
     "CSS.STATIC.build_product_review",
     "HTML.Element.build_product_review"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "layout",
+     "reviews_per_page",
+     "show_avatar",
+     "show_publish_date",
+     "tabIndex",
+     "title"
+    ]
+   },
    "config": {
     "areaBackground": {},
     "areaBorderColor": {},
@@ -6312,6 +10211,160 @@
     "voteFontTheme": {},
     "voteFontWeight": {}
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "areaBackground",
+     "areaBorderColor",
+     "areaBorderRadius",
+     "areaBorderWidth",
+     "bars_active_color",
+     "bars_border_radius",
+     "bars_color",
+     "bodyColor",
+     "bodyFont",
+     "bodyFontSize",
+     "bodyFontStyle",
+     "bodyFontTheme",
+     "bodyFontWeight",
+     "buttonBackground",
+     "buttonBorderRadius",
+     "buttonColor",
+     "buttonFont",
+     "buttonFontSize",
+     "buttonFontStyle",
+     "buttonFontTheme",
+     "buttonFontWeight",
+     "buttonUploadColor",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "errorColor",
+     "filled_star_color",
+     "filterBtnColor",
+     "filterBtnFont",
+     "filterBtnFontSize",
+     "filterBtnFontStyle",
+     "filterBtnFontTheme",
+     "filterBtnFontWeight",
+     "filterColor",
+     "filterFont",
+     "filterFontSize",
+     "filterFontStyle",
+     "filterFontTheme",
+     "filterFontWeight",
+     "filterSelectedColor",
+     "formBackground",
+     "formBorderColor",
+     "formBorderRadius",
+     "formBorderWidth",
+     "formStarHoverColor",
+     "form_star_color",
+     "headingColor",
+     "headingDecoration",
+     "headingFont",
+     "headingFontSize",
+     "headingFontStyle",
+     "headingFontTheme",
+     "headingFontWeight",
+     "heightUnit",
+     "inputBackground",
+     "inputBorderColor",
+     "inputBorderRadius",
+     "inputBorderWidth",
+     "inputColor",
+     "inputFont",
+     "inputFontSize",
+     "inputFontStyle",
+     "inputFontTheme",
+     "inputFontWeight",
+     "inputHoverBackground",
+     "inputHoverBorderColor",
+     "inputHoverColor",
+     "isHidden",
+     "labelColor",
+     "labelFont",
+     "labelFontSize",
+     "labelFontStyle",
+     "labelFontTheme",
+     "labelFontWeight",
+     "leftUnit",
+     "loadingColor",
+     "paddingY",
+     "paginationSelectedColor",
+     "publishColor",
+     "publishFont",
+     "publishFontSize",
+     "publishFontStyle",
+     "publishFontTheme",
+     "publishFontWeight",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "reviewButtonBackground",
+     "reviewButtonBorderColor",
+     "reviewButtonBorderRadius",
+     "reviewButtonBorderWidth",
+     "reviewButtonColor",
+     "reviewButtonFont",
+     "reviewButtonFontSize",
+     "reviewButtonFontStyle",
+     "reviewButtonFontTheme",
+     "reviewButtonFontWeight",
+     "reviewButtonHoverBackground",
+     "reviewButtonHoverBorderColor",
+     "reviewButtonHoverColor",
+     "reviewListDividerBorderColor",
+     "reviewListFilledStar",
+     "reviewListStarSize",
+     "reviewListUnfilledStar",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "sidePadding",
+     "star_size",
+     "titleColor",
+     "titleFont",
+     "titleFontSize",
+     "titleFontStyle",
+     "titleFontTheme",
+     "titleFontWeight",
+     "unfilled_star_color",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "avatar_border_color",
+     "avatar_border_radius",
+     "avatar_border_size",
+     "avatar_size",
+     "custom_class",
+     "layout",
+     "require_email",
+     "require_phone_number",
+     "reviews_per_page",
+     "show_avatar",
+     "show_filter",
+     "show_heading",
+     "show_publish_date",
+     "show_rating_breakdown",
+     "title"
+    ]
+   },
    "specials": {
     "avatar_border_color": {
      "default": "#000"
@@ -6361,6 +10414,18 @@
     "CSS.DYNAMIC.build_promotions",
     "HTML.Element.build_promotion"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "direction",
+     "grid",
+     "loaded"
+    ],
+    "specials": [
+     "getBy",
+     "tabIndex"
+    ]
+   },
    "config": {
     "columns": {},
     "direction": {
@@ -6394,6 +10459,46 @@
      ]
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "direction",
+     "heightUnit",
+     "leftUnit",
+     "promotionCount",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "rows",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "displayPromotions",
+     "getBy"
+    ]
+   },
    "specials": {
     "displayPromotions": {},
     "getBy": {
@@ -6410,6 +10515,15 @@
     "CSS.STATIC.build_promotions_short",
     "HTML.Element.build_promotions_short"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "direction",
+     "grid",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "axis": {},
     "direction": {
@@ -6440,6 +10554,49 @@
      "default": false
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "axis",
+     "borderRadius",
+     "borderWidth",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "direction",
+     "heightUnit",
+     "paddingX",
+     "paddingY",
+     "promotionBorderColor",
+     "promotionDotColor",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "showArrow",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "displayPromotions"
+    ]
+   },
    "specials": {
     "displayPromotions": {},
     "getBy": {
@@ -6466,6 +10623,15 @@
     "CSS.STATIC.build_quantity_input",
     "HTML.build_quantity_input"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "max",
+     "min"
+    ]
+   },
    "config": {
     "borderEdges": {},
     "borderEdgesDec": {},
@@ -6478,6 +10644,54 @@
     "iconWidthInc": {
      "default": 9.3
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "borderEdges",
+     "borderEdgesDec",
+     "borderEdgesInc",
+     "btnDecrease",
+     "btnIncrease",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "iconWidthDec",
+     "iconWidthInc",
+     "isHidden",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "max",
+     "min",
+     "showLeftBtn",
+     "showRightBtn",
+     "spinner"
+    ]
    },
    "specials": {
     "minusText": {},
@@ -6540,6 +10754,18 @@
     "CSS.STATIC.build_radio",
     "HTML.build_radio"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "defaultValue",
+     "field_name",
+     "isRetrieve",
+     "options",
+     "required"
+    ]
+   },
    "config": {
     "backgroundInput": {
      "default": "#ffffff00"
@@ -6596,6 +10822,56 @@
      "default": 200
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "column",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "gap",
+     "heightUnit",
+     "isStyleInputChecked",
+     "leftUnit",
+     "optionBorderColor",
+     "optionBorderRadius",
+     "optionBorderStyle",
+     "optionBorderWidth",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "sizeInput",
+     "textPadding",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "defaultValue",
+     "field_name",
+     "form_type",
+     "icon_color",
+     "isRetrieve",
+     "options",
+     "required"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -6629,6 +10905,16 @@
     "CSS.STATIC.build_radio_group",
     "HTML.build_radio_group"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "count",
+     "filter_elements",
+     "options"
+    ]
+   },
    "config": {
     "borderRadiusInput": {
      "default": 0
@@ -6645,6 +10931,49 @@
     "spaceButtonText": {
      "default": 16
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "column",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "leftUnit",
+     "radioButtonSize",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "spaceButtonText",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "filter_elements",
+     "icon_color",
+     "is_attribute_by_category",
+     "is_auto_child_categories",
+     "options",
+     "use_button_filter"
+    ]
    },
    "specials": {
     "auto_category_type": {
@@ -6706,6 +11035,14 @@
     "CSS.STATIC.build_rating_input",
     "HTML.Element.build_rating_input"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "tabIndex"
+    ]
+   },
    "config": {
     "activeStarColor": {
      "default": "#FCD53F"
@@ -6716,6 +11053,45 @@
     "inactiveStarColor": {
      "default": "#808080"
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "activeStarColor",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "gap",
+     "heightUnit",
+     "inactiveStarColor",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "activeStarIcon",
+     "auto_hide_without_star",
+     "inactiveStarIcon"
+    ]
    },
    "relations": {
     "reads": [
@@ -6739,6 +11115,15 @@
     "CSS.DYNAMIC.build_rectangle",
     "HTML.build_rectangle"
    ],
+   "client": {
+    "config": [
+     "loaded",
+     "position"
+    ],
+    "specials": [
+     "tabIndex"
+    ]
+   },
    "config": {
     "borderEdges": {},
     "custom_mask": {
@@ -6756,6 +11141,56 @@
       ""
      ]
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "animation",
+     "borderEdges",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "custom_mask",
+     "fixedBottom",
+     "fixedLeft",
+     "fixedPosition",
+     "heightUnit",
+     "isHidden",
+     "leftCenterXUnit",
+     "leftUnit",
+     "mask",
+     "position",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightCenterXUnit",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "stickyBottom",
+     "stickyPosition",
+     "topUnit",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css"
+    ]
    },
    "specials": {
     "chatgpt_event_type": {},
@@ -6825,7 +11260,58 @@
     "CSS.DYNAMIC.build_input",
     "HTML.build_retype_password"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "field_name",
+     "required",
+     "validate"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelMarginBottom",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "custom_class",
+     "field_name",
+     "label",
+     "placeholder",
+     "required",
+     "showHidePassword",
+     "show_label"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -6877,6 +11363,18 @@
     "HTML.Element.build_reward_point"
    ],
    "config": {},
+   "mentions": {
+    "config": [
+     "backgroundInput",
+     "labelMarginBottom",
+     "textPadding"
+    ],
+    "specials": [
+     "label",
+     "placeholder",
+     "show_label"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -6902,6 +11400,14 @@
     "CSS.STATIC.build_search_droppable",
     "HTML.build_search_droppable"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -6955,6 +11461,27 @@
      ]
     }
    },
+   "mentions": {
+    "config": [
+     "columns",
+     "droppable_position",
+     "heightUnit",
+     "leftUnit",
+     "relHeight",
+     "relLeft",
+     "relTop",
+     "relWidth",
+     "rows",
+     "topUnit",
+     "use_overlay",
+     "vhHeight",
+     "vwHeight",
+     "vwWidth",
+     "widthScreen",
+     "widthUnit"
+    ],
+    "specials": []
+   },
    "specials": {}
   },
   "search-form": {
@@ -6962,7 +11489,55 @@
     "CSS.DYNAMIC.build_input",
     "HTML.build_input"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "field_name",
+     "required"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelMarginBottom",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "field_name",
+     "label",
+     "placeholder",
+     "required",
+     "show_label"
+    ]
+   },
    "relations": {
     "parent": [
      "form.config",
@@ -6987,6 +11562,23 @@
     "CSS.STATIC.build_section",
     "HTML.build_section"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded",
+     "position",
+     "type",
+     "undefined"
+    ],
+    "specials": [
+     "global",
+     "layout",
+     "max",
+     "tabs",
+     "text"
+    ]
+   },
    "config": {
     "apply_pattern_overlay": {},
     "columnGap": {
@@ -7045,6 +11637,36 @@
     "useStickyLayoutOther": {},
     "video_background": {}
    },
+   "mentions": {
+    "config": [
+     "apply_pattern_overlay",
+     "columnGap",
+     "columns",
+     "heightUnit",
+     "isHidden",
+     "pattern_overlay",
+     "pinnedPoint",
+     "position",
+     "relHeight",
+     "rowGap",
+     "rows",
+     "showShadowWhenSticky",
+     "stickyBottom",
+     "stickyPosition",
+     "stickyTop",
+     "unpinnedPoint",
+     "useStickyLayoutOther",
+     "vhHeight",
+     "video_background",
+     "vwHeight"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "layout",
+     "max"
+    ]
+   },
    "relations": {
     "provides": [
      "section_id"
@@ -7063,6 +11685,18 @@
     "CSS.STATIC.build_select",
     "HTML.build_select"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "defaultValue",
+     "field_name",
+     "isRetrieve",
+     "options",
+     "required"
+    ]
+   },
    "config": {
     "arrowColor": {
      "default": "#000"
@@ -7079,6 +11713,49 @@
     "textPadding": {
      "default": 15
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "arrowColor",
+     "backgroundInput",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "datagrid_id",
+     "defaultValue",
+     "field_name",
+     "field_type",
+     "form_type",
+     "isRetrieve",
+     "options",
+     "placeholder",
+     "required"
+    ]
    },
    "relations": {
     "parent": [
@@ -7119,6 +11796,14 @@
     "CSS.DYNAMIC.build_slide",
     "CSS.STATIC.build_slide"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -7128,6 +11813,14 @@
      "default": 0
     },
     "rows": {}
+   },
+   "mentions": {
+    "config": [
+     "columns",
+     "rowGap",
+     "rows"
+    ],
+    "specials": []
    },
    "specials": {}
   },
@@ -7295,6 +11988,13 @@
     "CSS.STATIC.build_grid_category",
     "HTML.Element.build_slider_category"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "arrowBorderColor": {
      "default": "rgba(0, 0, 0, 0.2)"
@@ -7389,6 +12089,63 @@
      "default": "px"
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "arrowBorderWidth",
+     "arrowColor",
+     "arrowX",
+     "cardBackground",
+     "cardBorderRadius",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "gap_column",
+     "gap_image_title",
+     "heightUnit",
+     "imageBorderRadius",
+     "image_placement",
+     "image_ratio",
+     "image_width",
+     "img_object_fit",
+     "minimum_card_width",
+     "name_padding_y",
+     "navIconSize",
+     "navSize",
+     "on_hover",
+     "padding_inner",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "responsive",
+     "reverse_image_title",
+     "rowEnd",
+     "rowStart",
+     "sizeThumbnail",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "custom_class",
+     "isAutoCatchMenuLevelFirst",
+     "isDisabelCategoryAll",
+     "showCategories"
+    ]
+   },
    "specials": {
     "arrow_icon": {
      "default": ""
@@ -7410,6 +12167,15 @@
     "CSS.DYNAMIC.build_slider_post",
     "HTML.Element.build_slider_post"
    ],
+   "client": {
+    "config": [
+     "layout",
+     "loaded"
+    ],
+    "specials": [
+     "category_id"
+    ]
+   },
    "config": {
     "arrowBorderColor": {
      "default": "rgba(0, 0, 0, 0)"
@@ -7633,6 +12399,125 @@
      "default": "px"
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "arrowBorderColor",
+     "arrowBorderWidth",
+     "arrowColor",
+     "arrowX",
+     "background_area",
+     "background_post",
+     "button_align",
+     "cardBorderColor",
+     "cardBorderRadius",
+     "cardBorderWidth",
+     "categoriesPaddingY",
+     "categoryColor",
+     "categoryDescriptionColor",
+     "categoryDescriptionFont",
+     "categoryDescriptionFontSize",
+     "categoryDescriptionFontStyle",
+     "categoryDescriptionFontWeight",
+     "categoryDescriptionPaddingY",
+     "categoryFont",
+     "categoryFontSize",
+     "categoryFontStyle",
+     "categoryFontWeight",
+     "categoryPosition",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "dateColor",
+     "dateFont",
+     "dateFontSize",
+     "dateFontStyle",
+     "dateFontWeight",
+     "datePaddingY",
+     "descriptionColor",
+     "descriptionFont",
+     "descriptionFontSize",
+     "descriptionFontStyle",
+     "descriptionFontWeight",
+     "descriptionPaddingY",
+     "expirationTimeFont",
+     "expirationTimeFontSize",
+     "expirationTimePaddingY",
+     "heightUnit",
+     "imageBorderRadius",
+     "image_align",
+     "image_proportions",
+     "image_ratio",
+     "isHidden",
+     "layout",
+     "leftUnit",
+     "navIconSize",
+     "navSize",
+     "number_of_line_description",
+     "number_of_line_title",
+     "post_info_alignment_y",
+     "posts_per_row",
+     "readButtonBackground",
+     "readButtonBorderRadius",
+     "readButtonColor",
+     "readButtonDecoration",
+     "readButtonFont",
+     "readButtonFontSize",
+     "readButtonFontStyle",
+     "readButtonFontWeight",
+     "readButtonHeight",
+     "readButtonWidth",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "responsive",
+     "rowEnd",
+     "rowStart",
+     "showCategory",
+     "showCategoryDescription",
+     "showDescription",
+     "showExpirationTime",
+     "showImage",
+     "showPostTitle",
+     "showPublishDate",
+     "showReadButton",
+     "spacing_between_posts",
+     "text_align",
+     "text_padding",
+     "text_padding_y",
+     "titleColor",
+     "titleFont",
+     "titleFontSize",
+     "titleFontStyle",
+     "titleFontWeight",
+     "titlePaddingY",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "arrow_icon",
+     "category_id",
+     "custom_class",
+     "custom_css",
+     "numbers_posts_to_show",
+     "on_hover",
+     "readButtonText"
+    ]
+   },
    "specials": {
     "arrow_icon": {
      "default": ""
@@ -7680,6 +12565,27 @@
     "CSS.DYNAMIC.build_slider_product",
     "HTML.Element.build_slider_product"
    ],
+   "client": {
+    "config": [
+     "background",
+     "columns",
+     "loaded",
+     "maxWidth"
+    ],
+    "specials": [
+     "autoplay",
+     "autoplay_step",
+     "autoplay_time",
+     "category_id",
+     "disable_filter",
+     "disable_search",
+     "fb_event_type",
+     "max_show_categories",
+     "plugins",
+     "promotion_id",
+     "tabIndex"
+    ]
+   },
    "config": {
     "activePaginationColor": {},
     "addToCartBackground": {},
@@ -8023,6 +12929,208 @@
      "default": "px"
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "addToCartBackground",
+     "addToCartBackgroundHover",
+     "addToCartBorderColor",
+     "addToCartBorderRadius",
+     "addToCartBorderWidth",
+     "addToCartColor",
+     "addToCartColorHover",
+     "addToCartFont",
+     "addToCartFontSize",
+     "addToCartFontStyle",
+     "addToCartFontWeight",
+     "addToCartPaddingX",
+     "addToCartPaddingY",
+     "addToCartTextAlign",
+     "arrowBorderColor",
+     "arrowBorderWidth",
+     "arrowColor",
+     "arrowPosition",
+     "arrowX",
+     "background",
+     "button_margin",
+     "cardBackground",
+     "cardBackgroundHover",
+     "cardBorderColor",
+     "cardBorderRadius",
+     "cardBorderWidth",
+     "cardBoxShadow",
+     "categoriesPaddingY",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "customRibbonStyle",
+     "discountBackground",
+     "discountColor",
+     "discountPaddingX",
+     "discountRadius",
+     "display_row",
+     "dividerBorderColor",
+     "dividerBorderWidth",
+     "dividerWidth",
+     "gap_column",
+     "gap_row",
+     "heightUnit",
+     "image_border_radius",
+     "image_padding",
+     "image_placement",
+     "image_ratio",
+     "image_width",
+     "img_object_fit",
+     "isHidden",
+     "item_show",
+     "leftCenterXUnit",
+     "leftUnit",
+     "maxWidth",
+     "maxWidthUnit",
+     "minLineProductName",
+     "minimum_card_width",
+     "nameLineClamp",
+     "navIconSize",
+     "navSize",
+     "origin_price_margin_x",
+     "price_padding_x",
+     "price_padding_y",
+     "productCategoryColor",
+     "productCategoryFont",
+     "productCategoryFontSize",
+     "productCategoryFontStyle",
+     "productCategoryFontTheme",
+     "productCategoryFontWeight",
+     "productNameColor",
+     "productNameDecoration",
+     "productNameFont",
+     "productNameFontSize",
+     "productNameFontStyle",
+     "productNameFontTheme",
+     "productNameFontWeight",
+     "productNameHover",
+     "productNamePaddingY",
+     "productNameTextTransform",
+     "productOriginalPriceColor",
+     "productOriginalPriceFont",
+     "productOriginalPriceFontSize",
+     "productOriginalPriceFontStyle",
+     "productOriginalPriceFontTheme",
+     "productOriginalPriceFontWeight",
+     "productPriceColor",
+     "productPriceFont",
+     "productPriceFontSize",
+     "productPriceFontStyle",
+     "productPriceFontTheme",
+     "productPriceFontWeight",
+     "productPriceHover",
+     "productTotalSoldColor",
+     "productTotalSoldFont",
+     "productTotalSoldFontSize",
+     "product_info_alignment",
+     "product_info_alignment_y",
+     "product_info_padding_x",
+     "product_info_padding_y",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "responsive",
+     "ribbonBackground",
+     "ribbonBorderRadius",
+     "ribbonBorderWidth",
+     "ribbonColor",
+     "ribbonDisplay",
+     "ribbonFont",
+     "ribbonFontSize",
+     "ribbonFontStyle",
+     "ribbonFontWeight",
+     "ribbonPadding",
+     "rowEnd",
+     "rowStart",
+     "scoreColor",
+     "scoreFont",
+     "scoreFontSize",
+     "scoreFontStyle",
+     "scoreFontTheme",
+     "scoreFontWeight",
+     "sizeThumbnail",
+     "starColor",
+     "starColorActive",
+     "starSize",
+     "store_show_attribute_template_1",
+     "store_show_extra_info",
+     "store_show_product_gallery",
+     "store_show_sale_info",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "action_add_to_cart",
+     "action_attachment_add_to_cart",
+     "action_product_card",
+     "arrow_icon",
+     "auto_hide_without_star",
+     "autoplay",
+     "category_id",
+     "custom_class",
+     "custom_css",
+     "dateRange",
+     "disable_filter",
+     "disable_search",
+     "filledStarIcon",
+     "filter_color_course_purchased",
+     "load_rating",
+     "max_show_categories",
+     "on_hover",
+     "original_price_position",
+     "plugins",
+     "productNameTag",
+     "productOriginalPriceTag",
+     "products_per_load",
+     "promotion_id",
+     "rating_number_type",
+     "show_button",
+     "show_button_on_hover",
+     "show_categories",
+     "show_detail_price",
+     "show_discount_on_price",
+     "show_divider",
+     "show_nav_on_hover",
+     "show_navigation",
+     "show_original_price",
+     "show_product_name",
+     "show_product_price",
+     "show_quantity",
+     "show_quick_view",
+     "show_rating",
+     "show_ribbon",
+     "show_text",
+     "show_total_sold",
+     "show_video_demo",
+     "show_wholesale_price",
+     "show_wholesale_quantity",
+     "store_show_attribute_template_1",
+     "textQuickBtn",
+     "typeLinkCategory",
+     "unfilledStarIcon",
+     "wholesale_price_position"
+    ]
+   },
    "relations": {
     "provides": [
      "product",
@@ -8185,6 +13293,18 @@
     "CSS.STATIC.build_submenu",
     "HTML.build_submenu"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded",
+     "position"
+    ],
+    "specials": [
+     "children",
+     "type"
+    ]
+   },
    "config": {
     "columnGap": {
      "default": 0
@@ -8232,6 +13352,32 @@
      ]
     }
    },
+   "mentions": {
+    "config": [
+     "columnGap",
+     "columns",
+     "heightUnit",
+     "leftUnit",
+     "relHeight",
+     "relLeft",
+     "relWidth",
+     "rowGap",
+     "rows",
+     "vhHeight",
+     "vwHeight",
+     "vwWidth",
+     "widthFixed",
+     "widthScreen",
+     "widthUnit"
+    ],
+    "specials": [
+     "children",
+     "custom_class",
+     "custom_css",
+     "effect",
+     "timeAnim"
+    ]
+   },
    "specials": {
     "effect": {
      "default": "none",
@@ -8249,8 +13395,53 @@
     "CSS.DYNAMIC.build_button",
     "HTML.build_submit_button"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "text"
+    ]
+   },
    "config": {
     "borderEdges": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "borderEdges",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "text"
+    ]
    },
    "specials": {
     "text": {}
@@ -8262,6 +13453,25 @@
     "CSS.STATIC.build_swiper",
     "HTML.build_swiper"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "auto_hide_navigation",
+     "autoplay",
+     "autoplayDelay",
+     "blurry",
+     "direction",
+     "infinity",
+     "overflow",
+     "paginate",
+     "paginateBar",
+     "paginateEffect",
+     "transitionMode",
+     "transitionTime"
+    ]
+   },
    "config": {
     "barHeight": {
      "default": 1
@@ -8308,6 +13518,71 @@
     },
     "scale_overflow": {},
     "show_button": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "barHeight",
+     "barHeightUnit",
+     "barWidth",
+     "barWidthUnit",
+     "bulletSizeColumn",
+     "bulletSizeRow",
+     "bulletSizeUnit",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "fractionFontSize",
+     "gapBar",
+     "heightUnit",
+     "isHidden",
+     "navBackground",
+     "navBoxShadow",
+     "navColor",
+     "navSecondaryColor",
+     "navSize",
+     "paginateRadius",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "show_button",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "arrowIcon",
+     "auto_hide_navigation",
+     "autoplay",
+     "autoplayDelay",
+     "blurry",
+     "custom_class",
+     "custom_css",
+     "direction",
+     "infinity",
+     "overflow",
+     "paginate",
+     "paginateBar",
+     "paginateEffect",
+     "scale_overflow",
+     "transitionMode",
+     "transitionTime"
+    ]
    },
    "specials": {
     "arrowIcon": {},
@@ -8363,6 +13638,14 @@
     "CSS.STATIC.build_switch",
     "HTML.Element.build_switch"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "defaultValue"
+    ]
+   },
    "config": {
     "backgroundSlider": {
      "default": "#108B67"
@@ -8383,6 +13666,44 @@
      "default": 18
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundSlider",
+     "borderRadiusSlider",
+     "colorRound",
+     "colorSlider",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "defaultValue"
+    ]
+   },
    "specials": {
     "defaultValue": {
      "default": false
@@ -8394,7 +13715,55 @@
     "CSS.DYNAMIC.build_table",
     "HTML.Element.build_table"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "tabIndex"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "evenBackground",
+     "evenColor",
+     "heightUnit",
+     "leftUnit",
+     "oddBackground",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "showTitle",
+     "titleBackground",
+     "titleColor",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "datagrid_id"
+    ]
+   },
    "specials": {
     "datagrid_id": {}
    }
@@ -8405,6 +13774,19 @@
     "CSS.STATIC.build_tabs",
     "HTML.Element.build_tabs"
    ],
+   "client": {
+    "config": [
+     "activeIndex",
+     "columns",
+     "grid",
+     "loaded",
+     "type"
+    ],
+    "specials": [
+     "tabIndex",
+     "tabs"
+    ]
+   },
    "config": {
     "alignNav": {
      "default": "start"
@@ -8423,6 +13805,58 @@
      ]
     },
     "rows": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "alignNav",
+     "columnEnd",
+     "columnGap",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "isHidden",
+     "leftUnit",
+     "navPosition",
+     "nav_display_style",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "rows",
+     "type",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "hightlightIconSize",
+     "navMode",
+     "showBullet",
+     "showDivider",
+     "showNav",
+     "tabIndex",
+     "tabs"
+    ]
    },
    "specials": {
     "hightlightIconSize": {
@@ -8451,6 +13885,18 @@
     "CSS.DYNAMIC.build_tags",
     "HTML.Element.build_tags"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "count",
+     "filter_elements",
+     "options",
+     "selectionMode",
+     "tabIndex"
+    ]
+   },
    "config": {
     "gridRow": {
      "default": 2
@@ -8461,6 +13907,58 @@
       "flex"
      ]
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "gridRow",
+     "heightUnit",
+     "isHidden",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightCenterXUnit",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "tags_layout",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "auto_category_type",
+     "auto_option",
+     "custom_class",
+     "custom_css",
+     "filter_elements",
+     "is_attribute_by_category",
+     "is_auto_child_categories",
+     "keyword_suggestions",
+     "max_child_categories",
+     "options",
+     "selectionMode",
+     "sync_tab",
+     "use_button_filter",
+     "use_filter_or"
+    ]
    },
    "specials": {
     "auto_category_type": {
@@ -8522,6 +14020,18 @@
     "CSS.DYNAMIC.build_text",
     "HTML.build_text"
    ],
+   "client": {
+    "config": [
+     "loaded",
+     "position",
+     "undefined"
+    ],
+    "specials": [
+     "tabIndex",
+     "tag",
+     "text"
+    ]
+   },
    "config": {
     "bgAttrs": {},
     "hover_color": {},
@@ -8552,6 +14062,63 @@
     "textColor": {
      "default": ""
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "animation",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "isHidden",
+     "leftCenterXUnit",
+     "leftUnit",
+     "listStyleIcon",
+     "listStyleImage",
+     "markIconBackground",
+     "markerBottom",
+     "markerLeft",
+     "markerSize",
+     "markerTop",
+     "maxWidth",
+     "maxWidthUnit",
+     "position",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightCenterXUnit",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "rows",
+     "textColor",
+     "topUnit",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "marker",
+     "tag",
+     "text",
+     "text_animation_type"
+    ]
    },
    "specials": {
     "chatgpt_event_type": {},
@@ -8580,6 +14147,15 @@
     "CSS.DYNAMIC.build_text_area",
     "HTML.build_textarea"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "field_name",
+     "required"
+    ]
+   },
    "config": {
     "backgroundInput": {
      "default": "#ffffff00"
@@ -8595,6 +14171,53 @@
     "textPadding": {
      "default": 15
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "backgroundInput",
+     "columnEnd",
+     "columnGap",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "labelColor",
+     "labelMarginBottom",
+     "leftUnit",
+     "placeholderColor",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "textPadding",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "field_name",
+     "label",
+     "placeholder",
+     "required",
+     "show_label"
+    ]
    },
    "relations": {
     "parent": [
@@ -8615,6 +14238,17 @@
     "CSS.DYNAMIC.build_text",
     "HTML.Element.build_text_dataset"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "ggc_id",
+     "tabIndex",
+     "tag",
+     "text"
+    ]
+   },
    "config": {
     "bgAttrs": {},
     "hover_color": {},
@@ -8646,6 +14280,53 @@
      "default": ""
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "hover_color",
+     "isHidden",
+     "leftCenterXUnit",
+     "leftUnit",
+     "maxHeightUnit",
+     "maxWidth",
+     "maxWidthUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relMaxHeight",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "textColor",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "custom_css",
+     "ggc_id",
+     "tag",
+     "text"
+    ]
+   },
    "specials": {
     "marker": {
      "default": ""
@@ -8667,6 +14348,17 @@
     "CSS.STATIC.build_two_point_range",
     "HTML.build_two_point_range"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "filter",
+     "max",
+     "min",
+     "use_button_filter"
+    ]
+   },
    "config": {
     "dotColor": {
      "default": "#000000"
@@ -8689,6 +14381,51 @@
     "progressSize": {
      "default": 4
     }
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "dotColor",
+     "dotHeight",
+     "dotSize",
+     "dotWidth",
+     "heightUnit",
+     "leftUnit",
+     "progressBgColor",
+     "progressColor",
+     "progressSize",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "display_type",
+     "filter",
+     "max",
+     "min",
+     "use_button_filter"
+    ]
    },
    "specials": {
     "display_type": {
@@ -8718,6 +14455,14 @@
     "CSS.STATIC.build_user_point_log",
     "HTML.build_user_point_log"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "tabIndex"
+    ]
+   },
    "config": {
     "amountFontSize": {
      "default": 14
@@ -8768,6 +14513,55 @@
      "default": ""
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "datetimeColor",
+     "datetimeFont",
+     "datetimeFontSize",
+     "datetimeFontStyle",
+     "datetimeFontTheme",
+     "datetimeFontWeight",
+     "heightUnit",
+     "itemGap",
+     "noteColor",
+     "noteFont",
+     "noteFontSize",
+     "noteFontStyle",
+     "noteFontTheme",
+     "noteFontWeight",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "datetimeColor",
+     "itemGap",
+     "logPerPage",
+     "noteColor",
+     "pointText"
+    ]
+   },
    "specials": {
     "logPerPage": {
      "default": 6
@@ -8781,7 +14575,67 @@
     "CSS.STATIC.build_video",
     "HTML.build_video"
    ],
+   "client": {
+    "config": [
+     "loaded",
+     "origin",
+     "src"
+    ],
+    "specials": [
+     "autoplay",
+     "id",
+     "loop",
+     "showControl",
+     "src",
+     "thumbnail",
+     "type"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "isHidden",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "src",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "autoplay",
+     "custom_class",
+     "custom_css",
+     "id",
+     "loop",
+     "showControl",
+     "src",
+     "thumbnail",
+     "type"
+    ]
+   },
    "specials": {
     "autoplay": {},
     "id": {},
@@ -8803,7 +14657,50 @@
     "CSS.DYNAMIC.build_video_dataset",
     "HTML.Element.build_video_dataset"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "tabIndex"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": [
+     "autoRotateInMobile",
+     "custom_class",
+     "show_list_video_lesson",
+     "show_next_video_lesson"
+    ]
+   },
    "specials": {
     "aspectRatio": {},
     "autoRotateInMobile": {
@@ -8818,6 +14715,12 @@
     "CSS.DYNAMIC.build_warehouse",
     "HTML.Element.build_warehouse"
    ],
+   "client": {
+    "config": [],
+    "specials": [
+     "warehouses"
+    ]
+   },
    "config": {
     "activeColor": {
      "default": "#E6F9F6"
@@ -8830,6 +14733,16 @@
      "default": "#E6F9F6"
     },
     "rows": {}
+   },
+   "mentions": {
+    "config": [
+     "activeColor",
+     "distanceWarehouse",
+     "hoverColor"
+    ],
+    "specials": [
+     "warehouses"
+    ]
    },
    "specials": {
     "warehouses": {}
@@ -8848,6 +14761,14 @@
     "CSS.STATIC.build_wishlist",
     "HTML.build_wishlist"
    ],
+   "client": {
+    "config": [
+     "loaded"
+    ],
+    "specials": [
+     "svg"
+    ]
+   },
    "config": {
     "itemBackgroundColor": {},
     "itemCountBorderRadius": {
@@ -8872,6 +14793,49 @@
      "default": ""
     }
    },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "isHidden",
+     "itemBackgroundColor",
+     "itemCountBorderRadius",
+     "itemCountColor",
+     "itemCountFontFamily",
+     "itemCountFontSize",
+     "itemCountFontWeight",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rightUnit",
+     "rowEnd",
+     "rowStart",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": [
+     "custom_class",
+     "svg"
+    ]
+   },
    "specials": {
     "svg": {}
    }
@@ -8881,7 +14845,48 @@
     "CSS.DYNAMIC.build_wishlist_container",
     "HTML.build_wishlist_container"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "loaded"
+    ],
+    "specials": [
+     "tabIndex"
+    ]
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "rows",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": []
+   },
    "specials": {}
   },
   "wishlist-empty": {
@@ -8889,7 +14894,46 @@
     "CSS.DYNAMIC.build_wishlist_empty",
     "HTML.build_wishlist_empty"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {},
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowStart",
+     "rows",
+     "vhHeight",
+     "vwHeight"
+    ],
+    "specials": []
+   },
    "specials": {}
   },
   "wishlist-item": {
@@ -8897,9 +14941,53 @@
     "CSS.DYNAMIC.build_wishlist_item",
     "HTML.build_wishlist_item"
    ],
+   "client": {
+    "config": [
+     "columns",
+     "grid",
+     "loaded"
+    ],
+    "specials": []
+   },
    "config": {
     "columns": {},
     "rows": {}
+   },
+   "mentions": {
+    "config": [
+     "absBottom",
+     "absBottomCenterY",
+     "absLeftCenterX",
+     "absRight",
+     "absRightCenterX",
+     "absTopCenterY",
+     "columnEnd",
+     "columnGap",
+     "columnStart",
+     "columns",
+     "constraintX",
+     "constraintY",
+     "heightUnit",
+     "leftUnit",
+     "relBottom",
+     "relBottomCenterY",
+     "relHeight",
+     "relLeft",
+     "relLeftCenterX",
+     "relRight",
+     "relRightCenterX",
+     "relTop",
+     "relTopCenterY",
+     "relWidth",
+     "rowEnd",
+     "rowGap",
+     "rowStart",
+     "rows",
+     "vhHeight",
+     "vwHeight",
+     "widthUnit"
+    ],
+    "specials": []
    },
    "specials": {}
   }

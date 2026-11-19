@@ -79,7 +79,7 @@ for (const [type, roots] of Object.entries(dispatch)) {
       const key = `${mod}.${fn}`;
       if (seen.has(key)) continue;
       seen.set(key, [mod, fn]);
-      if (depth >= 2) continue;
+      if (depth >= 4) continue;
       for (const c of modules[mod].fns[fn].matchAll(CALL)) {
         const r = resolve(mod, c[1]);
         if (r && r[1] !== "build_element") next.push([...r, depth + 1]);
@@ -171,6 +171,33 @@ function relationsOf(fns) {
   return Object.keys(out).length ? out : undefined;
 }
 
+// Client side: the JS module(s) a type loads — assets/render/<type>.js, <type>-binding.js and the
+// x:init / x:now / modules names its builders emit — and which of the type's real keys they mention.
+const renderDir = path.join(API, "assets/render");
+const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+const jsText = {};
+const jsFor = (name) => {
+  if (name in jsText) return jsText[name];
+  const f = path.join(renderDir, `${name}.js`);
+  return (jsText[name] = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "");
+};
+const minedKeys = JSON.parse(fs.readFileSync("src/builder/element-keys.generated.json", "utf8"));
+function clientKeys(type, fns) {
+  const names = new Set([type, `${type}-binding`]);
+  for (const [m, f] of fns) {
+    const body = modules[m].fns[f];
+    for (const x of body.matchAll(/x:(?:init|now)="([A-Za-z]+)/g)) names.add(kebab(x[1]));
+    for (const x of body.matchAll(/MapSet\.put\(:([A-Za-z]+)/g)) names.add(kebab(x[1]));
+  }
+  // events.js / common.js run for every element (tracking specials reach the client through them).
+  const src = [...names, "events", "common"].map(jsFor).join("\n");
+  if (!src) return undefined;
+  const tokens = new Set(src.match(/[A-Za-z_][\w]*/g) || []);
+  const out = { specials: [], config: [] };
+  for (const b of ["specials", "config"]) for (const k of minedKeys[type]?.[b] || []) if (tokens.has(k)) out[b].push(k);
+  return out.specials.length || out.config.length ? out : undefined;
+}
+
 const types = {};
 const shared = { specials: {}, config: {} };
 for (const [type, fns] of Object.entries(reach)) {
@@ -180,6 +207,15 @@ for (const [type, fns] of Object.entries(reach)) {
     merge(fanIn[`${m}.${f}`] > GENERIC ? shared : t, keys);
   }
   // Relations: only the type's own builders + helpers few types share (not common plumbing).
+  const client = clientKeys(type, fns);
+  if (client) t.client = client;
+  // Every real key of the type that its render code names as a string literal anywhere in what it
+  // calls (shared helpers included): reads through a key list / variable count as reads.
+  const own = new Set();
+  for (const [m, f] of fns) for (const x of modules[m].fns[f].matchAll(/"([A-Za-z_][\w-]*)"/g)) own.add(x[1]);
+  const mentions = { specials: [], config: [] };
+  for (const b of ["specials", "config"]) for (const k of minedKeys[type]?.[b] || []) if (own.has(k)) mentions[b].push(k);
+  if (mentions.specials.length || mentions.config.length) t.mentions = mentions;
   const rel = relationsOf(fns.filter(([m, f]) => fanIn[`${m}.${f}`] <= 40)); // build_input serves ~20 field types
   if (rel) t.relations = rel;
   types[type] = t;

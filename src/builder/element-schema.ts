@@ -29,6 +29,21 @@ interface RendererKey { default?: unknown; values?: string[] }
 interface EditorKey { label?: string; control?: string; options?: string[] }
 const RENDERER: { mentioned?: string[]; dispatched?: string[]; event_actions?: string[]; img_hosts?: string[]; shared?: Record<Bucket, Record<string, RendererKey>>; types?: Record<string, Record<Bucket, Record<string, RendererKey>>> } = loadJson("./renderer-keys.generated.json");
 const MENTIONED = new Set<string>(RENDERER.mentioned || []);
+/** Parent type → its keys a CHILD's builder reads (menu-item reads its menu's specials.fullField).
+ *  "config.*" / "style.*" when a child reads the whole bucket (form fields read the form's style). */
+const CHILD_READS: Record<string, Set<string>> = (() => {
+  const out: Record<string, Set<string>> = {};
+  for (const [child, r] of Object.entries((RENDERER.types || {}) as Record<string, any>))
+    for (const p of r.relations?.parent || []) {
+      const m = /^(parent|form)\.(specials\.\w+|config|style)$/.exec(p);
+      if (!m) continue;
+      const key = m[2].startsWith("specials.") ? m[2] : `${m[2]}.*`;
+      const parents = m[1] === "form" ? ["form"] : Object.keys(OBSERVED[child]?.parents || {});
+      for (const pt of parents) (out[pt] ||= new Set()).add(key);
+    }
+  return out;
+})();
+
 /** Types the published renderer has a branch for. A type outside it renders nothing. */
 const RENDERED_TYPES = new Set<string>(RENDERER.dispatched || []);
 /** Event actions the published page runs (events.js cases + names common.ex compares). */
@@ -206,10 +221,12 @@ export function elementSchema(type: string): ElementSchema | undefined {
       if (ek?.label) spec.label = ek.label;
       if (rk?.default !== undefined) spec.default = rk.default;
       // Grid/position config and shared specials are read by generic plumbing — no per-type flag.
-      // false only when nothing on the render side (Elixir or client JS) mentions the key at all.
+      // Read for THIS type: by its builders (or the shared helpers they call), by name anywhere in
+      // that code, by its client JS / events.js, or by a child that reads its parent's specials/config.
+      // Otherwise it is stored only — no effect on the published page.
       if (rend && !(where === "config" ? GENERIC_CONFIG.has(k) : k in SHARED_SPECIALS)) {
-        if (rk) spec.rendered = true;
-        else if (!MENTIONED.has(k)) spec.rendered = false;
+        const R: any = rend;
+        spec.rendered = !!(rk || R.client?.[where]?.includes(k) || R.mentions?.[where]?.includes(k) || CHILD_READS[type]?.has(`${where}.${k}`) || CHILD_READS[type]?.has(`${where}.*`));
       }
       out[k] = spec;
     }
