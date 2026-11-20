@@ -33,7 +33,7 @@ export async function loadPageContext(api: WebcakeCmsApi, kind?: string): Promis
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL) return { kind, externalIds: hit.ids, popupIds: hit.popups };
   const [gs, cart] = await Promise.all([
-    Promise.resolve().then(() => (api as any).getGlobalSources?.({})).catch(() => null),
+    Promise.resolve().then(() => ((api as any).getAllGlobalSources ? (api as any).getAllGlobalSources() : (api as any).getGlobalSources?.({}))).catch(() => null),
     Promise.resolve().then(() => (api as any).getSourceCart?.()).catch(() => null),
   ]);
   const lists = [listOf(gs), listOf(cart)];

@@ -141,7 +141,7 @@ Scans every string field in the source tree (config.src, style.background-image,
         if (scope === "all" || scope === "global_sources") {
           try {
             const [gsRes, cartRes] = await Promise.all([
-              api.getGlobalSources({}).catch(() => null),
+              api.getAllGlobalSources().catch(() => null),
               api.getSourceCart().catch(() => null),
             ]);
             const gsList = (gsRes && gsRes.data) || (Array.isArray(gsRes) ? gsRes : []) || [];
@@ -446,7 +446,7 @@ Note: global_sections are read-only via the API and are not included.`,
         if (scope === "all" || scope === "global_sources") {
           try {
             const [gsRes, cartRes] = await Promise.all([
-              api.getGlobalSources({}).catch(() => null),
+              api.getAllGlobalSources().catch(() => null),
               api.getSourceCart().catch(() => null),
             ]);
             const gsList = (gsRes && gsRes.data) || (Array.isArray(gsRes) ? gsRes : []) || [];
@@ -525,7 +525,7 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
               context = { page };
             } else {
               const [gsRes, cartRes] = await Promise.all([
-                api.getGlobalSources({}).catch(() => null),
+                api.getAllGlobalSources().catch(() => null),
                 api.getSourceCart().catch(() => null),
               ]);
               const gsList = (gsRes && gsRes.data) || (Array.isArray(gsRes) ? gsRes : []) || [];
@@ -645,7 +645,7 @@ The pre-built "items" template at the end contains placeholders — fill in "alt
         }
         if (scope === "all" || scope === "global_sources") {
           const [gsRes, cartRes] = await Promise.all([
-            api.getGlobalSources({}).catch(() => null),
+            api.getAllGlobalSources().catch(() => null),
             api.getSourceCart().catch(() => null),
           ]);
           const gsList = (gsRes && gsRes.data) || (Array.isArray(gsRes) ? gsRes : []) || [];
