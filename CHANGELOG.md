@@ -5,6 +5,20 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.8.1] - 2026-11-20
+
+### Changed
+- `list_pages`, `get_page_source`, `update_page_element`, `update_page_elements`, `update_page_source`, `build_page`'s `new_section` save, `get_page_custom_code`/`update_page_custom_code`, and the page scans behind `search_images`/`upload_images` now read a single page's source (or page metadata without sources) through the backend's per-page routes when it has them, instead of downloading every page's source for the whole site on each call.
+- `update_page_element`, `update_page_elements`, `update_page_source`, and `build_page`'s `new_section` save now send only the changed nodes as a patch when the backend supports it, instead of the whole page `source`, and let the backend rebuild that page's CSS itself instead of a separate full-site `/save` round trip that resends site settings, the cart drawer, and popups.
+- `publish_site` and the CSS rebuild triggered by a popup/cart-drawer write now use dedicated backend routes that read stored page sources server-side, instead of downloading and re-uploading every page's source.
+- Request bodies over 8KB (typically a large page `source`) are now sent gzip-compressed.
+- `update_page_element`, `update_page_elements`, and `update_page_source` now check the saved page's version against the one just read and return `page_changed` instead of overwriting it when the page was saved elsewhere (the editor or another agent) in between; rerun the same call to read the current page and reapply the edit.
+- Backends that don't yet expose these per-page routes keep working exactly as before — the fallback is automatic and transparent to every tool above.
+
+### Fixed
+- Saving a page that embeds a global section (header/footer) now correctly propagates the change to every other page embedding that same section, and `delete_page` now correctly removes the deleted page from each global section's `pages` list; both were silently no-ops because the global-sections response's nested shape (`{ data: { global_sections: [...] } }`) was read as if it were already the array.
+- `validate_page`'s cross-page checks (a dangling event target, an `open_popup`'s `popup_id`, `BINDING_SCOPE`) now correctly see the site's global sources even on a backend that errors on a global-source lookup with no `component`; previously that error was swallowed and the check silently fell back to page-kind-only context, missing real problems.
+
 ## [2.8.0] - 2026-11-19
 
 ### Added

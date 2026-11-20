@@ -5,6 +5,20 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.8.1] - 2026-11-20
+
+### Changed
+- `list_pages`, `get_page_source`, `update_page_element`, `update_page_elements`, `update_page_source`, lượt lưu `new_section` của `build_page`, `get_page_custom_code`/`update_page_custom_code`, và các lượt quét trang phía sau `search_images`/`upload_images` nay đọc source của đúng một trang (hoặc metadata trang không kèm source) qua route riêng theo từng trang của backend khi backend có, thay vì tải source của mọi trang trong site ở mỗi lần gọi.
+- `update_page_element`, `update_page_elements`, `update_page_source`, và lượt lưu `new_section` của `build_page` nay chỉ gửi các node đã đổi dưới dạng patch khi backend hỗ trợ, thay vì gửi cả `source` của trang, và để backend tự build lại CSS của trang đó thay vì một lượt `/save` toàn site riêng (gửi lại cả settings, giỏ hàng và popup).
+- `publish_site` và lượt build lại CSS khi ghi popup/giỏ hàng nay dùng route riêng của backend tự đọc source trang đã lưu ở phía server, thay vì tải rồi gửi lại source của mọi trang.
+- Body request lớn hơn 8KB (thường là `source` của một trang lớn) nay được gửi dưới dạng gzip.
+- `update_page_element`, `update_page_elements`, và `update_page_source` nay so phiên bản của trang đã lưu với phiên bản vừa đọc, trả về `page_changed` thay vì ghi đè khi trang đã được lưu ở nơi khác (editor hoặc một agent khác) trong lúc đó; gọi lại đúng lệnh đó để đọc trang hiện tại rồi áp lại chỉnh sửa.
+- Backend chưa có các route riêng theo từng trang này vẫn hoạt động như trước — phần dự phòng tự động và không ảnh hưởng đến các tool trên.
+
+### Fixed
+- Lưu một trang có nhúng global section (header/footer) nay lan đúng thay đổi sang mọi trang khác cũng nhúng global section đó, và `delete_page` nay gỡ đúng trang đã xoá khỏi danh sách `pages` của từng global section; cả hai trước đây đều âm thầm không làm gì vì phần dữ liệu lồng trong response của global sections (`{ data: { global_sections: [...] } }`) bị đọc như thể đã là mảng.
+- Các kiểm tra chéo trang của `validate_page` (một event target bị treo, `popup_id` của `open_popup`, `BINDING_SCOPE`) nay thấy đúng các global source của site ngay cả khi backend báo lỗi với lượt tra global source không có `component`; trước đây lỗi này bị nuốt và kiểm tra âm thầm chỉ còn dựa vào kind của trang, bỏ sót các lỗi thật.
+
 ## [2.8.0] - 2026-11-19
 
 ### Added
