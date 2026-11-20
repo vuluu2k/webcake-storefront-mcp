@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
+import { pagesWithSources, pageWithSource } from "./page-read.js";
 
 const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|svg|avif|bmp|ico)(\?[^"')\s]*)?$/i;
 const URL_IN_CSS_RE = /url\(\s*['"]?([^'")\s]+)['"]?\s*\)/g;
@@ -119,7 +120,7 @@ Scans every string field in the source tree (config.src, style.background-image,
 
         if (scope === "all" || scope === "pages") {
           try {
-            const res = await api.listPages();
+            const res = { data: await pagesWithSources(api, page_id) };
             const pages = (res && res.data) || res || [];
             if (Array.isArray(pages)) {
               const targets = page_id ? pages.filter((p) => p.id === page_id) : pages;
@@ -141,7 +142,7 @@ Scans every string field in the source tree (config.src, style.background-image,
         if (scope === "all" || scope === "global_sources") {
           try {
             const [gsRes, cartRes] = await Promise.all([
-              api.getGlobalSources({}).catch(() => null),
+              api.getAllGlobalSources().catch(() => null),
               api.getSourceCart().catch(() => null),
             ]);
             const gsList = (gsRes && gsRes.data) || (Array.isArray(gsRes) ? gsRes : []) || [];
@@ -431,7 +432,7 @@ Note: global_sections are read-only via the API and are not included.`,
 
         if (scope === "all" || scope === "pages") {
           try {
-            const res = await api.listPages();
+            const res = { data: await pagesWithSources(api, page_id) };
             const pages = (res && res.data) || res || [];
             if (Array.isArray(pages)) {
               const targets = page_id ? pages.filter((p) => p.id === page_id) : pages;
@@ -446,7 +447,7 @@ Note: global_sections are read-only via the API and are not included.`,
         if (scope === "all" || scope === "global_sources") {
           try {
             const [gsRes, cartRes] = await Promise.all([
-              api.getGlobalSources({}).catch(() => null),
+              api.getAllGlobalSources().catch(() => null),
               api.getSourceCart().catch(() => null),
             ]);
             const gsList = (gsRes && gsRes.data) || (Array.isArray(gsRes) ? gsRes : []) || [];
@@ -514,18 +515,19 @@ If alt_path is omitted, it is auto-detected via the same probe used by list_imag
 
           try {
             if (source_type === "page") {
-              const pages = await api.listPages();
-              const list = (pages && pages.data) || pages || [];
-              const page = Array.isArray(list) ? list.find((p) => p.id === source_id) : null;
+              const got = await pageWithSource(api, source_id);
+              const page = got?.page;
               if (!page) { results.push({ source_type, source_id, error: "Page not found" }); continue; }
               source = parseSource(page.source && page.source.source);
               if (!source) { results.push({ source_type, source_id, error: "Page has no source" }); continue; }
               existingLen = JSON.stringify(source).length;
-              saver = (newSrc: any) => api.updatePageSource(source_id, { source: newSrc });
+              // against the version read: only the changed image nodes travel
+              const stored = structuredClone(source);
+              saver = (newSrc: any) => api.updatePageSource(source_id, { source: newSrc }, { base: got?.version, before: stored });
               context = { page };
             } else {
               const [gsRes, cartRes] = await Promise.all([
-                api.getGlobalSources({}).catch(() => null),
+                api.getAllGlobalSources().catch(() => null),
                 api.getSourceCart().catch(() => null),
               ]);
               const gsList = (gsRes && gsRes.data) || (Array.isArray(gsRes) ? gsRes : []) || [];
@@ -633,7 +635,7 @@ The pre-built "items" template at the end contains placeholders — fill in "alt
         };
 
         if (scope === "all" || scope === "pages") {
-          const res = await api.listPages();
+          const res = { data: await pagesWithSources(api, page_id) };
           const pages = (res && res.data) || res || [];
           if (Array.isArray(pages)) {
             const targets = page_id ? pages.filter((p) => p.id === page_id) : pages;
@@ -645,7 +647,7 @@ The pre-built "items" template at the end contains placeholders — fill in "alt
         }
         if (scope === "all" || scope === "global_sources") {
           const [gsRes, cartRes] = await Promise.all([
-            api.getGlobalSources({}).catch(() => null),
+            api.getAllGlobalSources().catch(() => null),
             api.getSourceCart().catch(() => null),
           ]);
           const gsList = (gsRes && gsRes.data) || (Array.isArray(gsRes) ? gsRes : []) || [];

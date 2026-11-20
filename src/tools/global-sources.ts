@@ -225,7 +225,7 @@ async function fetchByComponent(api: WebcakeCmsApi, component: string): Promise<
 /** Fetch ALL global sources (general + cart) and cache */
 async function fetchAll(api: WebcakeCmsApi): Promise<any[]> {
   const [gsRes, cartRes] = await Promise.all([
-    api.getGlobalSources({}).catch(() => null),
+    api.getAllGlobalSources().catch(() => null),
     api.getSourceCart().catch(() => null),
   ]);
   const gsList = Array.isArray(gsRes?.data) ? gsRes.data : (Array.isArray(gsRes) ? gsRes : []);

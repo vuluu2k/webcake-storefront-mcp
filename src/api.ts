@@ -1,7 +1,11 @@
+import { gzipSync } from "node:zlib";
 import { buildSection, finalizeForRender } from "./builder/page.js";
+import { sourceOps, applyOps } from "./builder/source-ops.js";
 import { BREAKPOINTS } from "./builder/grid.js";
 
 const DEFAULT_TIMEOUT = 15000;
+/** JSON bodies above this size are sent gzipped (see request). */
+const GZIP_OVER = 8 * 1024;
 /** Stamped on every site and page this MCP server creates (backend columns `sites.by_ai`
  *  and `pages.by_ai`), so the builder can flag AI-authored work. Mirrors the landing-page convention. */
 export const BY_AI_MARKER = "mcp";
@@ -129,13 +133,21 @@ export class WebcakeCmsApi {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout || DEFAULT_TIMEOUT);
 
+    // A large JSON body goes gzipped: builderx_api's DecompressPlug (endpoint-wide) inflates
+    // `Content-Encoding: gzip` bodies — a page source shrinks ~10× on the wire.
+    let payload: string | Uint8Array | undefined = body ? JSON.stringify(body) : undefined;
+    if (typeof payload === "string" && payload.length > GZIP_OVER) {
+      payload = gzipSync(payload);
+      headers["Content-Encoding"] = "gzip";
+    }
+
     let res: Response;
     let raw: string;
     try {
       res = await fetch(url, {
         method,
         headers,
-        body: body ? JSON.stringify(body) : undefined,
+        body: payload as any,
         signal: controller.signal,
       });
       // Read the body under the same timer — clearing it after the headers left a stalled body unbounded.
@@ -155,8 +167,10 @@ export class WebcakeCmsApi {
         if (!retried && (await this.renewAuth())) return this.request(method, path, opts, true);
         throw new Error("API 401: phiên đăng nhập WebCake đã hết hạn (token expired). Bấm Kết nối (Connect) lại để gia hạn — stdio: chạy `npx -y webcake-storefront-mcp login`.");
       }
-      const msg = (json && json.message) || (json && json.error) || res.statusText;
-      throw new Error(`API ${res.status}: ${msg}`);
+      const reason = json && typeof json.reason === "object" ? json.reason : null;
+      const msg = (json && json.message) || (reason && reason.message) || (json && typeof json.reason === "string" && json.reason) || (json && json.error) || res.statusText;
+      // status + body ride along: a caller tells page_changed / invalid_ops / a missing route apart
+      throw Object.assign(new Error(`API ${res.status}: ${msg}`), { status: res.status, body: json, raw: raw.slice(0, 300), code: reason?.code });
     }
     return json;
   }
@@ -204,6 +218,9 @@ export class WebcakeCmsApi {
   }
   /** Switch to a different site (in-memory, no restart needed) */
   switchSite(siteId: string) {
+    // another site: what was learned about routes and pages of the previous one does not carry over
+    this.aiRoutesMissing = false;
+    this.pageCache.clear();
     this.siteId = siteId;
     this._adminToken = null;
     this._cmsApiKey = null;
@@ -287,6 +304,61 @@ export class WebcakeCmsApi {
   listPages() {
     return this.request("GET", `/api/v1/site/${this.siteId}/pages`);
   }
+  /** Pages without their sources (GET /pages, with sources, on a backend without the AI routes). */
+  async listPagesMeta() {
+    const res = await this.aiRoute("GET", "/pages");
+    return res === null ? this.listPages() : res;
+  }
+  /** Backends without builderx_api's AI routes (`/site/:id/ai/*`, AiPageController). */
+  private aiRoutesMissing = false;
+  /** A call to an AI route; null → the backend has none (404), the caller takes the editor's route. */
+  private async aiRoute(method: "GET" | "POST", path: string, opts: { body?: any; timeout?: number } = {}): Promise<any | null> {
+    if (this.aiRoutesMissing) return null;
+    try {
+      return await this.request(method, `/api/v1/site/${this.siteId}/ai${path}`, opts);
+    } catch (e: any) {
+      if (!this.routeMissing(e)) throw e;
+      this.aiRoutesMissing = true;
+      return null;
+    }
+  }
+  /** Stored page sources by page id, under the backend's version (md5): a read whose version still
+   *  matches costs a page_version probe, not the source. Our own writes keep it current; every
+   *  other write path (/save, global sections, another site) drops it. */
+  private pageCache = new Map<string, { version: string; raw: string; custom_code?: string }>();
+  private cachePage(pageId: string, entry: { version: string; raw: string; custom_code?: string }) {
+    this.pageCache.delete(pageId);
+    this.pageCache.set(pageId, entry);
+    if (this.pageCache.size > 30) this.pageCache.delete(this.pageCache.keys().next().value!); // ponytail: oldest-first cap
+  }
+  dropPageCache(pageId?: string) {
+    if (pageId) this.pageCache.delete(pageId);
+    else this.pageCache.clear();
+  }
+  /** A 404 that means "no such route" (an older backend) — not SitePlug's plain-text "Site not found"
+   *  / "Site permission not found", which says nothing about the route. */
+  private routeMissing(e: any) {
+    return e?.status === 404 && !/site( permission)? not found/i.test(String(e?.raw ?? ""));
+  }
+  /** ONE page's stored source with its version (md5 of the stored string, from the server), instead
+   *  of GET /pages (every page of the site with its source). null → no such route: use listPages. */
+  async getPageSourceOne(pageId: string): Promise<{ source: any; raw: string; version: string; custom_code?: string } | null> {
+    if (this.aiRoutesMissing) return null;
+    const hit = this.pageCache.get(pageId);
+    if (hit && (await this.getPageVersion(pageId).catch(() => null)) === hit.version)
+      return { source: JSON.parse(hit.raw), raw: hit.raw, version: hit.version, custom_code: hit.custom_code };
+    {
+      const res: any = await this.aiRoute("GET", `/pages/${pageId}/source`);
+      if (res === null) return null;
+      const d = res?.data ?? res;
+      // the version is only ever the server's (a locally computed one could never match its check)
+      if (!d?.source_hash) return null;
+      const raw = typeof d.source === "string" ? d.source : JSON.stringify(d.source ?? {});
+      const version = String(d.source_hash);
+      this.cachePage(pageId, { version, raw, custom_code: d.custom_code });
+      return { source: parseMaybe(raw) ?? {}, raw, version, custom_code: d.custom_code };
+    }
+  }
   /** Create a page. The backend creates the page AND its source in one call, so `source`
    *  is REQUIRED and must be a JSON string (stringified here if an object is passed).
    *  `slug`/`is_homepage` are NOT applied at create — set them afterwards via updatePage.
@@ -311,11 +383,27 @@ export class WebcakeCmsApi {
    *  see syncPageAfterWrite). The source is already stored when the sync runs, so a sync failure
    *  says so instead of reading as a lost write. `sync:false` skips the /save, for intermediate
    *  writes of a batch whose last write syncs (each sync rebuilds the page CSS). */
-  async updatePageSource(pageId: string, params: any, opts?: { timeout?: number; sync?: boolean }) {
+  async updatePageSource(pageId: string, params: any, opts?: { timeout?: number; sync?: boolean; base?: string; before?: any }) {
     const sync = params && params.source != null && opts?.sync !== false;
     const src = sync ? (typeof params.source === "string" ? JSON.parse(params.source) : params.source) : null;
-    // With a global section on the page, keep the sources as they were BEFORE this write: only a
-    // global node this write actually changed may be pushed to the other pages.
+    // The per-page AI routes: only what changed travels (ai/pages/:id/patch), the backend rebuilds
+    // the page's CSS itself (no /save round trip re-sending settings, cart, popups and the page),
+    // answers with the version only, and — with a base — refuses a write against an older version.
+    // A global section this write changed goes with it in ONE call (ai/global_sections/sync): the
+    // page, the section record and every page embedding it, all or nothing.
+    if (src && !this.aiRoutesMissing) {
+      let sections: any[] = [];
+      if (globalsOf(src).length) {
+        // the source as it was BEFORE this write: only a global node this write changed is pushed
+        const prev = opts?.before ?? (await this.getPageSourceOne(pageId))?.source;
+        if (prev !== undefined && !this.aiRoutesMissing) sections = await this.changedGlobalSections(src, prev);
+      }
+      const fresh = this.aiRoutesMissing ? null : await this.aiPageWrite(pageId, src, params, opts, sections);
+      if (fresh) return fresh;
+    }
+    this.pageCache.delete(pageId);
+    // a backend without the AI routes: the editor's write, then /save (CSS + global sections), with
+    // every page's source as it was BEFORE this write
     const before = src && globalsOf(src).length ? listOf(await this.listPages()) : null;
     const res = await this.request("POST", `/api/v1/site/${this.siteId}/${pageId}/update_page_source`, { body: params, timeout: opts?.timeout });
     if (sync) {
@@ -324,6 +412,72 @@ export class WebcakeCmsApi {
       });
     }
     return res;
+  }
+  /** The global sections whose node on this page `src` changes against `prev` (and whose record
+   *  differs), as ai/global_sections/sync and /save take them. */
+  private async changedGlobalSections(src: any, prev: any): Promise<any[]> {
+    const prevNode = (id: string) => (prev?.sections || []).find((s: any) => s && s.id === id);
+    const records = listOf(await this.listGlobalSections());
+    const changed: any[] = [];
+    for (const node of globalsOf(src)) {
+      const rec = records.find((r) => r.section_id === node.id);
+      if (!rec || canon(prevNode(node.id)) === canon(node) || canon(parseMaybe(rec.section)) === canon(node)) continue;
+      changed.push({ section_id: rec.section_id, name: rec.name, type: rec.type, pages: rec.pages || [], status: "update", section: node, contents: [] });
+    }
+    return changed;
+  }
+  /** One page write through the AI routes (with `sections`: ai/global_sections/sync); null → the
+   *  backend lacks them (caller falls back). */
+  private async aiPageWrite(pageId: string, src: any, params: any, opts?: { timeout?: number; base?: string; before?: any }, sections: any[] = []): Promise<any | null> {
+    const base = opts?.base;
+    const code = params?.custom_code !== undefined ? { custom_code: params.custom_code } : {};
+    const flags = { ...(base ? { base_source_hash: base } : {}), ...code };
+    const timeout = opts?.timeout ?? 120000; // the backend builds the page CSS inside this request
+    const sync = sections.length ? { page_id: pageId, global_sections: sections } : null;
+    const path = (kind: "patch" | "source") => (sync ? "/global_sections/sync" : `/pages/${pageId}/${kind}`);
+    const prevCode = this.pageCache.get(pageId)?.custom_code;
+    const ops = base && opts?.before != null ? sourceOps(opts.before, src) : undefined;
+    if (ops && ops.length === 0 && !sync) {
+      // nothing to write — still a (bodiless) save: the backend checks the version and rebuilds the
+      // CSS, so "retry the same write" after a failed CSS build or a timeout really rebuilds it
+      const res: any = await this.aiRoute("POST", `/pages/${pageId}/source`, { body: flags, timeout });
+      if (res === null) return null;
+      const d = res?.data ?? res;
+      if (d.css_rebuilt === false) throw new Error(`Page unchanged (version ${d.source_hash}), but rebuilding its CSS failed: ${d.css_error || "unknown"}. Retry the same write.`);
+      return { ...res, data: { ...d, via: "patch", patch_ops: 0, unchanged: true } };
+    }
+    const whole = { ...params, source: src, ...flags, ...sync };
+    const patch = ops ? { ops, ...flags, ...sync } : null;
+    const usePatch = !!patch && JSON.stringify(patch).length < JSON.stringify(whole).length;
+    let viaPatch = usePatch;
+    let res: any;
+    try {
+      res = await this.aiRoute("POST", path(usePatch ? "patch" : "source"), { body: usePatch ? patch : whole, timeout });
+    } catch (e: any) {
+      // ops the stored tree refuses (it differs from our copy in some way): the whole tree, same base
+      if (e?.code !== "invalid_ops") throw e;
+      res = await this.aiRoute("POST", path("source"), { body: whole, timeout });
+      viaPatch = false;
+    }
+    if (res === null) return null;
+    const d = res?.data ?? res;
+    if (sync) this.pageCache.clear(); // the other pages embedding the section were rewritten
+    // what is stored now: the ops applied to the version they were checked against, or the tree sent
+    let stored: any;
+    try {
+      stored = viaPatch ? applyOps(opts!.before, ops!) : src;
+    } catch {
+      stored = undefined;
+    }
+    if (stored != null) this.cachePage(pageId, { version: d.source_hash, raw: JSON.stringify(stored), custom_code: params?.custom_code ?? prevCode });
+    else this.pageCache.delete(pageId);
+    if (d.css_rebuilt === false) throw new Error(`Page source SAVED (version ${d.source_hash}), but rebuilding the CSS failed: ${d.css_error || JSON.stringify(d.css_failed || "unknown")}. Retry the same write.`);
+    return { ...res, data: { ...d, via: viaPatch ? "patch" : "update", ...(viaPatch ? { patch_ops: ops!.length } : {}) } };
+  }
+  /** The stored source's version (md5) alone — null when the backend has no such route. */
+  async getPageVersion(pageId: string): Promise<string | null> {
+    const res: any = await this.aiRoute("GET", `/pages/${pageId}/version`);
+    return (res?.data ?? res)?.source_hash ?? null;
   }
   deletePage(params: any) {
     return this.request("POST", `/api/v1/site/${this.siteId}/delete_page`, { body: params });
@@ -341,8 +495,11 @@ export class WebcakeCmsApi {
       body: { pages: [{ contents: [{ page_id, language_code, content, meta_tags, site_id: this.siteId }] }] },
     });
   }
-  listGlobalSections() {
-    return this.request("GET", `/api/v1/site/${this.siteId}/global_sections`);
+  /** `{ data: [records] }` — the route answers `{ data: { global_sections: [...] } }`. */
+  async listGlobalSections(): Promise<{ data: any[] }> {
+    const res: any = await this.request("GET", `/api/v1/site/${this.siteId}/global_sections`);
+    const d = res?.data ?? res;
+    return { data: Array.isArray(d) ? d : Array.isArray(d?.global_sections) ? d.global_sections : [] };
   }
   /** The cart drawer + popups, as the editor sends them with every save and publish
    *  (PagePublish.vue: `global_sources: cart.source.concat(popup.popups)`). /save builds the
@@ -367,6 +524,8 @@ export class WebcakeCmsApi {
     { pages = [], global_sections = [], changes = {}, domain }: { pages?: any[]; global_sections?: any[]; changes?: Record<string, number>; domain?: string },
   ) {
     const [settings, global_sources] = await Promise.all([this.readSettingsOrThrow(), this.globalSourcesForSave()]);
+    // a /save rewrites page sources (and global sections inside them): our cached copies are spent
+    if (pages.length || global_sections.length) this.pageCache.clear();
     return this.request("POST", `/api/v1/site/${this.siteId}/${path}`, {
       body: {
         settings: JSON.stringify(this.ensureSafeSettings(settings)),
@@ -380,6 +539,13 @@ export class WebcakeCmsApi {
       timeout: 120000,
     });
   }
+  /** A site-wide AI route (rebuild_css / publish): the backend reads the settings, pages, cart and
+   *  popups itself. null → no such route. */
+  private async aiSiteSave(path: string, body: Record<string, any> = {}): Promise<any | null> {
+    if (this.aiRoutesMissing) return null;
+    this.pageCache.clear(); // page sources are rewritten server-side
+    return this.aiRoute("POST", path, { body, timeout: 120000 });
+  }
   /** A /save with no pages: stamps site.published_at, which (re)opens the draft preview window
    *  (PreviewExpire: 10 min after published_at on prod) without changing any content. */
   refreshDraftPreview() {
@@ -389,6 +555,12 @@ export class WebcakeCmsApi {
    *  each page's app_css (Qwik gets `popups` + `source_cart`), so after one changes, every page's
    *  CSS must be rebuilt or the new popup/cart renders unstyled until some page is saved. */
   async resaveAllPages() {
+    const done = await this.aiSiteSave("/rebuild_css");
+    if (done) {
+      const d = done?.data ?? done;
+      if (d?.css_rebuilt === false) throw new Error(`rebuilding the pages' CSS failed: ${d.css_error || JSON.stringify(d.css_failed)}`);
+      return done;
+    }
     const pages = listOf(await this.listPages())
       .filter((p: any) => p && p.source && p.source.source != null && p.source.source !== "")
       .map((p: any) => ({ id: p.id, source: typeof p.source.source === "string" ? p.source.source : JSON.stringify(p.source.source) }));
@@ -433,20 +605,8 @@ export class WebcakeCmsApi {
    *  one site-wide. `changes` stays {}: a version row per write (and per popup) is noise; publish
    *  versions every page. */
   async syncPageAfterWrite(pageId: string, src: any, pagesBefore: any[] | null = null) {
-    const changed: any[] = [];
-    const globals = globalsOf(src);
-    if (globals.length && pagesBefore) {
-      const prev = pagesBefore.find((p) => p && p.id === pageId);
-      const prevSrc = parseMaybe(prev?.source?.source);
-      const prevNode = (id: string) => (prevSrc?.sections || []).find((s: any) => s && s.id === id);
-      const res: any = await this.listGlobalSections();
-      const records = listOf(res);
-      for (const node of globals) {
-        const rec = records.find((r) => r.section_id === node.id);
-        if (!rec || canon(prevNode(node.id)) === canon(node) || canon(parseMaybe(rec.section)) === canon(node)) continue;
-        changed.push({ section_id: rec.section_id, name: rec.name, type: rec.type, pages: rec.pages || [], status: "update", section: node, contents: [] });
-      }
-    }
+    const prev = pagesBefore?.find((p) => p && p.id === pageId);
+    const changed = globalsOf(src).length && pagesBefore ? await this.changedGlobalSections(src, parseMaybe(prev?.source?.source)) : [];
     const pages: any[] = [{ id: pageId, source: JSON.stringify(src) }];
     if (changed.length) {
       const byId = new Map(changed.map((g) => [g.section_id, g.section]));
@@ -469,6 +629,9 @@ export class WebcakeCmsApi {
    *  the backend publish nothing. /publish runs the whole /save first, so CSS is built here; the
    *  old separate rebuild doubled the work and the page-version history. */
   async publishSite(params: { domain?: string } = {}) {
+    // every page from the stored sources, a version each — the backend reads them itself
+    const done = await this.aiSiteSave("/publish", params.domain ? { domain: params.domain } : {});
+    if (done) return done;
     const res: any = await this.listPages();
     const pages = ((res && res.data) || res || [])
       .filter((p: any) => p && p.source && p.source.source != null && p.source.source !== "")
@@ -811,6 +974,18 @@ export class WebcakeCmsApi {
     const res = await this.request("POST", `/api/v1/site/${this.siteId}/cart/update_source_cart`, { body: params });
     await this.afterGlobalSourceWrite(res);
     return res;
+  }
+  /** Every global source of the site except the cart drawer (callers add getSourceCart() themselves).
+   *  builderx_api before the fix 500s on a missing `component` (it compared with nil): then the popups. */
+  async getAllGlobalSources() {
+    try {
+      const res: any = await this.getGlobalSources({});
+      const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      return { ...(Array.isArray(res) ? {} : res), data: list.filter((g: any) => g?.component !== "cart-droppable") };
+    } catch (e: any) {
+      if (e?.status !== 500) throw e;
+      return this.getGlobalSources({ component: "popup" });
+    }
   }
   getGlobalSources(query?: any) {
     return this.request("GET", `/api/v1/site/${this.siteId}/global_source/`, { query });

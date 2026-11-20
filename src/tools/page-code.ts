@@ -10,6 +10,7 @@ import {
   type PageCode,
 } from "../builder/page-code.js";
 import { getConfirmMode } from "./context.js";
+import { pageWithSource } from "./page-read.js";
 
 const parse = (v: any) => {
   if (typeof v !== "string") return v;
@@ -22,9 +23,7 @@ const parse = (v: any) => {
 
 /** The page (fresh from the backend), its settings object and parsed source. */
 async function loadPage(api: WebcakeCmsApi, pageId: string) {
-  const res: any = await api.listPages();
-  const list = res?.data || res?.pages || res;
-  const page = (Array.isArray(list) ? list : []).find((p: any) => p.id === pageId);
+  const page = (await pageWithSource(api, pageId))?.page;
   if (!page) throw new Error(`Page "${pageId}" not found on this site (list_pages).`);
   const settings = parse(page.settings);
   const source = parse(page.source?.source) || { sections: [] };

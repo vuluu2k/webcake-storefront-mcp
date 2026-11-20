@@ -15,6 +15,7 @@ import { PAGE_SCHEMA } from "../builder/page-schema.js";
 import { listElements, getElement, buildElement } from "../builder/catalog.js";
 import { describeEventsCatalog } from "../builder/events.js";
 import { describeBindingsCatalog } from "../builder/bindings.js";
+import { pagesMeta, pageWithSource } from "./page-read.js";
 import {
   buildSection,
   buildRow,
@@ -99,8 +100,7 @@ export async function checkPageCreateConflict(
 ): Promise<PageCreateConflict | null> {
   let pages: any[];
   try {
-    const res: any = await api.listPages();
-    pages = (res && res.data) || res || [];
+    pages = await pagesMeta(api);
   } catch {
     return null;
   }
@@ -169,9 +169,8 @@ export async function applyPageMeta(
   if (is_homepage) await api.updatePage(pageId, { is_homepage: true });
   const seoBlock = seo ? buildPageSeo(seo) : {};
   if (slug || settings || Object.keys(seoBlock).length || name != null) {
-    // ponytail: no get-page-by-id route, so this pulls the full page list (with sources) once.
-    const res: any = await api.listPages();
-    const list = res?.data || res?.pages || res;
+    // metadata only (an older backend ignores the flag and sends the sources anyway)
+    const list = await pagesMeta(api);
     let cur = (Array.isArray(list) ? list : []).find((p: any) => p.id === pageId)?.settings;
     if (typeof cur === "string") try { cur = JSON.parse(cur); } catch { cur = null; }
     if (!cur || typeof cur !== "object") cur = {};
@@ -330,8 +329,7 @@ Example children: [{ "type":"container", "children":[{"type":"image","opts":{...
         // With page_id / page_kind it is judged like a save: popups + global sources + page kind.
         let kind: string | undefined = page_kind;
         if (page_id) {
-          const res: any = await api.listPages();
-          const list = res?.data || res;
+          const list = await pagesMeta(api);
           kind ??= kindOfPage((Array.isArray(list) ? list : []).find((p: any) => p.id === page_id));
         }
         const ctx = page_id || page_kind ? await loadPageContext(api, kind) : {};
@@ -530,12 +528,12 @@ Two-step safety: dry_run=true (default) previews; dry_run=false saves.`,
           section = templateRoot(found);
         }
         if (!section) return { error: "Pass a section (from new_section) or a template { category_id, id }." };
-        const pagesRes = await api.listPages();
-        const pages = (pagesRes && pagesRes.data) || pagesRes || [];
-        const page = Array.isArray(pages) ? pages.find((p: any) => p.id === page_id) : null;
+        const got = await pageWithSource(api, page_id);
+        const page = got?.page;
         if (!page) return { error: `Page "${page_id}" not found.` };
 
         const source: any = parseSource(page.source && page.source.source) || newPageSkeleton();
+        const stored = structuredClone(source); // the version read: the write sends only the new section
         if (!Array.isArray(source.sections)) source.sections = [];
 
         const sectionNode = reassignIds(parseSource(section));
@@ -570,7 +568,7 @@ Two-step safety: dry_run=true (default) previews; dry_run=false saves.`,
         // Expand the newly-added section's runtime -> bp1..bp4 (existing sections are
         // already in breakpoint shape and are left untouched).
         finalizeForRender(source, await api.getSiteBreakpoints(), await api.getSiteDefaultGrid());
-        const saved = await api.updatePageSource(page_id, { source });
+        const saved = await api.updatePageSource(page_id, { source }, { base: got?.version, before: stored });
         return {
           success: true,
           page_id,

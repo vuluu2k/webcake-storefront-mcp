@@ -35,6 +35,7 @@ const pageSeoSchema = z.object({
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
+import { pagesMeta } from "./page-read.js";
 
 /**
  * Page source utilities.
@@ -190,7 +191,8 @@ let _pagesCache: any = null;
 let _pagesCacheTime = 0;
 const CACHE_TTL = 30000;
 
-async function getCachedPages(api: WebcakeCmsApi): Promise<any> {
+/** Every page WITH its source — only the fallback for a backend without the per-page routes. */
+async function getCachedPagesFull(api: WebcakeCmsApi): Promise<any> {
   const now = Date.now();
   if (_pagesCache && now - _pagesCacheTime < CACHE_TTL) return _pagesCache;
   const res = await api.listPages();
@@ -202,10 +204,55 @@ async function getCachedPages(api: WebcakeCmsApi): Promise<any> {
 function invalidatePageCache() {
   _pagesCache = null;
   _pagesCacheTime = 0;
+  _metaCache = null;
+  _metaCacheTime = 0;
 }
 
+/** A write the backend refused because the page moved on since this call read it → a result the
+ *  model can act on (re-run reads the new version), not a thrown error. */
+async function writeOrChanged(write: () => Promise<any>): Promise<any> {
+  try {
+    return await write();
+  } catch (e: any) {
+    if (e?.code !== "page_changed") throw e;
+    return {
+      page_changed: {
+        error: "page_changed: the page was saved elsewhere (the editor or another agent) after this call read it — nothing was written.",
+        hint: "Run the same call again: it reads the current page and applies your change to it. For update_page_source, read the page (get_page_source / get_page_element) again first and re-apply your edit to the fresh tree.",
+      },
+    };
+  }
+}
+/** How a write went over the wire (only with the per-page AI routes). */
+const writeVia = (saved: any) => (saved?.via ? { via: saved.via, ...(saved.patch_ops != null ? { patch_ops: saved.patch_ops } : {}), ...(saved.unchanged ? { unchanged: true } : {}) } : {});
+
+/** Page metadata without sources, cached like getCachedPages. */
+let _metaCache: any = null;
+let _metaCacheTime = 0;
+async function getCachedPagesMeta(api: WebcakeCmsApi): Promise<any> {
+  const now = Date.now();
+  if (_metaCache && now - _metaCacheTime < CACHE_TTL) return _metaCache;
+  const res = await api.listPagesMeta();
+  _metaCache = (res && res.data) || res || [];
+  _metaCacheTime = now;
+  return _metaCache;
+}
+
+/** One page with its source and the source's version (md5) — the base a later write is checked
+ *  against. With the per-page route only that page's source is downloaded (not every page's). */
 async function getPageWithSource(api: WebcakeCmsApi, pageId: string): Promise<any> {
-  const pages = await getCachedPages(api);
+  const got: any = await api.getPageSourceOne(pageId).catch((e: any) => (e?.status === 422 ? { missing: true } : Promise.reject(e)));
+  // only a real answer of the per-page route (raw source + version); anything else → GET /pages
+  const one = got && (got.missing || (typeof got.raw === "string" && typeof got.version === "string")) ? got : null;
+  if (one && !(one as any).missing) {
+    const metas = await getCachedPagesMeta(api);
+    const meta = Array.isArray(metas) ? metas.find((p: any) => p.id === pageId) : null;
+    if (!meta) return { error: "Page not found" };
+    const o = one as any;
+    return { page: { ...meta, source: { source: o.raw, custom_code: o.custom_code } }, source: o.source, version: o.version };
+  }
+  if (one && (one as any).missing) return { error: "Page not found" };
+  const pages = await getCachedPagesFull(api);
   if (!Array.isArray(pages)) return { error: "Failed to load pages" };
   const page = pages.find((p) => p.id === pageId);
   if (!page) return { error: "Page not found" };
@@ -230,15 +277,14 @@ const NATIVE_GAP = z.string().min(30).optional()
 export function registerPageTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool("list_pages", "List all pages of the site (metadata only, without source)", {}, () =>
     handle(async () => {
-      const pages = await getCachedPages(api);
-      if (!Array.isArray(pages)) return pages;
+      const pages = await pagesMeta(api);
       return pages.map((p) => ({
         id: p.id,
         name: p.name,
         slug: p.slug,
         type: p.type,
         is_homepage: p.is_homepage,
-        is_build: p.is_build,
+        ...(p.is_build !== undefined ? { is_build: p.is_build } : {}), // only with sources (older backend)
         updated_at: p.updated_at,
       }));
     })
@@ -601,7 +647,7 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
       handle(async () => {
         const dry_run = dryRunParam !== undefined ? dryRunParam : getConfirmMode() === "always_confirm";
         invalidatePageCache();
-        const { page, source, error } = await getPageWithSource(api, page_id);
+        const { page, source, error, version } = await getPageWithSource(api, page_id);
         if (error) return { error };
         if (!source) return { error: "Page has no source" };
         const saved0 = structuredClone(source); // before any patch: source may be the cached object itself
@@ -643,13 +689,16 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
           };
         }
 
-        const res = await api.updatePageSource(page_id, { source });
+        // against the version just read: only the changed element travels, and a save made elsewhere
+        // in between is refused instead of overwritten
+        const res = await writeOrChanged(() => api.updatePageSource(page_id, { source }, { base: version, before: saved0 }));
         invalidatePageCache();
+        if (res.page_changed) return res.page_changed;
 
         const saved = res && res.data;
         if (!saved) return { error: "Backend returned empty response — update may not have persisted", sent_length: newLen };
 
-        return { success: true, element_id, diff, ...(fixed.length ? { fixed } : {}), page_source_id: saved.id, source_length: newLen };
+        return { success: true, element_id, diff, ...(fixed.length ? { fixed } : {}), page_source_id: saved.id, source_length: newLen, ...writeVia(saved) };
       })
   );
 
@@ -679,7 +728,7 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
       handle(async () => {
         const dry_run = dryRunParam !== undefined ? dryRunParam : getConfirmMode() === "always_confirm";
         invalidatePageCache();
-        const { page, source, error } = await getPageWithSource(api, page_id);
+        const { page, source, error, version } = await getPageWithSource(api, page_id);
         if (error) return { error };
         if (!source) return { error: "Page has no source" };
         const saved0 = structuredClone(source); // before any patch: source may be the cached object itself
@@ -723,13 +772,14 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
           };
         }
 
-        const res = await api.updatePageSource(page_id, { source });
+        const res = await writeOrChanged(() => api.updatePageSource(page_id, { source }, { base: version, before: saved0 }));
         invalidatePageCache();
+        if (res.page_changed) return res.page_changed;
 
         const saved = res && res.data;
         if (!saved) return { error: "Backend returned empty response — update may not have persisted", sent_length: newLen };
 
-        return { success: true, elements: results, page_source_id: saved.id, source_length: newLen };
+        return { success: true, elements: results, page_source_id: saved.id, source_length: newLen, ...writeVia(saved) };
       })
   );
 
@@ -772,9 +822,11 @@ Safeguarded: blocks if new source is <50% of existing size.`,
         }
 
         // Safeguard: force fresh read and block if new source is suspiciously smaller
+        let writeBase: { base?: string; before?: any } = {};
         if (body.source) {
           invalidatePageCache();
-          const { page: existingPage, source: existingSource, error } = await getPageWithSource(api, page_id);
+          const { page: existingPage, source: existingSource, error, version } = await getPageWithSource(api, page_id);
+          writeBase = { base: version, before: existingSource ? structuredClone(existingSource) : undefined };
           // Full structural + renderer-crash check, refusing only what this save ADDS.
           const added = addedErrors(body.source, existingSource || undefined, await loadPageContext(api, kindOfPage(existingPage)));
           if (added.length) return { error: "BLOCKED: not saving.", errors: added };
@@ -792,8 +844,9 @@ Safeguarded: blocks if new source is <50% of existing size.`,
           }
         }
 
-        const res = await api.updatePageSource(page_id, body);
+        const res = await writeOrChanged(() => api.updatePageSource(page_id, body, writeBase));
         invalidatePageCache();
+        if (res.page_changed) return res.page_changed;
 
         const saved = res && res.data;
         if (!saved) return { error: "Backend returned empty response — update may not have persisted" };
@@ -802,7 +855,8 @@ Safeguarded: blocks if new source is <50% of existing size.`,
           success: true,
           page_source_id: saved.id,
           page_id: saved.page_id,
-          source_length: (saved.source || "").length,
+          source_length: saved.source != null ? String(saved.source).length : JSON.stringify(body.source ?? "").length,
+          ...writeVia(saved),
           ...(fixedSource.length ? { fixed: fixedSource } : {}),
           ...(pageCode ? { custom_code: pageCode } : {}),
         };
