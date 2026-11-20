@@ -35,6 +35,7 @@ const pageSeoSchema = z.object({
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
+import { pagesMeta } from "./page-read.js";
 
 /**
  * Page source utilities.
@@ -190,7 +191,8 @@ let _pagesCache: any = null;
 let _pagesCacheTime = 0;
 const CACHE_TTL = 30000;
 
-async function getCachedPages(api: WebcakeCmsApi): Promise<any> {
+/** Every page WITH its source — only the fallback for a backend without the per-page routes. */
+async function getCachedPagesFull(api: WebcakeCmsApi): Promise<any> {
   const now = Date.now();
   if (_pagesCache && now - _pagesCacheTime < CACHE_TTL) return _pagesCache;
   const res = await api.listPages();
@@ -250,7 +252,7 @@ async function getPageWithSource(api: WebcakeCmsApi, pageId: string): Promise<an
     return { page: { ...meta, source: { source: o.raw, custom_code: o.custom_code } }, source: o.source, version: o.version };
   }
   if (one && (one as any).missing) return { error: "Page not found" };
-  const pages = await getCachedPages(api);
+  const pages = await getCachedPagesFull(api);
   if (!Array.isArray(pages)) return { error: "Failed to load pages" };
   const page = pages.find((p) => p.id === pageId);
   if (!page) return { error: "Page not found" };
@@ -275,15 +277,14 @@ const NATIVE_GAP = z.string().min(30).optional()
 export function registerPageTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
   server.tool("list_pages", "List all pages of the site (metadata only, without source)", {}, () =>
     handle(async () => {
-      const pages = await getCachedPages(api);
-      if (!Array.isArray(pages)) return pages;
+      const pages = await pagesMeta(api);
       return pages.map((p) => ({
         id: p.id,
         name: p.name,
         slug: p.slug,
         type: p.type,
         is_homepage: p.is_homepage,
-        is_build: p.is_build,
+        ...(p.is_build !== undefined ? { is_build: p.is_build } : {}), // only with sources (older backend)
         updated_at: p.updated_at,
       }));
     })

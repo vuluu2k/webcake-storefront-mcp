@@ -24,6 +24,8 @@ function backend() {
   globalThis.fetch = async (url, init) => {
     const u = new URL(url);
     const ok = (data) => new Response(JSON.stringify({ success: true, data }));
+    // the editor's routes only — a backend without AiPageController
+    if (u.pathname.includes("/ai/")) return new Response("not found", { status: 404 });
     if (init.method === "POST") {
       posts.push({ path: u.pathname, body: JSON.parse(init.body) });
       return ok({ id: "saved" });
@@ -31,7 +33,7 @@ function backend() {
     if (u.pathname.endsWith("/pages")) return ok(db.pages);
     if (u.pathname.endsWith("/get_source_cart")) return ok(db.cart);
     if (u.pathname.includes("/global_source")) return ok(db.popups);
-    if (u.pathname.endsWith("/global_sections")) return ok(db.globalSections);
+    if (u.pathname.endsWith("/global_sections")) return ok({ global_sections: db.globalSections }); // the real envelope
     return ok({ settings: db.settings });
   };
   return { posts, api: new WebcakeCmsApi({ baseUrl: "http://x", token: "t", siteId: "S" }) };
@@ -101,7 +103,7 @@ test("a write carrying an OLD copy of the header does not revert the newer one s
   const fetchBefore = globalThis.fetch;
   globalThis.fetch = async (url, init) => {
     if (init.method !== "POST" && new URL(url).pathname.endsWith("/global_sections"))
-      return new Response(JSON.stringify({ data: [{ section_id: "HEADER-1", name: "Header", type: 1, pages: ["A", "B"], section: JSON.stringify(v2) }] }));
+      return new Response(JSON.stringify({ data: { global_sections: [{ section_id: "HEADER-1", name: "Header", type: 1, pages: ["A", "B"], section: JSON.stringify(v2) }] } }));
     return fetchBefore(url, init);
   };
   await api.updatePageSource("A", { source: { sections: [header, { ...body, specials: { x: 1 } }] } });

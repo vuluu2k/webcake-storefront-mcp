@@ -15,6 +15,7 @@ import { stat, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { pagesMeta } from "./page-read.js";
 
 /** Checks the SAVED site before publish_site sends it: anything here that is an error either makes
  *  /publish fail (500) or ships a broken storefront, so it blocks the publish. */
@@ -404,7 +405,7 @@ RENDER_SCREENSHOT_BASE to avoid that).`,
     },
     async ({ page_id, widths, full_page }) => {
       try {
-        const res: any = await api.listPages();
+        const res: any = { data: await pagesMeta(api) };
         const page = ((res && res.data) || res || []).find((p: any) => p && p.id === page_id);
         if (!page) return { content: [{ type: "text" as const, text: JSON.stringify({ error: `Page ${page_id} not found` }) }], isError: true };
         // /save stamps published_at: the draft preview opens for ~10 min (PreviewExpire), content untouched.
