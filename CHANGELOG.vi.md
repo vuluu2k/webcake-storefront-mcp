@@ -5,6 +5,14 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.8.2] - 2026-11-22
+
+### Changed
+- README nay khuyến nghị dùng `npx -y webcake-storefront-mcp@latest install`.
+
+### Fixed
+- `install` / `uninstall` nay tìm đúng mọi file config Claude Desktop trên Windows (Store package container, `Claude-Data`, `%APPDATA%\Claude`), ghi vào tất cả và in ra từng đường dẫn; một file config có BOM UTF-8 không còn khiến nó không đọc được; installer cảnh báo khi Claude Desktop vẫn đang chạy.
+
 ## [2.8.1] - 2026-11-20
 
 ### Changed
