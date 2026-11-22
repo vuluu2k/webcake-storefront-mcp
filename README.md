@@ -104,7 +104,7 @@ Zero install, always the latest version, needs Node.js 18+. **One line** connect
 
 ```bash
 # Opens the browser — click Connect, your installed IDEs are configured (prod)
-npx -y webcake-storefront-mcp install
+npx -y webcake-storefront-mcp@latest install
 
 # Developers only — step by step: environment, login or token, IDE(s)
 npx -y webcake-storefront-mcp install --dev

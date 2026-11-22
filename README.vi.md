@@ -104,7 +104,7 @@ Không cần cài, luôn mới nhất, cần Node.js 18+. **Một dòng** kết 
 
 ```bash
 # Mở trình duyệt — bấm Kết nối, các IDE trên máy được cấu hình tự động (prod)
-npx -y webcake-storefront-mcp install
+npx -y webcake-storefront-mcp@latest install
 
 # Chỉ dành cho dev — từng bước: môi trường, đăng nhập hoặc token, IDE
 npx -y webcake-storefront-mcp install --dev
