@@ -5,6 +5,21 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.9.0] - 2026-11-23
+
+### Added
+- `validate_page` nay kiểm tra `columns`/`rows`/`grid`/gap/vị trí ô/`constraintX`/`constraintY`/`widthUnit`/`heightUnit`/`lockCellGrid` của mọi element dạng lưới theo đúng định dạng mà chính editor của BuilderX ghi ra, báo các mã `GRID_EMPTY`, `GRID_TRACK`, `GRID_FORMAT`, `GRID_MISMATCH`, `LAYOUT_VALUE`, và `PADDING`.
+- `validate_page` nay báo cảnh báo `VALUE_FORMAT` khi một giá trị `style`, `config`, hoặc `specials` được lưu ở định dạng mà các trang thật đã publish không dùng cho key đó, khai thác từ 1.229 trang thật.
+- `get_element` nay trả thêm danh sách `keys.layout` mô tả đúng định dạng bắt buộc của mọi key lưới/layout và danh sách `keys.style` mô tả định dạng lưu của mọi key style theo từng type; `get_build_guide` cũng ghi đúng các định dạng layout này.
+
+### Changed
+- Việc kiểm tra lưới và tự sửa trong `build_page`/`new_section`/`update_page_source` nay áp dụng cho mọi type lưu `config.columns`/`config.rows` dưới dạng track lưới trên trang thật, không chỉ `section`, `container`, `form`, `popup`, và `carousel`.
+- `build_page`, `new_section`, và `update_page_source` nay tự sửa thêm nhiều lỗi trước khi validate: giá trị `style`/`config` sai định dạng (ví dụ số trần thành `"<N>px"`, một góc `borderRadius` thành đủ bốn góc, `lineHeight` theo px đổi thành hệ số của `fontSize`), `lockCellGrid` hoặc chuỗi `config.grid` bị lệch, một hàng `rows` không viết theo dạng `min/max` của builder, và `style.padding` trên một box dạng lưới đã lưu nay được đổi thành cột/hàng đệm.
+- Trang được clone nay lưu `borderRadius` theo dạng rút gọn bốn giá trị (`"Npx Npx Npx Npx"`) giống trang thật, thay vì một giá trị duy nhất.
+
+### Fixed
+- Các element dạng lưới ngoài `section`/`container`/`form`/`popup`/`carousel` (ví dụ `cart-items`, `product-overlay`) trước đây có thể được lưu mà không có `columns`/`rows` nào, khiến chúng render với chiều cao bằng 0; `build_page`/`new_section` nay tự điền một lưới hoạt động được khi lưu, và `validate_page` báo lỗi nếu vẫn còn thiếu.
+
 ## [2.8.2] - 2026-11-22
 
 ### Changed

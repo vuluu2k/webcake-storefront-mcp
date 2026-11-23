@@ -5,6 +5,21 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.9.0] - 2026-11-23
+
+### Added
+- `validate_page` now checks every grid-box element's `columns`/`rows`/`grid`/gaps/cell placement/`constraintX`/`constraintY`/`widthUnit`/`heightUnit`/`lockCellGrid` against the exact format BuilderX's own editor writes, reporting `GRID_EMPTY`, `GRID_TRACK`, `GRID_FORMAT`, `GRID_MISMATCH`, `LAYOUT_VALUE`, and `PADDING` findings.
+- `validate_page` now reports a `VALUE_FORMAT` warning when a `style`, `config`, or `specials` value is stored in a shape real published pages don't use for that key, mined from 1,229 live pages.
+- `get_element` now returns a `keys.layout` list documenting the required format of every grid/layout key and a `keys.style` list documenting the stored value format of every style key for that element type; `get_build_guide` documents the same layout value formats.
+
+### Changed
+- Grid validation and auto-repair in `build_page`/`new_section`/`update_page_source` now cover every element type whose real pages store `config.columns`/`config.rows` as grid tracks, not only `section`, `container`, `form`, `popup`, and `carousel`.
+- `build_page`, `new_section`, and `update_page_source` auto-repair more mistakes before validating: out-of-format `style`/`config` values (e.g. a bare number becomes `"<N>px"`, a single `borderRadius` corner becomes all four, a pixel `lineHeight` becomes its multiplier of `fontSize`), a stale `lockCellGrid` or `config.grid` string, a `rows` entry not written in the builder's `min/max` shape, and `style.padding` on a saved grid box, which is now converted into spacer columns/rows.
+- Cloned pages now store `borderRadius` as the four-value shorthand (`"Npx Npx Npx Npx"`) real pages use instead of a single value.
+
+### Fixed
+- Grid-box elements outside `section`/`container`/`form`/`popup`/`carousel` (e.g. `cart-items`, `product-overlay`) could previously be saved with no `columns`/`rows` at all and render with zero height; `build_page`/`new_section` now fill them with a working grid on save, and `validate_page` flags any that still have none.
+
 ## [2.8.2] - 2026-11-22
 
 ### Changed
