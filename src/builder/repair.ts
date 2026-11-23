@@ -1,10 +1,11 @@
 // repairSource: fix, in place, the AI mistakes that have exactly one right answer, and say what
 // changed. Runs on every page/section write before validation, so these never cost a round trip;
 // anything ambiguous is left for validatePage to report (and block when it is surely broken).
-import { walk } from "./page.js";
+import { walk, stackChildren, padToTracks } from "./page.js";
+import { GRID_TYPES, toEditorRow } from "./shape.js";
 import { isKnownType } from "./catalog.js";
 import { randomString, WISHLIST_SVG } from "./factory.js";
-import { CSS_PROPS, elementSchema } from "./element-schema.js";
+import { coerceToFormat, CSS_PROPS, elementSchema, valueFormat } from "./element-schema.js";
 import { GENERIC_CONFIG, OBSERVED } from "./attributes.js";
 
 /** Type names agents invent → the element that does it (+ the semantic tag for text). */
@@ -45,6 +46,22 @@ const camel = (k: string) => k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
 const mintId = (type: string) => `${type.toUpperCase()}-${randomString(8)}`;
 const layersOf = (node: any) => ["runtime", ...Object.keys(node).filter((k) => /^bp\d+$/.test(k))].filter((k) => node[k] && typeof node[k] === "object");
 
+const missing = (t: any) => t == null || (Array.isArray(t) && !t.length);
+const hasTracks = (cfg: any) => !!cfg && !missing(cfg.columns) && !missing(cfg.rows);
+const minRow = (h: number) => ({ unit: "min/max", min: { unit: "px", absValue: h }, max: { unit: "max-c" } });
+/** Give a layer the tracks its children are placed in (1×1 when they aren't): 1fr columns and
+ *  content-sized rows, like the editor's ContainerPicker (an empty box keeps its height). */
+function fillTracks(layer: any, kidCfgs: any[], unsaved: boolean) {
+  const cfg = (layer.config ||= {});
+  const span = (k: string) => Math.max(1, ...kidCfgs.map((c) => Number(c?.[k]) - 1).filter(Number.isFinite));
+  if (missing(cfg.columns)) cfg.columns = Array.from({ length: span("columnEnd") }, () => ({ unit: "fr", value: 1 }));
+  if (missing(cfg.rows)) {
+    const h = kidCfgs.length ? 50 : parseFloat(layer.style?.height) || 280;
+    cfg.rows = Array.from({ length: span("rowEnd") }, () => minRow(h));
+  }
+  if (Array.isArray(cfg.columns) && Array.isArray(cfg.rows)) cfg.grid = `${cfg.columns.length}x${cfg.rows.length}`;
+  if (unsaved) cfg.heightUnit ??= "auto";
+}
 export function repairSource(source: any): string[] {
   const fixed: string[] = [];
   if (!source || typeof source !== "object" || !Array.isArray(source.sections)) return fixed;
@@ -143,6 +160,84 @@ export function repairSource(source: any): string[] {
       if (!plugins.some((p: any) => p?.name === "store_show_extra_info")) {
         node.specials = { ...(node.specials || {}), plugins: [...plugins, { name: "store_show_extra_info" }] };
         fixed.push(`${who()}: added plugin store_show_extra_info (its custom-layout renders only with it)`);
+      }
+    }
+
+    // 7a. values outside the format real pages use, with one answer (8 → "8px" for fontSize,
+    //     "8px 8px 8px 8px" for borderRadius, "24px" → 24 for a number-only key…)
+    if (typeof node.type === "string")
+      for (const l of layersOf(node))
+        for (const where of ["style", "config"] as const) {
+          const obj = node[l]?.[where];
+          if (!obj || typeof obj !== "object") continue;
+          for (const [k, v] of Object.entries(obj)) {
+            if (where === "config" && (GENERIC_CONFIG.has(k) || !(schema?.config && k in schema.config))) continue;
+            const f = valueFormat(node.type, `${where}.${k}`);
+            let to = f ? coerceToFormat(f, v) : undefined;
+            // lineHeight "20px" with fontSize "16px" → 1.25: real pages store the multiplier (the
+            // renderer prints it raw), and it is the same line box.
+            if (k === "lineHeight" && to === undefined && f?.accept.includes("number") && !f.accept.includes("px") && /^\d+(\.\d+)?px$/.test(String(v)) && /^\d+(\.\d+)?px$/.test(String(obj.fontSize)))
+              to = Math.round((parseFloat(v as string) / parseFloat(obj.fontSize)) * 100) / 100;
+            if (to === undefined) continue;
+            obj[k] = to;
+            fixed.push(`${who()} ${l}.${where}.${k}: ${JSON.stringify(v)} → ${JSON.stringify(to)} (the format real pages use)`);
+          }
+        }
+
+    // 7b. layout values with one answer: "16px" gap → 16; a stale editor lock → the node's own cell
+    for (const l of layersOf(node)) {
+      const cfg = node[l]?.config;
+      if (!cfg || typeof cfg !== "object") continue;
+      for (const k of ["columnGap", "rowGap"])
+        if (typeof cfg[k] === "string" && /^\d+(\.\d+)?(px)?$/.test(cfg[k].trim())) {
+          fixed.push(`${who()} ${l}.config.${k}: "${cfg[k]}" → ${parseFloat(cfg[k])}`);
+          cfg[k] = parseFloat(cfg[k]);
+        }
+      const lk = cfg.lockCellGrid;
+      if (lk && typeof lk === "object" && Number.isInteger(cfg.columnStart) && ["columnStart", "columnEnd", "rowStart", "rowEnd"].some((k) => lk[k] !== cfg[k])) {
+        cfg.lockCellGrid = { columnStart: cfg.columnStart, columnEnd: cfg.columnEnd, rowStart: cfg.rowStart, rowEnd: cfg.rowEnd };
+        fixed.push(`${who()} ${l}.config.lockCellGrid → its own cell (the editor drags by it)`);
+      }
+    }
+
+    // 8. grid boxes: columns/rows every layer can render, and a grid string the editor agrees with
+    if (GRID_TYPES.has(node.type)) {
+      const kids = (Array.isArray(node.children) ? node.children : []).filter((c: any) => c && typeof c === "object");
+      const bps = layersOf(node).filter((l) => l !== "runtime");
+      if (!bps.length && node.type !== "section" && !hasTracks(node.runtime?.config)) {
+        // Built with children but no layout (buildElement(type, { children })): stack them, as
+        // buildFromSpec does. Placed children keep their cells; the grid is sized around them.
+        if (kids.length && kids.every((c: any) => c.runtime?.config?.rowStart == null)) stackChildren(node, kids);
+        else fillTracks((node.runtime ||= {}), kids.map((c: any) => c.runtime?.config), true);
+        fixed.push(`${who()}: no grid columns/rows → ${node.runtime.config.grid} (an empty grid-template piles the children up)`);
+      }
+      for (const l of bps)
+        if (!hasTracks(node[l].config)) {
+          fillTracks(node[l], kids.map((c: any) => c[l]?.config), false);
+          fixed.push(`${who()} ${l}: no grid columns/rows → ${node[l].config.grid}`);
+        }
+      for (const l of layersOf(node)) {
+        const cfg = node[l].config;
+        if (!cfg || !Array.isArray(cfg.columns) || !Array.isArray(cfg.rows)) continue;
+        // The builder keeps rows as min/max (Grid.vue's drag reads row.min): px/% → minmax(N, N),
+        // auto/max-c → its content row. Same render, and the editor can resize them.
+        const rows = cfg.rows.map(toEditorRow);
+        const changed = rows.filter((r: any, i: number) => r !== cfg.rows[i]).length;
+        if (changed) fixed.push(`${who()} ${l}.config.rows: ${changed} row(s) → builder min/max rows (the editor's row drag reads row.min)`);
+        cfg.rows = rows;
+        for (const tr of [...cfg.columns, ...cfg.rows.flatMap((r: any) => [r, r?.min, r?.max])])
+          if (tr?.unit === "px" && tr.absValue == null && Number.isFinite(Number(tr.value))) {
+            tr.absValue = Number(tr.value);
+            fixed.push(`${who()} ${l}: px track value → absValue (the renderer prints absValue)`);
+          }
+        const want = `${cfg.columns.length}x${cfg.rows.length}`;
+        if (cfg.columns.length && cfg.rows.length && cfg.grid !== want) {
+          fixed.push(`${who()} ${l}.config.grid "${cfg.grid ?? ""}" → "${want}" (the editor draws its cells from it)`);
+          cfg.grid = want;
+        }
+        // 9. padding on a saved grid box: the storefront prints it, the editor ignores it → spacer
+        //    tracks. Unsaved (runtime) nodes are converted by finalizeForRender, after the rows exist.
+        if (l !== "runtime" && padToTracks(node, l)) fixed.push(`${who()} ${l}.style.padding → spacer columns/rows (the editor ignores padding on a ${node.type})`);
       }
     }
 

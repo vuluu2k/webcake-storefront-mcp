@@ -1,6 +1,7 @@
 // Generation guide injected into builder tools so an AI agent understands the BuilderX
 // page model well enough to author pages that actually render.
 import { NATIVE_FIRST_GUIDE } from "./native-first.js";
+import { LAYOUT_FORMATS } from "./shape.js";
 
 export const BUILD_GUIDE = `# BuilderX page authoring guide
 
@@ -97,6 +98,8 @@ children with a grid:
   its children sit in \`columnStart:1, columnEnd:2\`.
 - each child config also has \`rowStart/rowEnd\` (1-based grid lines),
   \`constraintX\` (['left'|'right'|'centerLeft']), \`constraintY\` (['top'|'bottom'|'centerTop']).
+Exact value formats (the builder's own; enforced on save, also in get_element.keys.layout):
+${Object.entries(LAYOUT_FORMATS).map(([k, f]) => `- \`${k}\`${f.grid ? " (grid boxes)" : ""}: ${f.format}`).join("\n")}
 new_section does ALL of this for you: pass children and they are stacked one row each in
 the centre column.
 

@@ -16,6 +16,7 @@
 import { OBSERVED, ELEMENT_ATTRS, SHARED_SPECIALS, SHARED_KEY_DICT, GENERIC_CONFIG } from "./attributes.js";
 import { buildElement, describeType, isKnownType, ELEMENT_TYPES, presetOf } from "./catalog.js";
 import { readFileSync } from "node:fs";
+import { CLASS_DOC, GRID_TYPES, LAYOUT_FORMATS, valueClass } from "./shape.js";
 
 const loadJson = (name: string): any => {
   try {
@@ -112,6 +113,8 @@ export interface KeySpec {
   values?: string[];
   /** true: the published-page renderer reads it for this type; false: stored only (no effect). */
   rendered?: boolean;
+  /** Exact value shape (LAYOUT_FORMATS), enforced on save. */
+  format?: string;
 }
 export interface ElementSchema {
   type: string;
@@ -162,6 +165,79 @@ const enumOf = (desc?: string) => {
 };
 const typeOf = (v: any): KeyType | undefined =>
   v === null || v === undefined ? undefined : Array.isArray(v) ? "array" : (typeof v as KeyType);
+
+// ── Value formats mined from real pages (`npm run mine-elements` → value-formats.generated.json):
+// per type and key, how often each value class (shape.ts valueClass) occurs. A key's format = the
+// classes holding ≥1% of its real values — the type's own counts when it has ≥20, else the key's
+// counts over every type (≥200). A "css" class means free CSS: documented, never enforced.
+const VF: Record<string, Record<string, Record<string, number>>> = (() => {
+  try {
+    return JSON.parse(readFileSync(new URL("./value-formats.generated.json", import.meta.url), "utf8"));
+  } catch {
+    return {};
+  }
+})();
+const VF_ALL: Record<string, Record<string, number>> = {};
+for (const t of Object.values(VF))
+  for (const [k, c] of Object.entries(t)) for (const [cl, n] of Object.entries(c)) ((VF_ALL[k] ??= {})[cl] = (VF_ALL[k][cl] || 0) + n);
+const sum = (c?: Record<string, number>) => Object.values(c || {}).reduce((a, b) => a + b, 0);
+/** accept = the main classes (≥1%: the format to write, what repair converts to); seen = every
+ *  class real pages use (≥0.1% or ≥10 values: legal, left alone when there's no single fix). */
+export interface ValueFormat { accept: string[]; seen: string[]; free: boolean; n: number; doc: string }
+const vfCache = new Map<string, ValueFormat | null>();
+/** The format real pages use for `where.key` ("style.fontSize", "config.textColor") on this type. */
+// Names, labels and copy: free text by nature, a format there would only reject real content.
+const CONTENT_KEY = /name|label|placeholder|text|title|alt|desc|caption|message|link|url|src|href|class|css|html|code|icon/i;
+export function valueFormat(type: string, tk: string): ValueFormat | undefined {
+  if (!tk.startsWith("style.") && CONTENT_KEY.test(tk.split(".")[1] || "")) return undefined;
+  const ck = `${type}|${tk}`;
+  if (vfCache.has(ck)) return vfCache.get(ck) ?? undefined;
+  const own = VF[type]?.[tk];
+  const counts = sum(own) >= 20 ? own : sum(VF_ALL[tk]) >= 200 ? VF_ALL[tk] : undefined;
+  let out: ValueFormat | null = null;
+  if (counts) {
+    const n = sum(counts);
+    const classes = Object.entries(counts).filter(([cl]) => cl !== "empty" && cl !== "nan").sort((a, b) => b[1] - a[1]);
+    const accept = classes.filter(([, c]) => c / n >= 0.01).map(([cl]) => cl);
+    const seen = classes.filter(([, c]) => c / n >= 0.001 || c >= 10).map(([cl]) => cl);
+    if (accept.length) {
+      const share = (cl: string) => Math.round((100 * counts[cl]) / n);
+      const rare = seen.filter((cl) => !accept.includes(cl));
+      out = {
+        accept, seen, free: accept.includes("css"), n,
+        doc: `${accept.map((cl) => `${CLASS_DOC[cl] ?? cl} ${share(cl)}%`).join(" | ")}${rare.length ? ` (rare: ${rare.map((cl) => CLASS_DOC[cl] ?? cl).join(", ")})` : ""} (${n} real values)`,
+      };
+    }
+  }
+  vfCache.set(ck, out);
+  return out ?? undefined;
+}
+/** The one value the format allows for a value outside it, or undefined (no single answer). */
+export function coerceToFormat(f: ValueFormat, v: any): any {
+  const cl = valueClass(v);
+  if (!cl || f.free || f.accept.includes(cl)) return undefined;
+  const only = (...cls: string[]) => f.accept.every((a) => cls.includes(a));
+  if (cl === "number" && only("px", "length")) return `${v}px`;
+  if (cl === "number" && only("lengths", "px")) return `${v}px ${v}px ${v}px ${v}px`;
+  if (cl === "px" && only("lengths")) return `${v} ${v} ${v} ${v}`; // one corner → all four
+  if ((cl === "px" || cl === "numeric-string") && only("number")) return parseFloat(v);
+  if (cl === "number" && only("numeric-string", "keyword")) return String(v);
+  return undefined;
+}
+/** VALUE_FORMAT finding for one value, or undefined. */
+export function valueFormatFinding(type: string, tk: string, v: any, base: { id?: string; type: string; at: string }): Finding | undefined {
+  if (LAYOUT_FORMATS[tk.split(".")[1]] || GENERIC_CONFIG.has(tk.split(".")[1])) return undefined; // layout checks own these
+  const f = valueFormat(type, tk);
+  const cl = valueClass(v);
+  if (!f || f.free || !cl || cl === "empty" || f.accept.includes(cl)) return undefined;
+  const to = coerceToFormat(f, v);
+  if (to === undefined && f.seen.includes(cl)) return undefined; // rare but real, and no single fix
+  return {
+    ...base, code: "VALUE_FORMAT", severity: "warning",
+    message: `${JSON.stringify(v)} (${CLASS_DOC[cl] ?? cl}) is not how real ${type} pages store ${tk}: ${f.doc}`,
+    fix: to !== undefined ? `write ${JSON.stringify(to)} (saves do this)` : `write it as ${f.accept.map((a) => CLASS_DOC[a] ?? a).join(" or ")}`,
+  };
+}
 
 const cache = new Map<string, ElementSchema>();
 
@@ -219,6 +295,14 @@ export function elementSchema(type: string): ElementSchema | undefined {
       else if (seen) spec.seen = seen;
       if (!spec.enum && offered.length) spec.values = offered;
       if (desc) spec.desc = desc;
+      const lf = where === "config" ? LAYOUT_FORMATS[k] : undefined;
+      if (lf && (!lf.grid || GRID_TYPES.has(type))) {
+        spec.format = lf.format;
+        if (lf.grid) delete spec.desc; // e.g. "Number of columns" is grid-product's meaning, not a track list
+      } else if (!lf) {
+        const vf = valueFormat(type, `${where}.${k}`);
+        if (vf && !vf.free) spec.format = vf.doc;
+      }
       if (ek?.label) spec.label = ek.label;
       if (rk?.default !== undefined) spec.default = rk.default;
       // Grid/position config and shared specials are read by generic plumbing — no per-type flag.
@@ -355,7 +439,10 @@ export function checkElementKeys(node: any): Finding[] {
       if (NOISE.has(k) || k.startsWith("__")) continue; // __row/__cell: layout markers finalizeForRender consumes
       const at = `${where}.${k}`;
       if (k in specs) {
+        const before = out.length;
         checkValue(specs[k], v, { ...base, at }, out);
+        const vf = out.length === before ? valueFormatFinding(node.type, `${where.split(".").pop()}.${k}`, v, { ...base, at }) : undefined;
+        if (vf) out.push(vf);
         if (specs[k].rendered === false && v !== undefined && v !== null && v !== "")
           out.push({ ...base, at, code: "NO_EFFECT", severity: "warning", message: `no render code reads ${where.split(".").pop()}.${k} — stored, changes nothing on the published page`, fix: `drop it; see keys in get_element("${node.type}")` });
         continue;
@@ -379,8 +466,13 @@ export function checkElementKeys(node: any): Finding[] {
   const styleIn = (obj: any, where: string) => {
     if (!obj || typeof obj !== "object" || Array.isArray(obj)) return;
     for (const k of Object.keys(obj)) {
-      if (CSS_PROPS.has(k) || NOISE.has(k)) continue;
       const at = `${where}.${k}`;
+      if (CSS_PROPS.has(k)) {
+        const vf = valueFormatFinding(node.type, `style.${k}`, obj[k], { ...base, at });
+        if (vf) out.push(vf);
+        continue;
+      }
+      if (NOISE.has(k)) continue;
       if (k.includes("-") && CSS_PROPS.has(kebabToCamel(k)))
         out.push({ ...base, at, code: "STYLE_KEY", severity: "warning", message: "kebab-case style key: element-specific CSS reads camelCase", fix: `rename to "${kebabToCamel(k)}"` });
       else if (k in schema.config)
@@ -482,7 +574,14 @@ export function keyReference(type: string) {
   const schema = elementSchema(type);
   if (!schema) return undefined;
   const fmt = (v: unknown) => (typeof v === "string" ? JSON.stringify(v) : String(v));
-  const out: { specials: string[]; config: string[]; no_effect?: string[] } = { specials: [], config: [] };
+  const out: { specials: string[]; config: string[]; layout?: string[]; style?: string[]; no_effect?: string[] } = { specials: [], config: [] };
+  // Layout keys are generic (hidden below) but their value format is strict: list it.
+  const layout = Object.entries(schema.config).filter(([k, s]) => s.format && LAYOUT_FORMATS[k]).map(([k, s]) => `${k}: ${s.format}`);
+  if (layout.length) out.layout = layout;
+  // Style keys this type's real pages carry, with the format they are stored in (enforced on save).
+  const style = Object.keys(VF[type] || {}).filter((tk) => tk.startsWith("style.")).map((tk) => [tk.slice(6), valueFormat(type, tk)] as const)
+    .filter(([, f]) => f).sort((a, b) => b[1]!.n - a[1]!.n).map(([k, f]) => `${k}: ${f!.free ? "free CSS" : f!.doc}`);
+  if (style.length) out.style = style;
   const dead: string[] = [];
   for (const where of ["specials", "config"] as const) {
     const rows = Object.entries(schema[where]).filter(
@@ -501,6 +600,7 @@ export function keyReference(type: string) {
       if (s.enum) parts.push(`one of ${s.enum.join("|")}`);
       else if (s.values || s.seen) parts.push(`e.g. ${[...new Set([...(s.values || []), ...(s.seen || [])])].slice(0, 12).join("|")}`);
       if (s.default !== undefined && s.default !== "") parts.push(`default ${fmt(s.default)}`);
+      if (s.format) parts.push(`format ${s.format}`);
       out[where].push(parts.length ? `${k}: ${parts.join(" · ")}` : k);
     }
   }

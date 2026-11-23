@@ -12,7 +12,7 @@ import { validateEvents, normalizeEvents, type EventContext } from "./events.js"
 import { validateBindings, normalizeBindings, BINDING_DATASETS } from "./bindings.js";
 import { OBSERVED } from "./attributes.js";
 import { NODE_CODE_BUDGET } from "./native-first.js";
-import { checkShape } from "./shape.js";
+import { checkShape, contentRow, editorTrackIssue, GRID_TYPES, layoutProblems, trackProblem } from "./shape.js";
 import {
   BREAKPOINTS,
   BREAKPOINT_KEYS,
@@ -173,7 +173,7 @@ export function stackChildren(container: any, children: any[], opts: StackOpts =
   const colEnd = opts.contentColEnd || 2;
 
   const rows = children.map((child: any) => {
-    if (opts.autoRows) return { unit: "auto" };
+    if (opts.autoRows) return contentRow(); // the editor's auto row (it has no bare "auto" row)
     const h = (child.runtime && child.runtime.style && child.runtime.style.height) || 50;
     return { unit: "min/max", min: { unit: "px", absValue: h }, max: { unit: "max-c" } };
   });
@@ -595,6 +595,42 @@ export function validatePage(source: any, previous?: any, ctx: PageContext = {})
       else if (rows && (cc.rowEnd > rows + 1 || cc.rowStart > rows))
         w("GRID_RANGE", `placed in row ${cc.rowStart}–${cc.rowEnd} but its ${parentNode.type} has ${rows} row(s)`, "use new_section / new_row layouts, or fix rowStart/rowEnd");
     }
+    // Layout values (LAYOUT_FORMATS): a fractional/backwards cell, an unknown heightUnit or a "16px"
+    // gap prints invalid CSS (the renderer interpolates them raw) and the editor computes NaN.
+    for (const l of Object.keys(node).filter((k) => /^bp\d+$/.test(k) || k === "runtime"))
+      for (const p of layoutProblems(node[l]?.config))
+        e("LAYOUT_VALUE", `${l}.config.${p}`, "see get_element(type).keys.layout for the exact format");
+    // Grid boxes: the renderer prints grid-template-columns/rows from config.columns/rows per
+    // breakpoint (no fallback) and the editor draws its cells from config.grid. Saves fill a
+    // missing grid and fix a stale grid string (repairSource); what is left here is broken.
+    if (GRID_TYPES.has(type)) {
+      const bps = Object.keys(node).filter((k) => /^bp\d+$/.test(k) && node[k] && typeof node[k] === "object");
+      // An unsaved section gets its grid from finalizeForRender.
+      for (const l of bps.length ? bps : type === "section" ? [] : ["runtime"]) {
+        const cfg = node[l]?.config || {};
+        const { columns: cols, rows } = cfg;
+        const none = [cols, rows].map((t) => t == null || (Array.isArray(t) && !t.length));
+        if (none[0] || none[1]) {
+          e("GRID_EMPTY", `${l}.config has no ${none[0] && none[1] ? "columns/rows" : none[0] ? "columns" : "rows"}: the renderer prints an empty grid-template (the children pile up, height 0) and the editor can't drop into it`, "rebuild it with new_element / new_section, or give it columns [{unit:\"fr\",value:1}] + rows [{unit:\"min/max\",min:{unit:\"px\",absValue:50},max:{unit:\"max-c\"}}]");
+          continue;
+        }
+        if (!Array.isArray(cols) || !Array.isArray(rows)) continue; // SHAPE reports it
+        const want = `${cols.length}x${rows.length}`;
+        if ((cfg.grid ?? "1x1") !== want)
+          w("GRID_MISMATCH", `${l}.config.grid "${cfg.grid ?? "(none = 1x1)"}" but it has ${want} tracks: the editor draws its cells from grid and throws when a row has no cell`, `set grid "${want}" (saves do this)`);
+        for (const [key, list] of [["columns", cols], ["rows", rows]] as const)
+          list.forEach((tr: any, i: number) => {
+            const p = trackProblem(tr);
+            if (p) return e("GRID_TRACK", `${l}.config.${key}[${i}] ${p}: the browser drops the whole grid-template-${key} and the children pile up`, `give the track its value, e.g. {unit:"px",absValue:24} or {unit:"fr",value:1}`);
+            const q = editorTrackIssue(tr, key);
+            const fmt = `use the builder format: columns {unit:"fr",value} | {unit:"px",absValue} | {unit:"%",relValue}; rows {unit:"min/max",min:{unit:"px",absValue},max:{unit:"max-c"}}`;
+            if (q) (key === "rows" ? e : w)("GRID_FORMAT", `${l}.config.${key}[${i}] ${q}`, fmt);
+          });
+        const st = node[l]?.style || {};
+        if (type !== "section" && l !== "runtime" && hasPadding(st))
+          w("PADDING", `${l}.style.padding on a ${type}: the storefront prints it but the editor ignores it (ElementWrapper.vue style whitelist), so the builder shows another layout and nobody can edit it`, "use spacer tracks: a px column left/right and a px row top/bottom (saves convert px padding)");
+      }
+    }
     // Renderer crashes / silent drops found by rendering every type (scripts/render-smoke.mjs).
     if (type === "checkbox-group") {
       // build_checkbox_group enumerates specials.options: nil there blanks the page (verified by rendering).
@@ -817,10 +853,10 @@ function remapToSiteBreakpoints(node: any, site: Record<string, [number, number]
   Object.assign(node, out);
 }
 
-/** Grid boxes the editor creates with a 1x1 grid (ContainerPicker.vue / popupBPSample). Left with
- *  no rows, the editor's useFindGridArea throws (nothing can be dropped in) and the renderer
- *  emits an empty grid-template with a zero height. */
-const EMPTY_GRID_TYPES = new Set(["container", "form", "popup"]);
+/** Grid boxes left with no rows: the editor's useFindGridArea throws (nothing can be dropped in)
+ *  and the renderer emits an empty grid-template with a zero height, so every grid type (not
+ *  only container/form/popup) gets the editor's 1x1 grid (ContainerPicker.vue / popupBPSample). */
+const needsEmptyGrid = (type: string) => GRID_TYPES.has(type) && type !== "section";
 /** Margin offsets the editor writes on every drop (setDimensionUnit, editor.js). Missing, the
  *  renderer prints `margin-left: %;` and the constraint/align panels compute NaN. */
 const OFFSET_ZEROS = {
@@ -855,7 +891,7 @@ function expandNodeToBreakpoints(node: any, site: Record<string, [number, number
     let baseConfig: any = { ...(rt.config || {}), loaded: true };
     if (node.type !== "section") baseConfig = { ...OFFSET_ZEROS, ...baseConfig };
     if (node.type === "popup" && !baseConfig.widthUnit) baseConfig.widthUnit = "px"; // editor popupBPSample
-    if (EMPTY_GRID_TYPES.has(node.type) && !(node.children || []).length && !(Array.isArray(baseConfig.rows) && baseConfig.rows.length))
+    if (needsEmptyGrid(node.type) && !(node.children || []).length && !(Array.isArray(baseConfig.rows) && baseConfig.rows.length))
       baseConfig = {
         ...baseConfig,
         grid: "1x1",
@@ -966,7 +1002,48 @@ export function finalizeForRender(source: any, siteBreakpoints?: SiteBreakpoints
     siteGrid = null;
   }
   walk(source, nameLikeEditor);
+  // Children have their bp layers only now: padding on a grid box → spacer tracks.
+  walk(source, (n) => {
+    if (GRID_TYPES.has(n?.type)) for (const k of Object.keys(n)) if (/^bp\d+$/.test(k)) padToTracks(n, k);
+  });
   return source;
+}
+
+const PAD_KEYS = ["padding", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft"];
+const hasPadding = (st: any) => !!st && PAD_KEYS.some((k) => st[k] != null && st[k] !== "");
+/** style.padding (px) on a saved grid box → a px column left/right and a px row top/bottom, the
+ *  children moved one cell in. The storefront prints padding (build_style) but the editor never
+ *  applies it (ElementWrapper.vue style whitelist): converted, both show the same box. A spacer
+ *  track also gets the column/row gap, so it is padding − gap. Left alone (PADDING warns) when it
+ *  isn't px, is smaller than the gap, or a child has no cell in this layer. */
+export function padToTracks(node: any, l: string): boolean {
+  const st = node[l]?.style, cfg = node[l]?.config;
+  if (node.type === "section" || !hasPadding(st) || !cfg || !Array.isArray(cfg.columns) || !Array.isArray(cfg.rows)) return false;
+  const px = (v: any) => (v == null || v === "" ? undefined : /^-?\d+(\.\d+)?(px)?$/.test(String(v).trim()) ? parseFloat(v) : NaN);
+  const parts = String(st.padding ?? "").trim().split(/\s+/).filter(Boolean).map(px) as number[];
+  if (parts.length > 4) return false;
+  const [t = 0, r = t, b = t, lf = r] = parts;
+  const side = (k: string, d: number) => px(st[k]) ?? d;
+  const [pt, pr, pb, pl] = [side("paddingTop", t), side("paddingRight", r), side("paddingBottom", b), side("paddingLeft", lf)];
+  const cg = Number(cfg.columnGap) || 0, rg = Number(cfg.rowGap) || 0;
+  const ok = (v: number, gap: number) => Number.isFinite(v) && (v === 0 || v >= gap);
+  if (!ok(pt, rg) || !ok(pb, rg) || !ok(pl, cg) || !ok(pr, cg)) return false;
+  const kids = (Array.isArray(node.children) ? node.children : []).map((c: any) => c?.[l]?.config);
+  if (kids.some((kc: any) => !kc || ((kc.position || "default") === "default" && kc.columnStart == null))) return false;
+  for (const kc of kids) {
+    if (kc.columnStart == null) continue;
+    if (pl > 0) { kc.columnStart += 1; kc.columnEnd += 1; }
+    if (pt > 0) { kc.rowStart += 1; kc.rowEnd += 1; }
+    if (kc.lockCellGrid) kc.lockCellGrid = { columnStart: kc.columnStart, columnEnd: kc.columnEnd, rowStart: kc.rowStart, rowEnd: kc.rowEnd };
+  }
+  const row = (h: number) => ({ unit: "min/max", min: { unit: "px", absValue: h }, max: { unit: "px", absValue: h } });
+  if (pl > 0) cfg.columns.unshift({ unit: "px", absValue: pl - cg });
+  if (pr > 0) cfg.columns.push({ unit: "px", absValue: pr - cg });
+  if (pt > 0) cfg.rows.unshift(row(pt - rg));
+  if (pb > 0) cfg.rows.push(row(pb - rg));
+  cfg.grid = `${cfg.columns.length}x${cfg.rows.length}`;
+  for (const k of PAD_KEYS) delete st[k];
+  return true;
 }
 
 /** The site's section grid (settings.defaultGrid, set by the editor per breakpoint), for the

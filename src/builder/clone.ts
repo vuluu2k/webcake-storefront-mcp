@@ -370,6 +370,8 @@ export function probeColumns(keys: string[]): Record<string, number> {
   return out;
 }
 
+/** borderRadius the way real pages store it: four corners (value-formats: 99% "Npx Npx Npx Npx"). */
+const corners = (r: number) => `${r}px ${r}px ${r}px ${r}px`;
 const PROBE_WIDTHS: Record<string, number> = { bp2: 1100, bp3: 768, bp4: 390 };
 
 /** Capture with a Playwright page: the 1440 snapshot plus, per breakpoint, the column count each
@@ -425,7 +427,7 @@ const bgStyle = (st: any = {}, base?: string) => {
   // Split keys: element CSS reads borderWidth/borderStyle/borderColor (real pages use them).
   const b = st.border && /^(\d+)px (\w+) (.+)$/.exec(st.border);
   if (b) Object.assign(o, { borderWidth: `${b[1]}px`, borderStyle: b[2], borderColor: b[3] });
-  if (st.radius) o.borderRadius = `${st.radius}px`;
+  if (st.radius) o.borderRadius = corners(st.radius);
   if (st.shadow) o.boxShadow = st.shadow;
   return o;
 };
@@ -501,7 +503,7 @@ function spec(n: any, c: Ctx, area?: Area): any {
       return { type: "text", opts: { text: n.html || n.text, specials: { tag: n.tag || "p" }, style, ...(events ? { events } : {}), ...(keepLine ? { responsive: WRAP_SMALL } : {}) } };
     case "image":
       c.images.push(n.src);
-      return { type: "image", opts: { src: n.src, width: n.w, height: n.h, align: placeOf(n, area), config: fixedOrShare(n, area), specials: n.alt ? { image_alt: n.alt } : undefined, style: { ...(n.radius ? { borderRadius: `${n.radius}px` } : {}), ...(n.fit && n.fit !== "fill" ? { objectFit: n.fit } : {}) } } };
+      return { type: "image", opts: { src: n.src, width: n.w, height: n.h, align: placeOf(n, area), config: fixedOrShare(n, area), specials: n.alt ? { image_alt: n.alt } : undefined, style: { ...(n.radius ? { borderRadius: corners(n.radius) } : {}), ...(n.fit && n.fit !== "fill" ? { objectFit: n.fit } : {}) } } };
     case "icon": {
       note(c, "svg icon → image (data URI; rehost_images uploads it as PNG)");
       const svg = /xmlns=/.test(n.svg) ? n.svg : n.svg.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');

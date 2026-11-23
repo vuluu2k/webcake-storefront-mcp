@@ -28,6 +28,10 @@ const CONTENT_KEY = /label|placeholder|text|title|name|content|desc|alt|message|
 const typeOf = (v) => (Array.isArray(v) ? "array" : v === null ? "null" : typeof v);
 const values = {}; // `${type}|${where}.${key}` → Set | null (null = not code-like)
 const parentsRun = {}; // type → parent type → count ("(page)" for a top-level section)
+// Value FORMAT per key (style too): `${type}|${where}.${key}` → class → count. Content keys are
+// classed but never stored as values. Written to value-formats.generated.json (replaced each run).
+const formats = {};
+const { valueClass: classOf } = await import("../dist/builder/shape.js");
 const childrenRun = {}; // type → child type → count
 
 function entry(type) {
@@ -39,6 +43,11 @@ function note(type, bucket, obj) {
   const keys = new Set(e[bucket]);
   for (const [k, v] of Object.entries(obj)) {
     keys.add(k);
+    const fc = classOf(v);
+    if (fc) {
+      const f = ((formats[type] ??= {})[`${bucket}.${k}`] ??= {});
+      f[fc] = (f[fc] || 0) + 1;
+    }
     if (bucket === "style") continue;
     const tk = `${bucket}.${k}`;
     const types = new Set((e.types ??= {})[tk] || []);
@@ -112,4 +121,8 @@ for (const [type, cs] of Object.entries(childrenRun)) db[type].children = byCoun
 const sorted = Object.fromEntries(Object.keys(db).sort().map((k) => [k, db[k]]));
 // One element per line: compact, and a diff still reads per element.
 writeFileSync(FILE, `{\n${Object.entries(sorted).map(([k, v]) => `${JSON.stringify(k)}:${JSON.stringify(v)}`).join(",\n")}\n}\n`);
+writeFileSync(
+  new URL("../src/builder/value-formats.generated.json", import.meta.url),
+  `{\n${Object.keys(formats).sort().map((t) => `${JSON.stringify(t)}:${JSON.stringify(formats[t])}`).join(",\n")}\n}\n`,
+);
 console.error(`mined ${pages} pages from ${sites.length} sites → ${Object.keys(db).length} element types`);

@@ -4,6 +4,8 @@
 // section or canvas. Every `errors` entry below is such a crash, with the code that throws.
 // `warnings` are layouts that render wrong but don't throw.
 
+import { OBSERVED } from "./attributes.js";
+
 const isObj = (v: any) => v !== null && typeof v === "object" && !Array.isArray(v);
 const BP_KEY = /^bp\d+$/;
 // Ids end up in `#id` CSS selectors and querySelector (editor Grid.vue / grid.js).
@@ -22,7 +24,119 @@ const NEEDS_SPECIALS = new Set([
 const CHILD_TYPES: Record<string, string[]> = { swiper: ["slide"], menu: ["menu-item", "menu-droppable"], collapse: ["collapse-item"] };
 /** Editor components that index specials.options (Select.vue, Radio.vue, Checkbox). */
 const OPTION_TYPES = new Set(["select", "radio", "checkbox"]);
-const GRID_CONTAINERS = new Set(["section", "container", "form", "popup", "carousel"]);
+/** Types whose config.columns/rows are grid TRACKS: every real page stores an array there
+ *  (element-keys.generated.json); grid-product & co. store a count instead. */
+export const GRID_TYPES = new Set([
+  "section", "container", "form", "popup", "carousel",
+  ...Object.entries(OBSERVED as Record<string, any>)
+    .filter(([, t]) => JSON.stringify(t?.types?.["config.columns"]) === '["array"]')
+    .map(([k]) => k),
+]);
+// convert_style_grid (builderx_api html/common.ex) prints "#{obj[key]}<unit>": a missing value
+// prints a bare "px", and the browser drops the whole grid-template.
+const TRACK_VALUE: Record<string, string> = { px: "absValue", "%": "relValue", calc: "calcValue", vh: "vhValue", vw: "vwValue" };
+const blank = (v: any) => v == null || v === "" || (typeof v !== "string" && !Number.isFinite(Number(v)));
+// The builder's own grid format (builderx_spa): GridAreaItem.vue offers columns in fr/px/% and
+// rows as min/max with a px/% min; grid.js getCI measures only fr/px/% columns and Grid.vue's row
+// drag reads row.min (convertUnitMinToPx), so any other row shape throws in the editor.
+const EDITOR_COLUMN_UNITS = new Set(["fr", "px", "%"]);
+/** The editor's content-sized row (what it saves for "auto" height rows). */
+export const contentRow = () => ({ unit: "min/max", min: { unit: "px", absValue: 0 }, max: { unit: "max-c" } });
+/** A row in the editor's format that renders the same, or the row unchanged when none does. */
+export function toEditorRow(tr: any): any {
+  if (!isObj(tr) || tr.unit === "min/max") return tr;
+  const n = Number(tr.absValue), p = Number(tr.relValue);
+  if (tr.unit === "px" && Number.isFinite(n)) return { unit: "min/max", min: { unit: "px", absValue: n }, max: { unit: "px", absValue: n } };
+  if (tr.unit === "%" && Number.isFinite(p)) return { unit: "min/max", min: { unit: "%", relValue: p }, max: { unit: "%", relValue: p } };
+  if (tr.unit === "auto" || tr.unit === "max-c" || tr.unit === "min-c") return contentRow();
+  return tr;
+}
+/** Why the editor can't use this track, or null. */
+export function editorTrackIssue(tr: any, kind: "columns" | "rows"): string | null {
+  if (!isObj(tr)) return null;
+  const unit = tr.unit ?? "fr";
+  if (kind === "columns") return EDITOR_COLUMN_UNITS.has(unit) ? null : `unit "${unit}" is not a builder column (fr/px/%): the editor measures it as nothing and drops land in the wrong cell`;
+  if (unit !== "min/max") return `{unit:"${unit}"} is not a builder row (min/max): the editor's row drag reads row.min and throws`;
+  if (!isObj(tr.min) || !["px", "%"].includes(tr.min.unit)) return "the row's min must be px or %: the editor's row panel and drag only handle those";
+  return null;
+}
+// ── Value classes: ONE classifier for the miner (value-formats.generated.json) and the checks ──
+const LEN = "-?\\d*\\.?\\d+(px|em|rem|%|vw|vh|pt)";
+const VALUE_CLASSES: [string, RegExp][] = [
+  ["px", /^-?\d*\.?\d+px$/],
+  ["length", new RegExp(`^${LEN}$`)],
+  ["lengths", new RegExp(`^(${LEN}|0|auto)( (${LEN}|0|auto)){1,3}$`)],
+  ["numeric-string", /^-?\d*\.?\d+$/],
+  ["color", /^(#[0-9a-f]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)|transparent)$/i],
+  ["var", /^var\(--[\w-]+\)$/],
+  ["gradient", /gradient\(/],
+  ["url", /url\(|^https?:\/\//],
+  ["keyword", /^[a-zA-Z][a-zA-Z0-9_-]{0,30}$/],
+  ["shorthand", /px.*(#|rgba?\()|(#|rgba?\().*px/],
+];
+/** The format class of one stored value (null for null/undefined). */
+export function valueClass(v: any): string | null {
+  if (v === null || v === undefined) return null;
+  if (Array.isArray(v)) return "array";
+  if (typeof v === "number") return Number.isFinite(v) ? "number" : "nan";
+  if (typeof v !== "string") return typeof v;
+  if (v === "") return "empty";
+  const s = v.trim();
+  for (const [name, re] of VALUE_CLASSES) if (re.test(s)) return name;
+  return "css";
+}
+/** How to write a value of each class (for get_element and messages). */
+export const CLASS_DOC: Record<string, string> = {
+  number: "number", px: '"<N>px"', length: '"<N>px|%|em|vw"', lengths: '"<N>px <N>px <N>px <N>px"',
+  "numeric-string": '"<N>" (string)', color: '"#rrggbb" | "rgba(r,g,b,a)"', var: '"var(--color_N)" (theme)',
+  gradient: '"linear-gradient(…)"', url: '"url(…)" | "https://…"', keyword: "keyword", shorthand: 'CSS shorthand e.g. "0px 2px 4px rgba(…)"',
+  css: "CSS value", boolean: "boolean", array: "array", object: "object",
+};
+
+/** The exact value format of every layout key, in the builder's own shape (what builderx_spa
+ *  writes and can edit). ONE definition: get_element shows it (schema `format`), BUILD_GUIDE
+ *  quotes it, and every rule here is enforced by validatePage / checkShape (+ repairSource for the
+ *  one-answer fixes). `grid: true` = only on GRID_TYPES; the others apply to any placed child. */
+export const LAYOUT_FORMATS: Record<string, { format: string; grid?: true }> = {
+  grid: { grid: true, format: '"<cols>x<rows>" = columns.length x rows.length, e.g. "1x3"' },
+  columns: { grid: true, format: 'non-empty list of {unit:"fr",value:N} | {unit:"px",absValue:N} | {unit:"%",relValue:N}' },
+  rows: { grid: true, format: 'non-empty list of {unit:"min/max",min:{unit:"px",absValue:N}|{unit:"%",relValue:N},max:{unit:"max-c"}|{unit:"px",absValue:N}}; content-sized row = min absValue 0, max max-c' },
+  columnGap: { grid: true, format: "number (px), no unit string" },
+  rowGap: { grid: true, format: "number (px), no unit string" },
+  columnStart: { format: "integer ≥ 1: grid line in the PARENT's grid (columnEnd > columnStart, ≤ parent columns + 1)" },
+  columnEnd: { format: "integer > columnStart, ≤ parent columns + 1" },
+  rowStart: { format: "integer ≥ 1: grid line in the PARENT's grid (rowEnd > rowStart, ≤ parent rows + 1)" },
+  rowEnd: { format: "integer > rowStart, ≤ parent rows + 1" },
+  constraintX: { format: `1-2 of ${[...CONSTRAINT_X].join("|")}, e.g. ["left","right"] = stretch` },
+  constraintY: { format: `1-2 of ${[...CONSTRAINT_Y].join("|")}, e.g. ["top"]` },
+  widthUnit: { format: '"%" (+ relWidth N) | "px" (+ style.width N) | "auto"' },
+  heightUnit: { format: '"auto" | "px" (+ style.height N) | "vh" (+ vhHeight N) | "vw" (+ vwHeight N) | "%" (+ relHeight N)' },
+  lockCellGrid: { format: "optional editor lock {columnStart,columnEnd,rowStart,rowEnd} = this node's own cell" },
+};
+const HEIGHT_UNITS = new Set(["auto", "px", "vh", "vw", "%"]);
+const PLACEMENT = ["columnStart", "columnEnd", "rowStart", "rowEnd"] as const;
+/** Layout-value problems of one config layer (beyond the grid tracks), per LAYOUT_FORMATS. */
+export function layoutProblems(cfg: any): string[] {
+  const out: string[] = [];
+  if (!isObj(cfg)) return out;
+  const has = PLACEMENT.filter((k) => cfg[k] != null);
+  for (const k of has) if (!Number.isInteger(cfg[k]) || cfg[k] < 1) out.push(`${k} ${JSON.stringify(cfg[k])} must be an integer ≥ 1 (a grid line)`);
+  if (Number.isInteger(cfg.columnStart) && Number.isInteger(cfg.columnEnd) && cfg.columnEnd <= cfg.columnStart) out.push(`columnEnd ${cfg.columnEnd} must be > columnStart ${cfg.columnStart}`);
+  if (Number.isInteger(cfg.rowStart) && Number.isInteger(cfg.rowEnd) && cfg.rowEnd <= cfg.rowStart) out.push(`rowEnd ${cfg.rowEnd} must be > rowStart ${cfg.rowStart}`);
+  if (cfg.heightUnit != null && !HEIGHT_UNITS.has(cfg.heightUnit)) out.push(`heightUnit "${cfg.heightUnit}" must be ${[...HEIGHT_UNITS].join("|")}`);
+  for (const k of ["columnGap", "rowGap"]) if (cfg[k] != null && !(typeof cfg[k] === "number" && Number.isFinite(cfg[k]))) out.push(`${k} ${JSON.stringify(cfg[k])} must be a number (px)`);
+  return out;
+}
+/** Why this track prints invalid CSS, or null. A null track prints 1fr (the editor saves those). */
+export function trackProblem(tr: any): string | null {
+  if (!isObj(tr)) return null;
+  const unit = tr.unit ?? "fr";
+  const k = TRACK_VALUE[unit];
+  if (k && blank(tr[k])) return `{unit:"${unit}"} has no ${k}`;
+  if (unit !== "min/max") return null;
+  if (!isObj(tr.min) || (tr.min.unit ?? "fr") === "fr") return "min/max needs a px/% min (a missing or fr min prints minmax(1fr, …), invalid CSS)";
+  return trackProblem(tr.min) || trackProblem(tr.max);
+}
 const UNIT_SUFFIXED = /^-?\d+(\.\d+)?(px|%|vw|vh|rem|em)$/;
 const NUMERIC_STYLE = ["width", "height", "top", "left", "right", "bottom", "columnGap", "rowGap"];
 
@@ -86,7 +200,7 @@ export function checkShape(source: any): { errors: string[]; warnings: string[];
       const t = cfg[key];
       if (!t) continue;
       // grid-product & co. store a per-row COUNT here; only grid containers map it as tracks.
-      if (typeof t === "number" && !GRID_CONTAINERS.has(node.type)) continue;
+      if (typeof t === "number" && !GRID_TYPES.has(node.type)) continue;
       // null tracks are saved by the editor itself; convert_style_grid treats nil as %{}.
       if (!Array.isArray(t) || !t.every((tr: any) => tr === null || isObj(tr))) {
         errors.push(`${at}.${key} must be an array of track objects { unit, value }: the grid builder throws.`);

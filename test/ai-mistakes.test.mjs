@@ -134,3 +134,149 @@ test("điều kiện hiển thị đọc từ code → báo trước khi dựng 
   assert.match(warn(B("rating-input"), { kind: "main" }), /auto_hide_without_star:false/);
   assert.doesNotMatch(warn(B("rating-input"), { kind: "store" }), /EMPTY_RENDER/);
 });
+
+test("lưới: mọi element có lưới ra columns/rows/grid đúng format builderx_spa, không để trống", async () => {
+  const { finalizeForRender } = await import("../dist/builder/page.js");
+  const { GRID_TYPES } = await import("../dist/builder/shape.js");
+  const errs = (src) => (validatePage(src).errors || []).join("\n");
+  // a container built with children but no layout: stacked like buildFromSpec, then renders
+  const c = B("container", { children: [T("A"), T("B")] });
+  const src = { sections: [buildSection([])] };
+  src.sections[0].children = [c];
+  assert.match(errs(src), /GRID_EMPTY/);
+  assert.match(repairSource(src).join("\n"), /no grid columns\/rows → 1x2/);
+  assert.deepEqual(c.children.map((k) => k.runtime.config.rowStart), [1, 2]);
+  finalizeForRender(src);
+  assert.equal(c.bp1.config.grid, "1x2");
+  assert.equal(errs(src), "");
+  // every grid type built bare and saved has a grid
+  for (const t of GRID_TYPES) {
+    if (t === "section" || t === "popup") continue;
+    let n;
+    try { n = B(t); } catch { continue; }
+    const s = { sections: [buildSection([])] };
+    s.sections[0].children = [n];
+    repairSource(s);
+    finalizeForRender(s);
+    assert.doesNotMatch(errs(s), /GRID_EMPTY|GRID_TRACK|GRID_FORMAT/, t);
+  }
+  // saved shape: stale grid string, px rows, a px track missing absValue
+  const saved = finalizeForRender({ sections: [buildSection([{ type: "container", children: [{ type: "text", opts: { text: "x" } }] }])] });
+  const box = saved.sections[0].children[0];
+  box.bp1.config.grid = "5x7";
+  box.bp1.config.rows = [{ unit: "px", absValue: 34 }];
+  assert.match((validatePage(saved).warnings || []).join("\n"), /GRID_MISMATCH/);
+  assert.match(errs(saved), /GRID_FORMAT.*row drag/);
+  repairSource(saved);
+  assert.equal(box.bp1.config.grid, "1x1");
+  assert.deepEqual(box.bp1.config.rows[0], { unit: "min/max", min: { unit: "px", absValue: 34 }, max: { unit: "px", absValue: 34 } });
+  box.bp2.config.columns = [{ unit: "px" }];
+  assert.match(errs(saved), /GRID_TRACK.*no absValue/);
+  box.bp2.config.columns = [{ unit: "vw", vwValue: 50 }];
+  assert.match((validatePage(saved).warnings || []).join("\n"), /GRID_FORMAT.*not a builder column/);
+  // auto rows from stackChildren are the editor's content row
+  const auto = buildSection([{ type: "container", autoRows: true, children: [{ type: "text", opts: { text: "x" } }] }]).children[0];
+  assert.deepEqual(auto.runtime.config.rows[0], { unit: "min/max", min: { unit: "px", absValue: 0 }, max: { unit: "max-c" } });
+});
+
+test("padding trên container: editor bỏ qua, renderer in ra → đổi thành track đệm khi lưu", async () => {
+  const { finalizeForRender } = await import("../dist/builder/page.js");
+  const make = (style, cfg = {}) => {
+    const s = finalizeForRender({ sections: [buildSection([{ type: "container", opts: { style, config: cfg }, children: [{ type: "text", opts: { text: "x" } }] }])] });
+    return s.sections[0].children[0];
+  };
+  // unsaved → converted by finalizeForRender (rowGap 16 from stackChildren is subtracted)
+  const box = make({ padding: "20px 24px" });
+  assert.equal(box.bp1.style.padding, undefined);
+  assert.equal(box.bp1.config.grid, "3x3");
+  assert.deepEqual(box.bp1.config.columns.map((c) => c.absValue ?? c.unit), [24, "fr", 24]);
+  assert.equal(box.bp1.config.rows[0].min.absValue, 20 - 16);
+  const kid = box.children[0].bp1.config;
+  assert.deepEqual([kid.columnStart, kid.columnEnd, kid.rowStart, kid.rowEnd], [2, 3, 2, 3]);
+  assert.equal((validatePage({ sections: [buildSection([])] }).warnings || []).some((w) => /PADDING/.test(w)), false);
+  // saved node with padding (an older write) → warned, and the save converts it
+  const saved = { sections: [buildSection([])] };
+  saved.sections[0].children = [make({})];
+  finalizeForRender(saved);
+  const b = saved.sections[0].children[0];
+  b.bp1.style.padding = "14px";
+  b.bp1.config.rowGap = 0; // like the pasted CONTAINER-cakesngot (rowGap/columnGap 0)
+  assert.match((validatePage(saved).warnings || []).join("\n"), /PADDING/);
+  assert.match(repairSource(saved).join("\n"), /spacer columns\/rows/);
+  assert.equal(b.bp1.config.grid, "3x3");
+  // not px, or smaller than the gap: no single answer → left, still warned
+  assert.equal(make({ padding: "1em" }).bp1.style.padding, "1em");
+  assert.equal(make({ padding: "8px" }).bp1.style.padding, "8px"); // < rowGap 16
+});
+
+test("schema ghi đúng format key layout và save thực thi đúng format đó", async () => {
+  const { keyReference, elementSchema } = await import("../dist/builder/element-schema.js");
+  const { LAYOUT_FORMATS } = await import("../dist/builder/shape.js");
+  const box = keyReference("container").layout.join("\n");
+  for (const k of Object.keys(LAYOUT_FORMATS)) assert.match(box, new RegExp(`^${k}: `, "m"), k);
+  assert.doesNotMatch(keyReference("text").layout.join("\n"), /^(rows|columns|grid): /m); // not a grid box
+  assert.deepEqual(elementSchema("grid-product").config.columns.types, ["number"]); // a count there
+  // each rule is enforced
+  const errs = (mut) => {
+    const n = T("x");
+    mut(n.runtime.config);
+    return outcome([n]);
+  };
+  assert.match(errs((c) => { c.columnStart = 1.5; }).detail, /LAYOUT_VALUE.*integer/);
+  assert.match(errs((c) => { c.rowStart = 3; c.rowEnd = 2; }).detail, /LAYOUT_VALUE.*rowEnd 2 must be > rowStart 3/);
+  assert.match(errs((c) => { c.heightUnit = "em"; }).detail, /LAYOUT_VALUE.*heightUnit/);
+  // one-answer forms are fixed on save
+  const c = B("container", { children: [T("x")] });
+  c.runtime = { config: { rowGap: "16px" } };
+  assert.equal(outcome([c]).verdict, "FIXED");
+  assert.equal(c.runtime.config.rowGap, 16);
+  const t = T("x");
+  Object.assign(t.runtime.config, { columnStart: 2, columnEnd: 3, rowStart: 1, rowEnd: 2, lockCellGrid: { columnStart: 1, columnEnd: 2, rowStart: 1, rowEnd: 2 } });
+  repairSource({ sections: [{ type: "section", id: "SECTION-x", children: [t] }] });
+  assert.deepEqual(t.runtime.config.lockCellGrid, { columnStart: 2, columnEnd: 3, rowStart: 1, rowEnd: 2 });
+});
+
+test("format value của style/config suy từ trang thật: schema ghi ra, save quy về, lệch thì báo", async () => {
+  const { keyReference, valueFormat } = await import("../dist/builder/element-schema.js");
+  const { finalizeForRender, walk } = await import("../dist/builder/page.js");
+  const { checkElementKeys } = await import("../dist/builder/element-schema.js");
+  const { ELEMENT_TYPES } = await import("../dist/builder/catalog.js");
+  // get_element shows the style format per key
+  assert.match(keyReference("text").style.join("\n"), /^fontSize: "<N>px"/m);
+  assert.match(keyReference("container").style.join("\n"), /^borderRadius: "<N>px <N>px <N>px <N>px"/m);
+  assert.equal(valueFormat("text", "specials.field_name"), undefined); // names are free text
+  // one-answer conversions on save
+  const t = T("x");
+  Object.assign(t.runtime.style, { lineHeight: "27px" });
+  t.runtime.style.fontSize = "18px";
+  const c = B("container", { children: [T("y")] });
+  c.runtime = { style: { borderRadius: 8 } };
+  const fixed = repairSource({ sections: [{ id: "SECTION-x", type: "section", children: [t, c] }] }).join("\n");
+  assert.equal(t.runtime.style.lineHeight, 1.5);
+  const ds = B("text-dataset", { bindings: [{ target: "product::product_name" }] });
+  ds.runtime.style.fontWeight = 700; // text-dataset pages: 98% "700" strings (text: numbers are common too)
+  repairSource({ sections: [{ id: "SECTION-z", type: "section", children: [ds] }] });
+  assert.equal(ds.runtime.style.fontWeight, "700");
+  assert.equal(c.runtime.style.borderRadius, "8px 8px 8px 8px");
+  assert.match(fixed, /the format real pages use/);
+  const n = T("x");
+  n.runtime.style.fontSize = 16;
+  repairSource({ sections: [{ id: "SECTION-y", type: "section", children: [n] }] });
+  assert.equal(n.runtime.style.fontSize, "16px"); // the editor (Vue :style) adds no px
+  // no single fix → reported with the format
+  const bad = T("x");
+  bad.runtime.style.color = "{{brand}}";
+  assert.match(outcome([bad]).detail, /VALUE_FORMAT.*color/);
+  // every factory element, saved, writes values in the real format
+  const left = [];
+  for (const type of ELEMENT_TYPES) {
+    let el;
+    try { el = B(type); } catch { continue; }
+    const src = { sections: [buildSection([])] };
+    src.sections[0].children = [el];
+    repairSource(src);
+    finalizeForRender(src);
+    walk(src, (node) => { for (const f of checkElementKeys(node)) if (f.code === "VALUE_FORMAT") left.push(`${node.type} ${f.at}`); return true; });
+  }
+  assert.deepEqual(left, []);
+});
