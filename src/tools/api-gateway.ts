@@ -109,7 +109,7 @@ export function redactSecrets(v: any, secretRoute = false, depth = 0): any {
   return out;
 }
 
-const LIST_KEYS = ["data", "items", "products", "orders", "customers", "articles", "results", "list", "records", "entries"];
+const LIST_KEYS = ["data", "items", "products", "orders", "customers", "articles", "results", "list", "records", "entries", "sites"];
 /** Trim a response for the model: keep `pick` fields per item, cap list length. */
 export function trimResult(res: any, pick?: string[], maxItems = 50): any {
   const pickOne = (x: any) =>

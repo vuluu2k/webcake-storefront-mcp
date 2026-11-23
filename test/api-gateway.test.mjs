@@ -88,6 +88,19 @@ test("searchOps xếp route site-scoped lên trước; trimResult giữ nguyên 
   assert.deepEqual(trimResult({ a: 1, b: 2 }, ["a"]), { a: 1 });
 });
 
+test("trimResult cắt cả data.sites (all_site_in_team cũ) và data top-level (team_site_options)", () => {
+  const sites = Array.from({ length: 3 }, (_, i) => ({ id: `s${i}`, name: `Site ${i}`, owner: { big: true }, tags: [] }));
+  assert.deepEqual(trimResult({ success: true, data: { sites, total_entries: 3 } }, ["id", "name"], 2), {
+    success: true,
+    data: { sites: { items: [{ id: "s0", name: "Site 0" }, { id: "s1", name: "Site 1" }], total_items: 3, truncated: true }, total_entries: 3 },
+  });
+  assert.deepEqual(trimResult({ success: true, data: sites, total_entries: 3 }, ["id"]), {
+    success: true,
+    data: [{ id: "s0" }, { id: "s1" }, { id: "s2" }],
+    total_entries: 3,
+  });
+});
+
 test("gateway không bao giờ trả secret (token, api key, mật khẩu, qr thanh toán…)", async () => {
   assert.deepEqual(
     redactSecrets({ data: [{ id: 1, api_key: "k", nested: { client_secret: "s", password: "p" }, qr_data: "QR", is_secret: true, name: "ok" }] }),

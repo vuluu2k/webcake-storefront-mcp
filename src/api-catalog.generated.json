@@ -1,4 +1,4 @@
-{"meta":{"generated_from":"builderx_api routers + controllers (static)","backend":"master@fa0908738","operations":675,"undescribed":9},"ops":[
+{"meta":{"generated_from":"builderx_api routers + controllers (static)","backend":"master@fa0908738+feat/team-site-options@c5708a655","operations":676,"undescribed":9},"ops":[
 {"id":"get:/api/v1/@me","method":"GET","path":"/api/v1/@me","handler":"AccountController.me","tools":["get_current_context","update_auth"]},
 {"id":"post:/api/v1/ai/embed_all_themes","method":"POST","path":"/api/v1/ai/embed_all_themes","handler":"ThemeController.embed_all_themes","params":{"secret":null}},
 {"id":"post:/api/v1/ai/embed_theme","method":"POST","path":"/api/v1/ai/embed_theme","handler":"ThemeController.embed_theme","params":{"id":null}},
@@ -531,6 +531,7 @@
 {"id":"post:/api/v1/org/edit_tag","method":"POST","path":"/api/v1/org/edit_tag","handler":"OrganizationController.edit_tag","params":{"id":null,"tag_ids":null}},
 {"id":"get:/api/v1/org/filter_tag","method":"GET","path":"/api/v1/org/filter_tag","handler":"OrganizationController.filter_tag","params":{"idtag":null,"limit":null,"page":null}},
 {"id":"get:/api/v1/org/get_member","method":"GET","path":"/api/v1/org/get_member","handler":"OrganizationController.get_organization"},
+{"id":"get:/api/v1/org/team_site_options","method":"GET","path":"/api/v1/org/team_site_options","handler":"OrganizationController.get_team_site_options","params":{"limit":null,"page":null,"term":null}},
 {"id":"get:/api/v1/photo/all","method":"GET","path":"/api/v1/photo/all","handler":"PhotoController.all","params":{"limit":null,"page":null}},
 {"id":"post:/api/v1/save_customer_invoice","method":"POST","path":"/api/v1/save_customer_invoice","handler":"CustomerInvoicesController.save_customer_invoice","params":{"type":null}},
 {"id":"get:/api/v1/shape/all","method":"GET","path":"/api/v1/shape/all","handler":"AdminController.get_shape_all","params":{"limit":null,"page":null}},
