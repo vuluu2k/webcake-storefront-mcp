@@ -5,6 +5,11 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.10.0] - 2026-11-23
+
+### Changed
+- Page metadata writes (page `name`/`slug`/`is_homepage`/`settings`, including through `update_page_custom_code`) now go through the backend's `ai/pages/:id/meta` route, which applies the editor's own `update_page` and tags the page as AI-edited; a backend without that route (404) falls back to the plain `update_page` route automatically, without disabling the site's other AI routes.
+
 ## [2.9.0] - 2026-11-23
 
 ### Added

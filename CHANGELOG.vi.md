@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.10.0] - 2026-11-23
+
+### Changed
+- Các lượt ghi metadata trang (`name`/`slug`/`is_homepage`/`settings` của trang, kể cả qua `update_page_custom_code`) nay đi qua route `ai/pages/:id/meta` của backend, áp dụng đúng `update_page` của editor và đánh dấu trang đó là được AI sửa; một backend chưa có route này (404) tự động chuyển về dùng route `update_page` thông thường, không làm mất hiệu lực các route AI khác của site.
+
 ## [2.9.0] - 2026-11-23
 
 ### Added
