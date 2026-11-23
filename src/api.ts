@@ -220,6 +220,7 @@ export class WebcakeCmsApi {
   switchSite(siteId: string) {
     // another site: what was learned about routes and pages of the previous one does not carry over
     this.aiRoutesMissing = false;
+    this.aiMetaMissing = false;
     this.pageCache.clear();
     this.siteId = siteId;
     this._adminToken = null;
@@ -376,7 +377,19 @@ export class WebcakeCmsApi {
     if (body.by_ai == null) body.by_ai = BY_AI_MARKER;
     return this.request("POST", `/api/v1/site/${this.siteId}/page`, { body, timeout: opts?.timeout });
   }
-  updatePage(pageId: string, params: any) {
+  /** Backends whose AI routes predate ai/pages/:id/meta. */
+  private aiMetaMissing = false;
+  /** Page metadata (name, slug, is_homepage, settings) through ai/pages/:id/meta — the editor's
+   *  update_page that also tags the page AI-edited; a backend without it (404) gets update_page. */
+  async updatePage(pageId: string, params: any) {
+    if (!this.aiRoutesMissing && !this.aiMetaMissing) {
+      try {
+        return await this.request("POST", `/api/v1/site/${this.siteId}/ai/pages/${pageId}/meta`, { body: params });
+      } catch (e: any) {
+        if (!this.routeMissing(e)) throw e;
+        this.aiMetaMissing = true;
+      }
+    }
     return this.request("POST", `/api/v1/site/${this.siteId}/${pageId}/update_page`, { body: params });
   }
   /** Write a page source, then re-save it through /save like the editor (CSS + global sections,

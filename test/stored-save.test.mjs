@@ -6,13 +6,13 @@ import { WebcakeCmsApi } from "../dist/api.js";
 
 const header = { id: "HEADER-1", type: "section", specials: { global: true }, children: [] };
 const pageSrc = JSON.stringify({ sections: [header] });
-function backend({ modern }) {
+function backend({ modern, noMeta = false }) {
   const posts = [];
   globalThis.fetch = async (url, init) => {
     const u = new URL(url);
     const p = u.pathname.replace("/api/v1/site/S", "");
     const ok = (data) => new Response(JSON.stringify({ success: true, data }));
-    if (p.startsWith("/ai/") && !modern) return new Response("not found", { status: 404 });
+    if ((p.startsWith("/ai/") && !modern) || (noMeta && p.endsWith("/meta"))) return new Response("not found", { status: 404 });
     if (init.method === "POST") {
       posts.push({ path: p, body: JSON.parse(init.body) });
       return ok(p.startsWith("/ai/") ? { pages: 2, page_id: "A", source_hash: "b".repeat(32), css_rebuilt: true } : { id: "saved" });
@@ -60,4 +60,24 @@ test("no AI routes (404): publish is the editor's /publish with every page", asy
   await api.publishSite({});
   assert.deepEqual(posts.map((p) => p.path), ["/publish"]);
   assert.deepEqual(posts[0].body.pages.map((p) => p.id), ["A", "B"]);
+});
+
+test("page metadata goes through ai/pages/:id/meta (tags the page AI-edited)", async () => {
+  const { posts, api } = backend({ modern: true });
+  await api.updatePage("A", { name: "Home" });
+  assert.deepEqual(posts, [{ path: "/ai/pages/A/meta", body: { name: "Home" } }]);
+});
+
+test("a backend without ai/pages/:id/meta (404) gets update_page; the other AI routes stay in use", async () => {
+  const { posts, api } = backend({ modern: true, noMeta: true });
+  await api.updatePage("A", { name: "Home" });
+  await api.updatePage("A", { slug: "home" });
+  await api.resaveAllPages();
+  assert.deepEqual(posts.map((p) => p.path), ["/A/update_page", "/A/update_page", "/ai/rebuild_css"]);
+});
+
+test("no AI routes (404): page metadata is the editor's update_page", async () => {
+  const { posts, api } = backend({ modern: false });
+  await api.updatePage("A", { name: "Home" });
+  assert.deepEqual(posts.map((p) => p.path), ["/A/update_page"]);
 });
