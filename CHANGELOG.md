@@ -5,6 +5,14 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.11.0] - 2026-11-23
+
+### Added
+- The `api_find`/`api_get`/`api_call` gateway now catalogs `get:/api/v1/org/team_site_options`, the slim team site picker route.
+
+### Changed
+- `api_get`/`api_call` now trim `data.sites` replies (e.g. the legacy `all_site_in_team` route) the same way they trim other list replies, applying `pick` and `max_items`.
+
 ## [2.10.0] - 2026-11-23
 
 ### Changed

@@ -5,6 +5,14 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.11.0] - 2026-11-23
+
+### Added
+- Gateway `api_find`/`api_get`/`api_call` nay có thêm route `get:/api/v1/org/team_site_options`, route chọn site trong team dạng gọn.
+
+### Changed
+- `api_get`/`api_call` nay cắt gọn cả các phản hồi `data.sites` (ví dụ route cũ `all_site_in_team`) giống như các phản hồi dạng danh sách khác, áp dụng `pick` và `max_items`.
+
 ## [2.10.0] - 2026-11-23
 
 ### Changed
