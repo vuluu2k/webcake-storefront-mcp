@@ -5,6 +5,11 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.11.1] - 2026-11-25
+
+### Fixed
+- `list_pages`, `get_page_element`, `get_page_source`, `update_page_element`, `update_page_elements`, `update_page_source`, và các lượt tra trang trong `build_page` trước đây có thể báo "Page not found" trên server hosted sau khi gọi `switch_site`, do cache danh sách trang được chia sẻ chung cho mọi account và site trong 30 giây thay vì gắn theo đúng client gọi và site hiện tại của nó.
+
 ## [2.11.0] - 2026-11-23
 
 ### Added

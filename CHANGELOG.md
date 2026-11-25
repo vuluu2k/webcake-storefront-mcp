@@ -5,6 +5,11 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.11.1] - 2026-11-25
+
+### Fixed
+- `list_pages`, `get_page_element`, `get_page_source`, `update_page_element`, `update_page_elements`, `update_page_source`, and `build_page`'s page lookups could return "Page not found" on the hosted server after `switch_site`, because the page-list cache was shared across every account and site for 30 s instead of being scoped to the calling client and its current site.
+
 ## [2.11.0] - 2026-11-23
 
 ### Added
