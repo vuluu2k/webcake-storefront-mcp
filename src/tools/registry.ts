@@ -36,6 +36,7 @@ import { registerSitePlanTools } from "./site-plans.js";
 import { registerApiGatewayTools } from "./api-gateway.js";
 import { registerPageCodeTools } from "./page-code.js";
 import { registerCloneTools } from "./clone.js";
+import { registerPageRenderTools } from "./page-render.js";
 import { readFileSync } from "node:fs";
 import { FAMILIES, familyTool } from "./families.js";
 
@@ -100,6 +101,7 @@ const MODULES: [string, RegisterFn][] = [
   ["session", registerApiGatewayTools],
   ["web", registerPageCodeTools],
   ["web", registerCloneTools],
+  ["web", registerPageRenderTools],
 ];
 
 interface ToolEntry {

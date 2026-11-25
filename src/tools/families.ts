@@ -16,7 +16,7 @@ export interface FamilyMember {
 /** family tool name → [one-line purpose, member tool names]. Order = order shown to the model. */
 export const FAMILIES: Record<string, [string, string[]]> = {
   page: ["Pages of the current site: list, create, rename/SEO, delete, read and save the source, content text, preview", [
-    "list_pages", "create_page", "update_page", "delete_page", "get_page_source", "update_page_source", "list_page_contents", "update_page_content", "preview_page",
+    "list_pages", "create_page", "update_page", "delete_page", "get_page_source", "update_page_source", "list_page_contents", "update_page_content", "preview_page", "render_page_source",
   ]],
   page_element: ["Read and edit single elements on a saved page, or append a section", [
     "search_page_elements", "get_page_element", "update_page_element", "update_page_elements", "add_section",

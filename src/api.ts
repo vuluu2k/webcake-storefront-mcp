@@ -221,6 +221,7 @@ export class WebcakeCmsApi {
     // another site: what was learned about routes and pages of the previous one does not carry over
     this.aiRoutesMissing = false;
     this.aiMetaMissing = false;
+    this.renderMissing = false;
     this.pageCache.clear();
     this.siteId = siteId;
     this._adminToken = null;
@@ -378,6 +379,26 @@ export class WebcakeCmsApi {
     return this.request("POST", `/api/v1/site/${this.siteId}/page`, { body, timeout: opts?.timeout });
   }
   /** Backends whose AI routes predate ai/pages/:id/meta. */
+  /** The backend has no POST /ai/render (older builderx_api): kept apart from aiRoutesMissing so the other
+   *  per-page AI routes keep working against a backend that lacks only this one. */
+  private renderMissing = false;
+  /** The published HTML and inline CSS (one <style media> per breakpoint) of a page source that is NOT
+   *  saved — POST /ai/render. Writes nothing. null → this backend cannot render sources yet. */
+  async renderSource(source: any, pageId?: string): Promise<{ html: string; css: string } | null> {
+    if (this.renderMissing) return null;
+    try {
+      const res: any = await this.request("POST", `/api/v1/site/${this.siteId}/ai/render`, {
+        body: { source: typeof source === "string" ? source : JSON.stringify(source), ...(pageId ? { page_id: pageId } : {}) },
+        timeout: 90_000,
+      });
+      const d = res?.data ?? res;
+      return typeof d?.html === "string" && typeof d?.css === "string" ? { html: d.html, css: d.css } : null;
+    } catch (e: any) {
+      if (!this.routeMissing(e)) throw e;
+      this.renderMissing = true;
+      return null;
+    }
+  }
   private aiMetaMissing = false;
   /** Page metadata (name, slug, is_homepage, settings) through ai/pages/:id/meta — the editor's
    *  update_page that also tags the page AI-edited; a backend without it (404) gets update_page. */
