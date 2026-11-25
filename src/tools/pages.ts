@@ -186,26 +186,30 @@ function searchElements(source: any, filters: any): any[] {
   return results;
 }
 
-/** Cache listPages for 30s to avoid repeated API calls within a session */
-let _pagesCache: any = null;
-let _pagesCacheTime = 0;
+/** Page lists cached 30 s to avoid repeated API calls within a session. One hosted server serves many accounts and
+ *  sites at once and switch_site changes a client's site, so an entry belongs to the API client and the site that
+ *  read it: a page of one site is never looked up in another site's list ("Page not found"). */
 const CACHE_TTL = 30000;
+type CacheEntry = { site: string; time: number; value: any };
+const pageCaches = new WeakMap<object, { full?: CacheEntry; meta?: CacheEntry }>();
+async function cachedList(api: WebcakeCmsApi, kind: "full" | "meta", load: () => Promise<any>): Promise<any> {
+  let slot = pageCaches.get(api);
+  if (!slot) pageCaches.set(api, (slot = {}));
+  const hit = slot[kind];
+  if (hit && hit.site === api.siteId && Date.now() - hit.time < CACHE_TTL) return hit.value;
+  const res = await load();
+  const value = (res && res.data) || res || [];
+  slot[kind] = { site: api.siteId, time: Date.now(), value };
+  return value;
+}
 
 /** Every page WITH its source — only the fallback for a backend without the per-page routes. */
 async function getCachedPagesFull(api: WebcakeCmsApi): Promise<any> {
-  const now = Date.now();
-  if (_pagesCache && now - _pagesCacheTime < CACHE_TTL) return _pagesCache;
-  const res = await api.listPages();
-  _pagesCache = (res && res.data) || res || [];
-  _pagesCacheTime = now;
-  return _pagesCache;
+  return cachedList(api, "full", () => api.listPages());
 }
 
-function invalidatePageCache() {
-  _pagesCache = null;
-  _pagesCacheTime = 0;
-  _metaCache = null;
-  _metaCacheTime = 0;
+function invalidatePageCache(api: WebcakeCmsApi) {
+  pageCaches.delete(api);
 }
 
 /** A write the backend refused because the page moved on since this call read it → a result the
@@ -226,21 +230,14 @@ async function writeOrChanged(write: () => Promise<any>): Promise<any> {
 /** How a write went over the wire (only with the per-page AI routes). */
 const writeVia = (saved: any) => (saved?.via ? { via: saved.via, ...(saved.patch_ops != null ? { patch_ops: saved.patch_ops } : {}), ...(saved.unchanged ? { unchanged: true } : {}) } : {});
 
-/** Page metadata without sources, cached like getCachedPages. */
-let _metaCache: any = null;
-let _metaCacheTime = 0;
+/** Page metadata without sources, cached like getCachedPagesFull. */
 async function getCachedPagesMeta(api: WebcakeCmsApi): Promise<any> {
-  const now = Date.now();
-  if (_metaCache && now - _metaCacheTime < CACHE_TTL) return _metaCache;
-  const res = await api.listPagesMeta();
-  _metaCache = (res && res.data) || res || [];
-  _metaCacheTime = now;
-  return _metaCache;
+  return cachedList(api, "meta", () => api.listPagesMeta());
 }
 
 /** One page with its source and the source's version (md5) — the base a later write is checked
  *  against. With the per-page route only that page's source is downloaded (not every page's). */
-async function getPageWithSource(api: WebcakeCmsApi, pageId: string): Promise<any> {
+export async function getPageWithSource(api: WebcakeCmsApi, pageId: string): Promise<any> {
   const got: any = await api.getPageSourceOne(pageId).catch((e: any) => (e?.status === 422 ? { missing: true } : Promise.reject(e)));
   // only a real answer of the per-page route (raw source + version); anything else → GET /pages
   const one = got && (got.missing || (typeof got.raw === "string" && typeof got.version === "string")) ? got : null;
@@ -367,7 +364,7 @@ Examples:
         if (conflict) return { error: conflict.error, existing_page: conflict.existing_page };
 
         const created: any = await api.createPage({ name, ...(typeNum != null ? { type: typeNum } : {}) });
-        invalidatePageCache();
+        invalidatePageCache(api);
         const pageId = (created && (created.id || created.data?.id || created.page?.id)) || null;
         const warning = pageId
           ? await applyPageMeta(api, pageId, { slug: cleanSlug, is_homepage, seo }).then(
@@ -375,7 +372,7 @@ Examples:
               (e) => `Page created, but slug/homepage/SEO failed: ${e?.message ?? e}`,
             )
           : undefined;
-        invalidatePageCache();
+        invalidatePageCache(api);
         return { success: true, page_id: pageId, name, slug: cleanSlug ?? null, type: type ?? null, raw: pageId ? undefined : created, ...(warning ? { warning } : {}) };
       })
   );
@@ -396,7 +393,7 @@ seo / settings are MERGED into the page's current settings — fields you don't 
       // Normalize slug (strip leading "/") so the storefront's bare-segment match resolves.
       const cleanSlug = slug !== undefined ? normalizeSlug(slug) : undefined;
       await applyPageMeta(api, page_id, { name, slug: cleanSlug, is_homepage, seo, settings });
-      invalidatePageCache();
+      invalidatePageCache(api);
       return { success: true, page_id };
     })
   );
@@ -527,7 +524,7 @@ For full rewrites, use update_site_custom_code instead.`,
     },
     ({ page_id }) => handle(async () => {
       const res = await api.deletePage({ page_id });
-      invalidatePageCache();
+      invalidatePageCache(api);
       // Like the editor: a deleted page leaves every global section's page list. The page is
       // already gone, so a failure here is a warning, not a failed delete (a retry would 404).
       try {
@@ -646,7 +643,7 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
     ({ page_id, element_id, dry_run: dryRunParam, allow_shrink, ...updates }) =>
       handle(async () => {
         const dry_run = dryRunParam !== undefined ? dryRunParam : getConfirmMode() === "always_confirm";
-        invalidatePageCache();
+        invalidatePageCache(api);
         const { page, source, error, version } = await getPageWithSource(api, page_id);
         if (error) return { error };
         if (!source) return { error: "Page has no source" };
@@ -692,7 +689,7 @@ events/bindings = REPLACE the whole array — pass the COMPLETE list (read it fi
         // against the version just read: only the changed element travels, and a save made elsewhere
         // in between is refused instead of overwritten
         const res = await writeOrChanged(() => api.updatePageSource(page_id, { source }, { base: version, before: saved0 }));
-        invalidatePageCache();
+        invalidatePageCache(api);
         if (res.page_changed) return res.page_changed;
 
         const saved = res && res.data;
@@ -727,7 +724,7 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
     ({ page_id, dry_run: dryRunParam, updates: elementUpdates, allow_shrink }) =>
       handle(async () => {
         const dry_run = dryRunParam !== undefined ? dryRunParam : getConfirmMode() === "always_confirm";
-        invalidatePageCache();
+        invalidatePageCache(api);
         const { page, source, error, version } = await getPageWithSource(api, page_id);
         if (error) return { error };
         if (!source) return { error: "Page has no source" };
@@ -773,7 +770,7 @@ Same merge rules: style/config/specials = shallow merge, events/bindings = repla
         }
 
         const res = await writeOrChanged(() => api.updatePageSource(page_id, { source }, { base: version, before: saved0 }));
-        invalidatePageCache();
+        invalidatePageCache(api);
         if (res.page_changed) return res.page_changed;
 
         const saved = res && res.data;
@@ -816,7 +813,7 @@ Safeguarded: blocks if new source is <50% of existing size.`,
         let pageCode: any;
         if (custom_code != null) {
           pageCode = await writePageCode(api, page_id, { code_custom_javascript: custom_code }, { native_gap, dry_run: false });
-          invalidatePageCache();
+          invalidatePageCache(api);
           if (pageCode.error) return pageCode;
           if (body.source == null) return { success: true, custom_code: pageCode };
         }
@@ -824,7 +821,7 @@ Safeguarded: blocks if new source is <50% of existing size.`,
         // Safeguard: force fresh read and block if new source is suspiciously smaller
         let writeBase: { base?: string; before?: any } = {};
         if (body.source) {
-          invalidatePageCache();
+          invalidatePageCache(api);
           const { page: existingPage, source: existingSource, error, version } = await getPageWithSource(api, page_id);
           writeBase = { base: version, before: existingSource ? structuredClone(existingSource) : undefined };
           // Full structural + renderer-crash check, refusing only what this save ADDS.
@@ -845,7 +842,7 @@ Safeguarded: blocks if new source is <50% of existing size.`,
         }
 
         const res = await writeOrChanged(() => api.updatePageSource(page_id, body, writeBase));
-        invalidatePageCache();
+        invalidatePageCache(api);
         if (res.page_changed) return res.page_changed;
 
         const saved = res && res.data;
