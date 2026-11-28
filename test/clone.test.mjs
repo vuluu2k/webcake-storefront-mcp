@@ -104,6 +104,9 @@ test("clone_page tool: snapshot → source_ref; build_page đọc được cache
   assert.match(miss.content[0].text, /url or snapshot/);
   const script = JSON.parse((await t.get_clone_script.handler({}, {})).content[0].text);
   assert.ok(script.script.startsWith("(async function captureInPage") && script.script === CLONE_SCRIPT);
+  // the multi-width contract: an async function of snapshot.probe, run at each probe width
+  assert.equal(typeof new Function(`return ${script.probe_script}`)(), "function");
+  assert.deepEqual(script.probe_widths, { bp2: 1100, bp3: 768, bp4: 390 });
 });
 
 test("clone: số cột đo từ trang gốc theo breakpoint; cụm nhỏ co theo nội dung; <details> → collapse; ảnh nhỏ giữ px", () => {
@@ -209,4 +212,66 @@ test("clone: nội dung giữa trang theo lề đo ở từng breakpoint; ô mà
   assert.equal(sw.runtime.config.widthUnit, "px"); // a swatch, not a bar across the card
   assert.equal(sw.runtime.style.width, 36);
   assert.equal((validatePage({ sections: [sec] }).errors || []).filter((e) => !e.startsWith("[IMAGE_HOST]")).length, 0);
+});
+
+test("clone mobile: ẩn/hiện theo lượt đo hẹp (isHidden, phần tử chỉ có trên mobile), cỡ chữ + ảnh mobile, ô ẩn không chiếm cột", async () => {
+  const { finalizeForRender } = await import("../dist/builder/page.js");
+  const sw = (x) => ({ k: "box", x, y: 300, w: 36, h: 22, style: { bg: "rgb(200, 0, 0)", radius: 11 }, key: `1/1/${x}` });
+  const snap = {
+    viewport: { w: 1440 },
+    sections: [
+      { k: "section", key: "0", x: 0, y: 0, w: 1440, h: 80, role: "header", style: { bg: "rgb(255, 255, 255)" }, content: {
+        k: "group", dir: "row", key: "0/0", gap: 40, x: 40, y: 10, w: 1360, h: 60, kids: [
+          { k: "image", key: "0/0/0", x: 40, y: 10, w: 90, h: 50, src: "https://x.test/logo.png" },
+          { k: "group", dir: "row", key: "0/0/1", gap: 32, x: 400, y: 20, w: 500, h: 40, kids: ["NAM", "NỮ", "THỂ THAO"].map((t, i) => T(400 + i * 170, 20, 120, 40, t, { key: `0/0/1/${i}` })) },
+          { k: "image", key: "0/0/2", x: 1360, y: 20, w: 24, h: 24, src: "https://x.test/cart.png" },
+        ] } },
+      { k: "section", key: "1", x: 0, y: 80, w: 1440, h: 600, style: {}, content: { k: "group", dir: "col", gap: 16, x: 0, y: 80, w: 1440, h: 600, kids: [
+        { k: "image", key: "1/0", x: 0, y: 80, w: 1440, h: 480, src: "https://x.test/hero-wide.jpg" },
+        { k: "group", dir: "row", key: "1/1", gap: 8, x: 60, y: 300, w: 128, h: 22, kids: [sw(60), sw(104), sw(148)] },
+        { k: "box", key: "1/2", x: 60, y: 340, w: 65, h: 19, style: { bg: "rgb(0, 0, 0)", radius: 10 }, pad: { t: 2, r: 6, b: 2, l: 6 }, content: T(66, 342, 53, 15, "BÁN CHẠY", { key: "1/2/0" }) },
+        T(60, 400, 600, 48, "Mua 1 tặng 1", { key: "1/3", style: { fontSize: 40, color: "rgb(0, 0, 0)" } }),
+      ] } },
+    ],
+    probes: {
+      bp4: {
+        columns: { "0/0": 3, "1/1": 3 },
+        view: { "0/0/0": [60, 14, 90, 50, 16], "0/0/1": 0, "0/0/2": [350, 18, 24, 24, 16], "1/0": [0, 60, 390, 520, 16, "https://x.test/hero-tall.jpg"], "1/3": [16, 600, 358, 30, 24] },
+        extra: { "0/0/3": { k: "icon", key: "0/0/3", x: 16, y: 18, w: 24, h: 24, svg: "<svg></svg>", color: "#000" } },
+      },
+    },
+  };
+  const out = snapshotToSource(snap);
+  assert.ok(out.notes.some((n) => /shown only on tablet\/phone/.test(n)));
+  const src = finalizeForRender(out.source);
+  const [header, body] = src.sections;
+  const bar = header.children[0];
+  // desktop nav hidden from phone width; the burger only there, first in the row (as the phone shows it)
+  const nav = bar.children.find((k) => k.type === "container");
+  assert.equal(nav.bp1.config.isHidden, undefined);
+  assert.equal(nav.bp4.config.isHidden, true);
+  const burger = bar.children[0];
+  assert.equal(burger.bp1.config.isHidden, true);
+  assert.equal(burger.bp4.config.isHidden, false);
+  // the hidden cells leave no empty column: desktop logo|nav|cart, phone burger|logo|cart
+  assert.equal(bar.bp1.config.columns.length, 3);
+  assert.equal(bar.bp4.config.columns.length, 3);
+  const cell = (n, bp) => [n[bp].config.columnStart, n[bp].config.rowStart];
+  assert.deepEqual(bar.children.map((k) => cell(k, "bp1")[0]), [1, 1, 2, 3]); // burger hidden, parked in slot 1
+  assert.deepEqual(bar.children.map((k) => cell(k, "bp4")[0]), [1, 2, 1, 3]); // nav hidden, parked in slot 1
+  // art-directed hero: the phone's own picture and height
+  const hero = body.children[0];
+  assert.equal(hero.bp4.config.src, "https://x.test/hero-tall.jpg");
+  assert.equal(hero.bp4.style.height, 520);
+  // swatches stay one row on the phone, at full width
+  const swatches = body.children[1];
+  assert.equal(swatches.bp4.config.columns.length, 3);
+  assert.equal(swatches.bp4.config.relWidth, 100);
+  // a badge keeps its pixel width and its one line
+  const badge = body.children[2];
+  assert.equal(badge.bp4.config.widthUnit, "px");
+  assert.equal(badge.children[0].bp4.style.whiteSpace, "nowrap");
+  // the phone's real font size
+  assert.equal(body.children[3].bp4.style.fontSize, "24px");
+  assert.ok(validatePage(out.source).errors.every((e) => e.startsWith("[IMAGE_HOST]")));
 });

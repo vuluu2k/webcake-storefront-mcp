@@ -6,14 +6,14 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
-import { CLONE_SCRIPT, capturePage, snapshotToSource, imageRefs, rewriteImages } from "../builder/clone.js";
+import { CLONE_SCRIPT, PROBE_SCRIPT, PROBE_WIDTHS, capturePage, snapshotToSource, imageRefs, rewriteImages } from "../builder/clone.js";
 import { validatePage, walk } from "../builder/page.js";
 import { codeOf } from "../builder/element-schema.js";
 import { cachePut } from "./result-cache.js";
 import { cdnUpload } from "./builder-extras.js";
 
 const RUN_HINT =
-  "Open the page in your browser tool at ~1440px wide, let it load, run `script` there (chrome-devtools evaluate_script / claude-in-chrome javascript_tool / playwright evaluate — it is an async expression returning JSON), then call clone_page({ snapshot: <the result> }).";
+  "Open the page in your browser tool at ~1440px wide, let it load, run `script` there (chrome-devtools evaluate_script / claude-in-chrome javascript_tool / playwright evaluate — it is an async expression returning JSON), then call clone_page({ snapshot: <the result> }). For a faithful tablet/phone layout (what hides, mobile-only elements, real font sizes, rows that stay rows) also: for each [bp, width] of `probe_widths`, resize the viewport to that width, wait ~400 ms, evaluate `${probe_script}(${JSON.stringify(snapshot.probe)})` and set snapshot.probes[bp] to the result — before sending the snapshot. Without probes the clone still works, with guessed tablet/phone layout.";
 
 /** Headless capture with a local Chrome via playwright-core (optional dependency). */
 async function captureWithChrome(url: string, width: number): Promise<any> {
@@ -109,7 +109,7 @@ export function registerCloneTools(server: McpServer, api: WebcakeCmsApi, handle
     "get_clone_script",
     "Get the capture script for clone_page: run it inside the source page with YOUR browser tool when clone_page can't open the page itself (remote server, no local Chrome, a page behind login).",
     {},
-    () => handle(async () => ({ script: CLONE_SCRIPT, run: RUN_HINT }))
+    () => handle(async () => ({ script: CLONE_SCRIPT, probe_script: PROBE_SCRIPT, probe_widths: PROBE_WIDTHS, run: RUN_HINT }))
   );
 
   server.tool(

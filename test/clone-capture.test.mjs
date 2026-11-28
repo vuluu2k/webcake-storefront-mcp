@@ -94,7 +94,7 @@ test("clone capture: consent closed, smooth scroll, sr-only out of the base, sli
     assert.ok(json.includes(IMG("teal")) && !json.includes('"bg":"rgb(204, 204, 204)"'));
     assert.ok(json.includes("https://example.com/a_(1).jpg"));
     // the slider's card width at every probed width (% of its window)
-    assert.equal(snap.slides.bp4[rows[0].key][0] > snap.slides.bp2[rows[0].key][0], true);
+    assert.equal(snap.probes.bp4.slides[rows[0].key][0] > snap.probes.bp2.slides[rows[0].key][0], true);
 
     // only the band at the top is the site header; a product block's own <header> is content
     assert.deepEqual(snap.sections.filter((x) => x.role === "header").map((x) => x.y), [0]);
@@ -102,7 +102,7 @@ test("clone capture: consent closed, smooth scroll, sr-only out of the base, sli
     assert.ok(!json.includes('"text":"mac-ra-duong"'));
     // content insets per probed width (the 60px side padding of "Best sellers")
     const best = snap.sections.find((x) => JSON.stringify(x).includes("Best sellers"));
-    assert.deepEqual(snap.insets.bp2[best.key], [60, 60]);
+    assert.deepEqual(snap.probes.bp2.insets[best.key], [60, 60]);
     const out = snapshotToSource(snap);
     assert.ok(JSON.stringify(out.source).includes("url(https://example.com/a_%281%29.jpg)"));
     assert.ok(JSON.stringify(out.source).includes('"type":"input-search"'), "header search box → input-search");
@@ -116,6 +116,51 @@ test("clone capture: consent closed, smooth scroll, sr-only out of the base, sli
     assert.equal(car[0].runtime.config.slideItems, 8);
     assert.equal(car[0].runtime.config.relSlideWidth, 22.73);
     assert.ok(car[0].runtime.responsive.bp4.config.relSlideWidth > 22.73);
+  } finally {
+    await page.close();
+  }
+});
+
+const MOBILE = `<!doctype html><html><head><style>
+.burger { display: none } .nav { display: flex; gap: 32px }
+@media (max-width: 640px) { .nav { display: none } .burger { display: block } h1 { font-size: 24px !important } .hero { aspect-ratio: 3 / 4 !important } }
+</style></head><body style="margin:0;font:16px sans-serif">
+<header style="display:flex;justify-content:space-between;align-items:center;height:60px;padding:0 40px;background:#fff">
+  <button class="burger" aria-label="Menu" style="width:32px;height:32px">☰</button>
+  <a href="/"><img src="${IMG("navy")}" style="width:90px;height:40px;display:block"></a>
+  <nav class="nav"><a href="/a">NAM</a><a href="/b">NỮ</a><a href="/c">THỂ THAO</a></nav>
+  <a href="/cart"><img src="${IMG("red")}" style="width:24px;height:24px;display:block"></a>
+</header>
+<section style="padding:40px"><h1 style="font-size:48px;margin:0 0 20px">Mua 1 tặng 1</h1>
+  <picture><source media="(max-width: 640px)" srcset="https://img.test/tall.svg"><img class="hero" src="https://img.test/wide.svg" style="width:100%;aspect-ratio:3/1;display:block"></picture>
+  <div style="display:flex;gap:8px;margin-top:20px">${["red", "#fff", "#000"].map((c) => `<span style="display:block;width:36px;height:22px;border-radius:11px;border:1px solid #333;background:${c}"></span>`).join("")}</div>
+</section></body></html>`;
+
+test("clone capture mobile: what the phone hides / only shows, its font size and picture, measured in narrower passes", { skip: !browser && "no local Chrome" }, async () => {
+  const { finalizeForRender } = await import("../dist/builder/page.js");
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  try {
+    await page.route("https://img.test/**", (r) => r.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="10"/>' }));
+    await page.setContent(MOBILE);
+    const snap = await capturePage(page, 1440);
+    assert.deepEqual(Object.keys(snap.probes), ["bp2", "bp3", "bp4"]);
+    assert.equal(snap.probe, undefined);
+    const src = finalizeForRender(snapshotToSource(snap).source);
+    const all = [];
+    const g = (n) => (all.push(n), (n.children || []).forEach(g));
+    src.sections.forEach(g);
+    const text = (t) => all.find((n) => String(n.specials?.text || "").includes(t));
+    const navRow = all.find((n) => n.type === "container" && (n.children || []).some((k) => String(k.specials?.text).includes("NAM")));
+    assert.equal(navRow.bp1.config.isHidden, undefined);
+    assert.equal(navRow.bp4.config.isHidden, true);
+    const burger = text("☰");
+    assert.equal(burger.bp1.config.isHidden, true);
+    assert.equal(burger.bp4.config.isHidden, false);
+    assert.equal(text("Mua 1").bp4.style.fontSize, "24px");
+    const hero = all.find((n) => n.type === "image" && /wide/.test(n.bp1.config.src));
+    assert.equal(hero.bp4.config.src, "https://img.test/tall.svg");
+    const swatches = all.find((n) => (n.children || []).length === 3 && n.children.every((k) => k.type === "rectangle"));
+    assert.equal(swatches.bp4.config.columns.length, 3);
   } finally {
     await page.close();
   }

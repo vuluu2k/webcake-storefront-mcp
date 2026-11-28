@@ -302,6 +302,18 @@ export function buildRow(childSpecs: any[] = [], opts: RowOpts & { containerOpts
   return rowChildren(container, children, opts);
 }
 
+/** Whether a not-yet-expanded node is hidden at `bp` (config.isHidden cascading bp1→bp). */
+function hiddenAt(node: any, bp: string): boolean {
+  const rt = node?.runtime || {};
+  let h = !!rt.config?.isHidden;
+  for (const b of BREAKPOINT_KEYS) {
+    const v = rt.responsive?.[b]?.config?.isHidden;
+    if (v != null) h = !!v;
+    if (b === bp) break;
+  }
+  return h;
+}
+
 /** How many columns a row shows at a given breakpoint (clamped to its real column count). */
 function colsForBp(meta: any, bp: string): number {
   const c = meta.collapse ? meta.collapse[bp] : null;
@@ -937,11 +949,21 @@ function expandNodeToBreakpoints(node: any, site: Record<string, [number, number
       // A multi-column row collapses to fewer columns on smaller screens so cards never
       // shrink to slivers: recompute the grid + this container's columns per breakpoint.
       if (rowMeta) {
-        const k = colsForBp(rowMeta, bp);
-        const nrows = Math.ceil(rowMeta.count / k);
+        // A cell hidden at this breakpoint (isHidden → display:none) leaves no empty column: the
+        // shown cells take the slots in order (each cell reads its slot from __cell.slot).
+        const kids = node.children || [];
+        const shown = kids.map((_: any, i: number) => i).filter((i: number) => !hiddenAt(kids[i], bp));
+        const count = shown.length === kids.length ? rowMeta.count : Math.max(1, shown.length);
+        kids.forEach((ch: any) => {
+          const cm = ch.runtime?.config?.__cell;
+          if (cm) (cm.slot ??= {})[bp] = [Math.max(0, shown.indexOf(kids.indexOf(ch))), count];
+        });
+        const k = Math.min(colsForBp(rowMeta, bp), count);
+        const nrows = Math.ceil(count / k);
+        const base = Array.isArray(baseConfig.columns) && baseConfig.columns.length === rowMeta.cols ? baseConfig.columns : null;
         config.columns =
-          k === rowMeta.cols && Array.isArray(baseConfig.columns) && baseConfig.columns.length === k
-            ? clone(baseConfig.columns)
+          k === count && base
+            ? clone(count === rowMeta.cols ? base : shown.map((i: number) => base[i]))
             : Array.from({ length: k }, () => (rowMeta.hug ? { unit: "max-c" } : { unit: "fr", value: 1 }));
         config.rows = Array.from({ length: nrows }, () => ROW_PLACEHOLDER_ROW());
         config.grid = `${k}x${nrows}`;
@@ -949,9 +971,10 @@ function expandNodeToBreakpoints(node: any, site: Record<string, [number, number
       }
       // A cell repositions itself into the collapsed grid (wraps to a new row as needed).
       if (cellMeta) {
-        const k = colsForBp(cellMeta, bp);
-        const c = cellMeta.index % k;
-        const r = Math.floor(cellMeta.index / k);
+        const [idx, count] = cellMeta.slot?.[bp] ?? [cellMeta.index, cellMeta.count];
+        const k = Math.max(1, Math.min(colsForBp(cellMeta, bp), count));
+        const c = idx % k;
+        const r = Math.floor(idx / k);
         config.columnStart = c + 1;
         config.columnEnd = c + 2;
         config.rowStart = r + 1;
