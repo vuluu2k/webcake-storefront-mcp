@@ -126,16 +126,70 @@ test("clone: số cột đo từ trang gốc theo breakpoint; cụm nhỏ co the
   assert.equal(validatePage(snapshotToSource(snap).source).valid, true);
 });
 
-test("clone: slider giữ mọi thẻ, xuống hàng theo số thẻ hiện cùng lúc; slide bị bỏ không tính vào coverage", () => {
+test("clone: slider → carousel giữ mọi thẻ, số thẻ hiện cùng lúc theo từng breakpoint; slide bị bỏ không tính vào coverage", async () => {
   const cards = Array.from({ length: 10 }, (_, i) => ({ k: "image", x: 60 + i * 340, y: 100, w: 320, h: 400, src: `https://content.pancake.vn/test/c${i}.jpg` }));
   const slider = { k: "group", dir: "row", key: "5/1", slider: 4, gap: 20, x: 60, y: 100, w: 1320, h: 400, kids: cards };
-  const snap = { ...SNAP, textTotal: 100, offscreenText: 60, columns: { bp3: { "5/1": 6 }, bp4: { "5/1": 2 } },
+  const snap = { ...SNAP, textTotal: 100, offscreenText: 60, columns: { bp3: { "5/1": 6 }, bp4: { "5/1": 2 } }, slides: { bp3: { "5/1": [40, 12] } },
     sections: [{ k: "section", x: 0, y: 0, w: 1440, h: 600, style: {}, pad: {}, content: { k: "group", dir: "col", gap: 20, x: 60, y: 40, w: 1320, h: 460, kids: [T(60, 40, 600, 40, "x".repeat(40)), slider] } }] };
   const out = snapshotToSource(snap);
-  const row = out.source.sections[0].children[1];
-  assert.equal(row.children.length, 10);
-  assert.deepEqual(row.runtime.config.__row.collapse, { bp1: 4, bp2: 4, bp3: 4, bp4: 2 }); // probes never exceed the view
+  const car = out.source.sections[0].children[1];
+  assert.equal(car.type, "carousel"); // a track that slides, not a grid of every card
+  assert.equal(car.children.length, 10);
+  assert.equal(car.runtime.config.slideItems, 10);
+  assert.equal(car.runtime.config.slideWidthUnit, "%");
+  assert.equal(car.runtime.config.relSlideWidth, 25); // 4 in view (no window measured)
+  assert.equal(car.specials.autoplay, "off");
+  // per breakpoint: the probed card width, else ~3 on a tablet / ~2 on a phone
+  assert.deepEqual(car.runtime.responsive.bp3.config, { relSlideWidth: 40, columnGap: 12 });
+  assert.equal(car.runtime.responsive.bp4.config.relSlideWidth, 45);
+  const { finalizeForRender } = await import("../dist/builder/page.js");
+  finalizeForRender(out.source);
+  assert.deepEqual(["bp1", "bp3", "bp4"].map((bp) => car[bp].config.relSlideWidth), [25, 40, 45]);
+  assert.deepEqual(car.children.map((k) => k.bp4.config.columnStart), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]); // one track, never wrapped
   assert.equal(out.stats.text_coverage_pct, 100); // 40 of the 100 - 60 left out
   assert.ok(out.notes.some((n) => /left-out slides held 60 characters/.test(n)));
   assert.equal(validatePage(out.source).valid, true);
+});
+
+test("clone rehost: mọi ảnh (src, nền url có/không ngoặc kép, layer bp, ảnh trong carousel) lên CDN; thử lại, bỏ query; ảnh hỏng bị bỏ và liệt kê", async () => {
+  const { rehost } = await import("../dist/tools/clone.js");
+  const { buildSection } = await import("../dist/builder/page.js");
+  const X = "https://shop.example/img";
+  const sec = buildSection([
+    { type: "image", opts: { src: `${X}/flaky.jpg` } },
+    { type: "image", opts: { src: `${X}/sized.jpg?w=700` } },
+    { type: "image", opts: { src: `${X}/gone.jpg` } },
+    { type: "container", opts: { style: { background: `url("${X}/q_(1).jpg") rgb(1, 2, 3)` } }, children: [{ type: "text", opts: { text: "x" } }] },
+    { type: "container", opts: { style: { background: `linear-gradient(red, blue), url('${X}/s.jpg')` } }, children: [{ type: "text", opts: { text: "y" } }] },
+    { type: "container", opts: { style: { background: `url(${X}/a_%281%29.jpg) rgb(4, 5, 6)` } }, children: [{ type: "text", opts: { text: "z" } }] },
+    { type: "container", opts: { style: { background: `url(${X}/dead.jpg) rgb(7, 8, 9)` } }, children: [{ type: "text", opts: { text: "w" } }] },
+    { type: "carousel", children: [{ type: "image", opts: { src: `${X}/card.jpg` } }, { type: "image", opts: { src: "data:image/svg+xml;base64,PHN2Zy8+" } }] },
+  ]);
+  const flat = sec.children[3];
+  flat.runtime.responsive = undefined;
+  flat.bp3 = { style: { backgroundImage: `url(${X}/mobile.jpg)` }, config: {} }; // a per-breakpoint layer
+  const source = { sections: [sec] };
+  assert.ok(validatePage(source).errors.some((e) => e.startsWith("[IMAGE_HOST]")));
+
+  const calls = {};
+  const upload = async (src) => {
+    calls[src] = (calls[src] || 0) + 1;
+    if (src.endsWith("/flaky.jpg") && calls[src] < 3) throw new Error("fetch failed (ECONNRESET)");
+    if (src.includes("?w=700") || /gone|dead/.test(src)) throw new Error(`Fetch failed (404) for ${src}`);
+    return `https://content.pancake.vn/hosted/${Object.keys(calls).length}.png`;
+  };
+  const r = await rehost(source, upload, { delayMs: 1 });
+  assert.equal(calls[`${X}/flaky.jpg`], 3); // retried with backoff
+  assert.equal(calls[`${X}/sized.jpg?w=700`], 1); // a 404 is not retried…
+  assert.equal(calls[`${X}/sized.jpg`], 1); // …the url without its query is tried instead
+  assert.equal(calls[`${X}/q_(1).jpg`], 1); // quoted: brackets inside kept whole
+  assert.deepEqual(r.failed.map((f) => f.src).sort(), [`${X}/dead.jpg`, `${X}/gone.jpg`]);
+  assert.ok(r.failed.every((f) => /404/.test(f.error) && f.elements.length === 1));
+  const v = validatePage(source);
+  assert.deepEqual(v.errors.filter((e) => e.startsWith("[IMAGE_HOST]")), []); // build_page takes the ref as is
+  const json = JSON.stringify(source);
+  assert.ok(!json.includes("shop.example"));
+  assert.ok(json.includes('"background":"rgb(7, 8, 9)"')); // the dead background keeps its colour
+  assert.equal(sec.children.filter((k) => k.type === "image").length, 2); // the dead picture is gone
+  assert.ok(!json.includes("data:image")); // svg icons are uploaded too
 });

@@ -143,9 +143,18 @@ async function readLocalImage(s: string): Promise<{ buf: Buffer; contentType: st
   return { buf, contentType };
 }
 
-/** Fetch a URL into a Buffer with a size cap. */
-async function fetchBuffer(url: string, maxBytes = 15 * 1024 * 1024) {
-  const res = await fetch(url, { redirect: "follow" });
+/** Fetch a URL into a Buffer with a size cap. Sent like a browser loading the picture from the page
+ *  that shows it (image CDNs refuse hotlinks / bots, or answer with a format we can't convert). */
+async function fetchBuffer(url: string, referer?: string, maxBytes = 15 * 1024 * 1024) {
+  const res = await fetch(url, {
+    redirect: "follow",
+    signal: AbortSignal.timeout(30000),
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      Accept: "image/webp,image/png,image/jpeg,image/svg+xml,image/*;q=0.8,*/*;q=0.5",
+      ...(referer ? { Referer: referer } : {}),
+    },
+  });
   if (!res.ok) throw new Error(`Fetch failed (${res.status}) for ${url}`);
   const ct = (res.headers.get("content-type") || "").split(";")[0].trim();
   const ab = await res.arrayBuffer();
@@ -167,7 +176,7 @@ async function toAllowedImage(buf: Buffer, contentType: string) {
  *  per-site cache so the same source is never uploaded twice. Returns the hosted URL.
  *  The storefront only renders whitelisted (WebCake CDN) image domains, so every image
  *  used on a page/product MUST go through this — external URLs (Pexels, etc.) won't show. */
-export async function cdnUpload(api: WebcakeCmsApi, source: string): Promise<string> {
+export async function cdnUpload(api: WebcakeCmsApi, source: string, referer?: string): Promise<string> {
   const cached = await getCachedUpload(api.siteId, source);
   if (cached) return cached;
   let buf: Buffer, contentType: string;
@@ -177,7 +186,7 @@ export async function cdnUpload(api: WebcakeCmsApi, source: string): Promise<str
     contentType = m[1];
     buf = Buffer.from(m[2], "base64");
   } else {
-    ({ buf, contentType } = await fetchBuffer(source));
+    ({ buf, contentType } = await fetchBuffer(source, referer));
   }
   const norm = await toAllowedImage(buf, contentType);
   const dataUri = `data:${norm.contentType};base64,${norm.buf.toString("base64")}`;

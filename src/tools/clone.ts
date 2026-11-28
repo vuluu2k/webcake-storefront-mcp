@@ -6,7 +6,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WebcakeCmsApi } from "../api.js";
 import type { Handle } from "../server.js";
-import { CLONE_SCRIPT, capturePage, snapshotToSource } from "../builder/clone.js";
+import { CLONE_SCRIPT, capturePage, snapshotToSource, imageRefs, rewriteImages } from "../builder/clone.js";
 import { validatePage, walk } from "../builder/page.js";
 import { codeOf } from "../builder/element-schema.js";
 import { cachePut } from "./result-cache.js";
@@ -52,30 +52,56 @@ function outline(sections: any[], roles: string[]) {
   return sections.map((s, i) => `#${i + 1} ${roles[i]}: ${(s.children || []).map((k: any) => label(k, 1)).join(" | ")}`.slice(0, 400));
 }
 
-async function rehost(api: WebcakeCmsApi, source: any, images: string[]) {
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Re-host every picture of a cloned source with `upload` (cdnUpload in the tool; a fake in tests).
+ *  Each image: the url, then the same url without its query (an on-the-fly resize/format param the
+ *  CDN may refuse), each tried `tries` times with backoff unless the answer is a hard 4xx. What still
+ *  fails is taken out of the page (a picture the storefront can't show would only block the save
+ *  with IMAGE_HOST) and listed with the elements that held it, so build_page takes the ref as is. */
+export async function rehost(source: any, upload: (src: string) => Promise<string>, opts: { tries?: number; delayMs?: number; workers?: number } = {}) {
+  const { tries = 3, delayMs = 500, workers = 4 } = opts;
   const map = new Map<string, string>();
-  const failed: string[] = [];
-  const queue = [...new Set(images)];
-  const worker = async () => {
-    for (let src = queue.shift(); src; src = queue.shift()) {
-      try {
-        map.set(src, await cdnUpload(api, src));
-      } catch (e: any) {
-        failed.push(`${src.slice(0, 80)}: ${String(e?.message || e).slice(0, 80)}`);
+  const errors = new Map<string, string>();
+  const queue = imageRefs(source);
+  const one = async (src: string) => {
+    const bare = /^https?:/.test(src) && src.includes("?") ? src.slice(0, src.indexOf("?")) : "";
+    let last = "";
+    for (const cand of bare ? [src, bare] : [src])
+      for (let i = 0; i < tries; i++) {
+        if (i) await sleep(delayMs * 2 ** (i - 1));
+        try {
+          return map.set(src, await upload(cand));
+        } catch (e: any) {
+          last = String(e?.message || e).slice(0, 160);
+          // 404/403/400…: this url won't change its answer (408/429 and 5xx/network are retried).
+          if (/\((4\d\d)\)/.test(last) && !/\((408|429)\)/.test(last)) break;
+        }
       }
-    }
+    errors.set(src, last);
   };
-  await Promise.all(Array.from({ length: 4 }, worker));
+  await Promise.all(Array.from({ length: workers }, async () => {
+    for (let src = queue.shift(); src; src = queue.shift()) await one(src);
+  }));
+  rewriteImages(source, map);
+  const failed = errors.size ? dropImages(source, errors) : [];
+  return { hosted: map.size, failed };
+}
+
+/** Take failed pictures out: an image element goes, a background keeps its colour/gradient. */
+function dropImages(source: any, errors: Map<string, string>) {
+  const where = new Map<string, Set<string>>();
+  const hit = (src: string, n: any) => where.set(src, (where.get(src) || new Set()).add(n.id));
   walk(source, (n: any) => {
-    const cfg = n.runtime?.config;
-    if (cfg?.src && map.has(cfg.src)) cfg.src = map.get(cfg.src);
-    if (n.specials?.src && map.has(n.specials.src)) n.specials.src = map.get(n.specials.src);
-    const bg = n.runtime?.style?.background;
-    if (typeof bg === "string")
-      n.runtime.style.background = bg.replace(/url\(([^)]+)\)/g, (m: string, u: string) => (map.has(u) ? `url(${map.get(u)})` : m));
+    if (!Array.isArray(n.children)) return n;
+    n.children = n.children.filter((k: any) => {
+      const src = k.runtime?.config?.src ?? k.specials?.src;
+      return !(k.type === "image" && errors.has(src) && (hit(src, k), true));
+    });
     return n;
   });
-  return { hosted: map.size, failed };
+  rewriteImages(source, new Map([...errors.keys()].map((u) => [u, ""])), hit);
+  return [...errors].map(([src, error]) => ({ src, error, elements: [...(where.get(src) || [])] }));
 }
 
 export function registerCloneTools(server: McpServer, api: WebcakeCmsApi, handle: Handle) {
@@ -110,7 +136,8 @@ export function registerCloneTools(server: McpServer, api: WebcakeCmsApi, handle
         }
         if (!snap || !Array.isArray(snap.sections)) throw new Error("snapshot has no sections — run the get_clone_script script on the page.");
         const out = snapshotToSource(snap, { skipChrome: !!skip_chrome });
-        const images = rehost_images ? await rehost(api, out.source, out.images) : undefined;
+        const referer = snap.url || url;
+        const images = rehost_images ? await rehost(out.source, (src) => cdnUpload(api, src, referer)) : undefined;
         const v: any = validatePage(out.source);
         const byCode: Record<string, number> = {};
         for (const w of v.warnings || []) byCode[codeOf(w)] = (byCode[codeOf(w)] || 0) + 1;
@@ -122,7 +149,7 @@ export function registerCloneTools(server: McpServer, api: WebcakeCmsApi, handle
           outline: outline(out.source.sections, out.roles),
           fonts: out.fonts,
           ...(out.notes.length ? { notes: out.notes } : {}),
-          ...(images ? { images: { hosted: images.hosted, ...(images.failed.length ? { failed: images.failed.slice(0, 10) } : {}) } } : { images: { external: out.images.length, note: out.images.length ? "Not on the CDN yet — the storefront won't show them. Re-run with rehost_images:true for a page you keep." : undefined } }),
+          ...(images ? { images: { hosted: images.hosted, ...(images.failed.length ? { failed: images.failed.slice(0, 20), failed_count: images.failed.length, note: "These could not be uploaded, so they were taken out of the page (an image element removed, a background left with its colour); the page builds as is. To restore one: upload_images([src]) after fixing it, then update_page_element on the listed element ids (the parent of a removed image)." } : {}) } } : { images: { external: out.images.length, note: out.images.length ? "Not on the CDN yet — the storefront won't show them. Re-run with rehost_images:true for a page you keep." : undefined } }),
           validation: { valid: v.valid, errors: (v.errors || []).slice(0, 8), warnings_by_code: byCode },
           source_ref: `cache:${ref}`,
           next: `${(v.errors || []).some((e: string) => e.startsWith("[IMAGE_HOST]")) ? "Images are not on the WebCake CDN yet (IMAGE_HOST blocks the save): run clone_page again with rehost_images:true. Then " : ""}build_page({ name, slug, source: "cache:${ref}", dry_run: true }) then dry_run:false. Set the site fonts to ${out.fonts.slice(0, 2).join(" / ") || "the source's"} if they differ; rewrite the copy for the user's brand. The ref expires in 10 min (read it with read_cached_result).`,
