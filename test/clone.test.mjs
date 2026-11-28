@@ -193,3 +193,20 @@ test("clone rehost: mọi ảnh (src, nền url có/không ngoặc kép, layer b
   assert.equal(sec.children.filter((k) => k.type === "image").length, 2); // the dead picture is gone
   assert.ok(!json.includes("data:image")); // svg icons are uploaded too
 });
+
+test("clone: nội dung giữa trang theo lề đo ở từng breakpoint; ô màu nhỏ giữ px", () => {
+  const swatch = { k: "box", x: 60, y: 120, w: 36, h: 22, style: { bgImage: "https://content.pancake.vn/test/sw.jpg", radius: 11 }, pad: {} };
+  const card = { k: "image", x: 60, y: 160, w: 300, h: 300, src: "https://content.pancake.vn/test/p.jpg" };
+  const snap = { ...SNAP, insets: { bp2: { "8/1": [60, 60] }, bp3: { "8/1": [24, 24] }, bp4: { "8/1": [5, 5] } },
+    sections: [{ k: "section", key: "8/1", x: 0, y: 100, w: 1440, h: 420, style: {}, pad: {}, content: { k: "group", dir: "col", gap: 16, x: 60, y: 100, w: 1320, h: 420, kids: [T(60, 100, 1320, 24, "Title"), swatch, card] } }] };
+  const sec = snapshotToSource(snap).source.sections[0];
+  const [title, sw] = sec.children;
+  // 1100px: 60px each side of a 1080px cell → 90.74%, centred; 768: 24px; 390: the grid's own 5px
+  assert.deepEqual(title.runtime.responsive.bp2.config, { widthUnit: "%", relWidth: 90.74, constraintX: ["centerLeft"] });
+  assert.equal(title.runtime.responsive.bp3.config.relWidth, 94.99); // (768 − 48) / 758
+  assert.deepEqual(title.runtime.responsive.bp4.config, { widthUnit: "%", relWidth: 100, constraintX: ["left", "right"] });
+  assert.equal(sw.type, "rectangle");
+  assert.equal(sw.runtime.config.widthUnit, "px"); // a swatch, not a bar across the card
+  assert.equal(sw.runtime.style.width, 36);
+  assert.equal((validatePage({ sections: [sec] }).errors || []).filter((e) => !e.startsWith("[IMAGE_HOST]")).length, 0);
+});

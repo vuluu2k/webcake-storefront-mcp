@@ -171,7 +171,9 @@ export async function captureInPage(opts: any = {}): Promise<any> {
     return h ? h.tagName.toLowerCase() : "p";
   };
   const isButton = (el: any, s: any) => {
-    const t = (el.innerText || (el as any).value || "").trim();
+    // A <button value="…"> (a radio/checkbox control) has no label: its value is data, not text.
+    if (/^(radio|checkbox|switch)$/.test(el.getAttribute("role") || "")) return false;
+    const t = (el.innerText || (el.tagName === "INPUT" ? el.value : "") || "").trim();
     if (!t || t.length > 60 || t.includes("\n")) return false;
     if (el.tagName === "BUTTON" || el.getAttribute("role") === "button") return true;
     const b = boxStyle(s);
@@ -470,12 +472,15 @@ export async function captureInPage(opts: any = {}): Promise<any> {
       const n = node(c);
       if (n) kids.push(n);
     }
-    const role = b.tagName === "HEADER" || b.querySelector(":scope > nav, header") || (s.position === "fixed" && r.y <= 8) ? "header" : b.tagName === "FOOTER" ? "footer" : b.tagName === "NAV" ? "nav" : undefined;
+    // The site header is a short band at the top: a <header> inside a product block lower down
+    // (title/price/variants) is content.
+    const atTop = r.y < 300 && r.h < 400;
+    const role = atTop && (b.tagName === "HEADER" || b.querySelector(":scope > nav, header") || (s.position === "fixed" && r.y <= 8)) ? "header" : b.tagName === "FOOTER" ? "footer" : b.tagName === "NAV" ? "nav" : undefined;
     const content = kids.filter(Boolean);
     if (!content.length && !painted(boxStyle(s))) continue;
     const own = self ? {} : boxStyle(s);
     const style = own.bg || own.bgImage || own.gradient ? own : { ...(inherited.get(b) || {}), ...own };
-    sections.push({ k: "section", ...r, role, style, pad: pads(s), sticky: s.position === "sticky" || s.position === "fixed" || undefined, content: content.length === 1 ? content[0] : content.length ? arrange(content, r, keyOf(b)) : null });
+    sections.push({ k: "section", ...r, key: keyOf(b), role, style, pad: pads(s), sticky: s.position === "sticky" || s.position === "fixed" || undefined, content: content.length === 1 ? content[0] : content.length ? arrange(content, r, keyOf(b)) : null });
   }
   // Thin bands with the same background as their neighbour (a section title above its grid)
   // belong to one section.
@@ -561,6 +566,31 @@ export function probeSlides(keys: string[]): Record<string, [number, number]> {
   return out;
 }
 
+/** In-page: how far each keyed section's content sits from its left/right edge at this width (a
+ *  centred max-width container, side padding) — measured on what shows: pictures and text. */
+export function probeInsets(keys: string[]): Record<string, [number, number]> {
+  const out: Record<string, [number, number]> = {};
+  const W = window.innerWidth;
+  for (const key of keys) {
+    let el: any = document.body;
+    for (const i of key.split("/").filter(Boolean)) el = el && el.children[+i];
+    if (!el) continue;
+    const box = el.getBoundingClientRect();
+    let l = Infinity;
+    let r = -Infinity;
+    for (const e of Array.from(el.querySelectorAll("*")) as any[]) {
+      const leaf = /^(IMG|SVG|VIDEO|PICTURE|INPUT|BUTTON)$/i.test(e.tagName) || Array.from(e.childNodes as any[]).some((n: any) => n.nodeType === 3 && n.textContent.trim());
+      if (!leaf) continue;
+      const b = e.getBoundingClientRect();
+      if (b.width < 2 || b.height < 2 || b.left < -1 || b.right > W + 1) continue;
+      l = Math.min(l, b.left);
+      r = Math.max(r, b.right);
+    }
+    if (l < r) out[key] = [Math.round(l - box.left), Math.round(box.right - r)];
+  }
+  return out;
+}
+
 /** borderRadius the way real pages store it: four corners (value-formats: 99% "Npx Npx Npx Npx"). */
 const corners = (r: number) => `${r}px ${r}px ${r}px ${r}px`;
 const PROBE_WIDTHS: Record<string, number> = { bp2: 1100, bp3: 768, bp4: 390 };
@@ -580,13 +610,16 @@ export async function capturePage(page: any, width = 1440): Promise<any> {
     walkKeys(n.content);
   };
   for (const s of snap.sections || []) walkKeys(s);
+  const bands = (snap.sections || []).map((s: any) => s.key).filter(Boolean);
   snap.columns = {};
   snap.slides = {};
+  snap.insets = {};
   for (const [bp, w] of Object.entries(PROBE_WIDTHS)) {
     await page.setViewportSize({ width: w, height: 900 });
     await page.waitForTimeout(250);
     snap.columns[bp] = await page.evaluate(probeColumns, [...keys]);
     if (sliders.size) snap.slides[bp] = await page.evaluate(probeSlides, [...sliders]);
+    snap.insets[bp] = await page.evaluate(probeInsets, bands);
   }
   await page.setViewportSize({ width, height: 900 });
   return snap;
@@ -832,7 +865,8 @@ function spec(n: any, c: Ctx, area?: Area): any {
       const ins = (inside?.type === "container" && !inside.opts?.style?.background && inside.pad) || {};
       const pad: any = Object.fromEntries(["t", "r", "b", "l"].map((k) => [k, ins[k] ?? n.pad?.[k] ?? 0]));
       const style = { ...bgStyle(n.style), ...(pad.t || pad.l || pad.r || pad.b ? { padding: `${pad.t}px ${pad.r}px ${pad.b}px ${pad.l}px` } : {}), height: n.h };
-      if (!inside) return { type: "rectangle", opts: { style: { ...bgStyle(n.style), height: n.h, width: n.w } } };
+      // A swatch / dot / divider keeps its size (and place) instead of stretching across its cell.
+      if (!inside) return { type: "rectangle", opts: { style: { ...bgStyle(n.style), height: n.h, width: n.w }, align: placeOf(n, area) ?? "left", config: fixedOrShare(n, area) } };
       // A painted wrapper around one group → the group's own container gets the paint.
       const own = { align: alignIn(n, area), config: share(n, area) };
       if (inside.type === "container" && !inside.opts?.style?.background) return { ...inside, opts: { ...(inside.opts || {}), ...own, style: { ...(inside.opts?.style || {}), ...style } } };
@@ -955,6 +989,34 @@ function carousel(n: any, c: Ctx, children: any[], ks: any[], gap: number) {
   };
 }
 
+/** The section grid's side margins per breakpoint (genGridByBp: 10px laptop, 5px tablet/phone)
+ *  would put content 5px from the edge where the source keeps a centred max-width container or
+ *  side padding. Each full-width child of a section takes the measured content share of the
+ *  width at that breakpoint, centred — so 1000–1319px desktops/laptops look like the source. */
+const GRID_MARGIN: Record<string, number> = { bp2: 10, bp3: 5, bp4: 5 };
+function inset(children: any[], key: string | undefined, insets?: Record<string, Record<string, [number, number]>>) {
+  if (!key || !insets) return;
+  const per: Record<string, any> = {};
+  for (const [bp, W] of Object.entries(PROBE_WIDTHS)) {
+    const m = insets[bp]?.[key];
+    if (!m) continue;
+    const [l, r] = m;
+    const cell = W - 2 * GRID_MARGIN[bp];
+    const wide = (l > GRID_MARGIN[bp] + 8 || r > GRID_MARGIN[bp] + 8) && Math.abs(l - r) <= 24;
+    per[bp] = wide
+      ? { widthUnit: "%", relWidth: Math.max(50, Math.min(100, +(((W - l - r) / cell) * 100).toFixed(2))), constraintX: ["centerLeft"] }
+      : { widthUnit: "%", relWidth: 100, constraintX: ["left", "right"] };
+  }
+  if (!Object.values(per).some((p) => p.relWidth < 100)) return;
+  for (const ch of children) {
+    const o = (ch.opts = ch.opts || {});
+    // Only what fills the column: a block that already keeps its own share is placed by it.
+    if (o.config?.relWidth != null || (o.align && o.align !== "fill")) continue;
+    const rs = (o.responsive = { ...(o.responsive || {}) });
+    for (const [bp, cfg] of Object.entries(per)) rs[bp] = { ...(rs[bp] || {}), config: { ...(rs[bp]?.config || {}), ...cfg } };
+  }
+}
+
 /** A captured page → { sections } built with the builder's own layout helpers. */
 export function snapshotToSource(snap: any, opts: { skipChrome?: boolean } = {}) {
   const c: Ctx = { pageBg: snap?.pageBg, columns: snap?.columns, slides: snap?.slides, notes: {}, text: 0, fonts: {}, images: [], W: snap?.viewport?.w || 1440 };
@@ -970,6 +1032,7 @@ export function snapshotToSource(snap: any, opts: { skipChrome?: boolean } = {})
     // The section's children: a column group stacks; anything else is one child.
     const childNodes = content?.k === "group" && content.dir === "col" ? content.kids : content ? [content] : [];
     const children = childNodes.map((n: any) => spec(n, c, inner(s))).filter(Boolean);
+    inset(children, s.key, snap?.insets);
     const pad = s.pad || {};
     const firstY = childNodes.length ? Math.min(...childNodes.map((n: any) => n.y)) : s.y;
     const lastY = childNodes.length ? Math.max(...childNodes.map((n: any) => n.y + n.h)) : s.y + s.h;
