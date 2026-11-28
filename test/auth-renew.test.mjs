@@ -90,6 +90,20 @@ test("token chết → thu hồi luôn access/refresh OAuth bọc nó (mọi ins
   assert.equal(again.ok, false); // client phải mở lại Connect
 });
 
+test("connect thiếu wsid: chỉ nhận khi JWT tự mang session_id", async () => {
+  const exp = Math.floor(Date.now() / 1000) + 7200;
+  const bare = jwt(exp);
+  const withSid = `h.${Buffer.from(JSON.stringify({ exp, session_id: "s1" })).toString("base64url")}.s`;
+  const { client } = await oauth.registerClient({ redirect_uris: ["http://localhost:9/cb"] });
+  const start = () => oauth.startAuthorize({
+    client_id: client.client_id, redirect_uri: "http://localhost:9/cb", response_type: "code",
+    code_challenge: oauth.s256("v".repeat(43)), code_challenge_method: "S256", state: "x",
+  });
+  assert.equal((await oauth.completeAuthorize((await start()).internalState, bare, "")).ok, false);
+  assert.equal((await oauth.completeAuthorize((await start()).internalState, withSid, "")).ok, true);
+  assert.equal((await oauth.completeAuthorize((await start()).internalState, bare, "w")).ok, true);
+});
+
 test("remote: mỗi session đọc/ghi cấu hình riêng, không đụng file chung của server", () => {
   setConfig("site_id", "server-site");
   const a = { values: { site_id: "site-A" } };
