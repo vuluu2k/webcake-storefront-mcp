@@ -5,6 +5,12 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.11.2] - 2026-11-28
+
+### Fixed
+- Request `/mcp` từ xa truyền phiên qua `?wsid=` thay vì `?session_id=` nay được map đúng sang header `x-webcake-session-id`; trước đây `wsid` bị bỏ qua khiến mọi lượt gọi backend bị 401.
+- Luồng Connect OAuth nay từ chối phát token khi JWT của WebCake không mang claim `session_id` và cũng không có `wsid` được truyền kèm, báo lỗi rõ ràng "WebCake session (wsid) missing" thay vì phát ra một token OAuth sẽ 401 ở mọi lượt gọi.
+
 ## [2.11.1] - 2026-11-25
 
 ### Fixed

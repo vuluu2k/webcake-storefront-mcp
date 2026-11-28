@@ -5,6 +5,12 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.11.2] - 2026-11-28
+
+### Fixed
+- Remote `/mcp` requests that pass the session as `?wsid=` instead of `?session_id=` now map to the `x-webcake-session-id` header correctly; previously `wsid` was ignored and every backend call 401'd.
+- The OAuth Connect flow now refuses to issue a token when the WebCake JWT carries no `session_id` claim and no `wsid` was supplied, returning a clear "WebCake session (wsid) missing" error instead of minting an OAuth token that would 401 on every call.
+
 ## [2.11.1] - 2026-11-25
 
 ### Fixed
