@@ -5,6 +5,22 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.13.0] - 2026-11-28
+
+### Added
+- `clone_page` now turns a multi-card slider into the storefront's native `carousel` element, keeping every card and measuring the visible-cards-per-breakpoint from the source page (`relSlideWidth` at 1100/768/390) instead of wrapping every card into a grid that made the page roughly 1.7x longer.
+- `clone_page` now measures each section's content inset at 1100/768/390 so a column-filling child keeps the source's width ratio and stays centered on tablet and laptop breakpoints, instead of sticking to the section grid's 5-10px edge.
+- `clone_page`'s `rehost_images` upload now retries failed images with backoff, drops a 4xx-triggering query string before retrying, and sends browser-like `User-Agent`/`Accept`/`Referer` headers, covering every place an image can appear (`src`, quoted and unquoted `url(...)` in `runtime`/breakpoint/`style` layers, carousel slides, SVG data URIs); an image that still fails is removed from the page and reported with its error and holding element ids so `build_page` can proceed immediately.
+
+### Fixed
+- `clone_page` now reads a background `url(...)` whose filename contains parentheses (e.g. `"_(1).jpg"`) in full instead of truncating at the first `(`, which previously caused a 404 during rehosting.
+- `clone_page` no longer captures a loading skeleton or tint placeholder painted underneath an image, so cloned circular images no longer show a gray overlay.
+- `clone_page` now measures cloned text by its own content instead of its container box, so overflowing text in a short box keeps its real height instead of being clipped, and banner stacks keep their top/bottom inset instead of letting captions crop a heading.
+- `clone_page` now keeps icons 48px and smaller at their pixel size (e.g. an account icon no longer grows) and preserves a search input's border, radius, background, and padding.
+- `clone_page` no longer turns a `<button role="radio">` or `<button role="checkbox">` with a `value` attribute into a native `button` element labeled with that value; it is now captured as the bordered circular control the source page renders.
+- `clone_page` no longer stretches a small empty swatch or dot into a full-width bar, keeping its pixel size and position instead.
+- `clone_page` no longer misidentifies a `<header>` element nested lower in the page (e.g. inside a product block) as the site header, which previously caused that block's image, color, and size content to be dropped.
+
 ## [2.12.0] - 2026-11-28
 
 ### Added

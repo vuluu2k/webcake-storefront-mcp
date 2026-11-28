@@ -5,6 +5,22 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.13.0] - 2026-11-28
+
+### Added
+- `clone_page` nay biến một slider nhiều thẻ thành element `carousel` gốc của storefront, giữ hết mọi thẻ và đo số thẻ hiện cùng lúc theo từng breakpoint từ trang gốc (`relSlideWidth` tại 1100/768/390) thay vì xếp mọi thẻ vào lưới khiến trang dài ra khoảng 1,7 lần.
+- `clone_page` nay đo lề nội dung của từng section tại 1100/768/390 để một con lấp cột giữ đúng tỉ lệ bề rộng của trang gốc và căn giữa ở breakpoint tablet/laptop, thay vì dính mép 5-10px của lưới section.
+- Lượt tải ảnh lên CDN (`rehost_images`) của `clone_page` nay thử lại có backoff khi thất bại, bỏ query string gây lỗi 4xx trước khi thử lại, và gửi header `User-Agent`/`Accept`/`Referer` như trình duyệt, bao quát mọi nơi ảnh có thể xuất hiện (`src`, `url(...)` có/không ngoặc kép trong các lớp `runtime`/breakpoint/`style`, slide của carousel, SVG data URI); ảnh vẫn thất bại thì bị bỏ khỏi trang và báo kèm lỗi cùng id của element chứa nó để `build_page` có thể tiếp tục ngay.
+
+### Fixed
+- `clone_page` nay đọc trọn `url(...)` của ảnh nền có tên file chứa dấu ngoặc (ví dụ `"_(1).jpg"`) thay vì bị cắt ở dấu `(` đầu tiên, điều trước đây gây lỗi 404 khi rehost.
+- `clone_page` không còn bắt skeleton hoặc lớp tint phủ dưới ảnh làm placeholder, nên ảnh tròn được clone không còn bị phủ xám.
+- `clone_page` nay đo chữ được clone theo chính nội dung chữ thay vì theo hộp chứa, nên chữ tràn khỏi một hộp thấp giữ đúng chiều cao thật thay vì bị cắt, và các stack dạng banner giữ khoảng inset trên/dưới thay vì để chú thích cắt mất tiêu đề.
+- `clone_page` nay giữ các icon từ 48px trở xuống đúng kích thước pixel (ví dụ icon tài khoản không còn phình to) và giữ viền, bo góc, nền, padding của ô tìm kiếm.
+- `clone_page` không còn biến `<button role="radio">` hoặc `<button role="checkbox">` có thuộc tính `value` thành một element `button` gắn nhãn bằng giá trị đó; nó nay được clone thành ô tròn có viền đúng như trang gốc hiển thị.
+- `clone_page` không còn kéo dãn một ô màu hoặc chấm nhỏ trống thành một thanh ngang hết chiều rộng, mà giữ đúng kích thước và vị trí pixel của nó.
+- `clone_page` không còn nhận nhầm một `<header>` nằm sâu hơn trong trang (ví dụ trong một khối sản phẩm) là header của site, điều trước đây khiến ảnh, màu, và nội dung kích thước của khối đó bị bỏ mất.
+
 ## [2.12.0] - 2026-11-28
 
 ### Added
