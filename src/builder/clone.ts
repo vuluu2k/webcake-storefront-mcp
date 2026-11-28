@@ -9,7 +9,7 @@
 //    rowChildren/stackChildren via buildFromSpec): a row → `layout:"row"` container with
 //    column widths from the measured boxes (collapses on tablet/mobile), a column → stack.
 //    Nothing becomes custom code; what can't be mapped is counted in `notes`.
-import { buildSection } from "./page.js";
+import { buildSection, walk } from "./page.js";
 
 // Browser globals for captureInPage (the project compiles without the DOM lib).
 declare const window: any, document: any, location: any, CSS: any;
@@ -25,19 +25,55 @@ export async function captureInPage(opts: any = {}): Promise<any> {
   const skip = (r: string) => {
     skipped[r] = (skipped[r] || 0) + 1;
   };
-  // Lazy content: walk the page once so images/sections that load on scroll exist.
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const cs = (el: any) => getComputedStyle(el);
+  /** The pinned layer an element sits in (itself or a fixed ancestor). */
+  const fixedOf = (el: any) => {
+    for (let e = el; e && e !== document.body; e = e.parentElement) if (cs(e).position === "fixed") return e;
+    return null;
+  };
+  // Consent bars, newsletter/promo popups: accept or close them first so they neither hide nor
+  // replace content (a modal's backdrop would otherwise be captured as a band).
+  if (opts.dismiss !== false) {
+    const ACCEPT = /^(chấp nhận|đồng ý|tôi đồng ý|accept|allow|agree|i agree|got it|đã hiểu|tôi đã hiểu)( tất cả| all| all cookies| cookies)?$/i;
+    const CLOSE = /^(close|đóng|×|✕|✖|x|no,? thanks|không,? cảm ơn|để sau|bỏ qua|later|maybe later|skip)$/i;
+    for (let round = 0; round < 2; round++) {
+      let hit = 0;
+      for (const el of arr(document.querySelectorAll("button,a,[role=button],[aria-label]"))) {
+        const layer = fixedOf(el) || el.closest("[role=dialog],[aria-modal=true],dialog");
+        if (!layer || !el.isConnected || el.tagName === "A" && /^(https?:|\/[^/#]|\.)/.test(el.getAttribute("href") || "")) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width < 4 || r.height < 4 || cs(el).visibility === "hidden") continue;
+        const t = (el.innerText || "").trim();
+        const label = el.getAttribute("aria-label") || el.getAttribute("title") || "";
+        const lr = layer.getBoundingClientRect();
+        // A pinned header bar is navigation: only an explicit accept is clicked there.
+        const bar = lr.width >= window.innerWidth * 0.9 && lr.top <= 8 && lr.height < window.innerHeight * 0.5;
+        if (ACCEPT.test(t) || !bar && (CLOSE.test(t) || !t && /^(close|đóng|dismiss|tắt)\b/i.test(label))) {
+          el.click();
+          hit++;
+        }
+      }
+      document.dispatchEvent(new (window as any).KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      if (!hit) break;
+      skip("dismissed overlay (consent / popup)");
+      await sleep(400);
+    }
+  }
+  // Lazy content: walk the page once so images/sections that load on scroll exist. Instant
+  // jumps: with `scroll-behavior: smooth` a plain scrollTo is still animating when we measure.
+  const jump = (y: number) => window.scrollTo({ top: y, left: 0, behavior: "instant" });
   if (opts.scroll !== false) {
     const step = Math.max(400, window.innerHeight * 0.8);
     for (let y = 0; y < document.body.scrollHeight && y < 40000; y += step) {
-      window.scrollTo(0, y);
-      await new Promise((r) => setTimeout(r, 120));
+      jump(y);
+      await sleep(120);
     }
-    window.scrollTo(0, 0);
-    await new Promise((r) => setTimeout(r, 200));
+    jump(0);
+    await sleep(300);
   }
   document.querySelectorAll("details").forEach((d: any) => (d.open = true));
 
-  const cs = (el: any) => getComputedStyle(el);
   const box = (el: any) => {
     const r = el.getBoundingClientRect();
     return { x: Math.round(r.left + window.scrollX), y: Math.round(r.top + window.scrollY), w: Math.round(r.width), h: Math.round(r.height) };
@@ -82,8 +118,18 @@ export async function captureInPage(opts: any = {}): Promise<any> {
     return o;
   };
   const painted = (b: any) => !!(b.bg || b.bgImage || b.gradient || b.border || b.shadow);
-  /** Pinned widgets (chat bubble, cookie bar, back-to-top) — not a pinned full-width header. */
-  const overlay = (s: any, r: any) => s.position === "fixed" && r.h < window.innerHeight * 0.9 && !(r.w >= W * 0.9 && r.y - window.scrollY <= 8);
+  /** Pinned widgets (chat bubble, cookie bar, back-to-top, a modal and its backdrop) — not a
+   *  pinned full-width header bar. */
+  const overlay = (s: any, r: any) => s.position === "fixed" && !(r.w >= W * 0.9 && r.y - window.scrollY <= 8 && r.h < window.innerHeight * 0.5);
+  /** The box that clips el's children: el or the nearest ancestor hiding overflow, else the viewport. */
+  const clipOf = (el: any) => {
+    for (let e = el; e && e !== document.body; e = e.parentElement)
+      if (cs(e).overflowX !== "visible") {
+        const r = box(e);
+        return { x: r.x, w: r.w };
+      }
+    return { x: 0, w: W };
+  };
   const pads = (s: any) => ({ t: px(s.paddingTop), r: px(s.paddingRight), b: px(s.paddingBottom), l: px(s.paddingLeft) });
   const INLINE = new Set(["A", "SPAN", "STRONG", "B", "EM", "I", "U", "SMALL", "BR", "SUP", "SUB", "MARK", "CODE", "S", "DEL", "LABEL", "ABBR", "TIME", "FONT", "Q", "CITE"]);
   // Text-only subtree laid out inline. A flex/grid row of spans, or a painted inline-block
@@ -165,7 +211,29 @@ export async function captureInPage(opts: any = {}): Promise<any> {
     for (let e = el; e && e !== document.body && e.parentElement; e = e.parentElement) p.unshift(arr(e.parentElement.children).indexOf(e));
     return p.join("/");
   };
-  const arrange = (kids: any[], r: any, key?: string) => {
+  const arrange = (kids: any[], r: any, key?: string): any => {
+    // Layers: a picture (or an empty painted box) with siblings laid ON it — a banner and its
+    // caption, a card image and its badge — becomes a box painted with that picture holding the
+    // siblings, instead of the caption stacked under the picture.
+    const area = (k: any) => k.w * k.h;
+    // (A scrim as big as the picture — a gradient over a banner — lies on it too.)
+    const on = (k: any, b: any) => k !== b && (area(k) < area(b) || (area(k) === area(b) && b.k === "image" && k.k !== "image")) && k.x + k.w / 2 > b.x && k.x + k.w / 2 < b.x + b.w && k.y + k.h / 2 > b.y && k.y + k.h / 2 < b.y + b.h;
+    const back = kids.filter((b) => b.k === "image" || (b.k === "box" && !b.content)).sort((a, b) => area(b) - area(a) || (b.k === "image" ? 1 : 0) - (a.k === "image" ? 1 : 0)).find((b) => kids.some((k) => on(k, b)));
+    if (back) {
+      const top = kids.filter((k) => on(k, back));
+      const x = Math.min(...top.map((k) => k.x));
+      const y = Math.min(...top.map((k) => k.y));
+      const x2 = Math.max(...top.map((k) => k.x + k.w));
+      const y2 = Math.max(...top.map((k) => k.y + k.h));
+      const layer = {
+        k: "box", x: back.x, y: back.y, w: back.w, h: back.h,
+        style: back.k === "image" ? { bgImage: back.src, radius: back.radius } : back.style,
+        pad: { t: Math.max(0, y - back.y), r: Math.max(0, back.x + back.w - x2), b: Math.max(0, back.y + back.h - y2), l: Math.max(0, x - back.x) },
+        content: top.length === 1 ? top[0] : arrange(top, { x, y, w: x2 - x, h: y2 - y }),
+      };
+      const rest = kids.filter((k) => k !== back && !top.includes(k));
+      return rest.length ? arrange([layer, ...rest], r, key) : layer;
+    }
     const sorted = [...kids].sort((a, b) => a.y - b.y || a.x - b.x);
     const bands: any[][] = [];
     for (const k of sorted) {
@@ -187,6 +255,9 @@ export async function captureInPage(opts: any = {}): Promise<any> {
     return { k: "group", dir: "col", gap: Math.max(0, Math.round(vg.reduce((n, g) => n + g, 0) / vg.length)), ...r, kids: rows };
   };
 
+  /** Characters of text a captured node holds (left-out slides are not counted against coverage). */
+  const textOf = (n: any): number => (n ? String(n.text || "").replace(/\s+/g, "").length + [n.content, n.body, ...(n.kids || [])].reduce((a, k) => a + textOf(k), 0) : 0);
+  let offText = 0;
   const node = (el: any): any => {
     if (++count > MAX) {
       skip("node limit");
@@ -201,9 +272,17 @@ export async function captureInPage(opts: any = {}): Promise<any> {
       return null;
     }
     const he = el as any;
+    // Carousel arrows: the slides are laid out as a grid (or the shown slide alone), nothing to page.
+    if (r.w <= 64 && r.h <= 64 && (/^(go to )?(prev(ious)?|next|trước|sau|tiếp)( slide| item)?$/i.test((el.getAttribute("aria-label") || he.innerText || "").trim()) || /\b(prev|next)\b/i.test(String(el.className?.baseVal ?? el.className ?? "")))) {
+      skip("carousel arrow");
+      return null;
+    }
     if (t === "IMG" || t === "PICTURE") {
       const img: any = t === "IMG" ? el : el.querySelector("img");
-      const src = img && (img.currentSrc || img.src);
+      // Lazy loaders park the real URL in data-* / srcset behind a placeholder (data: gif/svg).
+      const set = (v: any) => String(v || "").split(",").map((p) => p.trim().split(/\s+/)[0]).filter(Boolean).pop();
+      const cands = img ? [img.currentSrc, img.getAttribute("src"), img.dataset.src, img.dataset.lazySrc, img.dataset.original, set(img.getAttribute("srcset") || img.dataset.srcset), set(el.querySelector?.("source")?.getAttribute("srcset"))] : [];
+      const src = cands.find((u) => u && !/^data:/.test(u)) || cands.find(Boolean);
       if (!src) return (skip("image without src"), null);
       return { k: "image", ...r, src: abs(src), alt: img.alt || "", radius: px(s.borderTopLeftRadius) || undefined, fit: s.objectFit };
     }
@@ -252,15 +331,27 @@ export async function captureInPage(opts: any = {}): Promise<any> {
       const n = { k: "text", ...r, tag: headingOf(el), html: richText(el), text: he.innerText.trim(), href: href ? abs(href) : undefined, style: textStyle(s) };
       return painted(b) ? { k: "box", ...r, style: b, pad: pads(s), content: n } : n;
     }
-    const kids: any[] = [];
+    let kids: any[] = [];
     for (const c of arr(el.children)) {
       const n = node(c);
       if (n) kids.push(n);
+    }
+    // A slider: some children sit wholly outside the box that clips them. One slide per view →
+    // keep the slide on screen; several per view → keep them all, `slider` per row as shown.
+    let slider = 0;
+    const clip = clipOf(el);
+    if (kids.some((k) => k.x >= clip.x + clip.w - 2 || k.x + k.w <= clip.x + 2)) {
+      const on = kids.filter((k) => k.x + k.w / 2 > clip.x && k.x + k.w / 2 < clip.x + clip.w);
+      if (on.length === 1 && on[0].w >= clip.w * 0.8) {
+        for (const k of kids) if (k !== on[0]) (offText += textOf(k), skip("off-screen slide of a one-per-view carousel / marquee (the shown one is kept)"));
+        kids = on;
+      } else if (on.length) slider = on.length;
     }
     const loose = arr(el.childNodes).filter((n) => n.nodeType === 3 && (n.textContent || "").trim()).map((n) => (n.textContent || "").trim()).join(" ");
     if (loose) kids.unshift({ k: "text", ...r, h: Math.max(16, px(s.lineHeight) || px(s.fontSize) * 1.4), tag: "p", html: esc(loose), text: loose, style: textStyle(s) });
     if (!kids.length) return painted(b) && r.h > 3 ? { k: "box", ...r, style: b, pad: pads(s) } : null;
     const content = kids.length === 1 ? kids[0] : arrange(kids, r, keyOf(el));
+    if (slider && content.k === "group" && content.dir === "row") content.slider = slider;
     return painted(b) ? { k: "box", ...r, style: b, pad: pads(s), content } : content;
   };
 
@@ -307,7 +398,9 @@ export async function captureInPage(opts: any = {}): Promise<any> {
     const s = cs(b);
     const r = box(b);
     if (r.h < 8) continue;
-    if (overlay(s, r)) {
+    // A band can be the child of a zero-height pinned wrapper: judge the layer it sits in.
+    const pin = fixedOf(b);
+    if (pin && overlay(cs(pin), box(pin))) {
       skip("fixed overlay (chat widget, cookie bar, sticky button)");
       continue;
     }
@@ -339,7 +432,16 @@ export async function captureInPage(opts: any = {}): Promise<any> {
   }
   sections.length = 0;
   sections.push(...merged);
-  const textTotal = (document.body.innerText || "").replace(/\s+/g, "").length;
+  // The text a visitor sees: innerText still holds visually-hidden (sr-only, 1px clipped) and
+  // transparent subtrees, which no clone should show — leave them out of the coverage base.
+  const len = (e: any) => (e.innerText || "").replace(/\s+/g, "").length;
+  const hidden = arr(document.body.querySelectorAll("*")).filter((e) => {
+    if (!e.getClientRects().length) return false; // not rendered: innerText already skips it
+    const r = e.getBoundingClientRect();
+    const s = cs(e);
+    return Number(s.opacity) === 0 || (r.width <= 1 || r.height <= 1) && (s.overflow !== "visible" || s.clip !== "auto");
+  });
+  const textTotal = len(document.body) - hidden.filter((e) => !hidden.some((h) => h !== e && h.contains(e))).reduce((n, e) => n + len(e), 0);
   // The page colour: body/html, else the colour most of the page's height is painted with
   // (an app root wrapper), so translucent bars and unpainted bands sit on the right colour.
   const weight: Record<string, number> = {};
@@ -347,7 +449,7 @@ export async function captureInPage(opts: any = {}): Promise<any> {
   const dominant = Object.entries(weight).sort((a, b) => b[1] - a[1])[0];
   const pageBg = [document.body, document.documentElement].map((e) => cs(e).backgroundColor).find((c) => !clear(c))
     || (dominant && dominant[1] > sections.reduce((n, s) => n + s.h, 0) * 0.5 ? dominant[0] : "rgb(255, 255, 255)");
-  return { url: location.href, title: document.title, viewport: { w: W, h: window.innerHeight }, pageBg, sections, skipped, textTotal };
+  return { url: location.href, title: document.title, viewport: { w: W, h: window.innerHeight }, pageBg, sections, skipped, textTotal, offscreenText: offText };
 }
 
 /** The capture as a script an agent can run in any browser tool (evaluate_script / javascript). */
@@ -361,7 +463,14 @@ export function probeColumns(keys: string[]): Record<string, number> {
     let el: any = document.body;
     for (const i of key.split("/").filter(Boolean)) el = el && el.children[+i];
     if (!el) continue;
-    const rs = Array.from(el.children as any[]).map((c: any) => c.getBoundingClientRect()).filter((r: any) => r.width > 1 && r.height > 1);
+    // Only what shows: a slider's off-screen slides are not columns.
+    let clip = { left: 0, right: window.innerWidth };
+    for (let e = el; e && e !== document.body; e = e.parentElement)
+      if (getComputedStyle(e).overflowX !== "visible") {
+        clip = e.getBoundingClientRect();
+        break;
+      }
+    const rs = Array.from(el.children as any[]).map((c: any) => c.getBoundingClientRect()).filter((r: any) => r.width > 1 && r.height > 1 && r.left + r.width / 2 > clip.left && r.left + r.width / 2 < clip.right);
     if (!rs.length) continue;
     // The first band = boxes that overlap the topmost one vertically (centred items included).
     const first = rs.reduce((a: any, b: any) => (b.top < a.top ? b : a));
@@ -626,11 +735,13 @@ function spec(n: any, c: Ctx, area?: Area): any {
           if ((cluster || colWidths[i].unit === "max-c") && k.type === "text") k.opts = { ...k.opts, config: { ...(k.opts.config || {}), widthUnit: "auto" } };
         });
         const n2 = keep.length;
+        // A slider shows `slider` cards per view: all of them are kept, wrapped that many per row.
+        const view = n.slider ? Math.min(n2, n.slider) : n2;
         // Measured: the columns the source really shows at laptop/tablet/phone width.
-        const measured: Record<string, number> = {};
+        const measured: Record<string, number> = view < n2 ? { bp1: view, bp2: view } : {};
         for (const bp of ["bp2", "bp3", "bp4"]) {
           const v = n.key ? c.columns?.[bp]?.[n.key] : undefined;
-          if (v) measured[bp] = Math.max(1, Math.min(n2, v));
+          if (v) measured[bp] = Math.max(1, Math.min(view, v));
         }
         const collapse = Object.keys(measured).length ? measured : small ? { bp3: n2, bp4: n2 } : undefined;
         // Small pieces hug their content; their row keeps its desktop share only on desktop.
@@ -686,8 +797,16 @@ export function snapshotToSource(snap: any, opts: { skipChrome?: boolean } = {})
     sections.push(section);
     roles.push(s.role || "content");
   }
+  // Background pictures (banners, swatches, card art) are images too: rehost_images uploads them.
+  walk({ sections }, (n: any) => {
+    const bg = n.runtime?.style?.background;
+    if (typeof bg === "string") for (const m of bg.matchAll(/url\(([^)]+)\)/g)) c.images.push(m[1]);
+  });
   for (const [k, n] of Object.entries(snap?.skipped || {})) c.notes[`skipped: ${k}`] = n as number;
-  const coverage = snap?.textTotal ? Math.min(100, Math.round((c.text / snap.textTotal) * 100)) : undefined;
+  // Base: the text a visitor sees, minus the slides deliberately left out (noted above).
+  const base = (snap?.textTotal || 0) - (snap?.offscreenText || 0);
+  const coverage = base > 0 ? Math.min(100, Math.round((c.text / base) * 100)) : undefined;
+  if (snap?.offscreenText) c.notes[`left-out slides held ${snap.offscreenText} characters of text (not counted in text_coverage_pct)`] = 1;
   const fonts = Object.entries(c.fonts).sort((a, b) => b[1] - a[1]).map(([f]) => f).slice(0, 4);
   return {
     source: { sections },
