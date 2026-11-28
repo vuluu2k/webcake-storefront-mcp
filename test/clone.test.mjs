@@ -104,6 +104,9 @@ test("clone_page tool: snapshot → source_ref; build_page đọc được cache
   assert.match(miss.content[0].text, /url or snapshot/);
   const script = JSON.parse((await t.get_clone_script.handler({}, {})).content[0].text);
   assert.ok(script.script.startsWith("(async function captureInPage") && script.script === CLONE_SCRIPT);
+  // the multi-width contract: an async function of snapshot.probe, run at each probe width
+  assert.equal(typeof new Function(`return ${script.probe_script}`)(), "function");
+  assert.deepEqual(script.probe_widths, { bp2: 1100, bp3: 768, bp4: 390 });
 });
 
 test("clone: số cột đo từ trang gốc theo breakpoint; cụm nhỏ co theo nội dung; <details> → collapse; ảnh nhỏ giữ px", () => {
