@@ -261,6 +261,11 @@ export async function captureInPage(opts: any = {}): Promise<any> {
   /** Characters of text a captured node holds (left-out slides are not counted against coverage). */
   const textOf = (n: any): number => (n ? String(n.text || "").replace(/\s+/g, "").length + [n.content, n.body, ...(n.kids || [])].reduce((a, k) => a + textOf(k), 0) : 0);
   let offText = 0;
+  const shift = (n: any, dx: number) => {
+    if (!n) return;
+    n.x += dx;
+    for (const k of [n.content, n.body, ...(n.kids || [])]) shift(k, dx);
+  };
   const node = (el: any): any => {
     if (++count > MAX) {
       skip("node limit");
@@ -363,7 +368,16 @@ export async function captureInPage(opts: any = {}): Promise<any> {
       if (on.length === 1 && on[0].w >= clip.w * 0.8) {
         for (const k of kids) if (k !== on[0]) (offText += textOf(k), skip("off-screen slide of a one-per-view carousel / marquee (the shown one is kept)"));
         kids = on;
-      } else if (on.length) slider = on.length;
+      } else if (on.length) {
+        slider = on.length;
+        // A looping slider parks slides before the view: they go after the last one, so the grid
+        // starts with the cards the visitor saw first.
+        const before = kids.filter((k) => k.x + k.w / 2 <= clip.x);
+        const ks = [...kids].sort((a, b) => a.x - b.x);
+        const gap = ks.length > 1 ? Math.max(0, ks[1].x - ks[0].x - ks[0].w) : 0;
+        const dx = Math.max(...kids.map((k) => k.x + k.w)) + gap - Math.min(...kids.map((k) => k.x));
+        for (const k of before) shift(k, dx);
+      }
     }
     const loose = arr(el.childNodes).filter((n) => n.nodeType === 3 && (n.textContent || "").trim()).map((n) => (n.textContent || "").trim()).join(" ");
     if (loose) kids.unshift({ k: "text", ...r, h: Math.max(16, px(s.lineHeight) || px(s.fontSize) * 1.4), tag: "p", html: esc(loose), text: loose, style: textStyle(s) });
@@ -450,14 +464,15 @@ export async function captureInPage(opts: any = {}): Promise<any> {
   }
   sections.length = 0;
   sections.push(...merged);
-  // The text a visitor sees: innerText still holds visually-hidden (sr-only, 1px clipped) and
-  // transparent subtrees, which no clone should show — leave them out of the coverage base.
+  // The text a visitor sees: innerText still holds visually-hidden subtrees (sr-only: 1px,
+  // clipped), which no clone should show — leave them out of the coverage base. (Transparent
+  // ones stay in: a reveal-on-scroll block that faded out again is content the capture lost.)
   const len = (e: any) => (e.innerText || "").replace(/\s+/g, "").length;
   const hidden = arr(document.body.querySelectorAll("*")).filter((e) => {
     if (!e.getClientRects().length) return false; // not rendered: innerText already skips it
     const r = e.getBoundingClientRect();
     const s = cs(e);
-    return Number(s.opacity) === 0 || (r.width <= 1 || r.height <= 1) && (s.overflow !== "visible" || s.clip !== "auto");
+    return (r.width <= 1 || r.height <= 1) && (s.overflow !== "visible" || s.clip !== "auto");
   });
   const textTotal = len(document.body) - hidden.filter((e) => !hidden.some((h) => h !== e && h.contains(e))).reduce((n, e) => n + len(e), 0);
   // The page colour: body/html, else the colour most of the page's height is painted with
