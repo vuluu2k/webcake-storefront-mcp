@@ -94,8 +94,9 @@ export async function captureInPage(opts: any = {}): Promise<any> {
   };
   const px = (v: string) => Math.round(parseFloat(v) || 0);
   const bgUrl = (s: any) => {
-    const m = /url\(["']?([^"')]+)["']?\)/.exec(s.backgroundImage || "");
-    return m ? abs(m[1]) : undefined;
+    // Computed style quotes the url: read up to the closing quote, a ")" in the name (a_(1).jpg) included.
+    const m = /url\((["']?)(.*?)\1\)/.exec(s.backgroundImage || "");
+    return m && m[2] ? abs(m[2]) : undefined;
   };
   const textStyle = (s: any) => {
     const o: any = { fontSize: px(s.fontSize), fontWeight: s.fontWeight, color: s.color, textAlign: s.textAlign };
@@ -170,7 +171,9 @@ export async function captureInPage(opts: any = {}): Promise<any> {
     return h ? h.tagName.toLowerCase() : "p";
   };
   const isButton = (el: any, s: any) => {
-    const t = (el.innerText || (el as any).value || "").trim();
+    // A <button value="…"> (a radio/checkbox control) has no label: its value is data, not text.
+    if (/^(radio|checkbox|switch)$/.test(el.getAttribute("role") || "")) return false;
+    const t = (el.innerText || (el.tagName === "INPUT" ? el.value : "") || "").trim();
     if (!t || t.length > 60 || t.includes("\n")) return false;
     if (el.tagName === "BUTTON" || el.getAttribute("role") === "button") return true;
     const b = boxStyle(s);
@@ -215,6 +218,12 @@ export async function captureInPage(opts: any = {}): Promise<any> {
     return p.join("/");
   };
   const arrange = (kids: any[], r: any, key?: string): any => {
+    // A placeholder painted UNDER a picture (a loading skeleton, a tint) is never seen: drop it,
+    // or it would be laid over the picture below. Paint order: z (positioned) first, then DOM order.
+    const zv = (k: any) => k.z ?? -1;
+    const within = (k: any, b: any) => k.x >= b.x - 2 && k.y >= b.y - 2 && k.x + k.w <= b.x + b.w + 2 && k.y + k.h <= b.y + b.h + 2;
+    kids = kids.filter((k, i) => !(k.k === "box" && !k.content && kids.some((b, j) => b.k === "image" && within(k, b) && (zv(b) > zv(k) || (zv(b) === zv(k) && j > i)))));
+    if (kids.length === 1) return kids[0];
     // Layers: a picture (or an empty painted box) with siblings laid ON it — a banner and its
     // caption, a card image and its badge — becomes a box painted with that picture holding the
     // siblings, instead of the caption stacked under the picture.
@@ -266,7 +275,16 @@ export async function captureInPage(opts: any = {}): Promise<any> {
     n.x += dx;
     for (const k of [n.content, n.body, ...(n.kids || [])]) shift(k, dx);
   };
+  /** Stacking among siblings: positioned boxes paint over static ones, higher z-index on top. */
   const node = (el: any): any => {
+    const n = nodeOf(el);
+    if (n) {
+      const s = cs(el);
+      n.z = s.position === "static" ? undefined : parseInt(s.zIndex) || 0;
+    }
+    return n;
+  };
+  const nodeOf = (el: any): any => {
     if (++count > MAX) {
       skip("node limit");
       return null;
@@ -338,7 +356,7 @@ export async function captureInPage(opts: any = {}): Promise<any> {
       const f: any = el;
       // A site search box (header) → the storefront's own search input.
       if (f.type === "search" || /search|tìm/i.test(`${f.name} ${f.placeholder} ${f.getAttribute("aria-label") || ""}`))
-        return { k: "search", ...r, placeholder: f.placeholder || "", style: { ...boxStyle(s), color: s.color, fontSize: px(s.fontSize) } };
+        return { k: "search", ...r, placeholder: f.placeholder || "", style: { ...boxStyle(s), color: s.color, fontSize: px(s.fontSize), padL: px(s.paddingLeft) } };
       skip("field outside a form");
       return null;
     }
@@ -352,6 +370,17 @@ export async function captureInPage(opts: any = {}): Promise<any> {
       // A whole-text link (menu item, footer link) → plain text + a click event, so it keeps
       // its own colour (rich-text <a> is forced blue/underlined by the storefront's .ql-editor a).
       const n = { k: "text", ...r, tag: headingOf(el), html: richText(el), text: he.innerText.trim(), href: href ? abs(href) : undefined, style: textStyle(s) };
+      // The words, not the box: padding around a link is spacing between links (a row of them
+      // would otherwise be glued together), and text spilling out of a short box is still shown.
+      const rg = document.createRange();
+      rg.selectNodeContents(el);
+      const tr = rg.getBoundingClientRect();
+      if (tr.width > 0) {
+        const tx = Math.round(tr.left + window.scrollX);
+        if (!painted(b) && tr.width < r.w - 4 && tx >= r.x - 1) Object.assign(n, { x: tx, w: Math.round(tr.width) });
+        const bottom = Math.round(tr.bottom + window.scrollY);
+        if (s.overflow === "visible" && bottom > r.y + r.h + 2) n.h = bottom - r.y;
+      }
       return painted(b) ? { k: "box", ...r, style: b, pad: pads(s), content: n } : n;
     }
     let kids: any[] = [];
@@ -383,7 +412,7 @@ export async function captureInPage(opts: any = {}): Promise<any> {
     if (loose) kids.unshift({ k: "text", ...r, h: Math.max(16, px(s.lineHeight) || px(s.fontSize) * 1.4), tag: "p", html: esc(loose), text: loose, style: textStyle(s) });
     if (!kids.length) return painted(b) && r.h > 3 ? { k: "box", ...r, style: b, pad: pads(s) } : null;
     const content = kids.length === 1 ? kids[0] : arrange(kids, r, keyOf(el));
-    if (slider && content.k === "group" && content.dir === "row") content.slider = slider;
+    if (slider && content.k === "group" && content.dir === "row") Object.assign(content, { slider, clipW: clip.w });
     return painted(b) ? { k: "box", ...r, style: b, pad: pads(s), content } : content;
   };
 
@@ -443,12 +472,15 @@ export async function captureInPage(opts: any = {}): Promise<any> {
       const n = node(c);
       if (n) kids.push(n);
     }
-    const role = b.tagName === "HEADER" || b.querySelector(":scope > nav, header") || (s.position === "fixed" && r.y <= 8) ? "header" : b.tagName === "FOOTER" ? "footer" : b.tagName === "NAV" ? "nav" : undefined;
+    // The site header is a short band at the top: a <header> inside a product block lower down
+    // (title/price/variants) is content.
+    const atTop = r.y < 300 && r.h < 400;
+    const role = atTop && (b.tagName === "HEADER" || b.querySelector(":scope > nav, header") || (s.position === "fixed" && r.y <= 8)) ? "header" : b.tagName === "FOOTER" ? "footer" : b.tagName === "NAV" ? "nav" : undefined;
     const content = kids.filter(Boolean);
     if (!content.length && !painted(boxStyle(s))) continue;
     const own = self ? {} : boxStyle(s);
     const style = own.bg || own.bgImage || own.gradient ? own : { ...(inherited.get(b) || {}), ...own };
-    sections.push({ k: "section", ...r, role, style, pad: pads(s), sticky: s.position === "sticky" || s.position === "fixed" || undefined, content: content.length === 1 ? content[0] : content.length ? arrange(content, r, keyOf(b)) : null });
+    sections.push({ k: "section", ...r, key: keyOf(b), role, style, pad: pads(s), sticky: s.position === "sticky" || s.position === "fixed" || undefined, content: content.length === 1 ? content[0] : content.length ? arrange(content, r, keyOf(b)) : null });
   }
   // Thin bands with the same background as their neighbour (a section title above its grid)
   // belong to one section.
@@ -512,6 +544,53 @@ export function probeColumns(keys: string[]): Record<string, number> {
   return out;
 }
 
+/** In-page: for each keyed slider track, the width of one card as % of the window that clips it,
+ *  and the gap between cards — how many cards a visitor sees at this width. Self-contained. */
+export function probeSlides(keys: string[]): Record<string, [number, number]> {
+  const out: Record<string, [number, number]> = {};
+  for (const key of keys) {
+    let el: any = document.body;
+    for (const i of key.split("/").filter(Boolean)) el = el && el.children[+i];
+    if (!el) continue;
+    let clip: any = { width: window.innerWidth };
+    for (let e = el; e && e !== document.body; e = e.parentElement)
+      if (getComputedStyle(e).overflowX !== "visible") {
+        clip = e.getBoundingClientRect();
+        break;
+      }
+    const rs = Array.from(el.children as any[]).map((c: any) => c.getBoundingClientRect()).filter((r: any) => r.width > 1 && r.height > 1).sort((a: any, b: any) => a.left - b.left);
+    if (rs.length < 2 || !clip.width) continue;
+    const w = rs.map((r: any) => r.width).sort((a: number, b: number) => a - b)[rs.length >> 1];
+    out[key] = [+((w / clip.width) * 100).toFixed(2), Math.max(0, Math.round(rs[1].left - rs[0].right))];
+  }
+  return out;
+}
+
+/** In-page: how far each keyed section's content sits from its left/right edge at this width (a
+ *  centred max-width container, side padding) — measured on what shows: pictures and text. */
+export function probeInsets(keys: string[]): Record<string, [number, number]> {
+  const out: Record<string, [number, number]> = {};
+  const W = window.innerWidth;
+  for (const key of keys) {
+    let el: any = document.body;
+    for (const i of key.split("/").filter(Boolean)) el = el && el.children[+i];
+    if (!el) continue;
+    const box = el.getBoundingClientRect();
+    let l = Infinity;
+    let r = -Infinity;
+    for (const e of Array.from(el.querySelectorAll("*")) as any[]) {
+      const leaf = /^(IMG|SVG|VIDEO|PICTURE|INPUT|BUTTON)$/i.test(e.tagName) || Array.from(e.childNodes as any[]).some((n: any) => n.nodeType === 3 && n.textContent.trim());
+      if (!leaf) continue;
+      const b = e.getBoundingClientRect();
+      if (b.width < 2 || b.height < 2 || b.left < -1 || b.right > W + 1) continue;
+      l = Math.min(l, b.left);
+      r = Math.max(r, b.right);
+    }
+    if (l < r) out[key] = [Math.round(l - box.left), Math.round(box.right - r)];
+  }
+  return out;
+}
+
 /** borderRadius the way real pages store it: four corners (value-formats: 99% "Npx Npx Npx Npx"). */
 const corners = (r: number) => `${r}px ${r}px ${r}px ${r}px`;
 const PROBE_WIDTHS: Record<string, number> = { bp2: 1100, bp3: 768, bp4: 390 };
@@ -522,18 +601,25 @@ export async function capturePage(page: any, width = 1440): Promise<any> {
   await page.setViewportSize({ width, height: 900 });
   const snap = await page.evaluate(captureInPage, {});
   const keys = new Set<string>();
+  const sliders = new Set<string>();
   const walkKeys = (n: any) => {
     if (!n || typeof n !== "object") return;
     if (n.k === "group" && n.key) keys.add(n.key);
+    if (n.slider && n.key) sliders.add(n.key);
     for (const k of n.kids || []) walkKeys(k);
     walkKeys(n.content);
   };
   for (const s of snap.sections || []) walkKeys(s);
+  const bands = (snap.sections || []).map((s: any) => s.key).filter(Boolean);
   snap.columns = {};
+  snap.slides = {};
+  snap.insets = {};
   for (const [bp, w] of Object.entries(PROBE_WIDTHS)) {
     await page.setViewportSize({ width: w, height: 900 });
     await page.waitForTimeout(250);
     snap.columns[bp] = await page.evaluate(probeColumns, [...keys]);
+    if (sliders.size) snap.slides[bp] = await page.evaluate(probeSlides, [...sliders]);
+    snap.insets[bp] = await page.evaluate(probeInsets, bands);
   }
   await page.setViewportSize({ width, height: 900 });
   return snap;
@@ -544,6 +630,8 @@ interface Ctx {
   pageBg?: string;
   /** bp → container key → columns the source shows at that width. */
   columns?: Record<string, Record<string, number>>;
+  /** bp → slider key → [card width % of its window, gap px] at that width. */
+  slides?: Record<string, Record<string, [number, number]>>;
   notes: Record<string, number>;
   text: number;
   fonts: Record<string, number>;
@@ -555,11 +643,57 @@ const note = (c: Ctx, k: string) => (c.notes[k] = (c.notes[k] || 0) + 1);
 /** rgba(…, a<1) can't be shown over the storefront's white page: lay it over `base` instead. */
 const over = (color: string, base?: string) => (base && /rgba\([^)]*,\s*0?\.\d+\)$/.test(color) ? `linear-gradient(${color}, ${color}), ${base}` : color);
 
+/** A url as an unquoted CSS url(): brackets, quotes and spaces escaped (a_(1).jpg would end the url). */
+export const cssUrl = (u: string) => u.replace(/[()'"\s]/g, (ch) => `%${ch.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0")}`);
+
+/** Every image a source points at: element src (specials / config, any layer) and url(…) in any
+ *  style string. rehost rewrites the same places, so whatever validatePage's IMAGE_HOST can see. */
+const URL_RE = /url\(\s*(["']?)(.*?)\1\s*\)/g;
+function eachImage(source: any, fn: (url: string, node: any) => string | void) {
+  let node: any;
+  const visit = (o: any, key?: string): any => {
+    if (typeof o === "string") {
+      if (key === "src" && /^(https?:|data:image\/|\/\/)/.test(o)) return fn(o, node) ?? o;
+      if (key === "text" || !o.includes("url(")) return o;
+      let cut = false;
+      const v = o.replace(URL_RE, (m, q, u) => {
+        if (!u) return m;
+        const to = fn(u, node);
+        if (to === "") return (cut = true), "";
+        return `url(${q}${to ?? u}${q})`;
+      });
+      // A removed layer leaves no stray comma behind ("…, url(x) #fff" → "…, #fff").
+      return cut ? v.replace(/(^|,)\s*(?=,|$)/g, "$1").replace(/^\s*,\s*|\s*,\s*$/g, "").trim() || "transparent" : v;
+    }
+    if (!o || typeof o !== "object") return o;
+    for (const k of Object.keys(o)) if (k !== "children") o[k] = visit(o[k], k);
+    return o;
+  };
+  walk(source, (n: any) => {
+    node = n;
+    for (const k of Object.keys(n)) if (k !== "children" && k !== "id" && k !== "type") n[k] = visit(n[k], k);
+    return n;
+  });
+}
+export function imageRefs(source: any): string[] {
+  const out = new Set<string>();
+  eachImage(source, (u) => void out.add(u));
+  return [...out];
+}
+/** Point every reference to a key of `map` at its value (in place); "" takes a url(…) layer out.
+ *  `seen` hears which element held each url. */
+export function rewriteImages(source: any, map: Map<string, string>, seen?: (url: string, node: any) => void) {
+  eachImage(source, (u, n) => {
+    if (map.has(u)) seen?.(u, n);
+    return map.get(u);
+  });
+}
+
 const bgStyle = (st: any = {}, base?: string) => {
   const o: any = {};
   if (st.bgImage) {
     // The colour stays under the image: if the image can't load the text keeps its contrast.
-    o.background = `${st.gradient ? `${st.gradient}, ` : ""}url(${st.bgImage})${st.bg ? ` ${st.bg}` : ""}`;
+    o.background = `${st.gradient ? `${st.gradient}, ` : ""}url(${cssUrl(st.bgImage)})${st.bg ? ` ${st.bg}` : ""}`;
     o["background-size"] = "cover";
     o["background-position-x"] = "center";
     o["background-position-y"] = "center";
@@ -616,7 +750,7 @@ const share = (n: any, p?: Area) => (p && n.w && n.w < p.w * 0.92 ? { widthUnit:
 
 /** Small pictures (avatars, logos, icons) keep their pixel width when the row collapses;
  *  larger ones keep their share of the column. */
-const small = (n: any, area?: Area) => !!n.w && n.w <= 240 && (!area || n.w < area.w * 0.6 || n.w >= area.w * 0.92);
+const small = (n: any, area?: Area) => !!n.w && ((n.w <= 48 && n.h <= 48) || (n.w <= 240 && (!area || n.w < area.w * 0.6 || n.w >= area.w * 0.92)));
 const fixedOrShare = (n: any, area?: Area) => (small(n, area) ? { widthUnit: "px" } : share(n, area));
 /** A fixed-width picture can't "fill": centre it when it filled its own column. */
 const placeOf = (n: any, area?: Area) => {
@@ -645,13 +779,11 @@ function spec(n: any, c: Ctx, area?: Area): any {
       if (events) style.cursor = "pointer";
       return { type: "text", opts: { text: n.html || n.text, specials: { tag: n.tag || "p" }, style, ...(events ? { events } : {}), ...(keepLine ? { responsive: WRAP_SMALL } : {}) } };
     case "image":
-      c.images.push(n.src);
       return { type: "image", opts: { src: n.src, width: n.w, height: n.h, align: placeOf(n, area), config: fixedOrShare(n, area), specials: n.alt ? { image_alt: n.alt } : undefined, style: { ...(n.radius ? { borderRadius: corners(n.radius) } : {}), ...(n.fit && n.fit !== "fill" ? { objectFit: n.fit } : {}) } } };
     case "icon": {
       note(c, "svg icon → image (data URI; rehost_images uploads it as PNG)");
       const svg = /xmlns=/.test(n.svg) ? n.svg : n.svg.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
       const src = `data:image/svg+xml;base64,${Buffer.from(svg.replace(/currentColor/g, n.color || "#000")).toString("base64")}`;
-      c.images.push(src);
       return { type: "image", opts: { src, width: n.w, height: n.h, align: placeOf(n, area) ?? "left", config: fixedOrShare(n, area) } };
     }
     case "button": {
@@ -672,9 +804,19 @@ function spec(n: any, c: Ctx, area?: Area): any {
     }
     case "line":
       return { type: "line", opts: { style: { borderColor: n.color } } };
-    case "search":
-      // The page's own magnifier is captured beside it: no second icon.
-      return { type: "input-search", opts: { specials: { placeholder: n.placeholder, showIcon: false }, style: { height: n.h, ...(n.style?.fontSize ? { fontSize: `${n.style.fontSize}px` } : {}), ...(n.style?.color ? { color: n.style.color } : {}) }, align: alignIn(n, area), config: share(n, area) } };
+    case "search": {
+      // The page's own magnifier is captured beside it: no second icon. The box (border, radius,
+      // fill) is the input-search's input* config — the same on hover/focus as at rest.
+      const st = n.style || {};
+      const bd = st.border && /^(\d+)px \w+ (.+)$/.exec(st.border);
+      const frame = {
+        ...(bd ? { inputBorderWidth: +bd[1], inputBorderColor: bd[2], inputBorderColorHover: bd[2], inputBorderColorFocus: bd[2], inputBorderType: "all", inputBorderTypeHover: "all", inputBorderTypeFocus: "all" } : {}),
+        ...(st.radius ? { inputBorderRadius: st.radius } : {}),
+        ...(st.bg ? { inputBackground: st.bg, inputBackgroundHover: st.bg, inputBackgroundFocus: st.bg } : {}),
+        ...(st.padL ? { inputPadding: st.padL } : {}),
+      };
+      return { type: "input-search", opts: { specials: { placeholder: n.placeholder, showIcon: false }, style: { height: n.h, ...(st.fontSize ? { fontSize: `${st.fontSize}px` } : {}), ...(st.color ? { color: st.color } : {}) }, align: alignIn(n, area), config: { ...(share(n, area) || {}), ...frame } } };
+    }
     case "accordion": {
       // <details> = the storefront's collapse: <details> + summary from specials.name, body in a
       // collapse-content grid (builderx_api build_collapse; the editor's collapse picker).
@@ -719,9 +861,12 @@ function spec(n: any, c: Ctx, area?: Area): any {
     }
     case "box": {
       const inside = n.content ? spec(n.content, c, inner(n)) : null;
-      const pad = n.pad || {};
-      const style = { ...bgStyle(n.style), ...(pad.t || pad.l ? { padding: `${pad.t}px ${pad.r}px ${pad.b}px ${pad.l}px` } : {}), height: n.h };
-      if (!inside) return { type: "rectangle", opts: { style: { ...bgStyle(n.style), height: n.h, width: n.w } } };
+      // A stack inside measured its own insets from this box's edge (padding + offsets): they win.
+      const ins = (inside?.type === "container" && !inside.opts?.style?.background && inside.pad) || {};
+      const pad: any = Object.fromEntries(["t", "r", "b", "l"].map((k) => [k, ins[k] ?? n.pad?.[k] ?? 0]));
+      const style = { ...bgStyle(n.style), ...(pad.t || pad.l || pad.r || pad.b ? { padding: `${pad.t}px ${pad.r}px ${pad.b}px ${pad.l}px` } : {}), height: n.h };
+      // A swatch / dot / divider keeps its size (and place) instead of stretching across its cell.
+      if (!inside) return { type: "rectangle", opts: { style: { ...bgStyle(n.style), height: n.h, width: n.w }, align: placeOf(n, area) ?? "left", config: fixedOrShare(n, area) } };
       // A painted wrapper around one group → the group's own container gets the paint.
       const own = { align: alignIn(n, area), config: share(n, area) };
       if (inside.type === "container" && !inside.opts?.style?.background) return { ...inside, opts: { ...(inside.opts || {}), ...own, style: { ...(inside.opts?.style || {}), ...style } } };
@@ -772,6 +917,7 @@ function spec(n: any, c: Ctx, area?: Area): any {
           if ((cluster || colWidths[i].unit === "max-c") && k.type === "text") k.opts = { ...k.opts, config: { ...(k.opts.config || {}), widthUnit: "auto" } };
         });
         const n2 = keep.length;
+        if (n.slider && n.slider < n2) return carousel(n, c, keep.map(([k]) => k), ks, gap);
         // A slider shows `slider` cards per view: all of them are kept, wrapped that many per row.
         const view = n.slider ? Math.min(n2, n.slider) : n2;
         // Measured: the columns the source really shows at laptop/tablet/phone width.
@@ -791,11 +937,24 @@ function spec(n: any, c: Ctx, area?: Area): any {
           children: keep.map(([k]) => k), opts: { align: alignIn(span, area), config: rowShare, ...(responsive ? { responsive } : {}) },
         };
       }
-      const box = { x: n.x, w: n.w };
-      const kids = (n.kids || []).map((k: any) => spec(k, c, box)).filter(Boolean);
+      // Insets of the stack's content from its box: padding (and offsets such as a vertically
+      // centred caption on a banner). Small side insets and any top/bottom one are kept as padding;
+      // a wide side inset is a narrower column, placed by alignment instead.
+      const ks = n.kids || [];
+      const x0 = Math.min(...ks.map((k: any) => k.x));
+      const x1 = Math.max(...ks.map((k: any) => k.x + k.w));
+      const y0 = Math.min(...ks.map((k: any) => k.y));
+      const y1 = Math.max(...ks.map((k: any) => k.y + k.h));
+      const side = (v: number) => (v >= 4 && v <= 64 ? Math.round(v) : undefined);
+      const end = (v: number) => (v >= 4 && v <= 160 ? Math.round(v) : undefined);
+      const ins: any = { t: end(y0 - n.y), r: side(n.x + n.w - x1), b: end(n.y + n.h - y1), l: side(x0 - n.x) };
+      const box = { x: n.x + (ins.l || 0), w: Math.max(1, n.w - (ins.l || 0) - (ins.r || 0)) };
+      const kids = ks.map((k: any) => spec(k, c, box)).filter(Boolean);
       if (!kids.length) return null;
       if (kids.length === 1) return kids[0];
-      return { type: "container", rowGap: Math.min(n.gap ?? 16, 160), autoRows: true, children: kids };
+      const padded = Object.values(ins).some((v) => v);
+      const css = (p: any) => `${p.t || 0}px ${p.r || 0}px ${p.b || 0}px ${p.l || 0}px`;
+      return { type: "container", rowGap: Math.min(n.gap ?? 16, 160), autoRows: true, children: kids, ...(padded ? { pad: ins, opts: { style: { padding: css(ins) } } } : {}) };
     }
     default:
       note(c, `unmapped ${n.k}`);
@@ -803,9 +962,64 @@ function spec(n: any, c: Ctx, area?: Area): any {
   }
 }
 
+/** A multi-card slider → the builder's carousel (a track of cards that slides by arrows/swipe):
+ *  every card kept, each `relSlideWidth` % of the window wide per breakpoint as measured, so the
+ *  same number of cards shows on desktop, tablet and phone. */
+function carousel(n: any, c: Ctx, children: any[], ks: any[], gap: number) {
+  const ws = ks.map((k: any) => k.w).sort((a: number, b: number) => a - b);
+  const cw = ws[ws.length >> 1];
+  const pct = (v: number) => Math.max(5, Math.min(100, +v.toFixed(2)));
+  const desk = pct(n.clipW ? (cw / n.clipW) * 100 : 100 / n.slider);
+  // Not probed (a snapshot from get_clone_script): ~3 cards on a tablet, ~2 on a phone.
+  const guess: Record<string, [number, number]> = { bp3: [Math.max(desk, 31), Math.min(gap, 16)], bp4: [Math.max(desk, 45), Math.min(gap, 12)] };
+  const responsive: any = {};
+  for (const bp of ["bp2", "bp3", "bp4"]) {
+    const m = (n.key && c.slides?.[bp]?.[n.key]) || guess[bp];
+    if (m) responsive[bp] = { config: { relSlideWidth: pct(m[0]), columnGap: Math.min(m[1], 120) } };
+  }
+  note(c, "slider → native carousel (every card kept, cards per view as measured; arrows + swipe)");
+  return {
+    type: "carousel", columnGap: gap, children,
+    opts: {
+      width: n.w, height: n.h, align: "fill",
+      config: { slideItems: children.length, slideWidth: cw, slideWidthUnit: "%", relSlideWidth: desk, columnGap: gap },
+      specials: { type: "controls", autoplay: "off", arrowColor: "rgba(0, 0, 0, 0.75)" },
+      responsive,
+    },
+  };
+}
+
+/** The section grid's side margins per breakpoint (genGridByBp: 10px laptop, 5px tablet/phone)
+ *  would put content 5px from the edge where the source keeps a centred max-width container or
+ *  side padding. Each full-width child of a section takes the measured content share of the
+ *  width at that breakpoint, centred — so 1000–1319px desktops/laptops look like the source. */
+const GRID_MARGIN: Record<string, number> = { bp2: 10, bp3: 5, bp4: 5 };
+function inset(children: any[], key: string | undefined, insets?: Record<string, Record<string, [number, number]>>) {
+  if (!key || !insets) return;
+  const per: Record<string, any> = {};
+  for (const [bp, W] of Object.entries(PROBE_WIDTHS)) {
+    const m = insets[bp]?.[key];
+    if (!m) continue;
+    const [l, r] = m;
+    const cell = W - 2 * GRID_MARGIN[bp];
+    const wide = (l > GRID_MARGIN[bp] + 8 || r > GRID_MARGIN[bp] + 8) && Math.abs(l - r) <= 24;
+    per[bp] = wide
+      ? { widthUnit: "%", relWidth: Math.max(50, Math.min(100, +(((W - l - r) / cell) * 100).toFixed(2))), constraintX: ["centerLeft"] }
+      : { widthUnit: "%", relWidth: 100, constraintX: ["left", "right"] };
+  }
+  if (!Object.values(per).some((p) => p.relWidth < 100)) return;
+  for (const ch of children) {
+    const o = (ch.opts = ch.opts || {});
+    // Only what fills the column: a block that already keeps its own share is placed by it.
+    if (o.config?.relWidth != null || (o.align && o.align !== "fill")) continue;
+    const rs = (o.responsive = { ...(o.responsive || {}) });
+    for (const [bp, cfg] of Object.entries(per)) rs[bp] = { ...(rs[bp] || {}), config: { ...(rs[bp]?.config || {}), ...cfg } };
+  }
+}
+
 /** A captured page → { sections } built with the builder's own layout helpers. */
 export function snapshotToSource(snap: any, opts: { skipChrome?: boolean } = {}) {
-  const c: Ctx = { pageBg: snap?.pageBg, columns: snap?.columns, notes: {}, text: 0, fonts: {}, images: [], W: snap?.viewport?.w || 1440 };
+  const c: Ctx = { pageBg: snap?.pageBg, columns: snap?.columns, slides: snap?.slides, notes: {}, text: 0, fonts: {}, images: [], W: snap?.viewport?.w || 1440 };
   const white = (col?: string) => !col || /^rgba?\(255, 255, 255(, 1)?\)$/.test(col);
   const sections: any[] = [];
   const roles: string[] = [];
@@ -818,6 +1032,7 @@ export function snapshotToSource(snap: any, opts: { skipChrome?: boolean } = {})
     // The section's children: a column group stacks; anything else is one child.
     const childNodes = content?.k === "group" && content.dir === "col" ? content.kids : content ? [content] : [];
     const children = childNodes.map((n: any) => spec(n, c, inner(s))).filter(Boolean);
+    inset(children, s.key, snap?.insets);
     const pad = s.pad || {};
     const firstY = childNodes.length ? Math.min(...childNodes.map((n: any) => n.y)) : s.y;
     const lastY = childNodes.length ? Math.max(...childNodes.map((n: any) => n.y + n.h)) : s.y + s.h;
@@ -834,11 +1049,8 @@ export function snapshotToSource(snap: any, opts: { skipChrome?: boolean } = {})
     sections.push(section);
     roles.push(s.role || "content");
   }
-  // Background pictures (banners, swatches, card art) are images too: rehost_images uploads them.
-  walk({ sections }, (n: any) => {
-    const bg = n.runtime?.style?.background;
-    if (typeof bg === "string") for (const m of bg.matchAll(/url\(([^)]+)\)/g)) c.images.push(m[1]);
-  });
+  // Every picture the source points at (src, background url(…) in any layer): rehost_images uploads them.
+  c.images = imageRefs({ sections });
   for (const [k, n] of Object.entries(snap?.skipped || {})) c.notes[`skipped: ${k}`] = n as number;
   // Base: the text a visitor sees, minus the slides deliberately left out (noted above).
   const base = (snap?.textTotal || 0) - (snap?.offscreenText || 0);

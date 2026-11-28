@@ -33,6 +33,14 @@ const PAGE = `<!doctype html><html style="scroll-behavior:smooth"><body style="m
   <img src="${IMG("navy")}" style="width:100%;height:360px;display:block">
   <div style="position:absolute;left:60px;top:120px;color:#fff"><h2 style="margin:0">Gift shop</h2><p>Pick any gift</p></div>
 </section>
+<section style="padding:40px"><header><h1>Product title</h1></header><p>399.000đ</p>
+  <div style="display:flex;gap:8px"><button type="button" role="radio" value="mac-ra-duong" style="width:20px;height:20px;border:1px solid #333;border-radius:50%;padding:0"></button><label>Mặc ra đường</label></div>
+</section>
+<section style="padding:20px"><nav style="display:flex"><a href="/a" style="padding:0 16px">About</a><a href="/b" style="padding:0 16px">Blog</a></nav>
+  <div style="position:relative;width:60px;height:60px;margin-top:20px"><div style="position:absolute;inset:0;background:#ccc"></div><img src="${IMG("teal")}" style="position:relative;z-index:1;width:60px;height:60px;display:block"></div>
+  <div style="width:200px;height:20px;font-size:16px;line-height:20px;margin-top:20px">Long text that wraps onto several lines in this short box</div>
+  <div style="width:100px;height:100px;margin-top:20px;background:url('https://example.com/a_(1).jpg') #eee"></div>
+</section>
 <div style="height:1600px;padding:60px"><p>Lots of content below the fold</p></div>
 <div style="position:fixed;inset:0;background:rgba(0,0,0,.5)" id="backdrop"></div>
 <div style="position:fixed;left:0;right:0;bottom:0;height:80px;background:#fff" id="consent">We use cookies <button onclick="document.getElementById('consent').remove();document.getElementById('backdrop').remove()">Chấp nhận tất cả</button></div>
@@ -75,13 +83,39 @@ test("clone capture: consent closed, smooth scroll, sr-only out of the base, sli
     // struck old prices keep their line
     assert.ok(json.includes("<s>999.000đ</s>") && json.includes('"textDecoration":"line-through"'));
 
+    // padding around a link is spacing between links: the words are measured, not the box
+    const texts = {};
+    const t = (n) => n && typeof n === "object" && (n.k === "text" && (texts[n.text] = n), Object.values(n).forEach(t));
+    t(snap.sections);
+    assert.equal(texts.Blog.x - (texts.About.x + texts.About.w), 32);
+    // text spilling out of its short box keeps its real height
+    assert.ok(texts["Long text that wraps onto several lines in this short box"].h >= 50); // 3 lines, box 20px
+    // the grey skeleton under the picture is gone; a url with brackets is read whole
+    assert.ok(json.includes(IMG("teal")) && !json.includes('"bg":"rgb(204, 204, 204)"'));
+    assert.ok(json.includes("https://example.com/a_(1).jpg"));
+    // the slider's card width at every probed width (% of its window)
+    assert.equal(snap.slides.bp4[rows[0].key][0] > snap.slides.bp2[rows[0].key][0], true);
+
+    // only the band at the top is the site header; a product block's own <header> is content
+    assert.deepEqual(snap.sections.filter((x) => x.role === "header").map((x) => x.y), [0]);
+    // a radio control's value is not a label: no "button" with it
+    assert.ok(!json.includes('"text":"mac-ra-duong"'));
+    // content insets per probed width (the 60px side padding of "Best sellers")
+    const best = snap.sections.find((x) => JSON.stringify(x).includes("Best sellers"));
+    assert.deepEqual(snap.insets.bp2[best.key], [60, 60]);
     const out = snapshotToSource(snap);
+    assert.ok(JSON.stringify(out.source).includes("url(https://example.com/a_%281%29.jpg)"));
     assert.ok(JSON.stringify(out.source).includes('"type":"input-search"'), "header search box → input-search");
     assert.ok(out.stats.text_coverage_pct >= 90, `coverage ${out.stats.text_coverage_pct}`);
-    const grid = [];
-    const g = (n) => (n.runtime?.config?.__row?.count === 8 && grid.push(n), (n.children || []).forEach(g));
+    // 8 cards, 4 in view → the builder's carousel holding all 8, each 300/1320 of the window
+    const car = [];
+    const g = (n) => (n.type === "carousel" && car.push(n), (n.children || []).forEach(g));
     out.source.sections.forEach(g);
-    assert.equal(grid[0].runtime.config.__row.collapse.bp1, 4); // 8 cards, 4 per row as the slider showed
+    assert.equal(car.length, 1);
+    assert.equal(car[0].children.length, 8);
+    assert.equal(car[0].runtime.config.slideItems, 8);
+    assert.equal(car[0].runtime.config.relSlideWidth, 22.73);
+    assert.ok(car[0].runtime.responsive.bp4.config.relSlideWidth > 22.73);
   } finally {
     await page.close();
   }
