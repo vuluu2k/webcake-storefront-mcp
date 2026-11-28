@@ -5,6 +5,25 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.12.0] - 2026-11-28
+
+### Added
+- `clone_page` now maps a bare `<input type="search">` or a header search box identified by its name/placeholder/`aria-label` to the storefront's native `input-search` element instead of skipping it.
+- `clone_page` now captures `text-decoration` (a struck-through old price, an underlined link) and strikethrough tags (`<s>`, `<del>`, `<strike>`) in cloned rich text.
+
+### Changed
+- `clone_page`'s capture (also used by the `get_clone_script` script) now dismisses cookie-consent banners, newsletter popups, and chat widgets, and scrolls instantly instead of smoothly while pre-loading lazy content, so those overlays and mid-scroll positions no longer pollute the captured sections.
+- `clone_page` now tells a pinned header bar apart from a modal and its backdrop more accurately (only a full-width bar pinned at the very top and under half the viewport tall counts as a header), so dialogs are treated as dismissible overlays rather than page content.
+- `clone_page` now keeps an image (or empty painted box) together with the siblings laid on top of it — a banner with a caption, a card image with a badge — as one box painted with that image instead of stacking the caption below it, and includes those background images in the `rehost_images` upload list.
+- `clone_page` now keeps every card of a multi-item carousel, recording the per-view count as `slider` columns, and for a single-slide-per-view carousel keeps only the currently visible slide, excluding the other slides' text from `text_coverage_pct` (reported via a note and the offscreen character count) instead of scoring them as missing coverage.
+- `clone_page`'s `text_coverage_pct` no longer counts visually-hidden (`sr-only`/clipped) text against the total, while still counting text that fades to `opacity:0` after being revealed on scroll.
+- `probeColumns` (the responsive column probe `clone_page` runs per breakpoint) now ignores a carousel's off-screen slides when counting the columns actually shown.
+
+### Fixed
+- `clone_page` now resolves the real URL of a lazy-loaded image from `data-src`/`data-lazy-src`/`data-original`/`srcset` when `src` is a placeholder, instead of skipping the image as having no source.
+- `clone_page` no longer drops text held inside a zero-size wrapper that doesn't clip its content, such as an inline `<a>` wrapping an absolutely-positioned marquee item.
+- `clone_page` no longer captures a carousel's previous/next arrow buttons as page elements.
+
 ## [2.11.2] - 2026-11-28
 
 ### Fixed

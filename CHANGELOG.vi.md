@@ -5,6 +5,25 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.12.0] - 2026-11-28
+
+### Added
+- `clone_page` nay map một `<input type="search">` trần hoặc ô tìm kiếm trong header (nhận diện qua name/placeholder/`aria-label`) sang element `input-search` gốc của storefront thay vì bỏ qua.
+- `clone_page` nay bắt được `text-decoration` (giá cũ gạch ngang, link gạch chân) và các thẻ gạch ngang (`<s>`, `<del>`, `<strike>`) trong rich text được clone.
+
+### Changed
+- Lượt capture của `clone_page` (cũng dùng trong script của `get_clone_script`) nay đóng các banner xin cookie, popup newsletter, và chat widget, và cuộn tức thì thay vì cuộn mượt khi tải trước nội dung lazy, nên các lớp phủ này và các vị trí đo giữa lúc đang cuộn không còn làm bẩn các section được capture.
+- `clone_page` nay phân biệt đúng hơn một thanh header ghim với một modal và lớp backdrop của nó (chỉ một thanh rộng toàn màn, ghim ngay trên cùng, và thấp hơn nửa viewport mới tính là header), nên các dialog được coi là lớp phủ cần đóng thay vì nội dung trang.
+- `clone_page` nay giữ một ảnh (hoặc hộp sơn rỗng) cùng các anh em nằm đè lên nó — banner với chú thích, ảnh thẻ với nhãn — thành một box duy nhất sơn bằng ảnh đó thay vì xếp chú thích xuống dưới ảnh, và đưa các ảnh nền này vào danh sách tải lên của `rehost_images`.
+- `clone_page` nay giữ hết mọi thẻ của một carousel nhiều thẻ mỗi khung, ghi số thẻ hiện cùng lúc vào `slider`, còn carousel một thẻ mỗi khung thì chỉ giữ slide đang hiện, loại chữ của các slide khác khỏi `text_coverage_pct` (báo qua một ghi chú và số ký tự bị bỏ) thay vì tính chúng là chữ bị thiếu.
+- `text_coverage_pct` của `clone_page` nay không còn tính chữ ẩn trực quan (sr-only/bị cắt) vào tổng, nhưng vẫn tính chữ mờ dần về `opacity:0` sau khi đã hiện ra lúc cuộn.
+- `probeColumns` (lượt đo số cột theo từng breakpoint mà `clone_page` chạy) nay bỏ qua các slide nằm ngoài khung nhìn của carousel khi đếm số cột thực sự hiển thị.
+
+### Fixed
+- `clone_page` nay lấy đúng URL thật của ảnh lazy-load từ `data-src`/`data-lazy-src`/`data-original`/`srcset` khi `src` chỉ là placeholder, thay vì bỏ qua ảnh đó vì coi như không có nguồn.
+- `clone_page` không còn làm rơi chữ nằm trong một wrapper 0×0 không cắt nội dung, ví dụ một `<a>` inline bọc một mục marquee đặt absolute.
+- `clone_page` không còn bắt nút prev/next của carousel thành một element của trang.
+
 ## [2.11.2] - 2026-11-28
 
 ### Fixed
