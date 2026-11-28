@@ -57,7 +57,8 @@ test("clone: snapshot → section native, không lỗi validate, không embed/cu
   const all = nodes(out.source);
   assert.ok(!all.some((n) => n.type === "embed"));
   assert.ok(out.notes.some((n) => n.startsWith("skipped: fixed overlay")));
-  assert.equal(out.images.length, 3);
+  assert.equal(out.images.length, 4); // 3 card images + the hero's background picture (rehosted too)
+  assert.ok(out.images.includes("https://content.pancake.vn/test/hero.jpg"));
 });
 
 test("clone: link cả khối → text + open_link (giữ màu), tel: → phone_call; form = subscribe, khung ô trên form", () => {
@@ -123,4 +124,18 @@ test("clone: số cột đo từ trang gốc theo breakpoint; cụm nhỏ co the
   assert.equal(avatar.runtime.config.widthUnit, "px");
   assert.deepEqual(avatar.runtime.config.constraintX, ["centerLeft"]);
   assert.equal(validatePage(snapshotToSource(snap).source).valid, true);
+});
+
+test("clone: slider giữ mọi thẻ, xuống hàng theo số thẻ hiện cùng lúc; slide bị bỏ không tính vào coverage", () => {
+  const cards = Array.from({ length: 10 }, (_, i) => ({ k: "image", x: 60 + i * 340, y: 100, w: 320, h: 400, src: `https://content.pancake.vn/test/c${i}.jpg` }));
+  const slider = { k: "group", dir: "row", key: "5/1", slider: 4, gap: 20, x: 60, y: 100, w: 1320, h: 400, kids: cards };
+  const snap = { ...SNAP, textTotal: 100, offscreenText: 60, columns: { bp3: { "5/1": 6 }, bp4: { "5/1": 2 } },
+    sections: [{ k: "section", x: 0, y: 0, w: 1440, h: 600, style: {}, pad: {}, content: { k: "group", dir: "col", gap: 20, x: 60, y: 40, w: 1320, h: 460, kids: [T(60, 40, 600, 40, "x".repeat(40)), slider] } }] };
+  const out = snapshotToSource(snap);
+  const row = out.source.sections[0].children[1];
+  assert.equal(row.children.length, 10);
+  assert.deepEqual(row.runtime.config.__row.collapse, { bp1: 4, bp2: 4, bp3: 4, bp4: 2 }); // probes never exceed the view
+  assert.equal(out.stats.text_coverage_pct, 100); // 40 of the 100 - 60 left out
+  assert.ok(out.notes.some((n) => /left-out slides held 60 characters/.test(n)));
+  assert.equal(validatePage(out.source).valid, true);
 });
