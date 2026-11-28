@@ -57,6 +57,7 @@ const QUERY_TO_HEADER: Record<string, string> = {
   site_id: "x-webcake-site-id",
   api_url: "x-webcake-api-url",
   session_id: "x-webcake-session-id",
+  wsid: "x-webcake-session-id",
   env: "x-webcake-env",
   tools: "x-webcake-tools",
 };

@@ -444,6 +444,11 @@ export async function completeAuthorize(
   if (!jwt) {
     return { ok: false, error: "access_denied", error_description: "No WebCake token returned from login." };
   }
+  // The backend takes the session from the JWT's session_id claim, else from x-session-id.
+  // A token with neither (admin token, wsid cookie gone) 401s on every call — fail here.
+  if (!wsid && !jwtHasSession(jwt)) {
+    return { ok: false, error: "access_denied", error_description: "WebCake session (wsid) missing — log in to WebCake again, then Connect." };
+  }
   const code = token(32);
   await store.putCode(code, {
     client_id: p.client_id,
@@ -468,6 +473,12 @@ const DEAD_MAX_TTL = 30 * 24 * 60 * 60 * 1000;
 const deadLocal = new Map<string, number>(); // hash → expiresAt (ms)
 
 const jwtHash = (jwt: string) => createHash("sha256").update(jwt).digest("hex");
+
+export function jwtHasSession(jwt: string): boolean {
+  try {
+    return !!JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString()).session_id;
+  } catch { return false; }
+}
 
 function deadTtl(jwt: string): number {
   try {
