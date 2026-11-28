@@ -5,6 +5,16 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.14.0] - 2026-11-28
+
+### Added
+- `clone_page` now runs one narrower-width probe pass per breakpoint (1100/768/390) and turns it into real mobile layout instead of guessing: elements the source hides on smaller screens get `config.isHidden`, elements only the source shows there (a burger menu, a mobile banner, a mobile footer) are captured and placed where the phone shows them, measured font sizes and a full-width picture's measured height are stored per breakpoint, and an art-directed picture (a different crop, not just a resolution variant) is stored as per-breakpoint `config.src`.
+- `clone_page` now keeps a row of small items (swatches, dots) as a row instead of stacking it on narrower breakpoints, keeps a badge or pill's pixel width, and never wraps a short label (16 characters or less).
+- `get_clone_script` now also returns `probe_script` and `probe_widths` so an external browser tool (chrome-devtools, claude-in-chrome, playwright) can run the same per-breakpoint probe and send the results back as `snapshot.probes`, matching the fidelity of `clone_page`'s own capture; a snapshot without probes still clones, with a guessed tablet/phone layout.
+
+### Changed
+- When a captured row loses a cell at a breakpoint (because that cell is hidden there), the remaining cells now shift into its place in order instead of leaving an empty grid slot.
+
 ## [2.13.0] - 2026-11-28
 
 ### Added

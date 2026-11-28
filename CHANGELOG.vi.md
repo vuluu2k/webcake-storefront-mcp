@@ -5,6 +5,16 @@
 Mọi thay đổi đáng chú ý của dự án được ghi lại trong file này.
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.14.0] - 2026-11-28
+
+### Added
+- `clone_page` nay chạy một lượt đo ở chiều rộng hẹp hơn cho từng breakpoint (1100/768/390) và biến nó thành bố cục mobile thật thay vì đoán: phần tử bị trang gốc ẩn ở màn hẹp nhận `config.isHidden`, phần tử chỉ trang gốc hiện ở đó (menu burger, banner mobile, footer mobile) được bắt và đặt đúng vị trí điện thoại hiển thị, cỡ chữ đo được và chiều cao đo được của ảnh full-width được lưu theo từng breakpoint, còn ảnh art-directed (đổi khung hình, không chỉ đổi độ phân giải) được lưu thành `config.src` theo từng breakpoint.
+- `clone_page` nay giữ một dòng các món nhỏ (mẫu màu, dấu chấm) ở dạng hàng ngang thay vì xếp chồng ở các breakpoint hẹp hơn, giữ đúng chiều rộng pixel của badge/pill, và không bao giờ xuống dòng với nhãn ngắn (16 ký tự hoặc ít hơn).
+- `get_clone_script` nay trả thêm `probe_script` và `probe_widths` để một trình duyệt ngoài (chrome-devtools, claude-in-chrome, playwright) có thể chạy cùng lượt đo theo từng breakpoint và gửi kết quả về dưới dạng `snapshot.probes`, đạt độ chính xác ngang với lượt capture của chính `clone_page`; một snapshot không có probes vẫn clone được, với bố cục tablet/phone chỉ là đoán.
+
+### Changed
+- Khi một hàng được capture mất một ô ở một breakpoint (vì ô đó bị ẩn tại đó), các ô còn lại nay dịch vào đúng vị trí đó theo thứ tự thay vì để trống một ô lưới.
+
 ## [2.13.0] - 2026-11-28
 
 ### Added
