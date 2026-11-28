@@ -103,6 +103,7 @@ export async function captureInPage(opts: any = {}): Promise<any> {
     if (s.letterSpacing !== "normal") o.letterSpacing = s.letterSpacing;
     if (s.textTransform !== "none") o.textTransform = s.textTransform;
     if (s.fontStyle !== "normal") o.fontStyle = s.fontStyle;
+    if (s.textDecorationLine && s.textDecorationLine !== "none") o.textDecoration = s.textDecorationLine; // a struck old price
     o.fontFamily = s.fontFamily.split(",")[0].replace(/["']/g, "").trim();
     return o;
   };
@@ -150,12 +151,14 @@ export async function captureInPage(opts: any = {}): Promise<any> {
       if (n.nodeType === 3) return esc(n.textContent || "");
       if (n.nodeType !== 1) return "";
       const e = n as any;
-      const inner = arr(e.childNodes).map(walk).join("");
+      // Inline pieces kept apart by a margin (no space in the markup) keep a space between them.
+      const inner = (px(cs(e).marginLeft) >= 4 ? " " : "") + arr(e.childNodes).map(walk).join("");
       const t = e.tagName;
       if (t === "BR") return "<br>";
       if (t === "B" || t === "STRONG" || (t === "SPAN" && +cs(e).fontWeight >= 600 && +cs(el).fontWeight < 600)) return `<b>${inner}</b>`;
       if (t === "I" || t === "EM") return `<i>${inner}</i>`;
       if (t === "U") return `<u>${inner}</u>`;
+      if (t === "S" || t === "DEL" || t === "STRIKE") return `<s>${inner}</s>`;
       if (t === "A" && e.getAttribute("href")) return `<a href="${abs(e.getAttribute("href")!).replace(/"/g, "&quot;")}">${inner}</a>`;
       return inner;
     };
@@ -264,7 +267,18 @@ export async function captureInPage(opts: any = {}): Promise<any> {
       return null;
     }
     const t = el.tagName.toUpperCase();
-    if (/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|LINK|META|HEAD)$/.test(t) || !visible(el)) return null;
+    if (/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|LINK|META|HEAD)$/.test(t)) return null;
+    if (!visible(el)) {
+      // A 0×0 wrapper that doesn't clip (an inline <a> around absolutely placed content) still
+      // shows its children; sr-only boxes clip, hidden ones are hidden.
+      const s0 = cs(el);
+      if (s0.display === "none" || s0.visibility === "hidden" || Number(s0.opacity) === 0 || s0.overflow !== "visible" || s0.clip !== "auto") return null;
+      const kids = arr(el.children).map(node).filter(Boolean);
+      if (kids.length < 2) return kids[0] || null;
+      const x = Math.min(...kids.map((k) => k.x));
+      const y = Math.min(...kids.map((k) => k.y));
+      return arrange(kids, { x, y, w: Math.max(...kids.map((k) => k.x + k.w)) - x, h: Math.max(...kids.map((k) => k.y + k.h)) - y }, keyOf(el));
+    }
     const s = cs(el);
     const r = box(el);
     if (overlay(s, r)) {
@@ -316,6 +330,10 @@ export async function captureInPage(opts: any = {}): Promise<any> {
     if (t === "FORM") return form(el, r, s);
     if (/^(INPUT|SELECT|TEXTAREA)$/.test(t)) {
       if (/^(submit|button)$/.test((el as any).type)) return { k: "button", ...r, text: (el as any).value, style: { ...boxStyle(s), ...textStyle(s) } };
+      const f: any = el;
+      // A site search box (header) → the storefront's own search input.
+      if (f.type === "search" || /search|tìm/i.test(`${f.name} ${f.placeholder} ${f.getAttribute("aria-label") || ""}`))
+        return { k: "search", ...r, placeholder: f.placeholder || "", style: { ...boxStyle(s), color: s.color, fontSize: px(s.fontSize) } };
       skip("field outside a form");
       return null;
     }
@@ -551,6 +569,7 @@ const fontStyle = (c: Ctx, st: any = {}) => {
   if (st.letterSpacing) o.letterSpacing = st.letterSpacing;
   if (st.textTransform) o.textTransform = st.textTransform;
   if (st.fontStyle) o.fontStyle = st.fontStyle;
+  if (st.textDecoration) o.textDecoration = st.textDecoration;
   if (st.fontFamily) c.fonts[st.fontFamily] = (c.fonts[st.fontFamily] || 0) + 1;
   return o;
 };
@@ -638,6 +657,9 @@ function spec(n: any, c: Ctx, area?: Area): any {
     }
     case "line":
       return { type: "line", opts: { style: { borderColor: n.color } } };
+    case "search":
+      // The page's own magnifier is captured beside it: no second icon.
+      return { type: "input-search", opts: { specials: { placeholder: n.placeholder, showIcon: false }, style: { height: n.h, ...(n.style?.fontSize ? { fontSize: `${n.style.fontSize}px` } : {}), ...(n.style?.color ? { color: n.style.color } : {}) }, align: alignIn(n, area), config: share(n, area) } };
     case "accordion": {
       // <details> = the storefront's collapse: <details> + summary from specials.name, body in a
       // collapse-content grid (builderx_api build_collapse; the editor's collapse picker).

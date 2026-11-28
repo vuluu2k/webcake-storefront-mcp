@@ -17,10 +17,11 @@ const launch = async () => {
 const browser = chromium && (await launch());
 
 const IMG = (c) => `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="${c}"/></svg>`)}`;
-const card = (i) => `<div class="card" style="width:300px;flex:none"><img src="${IMG("#" + (i % 9) + "88")}" style="width:300px;height:200px;display:block"><h3>Card ${i}</h3><p>${(i + 1) * 100}.000đ</p></div>`;
+const card = (i) => `<div class="card" style="width:300px;flex:none"><img src="${IMG("#" + (i % 9) + "88")}" style="width:300px;height:200px;display:block"><h3>Card ${i}</h3><p>${(i + 1) * 100}.000đ <s>999.000đ</s></p><p style="text-decoration:line-through">${i}99.000đ</p></div>`;
 const PAGE = `<!doctype html><html style="scroll-behavior:smooth"><body style="margin:0;font:16px sans-serif">
 <nav class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">${"Hidden menu link ".repeat(40)}</nav>
-<header style="height:60px;background:#111;color:#fff"><a href="/">Brand</a></header>
+<header style="height:60px;background:#111;color:#fff;display:flex;gap:40px"><a href="/">Brand</a><input type="search" placeholder="Tìm kiếm..." style="width:300px;height:36px"></header>
+<div style="position:relative;height:30px;overflow:hidden;background:#cf0"><a href="/ship"><div style="position:absolute;left:600px;top:6px">Free shipping</div></a></div>
 <section style="position:relative;height:400px;overflow:hidden">
   <div style="display:flex;transform:translateX(-1200px)">${[0, 1, 2].map((i) => `<img src="${IMG(["red", "green", "blue"][i])}" style="width:1200px;height:400px;flex:none">`).join("")}</div>
   <button aria-label="Previous slide" style="position:absolute;left:8px;top:180px;width:32px;height:32px">‹</button>
@@ -69,7 +70,13 @@ test("clone capture: consent closed, smooth scroll, sr-only out of the base, sli
     assert.equal(banner.length, 1);
     assert.deepEqual([banner[0].pad.l, banner[0].pad.t], [60, 120]);
 
+    // a 0×0 inline link around an absolutely placed label still shows the label
+    assert.ok(json.includes('"text":"Free shipping"'));
+    // struck old prices keep their line
+    assert.ok(json.includes("<s>999.000đ</s>") && json.includes('"textDecoration":"line-through"'));
+
     const out = snapshotToSource(snap);
+    assert.ok(JSON.stringify(out.source).includes('"type":"input-search"'), "header search box → input-search");
     assert.ok(out.stats.text_coverage_pct >= 90, `coverage ${out.stats.text_coverage_pct}`);
     const grid = [];
     const g = (n) => (n.runtime?.config?.__row?.count === 8 && grid.push(n), (n.children || []).forEach(g));
